@@ -1,7 +1,9 @@
-
 import { useToast } from "@/hooks/use-toast";
 
-// Define types
+// This file re-exports all functionality from individual service files 
+// to maintain compatibility with existing imports
+
+// Types
 export interface Agent {
   id: string;
   name: string;
@@ -223,7 +225,7 @@ export const updateTransporter = (updatedTransporter: Transporter): void => {
 export const deleteTransporter = (id: string): void => {
   const transporters = getTransporters();
   const updatedTransporters = transporters.filter(t => t.id !== id);
-  localStorage.setItem('transporters', JSON.stringify(transporters));
+  localStorage.setItem('transporters', JSON.stringify(updatedTransporters));
 };
 
 // Purchase functions
@@ -621,158 +623,98 @@ export const importDataBackup = (jsonData: string) => {
   }
 };
 
-// Modify seedInitialData to accept a force parameter
+// Seed initial data function
 export const seedInitialData = (force = false) => {
   // Check if data already exists
   const purchases = localStorage.getItem('purchases');
-  const sales = localStorage.getItem('sales');
   const inventory = localStorage.getItem('inventory');
   
-  // If force is true or any of the required data is missing, seed the data
-  if (force || !purchases || !sales || !inventory) {
-    // Create a backup first if data exists
-    if (purchases || sales || inventory) {
-      exportDataBackup(true);
-    }
-    
-    // Seed initial data
-    const initialPurchases = [
-      {
-        id: '1',
-        date: '2024-01-01',
-        agent: 'Agent A',
-        quantity: 50,
-        ratePerKg: 250,
-        netWeight: 50,
-        transportCharges: 1000,
-        otherExpenses: 500,
-        totalAfterExpenses: 14000
-      },
-      {
-        id: '2',
-        date: '2024-01-05',
-        agent: 'Agent B',
-        quantity: 30,
-        ratePerKg: 260,
-        netWeight: 30,
-        transportCharges: 800,
-        otherExpenses: 400,
-        totalAfterExpenses: 9000
-      },
-    ];
-    
-    const initialSales = [
-      {
-        id: '101',
-        date: '2024-01-10',
-        customer: 'Customer X',
-        quantity: 20,
-        ratePerKg: 300,
-        netWeight: 20,
-        amount: 6000
-      },
-      {
-        id: '102',
-        date: '2024-01-15',
-        customer: 'Customer Y',
-        quantity: 15,
-        ratePerKg: 310,
-        netWeight: 15,
-        amount: 4650
-      },
-    ];
-    
-    const initialInventory = [
-      {
-        id: '201',
-        lotNumber: 'LOT001',
-        location: 'Mumbai',
-        quantity: 100,
-        dateAdded: '2024-01-01',
-        netWeight: 1000
-      },
-      {
-        id: '202',
-        lotNumber: 'LOT002',
-        location: 'Chiplun',
-        quantity: 50,
-        dateAdded: '2024-01-05',
-        netWeight: 500
-      },
-      {
-        id: '203',
-        lotNumber: 'LOT003',
-        location: 'Sawantwadi',
-        quantity: 75,
-        dateAdded: '2024-01-10',
-        netWeight: 750
-      },
-    ];
-    
-    localStorage.setItem('purchases', JSON.stringify(initialPurchases));
-    localStorage.setItem('sales', JSON.stringify(initialSales));
-    localStorage.setItem('inventory', JSON.stringify(initialInventory));
-    
-    // Initialize other collections if they don't exist
-    if (!localStorage.getItem('agents')) {
-      localStorage.setItem('agents', JSON.stringify([
-        { id: '1', name: 'Agent A', contactNumber: '1234567890', address: 'Mumbai', balance: 0 },
-        { id: '2', name: 'Agent B', contactNumber: '9876543210', address: 'Chiplun', balance: 0 }
-      ]));
-    }
-    
-    if (!localStorage.getItem('customers')) {
-      localStorage.setItem('customers', JSON.stringify([
-        { id: '1', name: 'Customer X', contactNumber: '5556667777', address: 'Delhi', balance: 0 },
-        { id: '2', name: 'Customer Y', contactNumber: '8889990000', address: 'Pune', balance: 0 }
-      ]));
-    }
-    
-    if (!localStorage.getItem('suppliers')) {
-      localStorage.setItem('suppliers', JSON.stringify([]));
-    }
-    
-    if (!localStorage.getItem('brokers')) {
-      localStorage.setItem('brokers', JSON.stringify([]));
-    }
-    
-    if (!localStorage.getItem('transporters')) {
-      localStorage.setItem('transporters', JSON.stringify([]));
-    }
-    
-    if (!localStorage.getItem('ledger')) {
-      localStorage.setItem('ledger', JSON.stringify([
-        {
-          id: '1001',
-          date: '2024-01-01',
-          partyName: 'Agent A',
-          partyType: 'agent',
-          description: 'Initial transaction',
-          debit: 5000,
-          credit: 0,
-          balance: -5000
-        },
-        {
-          id: '1002',
-          date: '2024-01-05',
-          partyName: 'Agent B',
-          partyType: 'agent',
-          description: 'Initial transaction',
-          debit: 0,
-          credit: 3000,
-          balance: 3000
-        },
-        {
-          id: '1003',
-          date: '2024-01-10',
-          partyName: 'Cash',
-          partyType: 'cash',
-          description: 'Opening balance',
-          debit: 0,
-          credit: 10000,
-          balance: 10000
-        }
-      ]));
-    }
+  // If data exists and force is false, do nothing
+  if (!force && purchases && inventory) {
+    return;
   }
+  
+  // Initialize empty arrays for all data types
+  localStorage.setItem('purchases', JSON.stringify([]));
+  localStorage.setItem('sales', JSON.stringify([]));
+  localStorage.setItem('inventory', JSON.stringify([]));
+  localStorage.setItem('ledger', JSON.stringify([]));
+  
+  // Seed some basic agents, suppliers, etc. for testing
+  const agents = [
+    {
+      id: '1',
+      name: 'Rajesh Kumar',
+      contactNumber: '9876543210',
+      address: 'Mumbai',
+      balance: 0
+    },
+    {
+      id: '2',
+      name: 'Sunil Patel',
+      contactNumber: '9876543211',
+      address: 'Ahmedabad',
+      balance: 0
+    }
+  ];
+  
+  const suppliers = [
+    {
+      id: '1',
+      name: 'Krishna Suppliers',
+      contactNumber: '9876543212',
+      address: 'Rajkot',
+      balance: 0
+    },
+    {
+      id: '2',
+      name: 'Agro Farms',
+      contactNumber: '9876543213',
+      address: 'Surat',
+      balance: 0
+    }
+  ];
+  
+  const customers = [
+    {
+      id: '1',
+      name: 'Mumbai Traders',
+      contactNumber: '9876543214',
+      address: 'Mumbai',
+      balance: 0
+    },
+    {
+      id: '2',
+      name: 'Super Market Chain',
+      contactNumber: '9876543215',
+      address: 'Pune',
+      balance: 0
+    }
+  ];
+  
+  const brokers = [
+    {
+      id: '1',
+      name: 'Mohan Broker',
+      contactNumber: '9876543216',
+      address: 'Mumbai',
+      balance: 0
+    }
+  ];
+  
+  const transporters = [
+    {
+      id: '1',
+      name: 'Fast Logistics',
+      contactNumber: '9876543217',
+      address: 'Ahmedabad',
+      balance: 0
+    }
+  ];
+  
+  localStorage.setItem('agents', JSON.stringify(agents));
+  localStorage.setItem('suppliers', JSON.stringify(suppliers));
+  localStorage.setItem('customers', JSON.stringify(customers));
+  localStorage.setItem('brokers', JSON.stringify(brokers));
+  localStorage.setItem('transporters', JSON.stringify(transporters));
 };
