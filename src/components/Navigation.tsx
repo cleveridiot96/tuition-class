@@ -14,21 +14,21 @@ import {
 interface NavigationProps {
   title?: string;
   showBackButton?: boolean;
-  showHomeButton?: boolean;
+  showHomeButton?: boolean; // This prop is already defined but not properly used
   className?: string;
 }
 
 const Navigation = ({ 
   title = "Kisan Khata Sahayak", 
   showBackButton = false,
-  showHomeButton = false,
+  showHomeButton = true, // Default to true to show home button on all pages
   className 
 }: NavigationProps) => {
   return (
     <TooltipProvider>
       <header className={cn("bg-ag-green text-white p-4 flex items-center justify-between shadow-md", className)}>
         <div className="flex items-center">
-          {showBackButton ? (
+          {showBackButton && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -45,25 +45,10 @@ const Navigation = ({
                 <p className="text-sm text-muted-foreground">પાછા જાઓ</p>
               </TooltipContent>
             </Tooltip>
-          ) : showHomeButton ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link to="/">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="mr-2 text-white hover:bg-ag-green-dark"
-                  >
-                    <Home size={24} />
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Return to dashboard</p>
-                <p className="text-sm text-muted-foreground">ડેશબોર્ડ પર પાછા ફરો</p>
-              </TooltipContent>
-            </Tooltip>
-          ) : (
+          )}
+          
+          {/* Always show home button unless explicitly disabled */}
+          {showHomeButton && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Link to="/">
@@ -82,6 +67,7 @@ const Navigation = ({
               </TooltipContent>
             </Tooltip>
           )}
+          
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
       </header>
