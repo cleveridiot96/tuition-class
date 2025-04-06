@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -13,6 +12,16 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -64,6 +73,8 @@ const Inventory = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [deletedItems, setDeletedItems] = useState<InventoryItem[]>([]);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [itemBeingDeleted, setItemBeingDeleted] = useState<InventoryItem | null>(null);
   const { toast } = useToast();
 
   const handleEdit = (item: InventoryItem) => {
@@ -88,27 +99,36 @@ const Inventory = () => {
   };
 
   const handleDelete = (id: string) => {
-    setItemToDelete(id);
     const item = inventory.find(i => i.id === id);
-    
-    if (item && item.quantity <= 0) {
-      setShowDeleteConfirm(true);
-    } else {
-      // Directly delete if quantity is not zero
-      executeDelete(id);
+    if (item) {
+      setItemBeingDeleted(item);
+      setConfirmDelete(true);
     }
   };
 
   const executeDelete = (id: string) => {
     const itemToRemove = inventory.find(item => item.id === id);
     if (itemToRemove) {
-      setDeletedItems(prev => [...prev, itemToRemove]);
-      setInventory(prev => prev.filter(item => item.id !== id));
-      toast({
-        title: "Item Deleted",
-        description: `${itemToRemove.lotNumber} has been removed from inventory.`
-      });
+      if (itemToRemove.quantity <= 0) {
+        // If quantity is zero, ask if they want to keep or delete
+        setItemToDelete(id);
+        setShowDeleteConfirm(true);
+      } else {
+        // If quantity is not zero, directly add to deletedItems and remove from inventory
+        confirmDeleteOperation(itemToRemove);
+      }
     }
+  };
+
+  const confirmDeleteOperation = (item: InventoryItem) => {
+    setDeletedItems(prev => [...prev, item]);
+    setInventory(prev => prev.filter(i => i.id !== item.id));
+    toast({
+      title: "Item Deleted",
+      description: `${item.lotNumber} has been removed from inventory.`,
+    });
+    setConfirmDelete(false);
+    setItemBeingDeleted(null);
     setShowDeleteConfirm(false);
     setItemToDelete(null);
   };
@@ -131,6 +151,15 @@ const Inventory = () => {
       });
     }
   };
+
+  // Calculate total stock by location
+  const chiplunStock = inventory
+    .filter(item => item.location === "Chiplun")
+    .reduce((total, item) => total + item.quantity, 0);
+  
+  const mumbaiStock = inventory
+    .filter(item => item.location === "Mumbai")
+    .reduce((total, item) => total + item.quantity, 0);
 
   return (
     <div className="min-h-screen bg-ag-beige">
@@ -208,7 +237,7 @@ const Inventory = () => {
               </div>
               <div>
                 <p className="text-sm text-ag-brown">Stock in Chiplun</p>
-                <p className="text-2xl font-bold">12 bags</p>
+                <p className="text-2xl font-bold">{chiplunStock} bags</p>
               </div>
             </Card>
             <Card className="p-4 flex items-center border-2 border-ag-orange-light">
@@ -217,7 +246,7 @@ const Inventory = () => {
               </div>
               <div>
                 <p className="text-sm text-ag-brown">Stock in Mumbai</p>
-                <p className="text-2xl font-bold">11 bags</p>
+                <p className="text-2xl font-bold">{mumbaiStock} bags</p>
               </div>
             </Card>
           </div>
@@ -293,13 +322,47 @@ const Inventory = () => {
             </Button>
             <Button 
               variant="destructive" 
-              onClick={() => itemToDelete && executeDelete(itemToDelete)}
+              onClick={() => {
+                if (itemToDelete) {
+                  const item = inventory.find(i => i.id === itemToDelete);
+                  if (item) {
+                    confirmDeleteOperation(item);
+                  }
+                }
+              }}
             >
               Delete
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* General Delete Confirmation */}
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {itemBeingDeleted?.lotNumber}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setConfirmDelete(false);
+              setItemBeingDeleted(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (itemBeingDeleted) {
+                executeDelete(itemBeingDeleted.id);
+              }
+            }}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       {/* Restore Dialog */}
       <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
