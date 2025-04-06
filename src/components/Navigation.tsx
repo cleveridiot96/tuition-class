@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 interface NavigationProps {
   title?: string;
   showBackButton?: boolean;
+  showHomeButton?: boolean;
   className?: string;
 }
 
 const Navigation = ({ 
   title = "Kisan Khata Sahayak", 
   showBackButton = false,
+  showHomeButton = false,
   className 
 }: NavigationProps) => {
   return (
@@ -28,6 +30,16 @@ const Navigation = ({
           >
             <ArrowLeft size={24} />
           </Button>
+        ) : showHomeButton ? (
+          <Link to="/">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="mr-2 text-white hover:bg-ag-green-dark"
+            >
+              <Home size={24} />
+            </Button>
+          </Link>
         ) : (
           <Link to="/">
             <Button 

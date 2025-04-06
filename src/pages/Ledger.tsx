@@ -32,7 +32,9 @@ import {
   getSuppliers, 
   getCustomers, 
   getBrokers, 
-  getLedgerEntries 
+  getLedgerEntries,
+  getLedgerEntriesByParty,
+  LedgerEntry as StorageLedgerEntry
 } from "@/services/storageService";
 
 interface LedgerEntry {
@@ -59,7 +61,7 @@ const Ledger = () => {
   const [parties, setParties] = useState<Party[]>([]);
   const [selectedPartyId, setSelectedPartyId] = useState<string>('');
   const [selectedPartyType, setSelectedPartyType] = useState<string>('agent');
-  const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+  const [ledgerEntries, setLedgerEntries] = useState<StorageLedgerEntry[]>([]);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
   
   useEffect(() => {
@@ -68,17 +70,24 @@ const Ledger = () => {
   
   useEffect(() => {
     if (selectedPartyId) {
-      const entries = getLedgerEntries(selectedPartyId);
-      setLedgerEntries(entries);
-      
-      // Calculate current balance
-      const balance = entries.reduce((total, entry) => total + entry.credit - entry.debit, 0);
-      setCurrentBalance(balance);
+      const selectedParty = parties.find(p => p.id === selectedPartyId);
+      if (selectedParty) {
+        const entries = getLedgerEntriesByParty(selectedParty.name, selectedParty.type);
+        setLedgerEntries(entries);
+        
+        // Calculate current balance
+        if (entries.length > 0) {
+          const balance = entries.reduce((total, entry) => total + entry.credit - entry.debit, 0);
+          setCurrentBalance(balance);
+        } else {
+          setCurrentBalance(0);
+        }
+      }
     } else {
       setLedgerEntries([]);
       setCurrentBalance(0);
     }
-  }, [selectedPartyId]);
+  }, [selectedPartyId, parties]);
   
   const loadParties = (type: string) => {
     let partyList: any[] = [];

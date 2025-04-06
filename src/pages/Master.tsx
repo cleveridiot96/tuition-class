@@ -33,7 +33,12 @@ import {
   getTransporters,
   addTransporter,
   updateTransporter,
-  deleteTransporter
+  deleteTransporter,
+  Agent,
+  Supplier,
+  Customer,
+  Broker,
+  Transporter
 } from "@/services/storageService";
 import { 
   Dialog,
@@ -45,24 +50,23 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-interface Party {
+interface PartyFormData {
   id: string;
   name: string;
-  phone?: string;
-  address?: string;
-  [key: string]: any;
+  contactNumber: string;
+  address: string;
 }
 
 const Master = () => {
   const { toast } = useToast();
   const [currentTab, setCurrentTab] = useState("agents");
-  const [parties, setParties] = useState<Party[]>([]);
+  const [parties, setParties] = useState<(Agent | Supplier | Customer | Broker | Transporter)[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<Party>({
+  const [formData, setFormData] = useState<PartyFormData>({
     id: "",
     name: "",
-    phone: "",
+    contactNumber: "",
     address: ""
   });
   
@@ -71,7 +75,7 @@ const Master = () => {
   }, [currentTab]);
   
   const loadParties = (type: string) => {
-    let partyList: Party[] = [];
+    let partyList: (Agent | Supplier | Customer | Broker | Transporter)[] = [];
     
     switch (type) {
       case "agents":
@@ -106,15 +110,20 @@ const Master = () => {
     setFormData({
       id: "",
       name: "",
-      phone: "",
+      contactNumber: "",
       address: ""
     });
     setShowForm(true);
   };
   
-  const handleEditClick = (party: Party) => {
+  const handleEditClick = (party: Agent | Supplier | Customer | Broker | Transporter) => {
     setIsEditing(true);
-    setFormData(party);
+    setFormData({
+      id: party.id,
+      name: party.name,
+      contactNumber: party.contactNumber,
+      address: party.address
+    });
     setShowForm(true);
   };
   
@@ -126,19 +135,39 @@ const Master = () => {
         // Update existing party
         switch (currentTab) {
           case "agents":
-            updateAgent(formData.id, formData);
+            updateAgent({
+              ...formData,
+              id: formData.id,
+              balance: (parties.find(p => p.id === formData.id) as Agent)?.balance || 0
+            } as Agent);
             break;
           case "suppliers":
-            updateSupplier(formData.id, formData);
+            updateSupplier({
+              ...formData,
+              id: formData.id,
+              balance: (parties.find(p => p.id === formData.id) as Supplier)?.balance || 0
+            } as Supplier);
             break;
           case "customers":
-            updateCustomer(formData.id, formData);
+            updateCustomer({
+              ...formData,
+              id: formData.id,
+              balance: (parties.find(p => p.id === formData.id) as Customer)?.balance || 0
+            } as Customer);
             break;
           case "brokers":
-            updateBroker(formData.id, formData);
+            updateBroker({
+              ...formData,
+              id: formData.id,
+              balance: (parties.find(p => p.id === formData.id) as Broker)?.balance || 0
+            } as Broker);
             break;
           case "transporters":
-            updateTransporter(formData.id, formData);
+            updateTransporter({
+              ...formData,
+              id: formData.id,
+              balance: (parties.find(p => p.id === formData.id) as Transporter)?.balance || 0
+            } as Transporter);
             break;
         }
         
@@ -149,23 +178,42 @@ const Master = () => {
       } else {
         // Add new party
         const newId = Date.now().toString();
-        const newParty = { ...formData, id: newId };
         
         switch (currentTab) {
           case "agents":
-            addAgent(newParty);
+            addAgent({
+              ...formData,
+              id: newId,
+              balance: 0
+            } as Agent);
             break;
           case "suppliers":
-            addSupplier(newParty);
+            addSupplier({
+              ...formData,
+              id: newId,
+              balance: 0
+            } as Supplier);
             break;
           case "customers":
-            addCustomer(newParty);
+            addCustomer({
+              ...formData,
+              id: newId,
+              balance: 0
+            } as Customer);
             break;
           case "brokers":
-            addBroker(newParty);
+            addBroker({
+              ...formData,
+              id: newId,
+              balance: 0
+            } as Broker);
             break;
           case "transporters":
-            addTransporter(newParty);
+            addTransporter({
+              ...formData,
+              id: newId,
+              balance: 0
+            } as Transporter);
             break;
         }
         
@@ -181,7 +229,7 @@ const Master = () => {
       setFormData({
         id: "",
         name: "",
-        phone: "",
+        contactNumber: "",
         address: ""
       });
     } catch (error) {
@@ -281,12 +329,12 @@ const Master = () => {
                   </div>
                   
                   <div className="form-group">
-                    <Label htmlFor="phone" className="form-label">फोन (Phone)</Label>
+                    <Label htmlFor="contactNumber" className="form-label">फोन (Phone)</Label>
                     <Input
-                      id="phone"
-                      name="phone"
+                      id="contactNumber"
+                      name="contactNumber"
                       placeholder="Enter phone number"
-                      value={formData.phone}
+                      value={formData.contactNumber}
                       onChange={handleChange}
                       className="text-lg p-6"
                     />
@@ -374,10 +422,10 @@ const Master = () => {
                       </Dialog>
                     </div>
                   </div>
-                  {party.phone && (
+                  {party.contactNumber && (
                     <div className="flex items-center gap-2 mt-2">
                       <Phone size={16} className="text-gray-500" />
-                      <span>{party.phone}</span>
+                      <span>{party.contactNumber}</span>
                     </div>
                   )}
                   {party.address && (

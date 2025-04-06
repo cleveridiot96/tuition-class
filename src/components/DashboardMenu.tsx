@@ -37,12 +37,12 @@ const DashboardMenu = () => {
       <div className="w-full flex justify-center mb-4">
         <div className="grid grid-cols-2 w-full max-w-2xl gap-4">
           <MenuItem 
-            icon={<ShoppingBag size={56} />} 
+            icon={<ShoppingCart size={56} />} 
             title="बिक्री (Sales)" 
             to="/sales" 
           />
           <MenuItem 
-            icon={<ShoppingCart size={56} />} 
+            icon={<ShoppingBag size={56} />} 
             title="खरीदी (Purchase)" 
             to="/purchases" 
           />
