@@ -66,9 +66,9 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       ...initialData,
-      customerId: initialData.customer?.id || initialData.customer || "",
-      brokerId: initialData.broker?.id || initialData.broker || "",
-      transporterId: initialData.transporter?.id || initialData.transporter || "",
+      customerId: initialData.customer?.id || initialData.customerId || "",
+      brokerId: initialData.broker?.id || initialData.brokerId || "",
+      transporterId: initialData.transporter?.id || initialData.transporterId || "",
       transportRate: initialData.transportRate || 0,
       billAmount: initialData.billAmount || 0,
       date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
@@ -91,11 +91,17 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
 
   // Load data
   useEffect(() => {
-    setInventory(getInventory().filter(item => item.quantity > 0));
+    // Immediately update inventory when the component loads
+    refreshInventory();
     setCustomers(getCustomers());
     setBrokers(getBrokers());
     setTransporters(getTransporters());
   }, []);
+
+  const refreshInventory = () => {
+    const currentInventory = getInventory().filter(item => item.quantity > 0);
+    setInventory(currentInventory);
+  };
 
   // Auto-populate fields when lot number changes
   const handleLotChange = (lotNumber: string) => {

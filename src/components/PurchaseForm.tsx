@@ -35,7 +35,7 @@ const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   lotNumber: z.string().min(1, "Lot number is required"),
   quantity: z.coerce.number().min(1, "Quantity is required"),
-  agentId: z.string().min(1, "Agent is required"),
+  agentId: z.string().optional(),
   party: z.string().min(1, "Party is required"),
   location: z.string().min(1, "Location is required"),
   netWeight: z.coerce.number().min(1, "Net weight is required"),
@@ -66,8 +66,8 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       ...initialData,
-      agentId: initialData.agent?.id || initialData.agent || "",
-      transporterId: initialData.transporter?.id || initialData.transporter || "",
+      agentId: initialData.agent?.id || initialData.agentId || "",
+      transporterId: initialData.transporter?.id || initialData.transporterId || "",
       transportRate: initialData.transportRate || 0,
       date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
     } : {
@@ -109,7 +109,7 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
-    // Calculate total after expenses
+    // Calculate total after expenses including transport cost
     const calculatedTotalAfterExpenses = calculatedTotalAmount + expenses + calculatedTransportCost;
     setTotalAfterExpenses(calculatedTotalAfterExpenses);
     
@@ -136,7 +136,7 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     // Format data for submission
     const submitData = {
       ...data,
-      agent: agents.find(a => a.id === data.agentId)?.name || data.agentId,
+      agent: data.agentId ? agents.find(a => a.id === data.agentId)?.name || data.agentId : "None",
       transporter: transporters.find(t => t.id === data.transporterId)?.name || data.transporterId,
       totalAmount,
       transportCost,
@@ -214,14 +214,15 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
               name="agentId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Agent</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Agent (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select agent" />
+                        <SelectValue placeholder="Select agent (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="">No Agent</SelectItem>
                       {agents.map((agent) => (
                         <SelectItem key={agent.id} value={agent.id}>
                           {agent.name}
@@ -337,6 +338,17 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
                 </FormItem>
               )}
             />
+            
+            <div>
+              <label className="text-sm font-medium">Transport Cost (₹)</label>
+              <Input 
+                type="number" 
+                value={transportCost.toFixed(2)} 
+                readOnly
+                className="bg-gray-100"
+              />
+              <p className="text-xs text-gray-500 mt-1">Transport Rate × Net Weight</p>
+            </div>
             
             <FormField
               control={form.control}
