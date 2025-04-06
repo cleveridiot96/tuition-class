@@ -102,6 +102,22 @@ const Index = () => {
     }
   };
 
+  const handleExportBackup = () => {
+    const jsonData = exportDataBackup();
+    if (jsonData) {
+      toast({
+        title: "Backup Created",
+        description: "Data backup successfully downloaded",
+      });
+    } else {
+      toast({
+        title: "Backup Failed",
+        description: "There was a problem creating the backup",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleFormatClick = () => {
     setIsFormatDialogOpen(true);
   };
@@ -158,7 +174,7 @@ const Index = () => {
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <Button
-              onClick={exportDataBackup}
+              onClick={handleExportBackup}
               variant="outline"
               className="flex items-center gap-2"
             >
