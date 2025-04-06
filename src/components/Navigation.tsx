@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Home, ArrowLeft, Info } from "lucide-react";
+import { Home, ArrowLeft, Info, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,8 @@ interface NavigationProps {
   title?: string;
   showBackButton?: boolean;
   showHomeButton?: boolean;
+  showFormatButton?: boolean;
+  onFormatClick?: () => void;
   className?: string;
 }
 
@@ -22,6 +24,8 @@ const Navigation = ({
   title = "Business Management", 
   showBackButton = false,
   showHomeButton = true,
+  showFormatButton = false,
+  onFormatClick,
   className 
 }: NavigationProps) => {
   return (
@@ -68,6 +72,24 @@ const Navigation = ({
           
           <h1 className="text-2xl font-bold">{title}</h1>
         </div>
+
+        {showFormatButton && (
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-ag-green-dark"
+                onClick={onFormatClick}
+              >
+                <RefreshCw size={24} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Format data</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </header>
     </TooltipProvider>
   );

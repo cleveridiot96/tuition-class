@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
+import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
 import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory, getSales } from "@/services/storageService";
@@ -16,6 +17,7 @@ const Index = () => {
     sales: { amount: 0, bags: 0, kgs: 0 },
     stock: { mumbai: 0, chiplun: 0, sawantwadi: 0 }
   });
+  const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
   
   const loadDashboardData = () => {
     // Seed initial data when the app first loads
@@ -100,6 +102,37 @@ const Index = () => {
     }
   };
 
+  const handleFormatClick = () => {
+    setIsFormatDialogOpen(true);
+  };
+
+  const handleFormatConfirm = () => {
+    // Create automatic backup before formatting
+    try {
+      const backupData = exportDataBackup(true); // true means silent mode - no toast
+      if (backupData) {
+        // Store the backup in localStorage as an additional safety measure
+        localStorage.setItem('preFormatBackup', backupData);
+        
+        // Now proceed with formatting
+        seedInitialData(true); // true means force re-seed
+        loadDashboardData();
+        
+        toast({
+          title: "Data Formatted",
+          description: "All data has been successfully formatted. A backup was automatically created.",
+        });
+      }
+    } catch (error) {
+      console.error("Error during formatting:", error);
+      toast({
+        title: "Format Error",
+        description: "There was a problem formatting the data.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -110,7 +143,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-ag-beige">
-      <Navigation title="Dashboard" />
+      <Navigation 
+        title="Dashboard" 
+        showFormatButton={true}
+        onFormatClick={handleFormatClick}
+      />
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-ag-brown-dark">
@@ -211,6 +248,13 @@ const Index = () => {
           </p>
         </div>
       </div>
+
+      {/* Format confirmation dialog */}
+      <FormatConfirmationDialog
+        isOpen={isFormatDialogOpen}
+        onClose={() => setIsFormatDialogOpen(false)}
+        onConfirm={handleFormatConfirm}
+      />
     </div>
   );
 };
