@@ -136,6 +136,8 @@ const Index = () => {
         variant: "destructive",
       });
     }
+    
+    setIsFormatDialogOpen(false);
   };
 
   const formatCurrency = (amount: number) => {
