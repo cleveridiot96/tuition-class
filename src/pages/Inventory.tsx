@@ -26,7 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getInventory, saveInventory } from "@/services/storageService";
+import { getInventory, saveInventory, getPurchases, savePurchases } from "@/services/storageService";
 
 interface InventoryItem {
   id: string;
@@ -35,6 +35,7 @@ interface InventoryItem {
   location: string;
   dateAdded: string;
   netWeight?: number;
+  isDeleted?: boolean;
 }
 
 const Inventory = () => {
@@ -55,7 +56,8 @@ const Inventory = () => {
 
   const loadInventory = () => {
     const inventoryData = getInventory();
-    setInventory(inventoryData);
+    setInventory(inventoryData.filter(item => !item.isDeleted)); // Only show non-deleted items
+    setDeletedItems(inventoryData.filter(item => item.isDeleted));
   };
 
   const handleEdit = (item: InventoryItem) => {
@@ -65,12 +67,17 @@ const Inventory = () => {
 
   const handleEditSave = () => {
     if (editItem) {
-      const updatedInventory = inventory.map(item => 
+      const allInventory = [...inventory, ...deletedItems];
+      const updatedInventory = allInventory.map(item => 
         item.id === editItem.id ? editItem : item
       );
       
-      setInventory(updatedInventory);
+      // Save the updated inventory including both active and deleted items
       saveInventory(updatedInventory);
+      
+      // Update the UI state
+      setInventory(updatedInventory.filter(item => !item.isDeleted));
+      setDeletedItems(updatedInventory.filter(item => item.isDeleted));
       
       setIsEditing(false);
       setEditItem(null);
@@ -97,25 +104,31 @@ const Inventory = () => {
         setItemToDelete(id);
         setShowDeleteConfirm(true);
       } else {
-        // If quantity is not zero, directly add to deletedItems and remove from inventory
+        // If quantity is not zero, directly mark as deleted
         confirmDeleteOperation(itemToRemove);
       }
     }
   };
 
   const confirmDeleteOperation = (item: InventoryItem) => {
-    const newDeletedItems = [...deletedItems, item];
+    // Mark the item as deleted instead of removing it
+    const deletedItem = { ...item, isDeleted: true };
+    const newDeletedItems = [...deletedItems, deletedItem];
     setDeletedItems(newDeletedItems);
     
     const newInventory = inventory.filter(i => i.id !== item.id);
     setInventory(newInventory);
     
-    // Update storage
-    saveInventory(newInventory);
+    // Update related purchases to mark this lot as deleted
+    updatePurchasesForDeletedItem(item.lotNumber);
+    
+    // Update storage with all items (active and deleted)
+    const allItems = [...newInventory, ...newDeletedItems];
+    saveInventory(allItems);
     
     toast({
       title: "Item Deleted",
-      description: `${item.lotNumber} has been removed from inventory.`,
+      description: `${item.lotNumber} has been marked as deleted in inventory.`,
     });
     
     setConfirmDelete(false);
@@ -124,18 +137,49 @@ const Inventory = () => {
     setItemToDelete(null);
   };
 
-  const handleRestore = (item: InventoryItem) => {
-    const updatedInventory = [...inventory, item];
-    setInventory(updatedInventory);
-    saveInventory(updatedInventory);
+  const updatePurchasesForDeletedItem = (lotNumber: string) => {
+    const purchases = getPurchases();
+    const updatedPurchases = purchases.map(purchase => {
+      if (purchase.lotNumber === lotNumber) {
+        return { ...purchase, isDeleted: true };
+      }
+      return purchase;
+    });
     
+    savePurchases(updatedPurchases);
+  };
+
+  const handleRestore = (item: InventoryItem) => {
+    // Restore the item by removing the deleted flag
+    const restoredItem = { ...item, isDeleted: false };
+    const updatedInventory = [...inventory, restoredItem];
     const updatedDeletedItems = deletedItems.filter(i => i.id !== item.id);
+    
+    // Update related purchases to unmark this lot as deleted
+    restorePurchasesForItem(item.lotNumber);
+    
+    // Update storage and state
+    setInventory(updatedInventory);
     setDeletedItems(updatedDeletedItems);
+    saveInventory([...updatedInventory, ...updatedDeletedItems]);
     
     toast({
       title: "Item Restored",
       description: `${item.lotNumber} has been restored to inventory.`
     });
+  };
+
+  const restorePurchasesForItem = (lotNumber: string) => {
+    const purchases = getPurchases();
+    const updatedPurchases = purchases.map(purchase => {
+      if (purchase.lotNumber === lotNumber) {
+        const { isDeleted, ...rest } = purchase;
+        return rest;
+      }
+      return purchase;
+    });
+    
+    savePurchases(updatedPurchases);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -360,9 +404,9 @@ const Inventory = () => {
             <AlertDialogDescription>
               Are you sure you want to delete {itemBeingDeleted?.lotNumber}? This action cannot be undone.
               {itemBeingDeleted && itemBeingDeleted.quantity > 0 && (
-                <p className="text-red-500 mt-2 font-semibold">
+                <div className="text-red-500 mt-2 font-semibold">
                   Warning: This item still has {itemBeingDeleted.quantity} bags in stock!
-                </p>
+                </div>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>

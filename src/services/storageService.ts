@@ -60,6 +60,7 @@ export interface Purchase {
   totalAfterExpenses: number;
   ratePerKgAfterExpenses: number;
   notes: string;
+  isDeleted?: boolean;
 }
 
 export interface InventoryItem {
@@ -69,6 +70,7 @@ export interface InventoryItem {
   location: string;
   dateAdded: string;
   netWeight: number;
+  isDeleted?: boolean;
 }
 
 export interface LedgerEntry {
@@ -265,12 +267,20 @@ export const deletePurchase = (id: string): void => {
   const purchaseToDelete = purchases.find(p => p.id === id);
   
   if (purchaseToDelete) {
-    // Remove from purchases
-    const updatedPurchases = purchases.filter(p => p.id !== id);
+    // Mark as deleted instead of removing
+    const updatedPurchases = purchases.map(p => p.id === id ? { ...p, isDeleted: true } : p);
     localStorage.setItem('purchases', JSON.stringify(updatedPurchases));
     
-    // Update inventory
-    updateInventoryAfterPurchaseDelete(purchaseToDelete);
+    // Update inventory - mark related inventory item as deleted
+    const inventory = getInventory();
+    const updatedInventory = inventory.map(item => {
+      if (item.lotNumber === purchaseToDelete.lotNumber) {
+        return { ...item, isDeleted: true };
+      }
+      return item;
+    });
+    
+    saveInventory(updatedInventory);
   }
 };
 
@@ -311,7 +321,7 @@ export const addInventoryItem = (item: InventoryItem): void => {
 
 export const getInventoryItem = (lotNumber: string): InventoryItem | undefined => {
   const inventory = getInventory();
-  return inventory.find(item => item.lotNumber === lotNumber);
+  return inventory.find(item => item.lotNumber === lotNumber && !item.isDeleted);
 };
 
 export const updateInventoryItem = (updatedItem: InventoryItem): void => {
@@ -335,6 +345,8 @@ export const updateInventoryAfterPurchase = (purchase: Purchase): void => {
     // Update existing item
     inventory[existingItemIndex].quantity += purchase.quantity;
     inventory[existingItemIndex].netWeight = (inventory[existingItemIndex].netWeight || 0) + purchase.netWeight;
+    // Ensure it's not marked as deleted
+    inventory[existingItemIndex].isDeleted = false;
   } else {
     // Add new item
     inventory.push({
@@ -343,7 +355,8 @@ export const updateInventoryAfterPurchase = (purchase: Purchase): void => {
       quantity: purchase.quantity,
       location: purchase.location,
       dateAdded: purchase.date,
-      netWeight: purchase.netWeight
+      netWeight: purchase.netWeight,
+      isDeleted: false
     });
   }
   
@@ -369,15 +382,17 @@ export const updateInventoryAfterPurchaseEdit = (
         (inventory[existingItemIndex].netWeight || 0) - oldPurchase.netWeight + newPurchase.netWeight;
         
       inventory[existingItemIndex].location = newPurchase.location;
+      // Clear any deleted flag if present
+      inventory[existingItemIndex].isDeleted = newPurchase.isDeleted;
     } else {
       // Lot number changed, need to adjust old item and maybe create new one
       inventory[existingItemIndex].quantity -= oldPurchase.quantity;
       inventory[existingItemIndex].netWeight = 
         (inventory[existingItemIndex].netWeight || 0) - oldPurchase.netWeight;
       
-      // If old item has zero quantity, remove it
+      // If old item has zero quantity, mark it as deleted
       if (inventory[existingItemIndex].quantity <= 0) {
-        inventory.splice(existingItemIndex, 1);
+        inventory[existingItemIndex].isDeleted = true;
       }
       
       // Look for the new lot number
@@ -387,6 +402,7 @@ export const updateInventoryAfterPurchaseEdit = (
         inventory[newItemIndex].quantity += newPurchase.quantity;
         inventory[newItemIndex].netWeight = 
           (inventory[newItemIndex].netWeight || 0) + newPurchase.netWeight;
+        inventory[newItemIndex].isDeleted = false; // Ensure it's not marked as deleted
       } else {
         // Create new inventory item
         inventory.push({
@@ -395,7 +411,8 @@ export const updateInventoryAfterPurchaseEdit = (
           quantity: newPurchase.quantity,
           location: newPurchase.location,
           dateAdded: newPurchase.date,
-          netWeight: newPurchase.netWeight
+          netWeight: newPurchase.netWeight,
+          isDeleted: false
         });
       }
     }
@@ -407,6 +424,7 @@ export const updateInventoryAfterPurchaseEdit = (
       inventory[newItemIndex].quantity += newPurchase.quantity;
       inventory[newItemIndex].netWeight = 
         (inventory[newItemIndex].netWeight || 0) + newPurchase.netWeight;
+      inventory[newItemIndex].isDeleted = false; // Ensure it's not marked as deleted
     } else {
       // Create new
       inventory.push({
@@ -415,7 +433,8 @@ export const updateInventoryAfterPurchaseEdit = (
         quantity: newPurchase.quantity,
         location: newPurchase.location,
         dateAdded: newPurchase.date,
-        netWeight: newPurchase.netWeight
+        netWeight: newPurchase.netWeight,
+        isDeleted: false
       });
     }
   }
@@ -433,7 +452,8 @@ export const updateInventoryAfterPurchaseDelete = (purchase: Purchase): void => 
       (inventory[existingItemIndex].netWeight || 0) - purchase.netWeight;
     
     if (inventory[existingItemIndex].quantity <= 0) {
-      inventory.splice(existingItemIndex, 1); // Remove item if quantity is zero or negative
+      // Mark as deleted instead of removing from array
+      inventory[existingItemIndex].isDeleted = true;
     }
     
     saveInventory(inventory);
