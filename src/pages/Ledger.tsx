@@ -94,13 +94,16 @@ const Ledger = () => {
         console.log("Found entries:", entries);
         setLedgerEntries(entries);
         
-        // Calculate current balance
-        if (entries.length > 0) {
-          const balance = entries.reduce((total, entry) => total + entry.credit - entry.debit, 0);
-          setCurrentBalance(balance);
-        } else {
-          setCurrentBalance(0);
-        }
+        // Calculate running balance
+        let runningBalance = 0;
+        const entriesWithBalance = entries.map(entry => {
+          // For tally-like format: add to running balance
+          runningBalance += entry.credit - entry.debit;
+          return {...entry, balance: runningBalance};
+        });
+        
+        setLedgerEntries(entriesWithBalance);
+        setCurrentBalance(runningBalance);
       } catch (error) {
         console.error("Error loading ledger data:", error);
         toast({
@@ -171,50 +174,36 @@ const Ledger = () => {
         <div className="container mx-auto px-4 py-6">
           <Tabs defaultValue="agent" className="w-full" onValueChange={loadParties}>
             <TabsList className="grid grid-cols-5 mb-6">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="agent" className="text-lg py-3">Agents</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View ledger entries for agents</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="supplier" className="text-lg py-3">Suppliers</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View ledger entries for suppliers</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="customer" className="text-lg py-3">Customers</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View ledger entries for customers</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="broker" className="text-lg py-3">Brokers</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View ledger entries for brokers</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="transporter" className="text-lg py-3">Transporters</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View ledger entries for transporters</p>
-                </TooltipContent>
-              </Tooltip>
+              <TabsTrigger 
+                value="agent" 
+                className={`text-lg py-3 ${selectedPartyType === 'agent' ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                Agents
+              </TabsTrigger>
+              <TabsTrigger 
+                value="supplier" 
+                className={`text-lg py-3 ${selectedPartyType === 'supplier' ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                Suppliers
+              </TabsTrigger>
+              <TabsTrigger 
+                value="customer" 
+                className={`text-lg py-3 ${selectedPartyType === 'customer' ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                Customers
+              </TabsTrigger>
+              <TabsTrigger 
+                value="broker" 
+                className={`text-lg py-3 ${selectedPartyType === 'broker' ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                Brokers
+              </TabsTrigger>
+              <TabsTrigger 
+                value="transporter" 
+                className={`text-lg py-3 ${selectedPartyType === 'transporter' ? 'bg-primary text-primary-foreground' : ''}`}
+              >
+                Transporters
+              </TabsTrigger>
             </TabsList>
             
             <div className="flex items-end gap-4 mb-6">
@@ -275,32 +264,35 @@ const Ledger = () => {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-gray-50">
-                        <TableHead>Date</TableHead>
-                        <TableHead>Particulars</TableHead>
-                        <TableHead className="text-right">Debit (Dr)</TableHead>
-                        <TableHead className="text-right">Credit (Cr)</TableHead>
-                        <TableHead className="text-right">Balance</TableHead>
+                      <TableRow className="bg-gray-100">
+                        <TableHead className="whitespace-nowrap">Date</TableHead>
+                        <TableHead className="whitespace-nowrap">Particulars</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Debit (Dr)</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Credit (Cr)</TableHead>
+                        <TableHead className="text-right whitespace-nowrap">Running Balance</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {ledgerEntries.length > 0 ? (
-                        ledgerEntries.map((entry) => (
-                          <TableRow key={entry.id} className="hover:bg-gray-50">
-                            <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                            <TableCell>{entry.description}</TableCell>
-                            <TableCell className="text-right font-medium">
-                              {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                            </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                            </TableCell>
-                            <TableCell className={`text-right font-bold ${entry.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatCurrency(Math.abs(entry.balance))}
-                              <span className="ml-1 text-xs">{entry.balance >= 0 ? 'Cr' : 'Dr'}</span>
-                            </TableCell>
-                          </TableRow>
-                        ))
+                        ledgerEntries.map((entry, index) => {
+                          // Calculate running balance up to this point
+                          return (
+                            <TableRow key={entry.id} className="hover:bg-gray-50">
+                              <TableCell className="whitespace-nowrap">{new Date(entry.date).toLocaleDateString()}</TableCell>
+                              <TableCell>{entry.description}</TableCell>
+                              <TableCell className="text-right font-medium">
+                                {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">
+                                {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                              </TableCell>
+                              <TableCell className={`text-right font-bold ${entry.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(Math.abs(entry.balance))}
+                                <span className="ml-1 text-xs">{entry.balance >= 0 ? 'Cr' : 'Dr'}</span>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       ) : (
                         <TableRow>
                           <TableCell colSpan={5} className="text-center py-4">
@@ -309,7 +301,7 @@ const Ledger = () => {
                         </TableRow>
                       )}
                       {ledgerEntries.length > 0 && (
-                        <TableRow className="font-bold border-t-2">
+                        <TableRow className="font-bold border-t-2 bg-gray-50">
                           <TableCell colSpan={2} className="text-right">Total</TableCell>
                           <TableCell className="text-right">
                             {formatCurrency(ledgerEntries.reduce((sum, entry) => sum + entry.debit, 0))}
