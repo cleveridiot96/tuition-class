@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -21,15 +20,11 @@ const Index = () => {
   const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
   
   const loadDashboardData = () => {
-    // Seed initial data when the app first loads
     seedInitialData();
     
-    // Load summary data
     const purchases = getPurchases();
-    // Get sales data
     const sales = getSales() || [];
     
-    // Get inventory by location
     const inventory = getInventory();
     const mumbaiStock = inventory.filter(item => item.location === "Mumbai");
     const chiplunStock = inventory.filter(item => item.location === "Chiplun");
@@ -57,10 +52,8 @@ const Index = () => {
   useEffect(() => {
     loadDashboardData();
     
-    // Add event listener to refresh the dashboard data when the window gets focus
     window.addEventListener('focus', loadDashboardData);
     
-    // Clean up event listener
     return () => {
       window.removeEventListener('focus', loadDashboardData);
     };
@@ -86,7 +79,7 @@ const Index = () => {
           title: "Data Import Successful",
           description: "All data successfully imported",
         });
-        loadDashboardData(); // Refresh data after import
+        loadDashboardData();
       } else {
         toast({
           title: "Import Failed",
@@ -97,7 +90,6 @@ const Index = () => {
     };
     reader.readAsText(file);
     
-    // Reset file input
     if (event.target) {
       event.target.value = '';
     }
@@ -124,15 +116,11 @@ const Index = () => {
   };
 
   const handleFormatConfirm = () => {
-    // Create automatic backup before formatting
     try {
-      const backupData = exportDataBackup(true); // true means silent mode - no toast
+      const backupData = exportDataBackup(true);
       if (backupData) {
-        // Store the backup in localStorage as an additional safety measure
         localStorage.setItem('preFormatBackup', backupData);
-        
-        // Now proceed with formatting
-        seedInitialData(true); // true means force re-seed
+        seedInitialData(true);
         loadDashboardData();
         
         toast({
@@ -158,9 +146,19 @@ const Index = () => {
     }).format(amount);
   };
 
-  const SummaryCard = ({ title, to, children }: { title: string; to: string; children: React.ReactNode }) => (
+  const SummaryCard = ({ 
+    title, 
+    to, 
+    children, 
+    className 
+  }: { 
+    title: string; 
+    to: string; 
+    children: React.ReactNode; 
+    className?: string 
+  }) => (
     <Link to={to} className="block hover:opacity-90 transition-opacity">
-      <Card className="p-4 shadow-md hover:shadow-lg transition-shadow">
+      <Card className={`p-4 shadow-md hover:shadow-lg transition-shadow ${className || ''}`}>
         <h3 className="text-lg font-semibold mb-2 border-b pb-1">{title}</h3>
         {children}
       </Card>
@@ -252,7 +250,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Format confirmation dialog */}
       <FormatConfirmationDialog
         isOpen={isFormatDialogOpen}
         onClose={() => setIsFormatDialogOpen(false)}
