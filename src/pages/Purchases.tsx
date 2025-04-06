@@ -58,7 +58,6 @@ const Purchases = () => {
     notes: ""
   });
 
-  // Load purchases and agents on component mount
   useEffect(() => {
     setPurchases(getPurchases());
     setAgents(getAgents().map(a => ({ id: a.id, name: a.name })));
@@ -74,7 +73,6 @@ const Purchases = () => {
           : value
       };
       
-      // Calculate dependent fields
       if (name === "netWeight" || name === "rate") {
         updated.totalAmount = Number(updated.netWeight) * Number(updated.rate);
       }
@@ -125,13 +123,10 @@ const Purchases = () => {
       ...formData
     };
     
-    // Add the purchase to storage
     addPurchase(newPurchase);
     
-    // Update the list in UI
     setPurchases([newPurchase, ...purchases]);
     
-    // Add to inventory
     addInventoryItem({
       id: Date.now().toString() + '-inv',
       lotNumber: newPurchase.lotNumber,
@@ -141,7 +136,6 @@ const Purchases = () => {
       netWeight: newPurchase.netWeight
     });
     
-    // Update agent balance - consider this a debit to agent (negative amount)
     const agentId = getAgents().find(a => a.name === newPurchase.agent)?.id;
     if (agentId) {
       updateAgentBalance(agentId, -newPurchase.totalAfterExpenses);
@@ -263,7 +257,7 @@ const Purchases = () => {
                           </div>
                           <div>
                             <p className="font-semibold">Rate/Kg After:</p>
-                            <p>₹{purchase.ratePerKgAfterExpenses.toFixed(2)}/Kg</p>
+                            <p>₹{purchase.ratePerKgAfterExpenses?.toFixed(2) || '0.00'}/Kg</p>
                           </div>
                         </div>
                       </div>
@@ -438,7 +432,7 @@ const Purchases = () => {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Net weight in kilograms</p>
-                        <p className="text-sm text-muted-foreground">શુદ્ધ વજન કિલોગ્રામમાં</p>
+                        <p className="text-sm text-muted-foreground">��ુદ્ધ વજન કિલોગ્રામમાં</p>
                       </TooltipContent>
                     </Tooltip>
                     <Input
