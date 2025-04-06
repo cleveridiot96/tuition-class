@@ -110,14 +110,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-ag-beige">
-      <Navigation title="Home" />
+      <Navigation title="Dashboard" />
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-ag-brown-dark">
-            Kisan Khata Sahayak
+            Business Management Software
           </h2>
           <p className="text-lg text-ag-brown mt-2">
-            Agricultural Business Management Software
+            Agricultural Business Management System
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <Button

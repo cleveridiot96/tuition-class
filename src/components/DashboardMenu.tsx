@@ -27,7 +27,7 @@ interface MenuItemProps {
 
 const MenuItem = ({ icon, title, to, description }: MenuItemProps) => {
   return (
-    <Tooltip>
+    <Tooltip delayDuration={300}>
       <TooltipTrigger asChild>
         <Link to={to} className="flex-1 min-w-[150px]">
           <div className="menu-card">

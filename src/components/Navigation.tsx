@@ -19,7 +19,7 @@ interface NavigationProps {
 }
 
 const Navigation = ({ 
-  title = "Kisan Khata Sahayak", 
+  title = "Business Management", 
   showBackButton = false,
   showHomeButton = true,
   className 
