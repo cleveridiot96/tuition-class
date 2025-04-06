@@ -49,6 +49,12 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface PartyFormData {
   id: string;
@@ -69,6 +75,8 @@ const Master = () => {
     contactNumber: "",
     address: ""
   });
+  const [deletedParties, setDeletedParties] = useState<(Agent | Supplier | Customer | Broker | Transporter)[]>([]);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   
   useEffect(() => {
     loadParties(currentTab);
@@ -172,7 +180,7 @@ const Master = () => {
         }
         
         toast({
-          title: "अपडेट सफल",
+          title: "Updated",
           description: `${formData.name} successfully updated.`,
         });
       } else {
@@ -218,7 +226,7 @@ const Master = () => {
         }
         
         toast({
-          title: "जोड़ दिया गया",
+          title: "Added",
           description: `${formData.name} successfully added.`,
         });
       }
@@ -243,6 +251,11 @@ const Master = () => {
   
   const handleDelete = (id: string, name: string) => {
     try {
+      const partyToDelete = parties.find(p => p.id === id);
+      if (partyToDelete) {
+        setDeletedParties(prev => [...prev, partyToDelete]);
+      }
+      
       switch (currentTab) {
         case "agents":
           deleteAgent(id);
@@ -262,7 +275,7 @@ const Master = () => {
       }
       
       toast({
-        title: "हटा दिया गया",
+        title: "Deleted",
         description: `${name} successfully deleted.`,
       });
       
@@ -276,171 +289,311 @@ const Master = () => {
     }
   };
   
+  const handleRestore = (party: Agent | Supplier | Customer | Broker | Transporter) => {
+    try {
+      switch (currentTab) {
+        case "agents":
+          addAgent(party as Agent);
+          break;
+        case "suppliers":
+          addSupplier(party as Supplier);
+          break;
+        case "customers":
+          addCustomer(party as Customer);
+          break;
+        case "brokers":
+          addBroker(party as Broker);
+          break;
+        case "transporters":
+          addTransporter(party as Transporter);
+          break;
+      }
+      
+      setDeletedParties(prev => prev.filter(p => p.id !== party.id));
+      loadParties(currentTab);
+      
+      toast({
+        title: "Restored",
+        description: `${party.name} successfully restored.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Could not restore. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const getTabTitle = () => {
     switch (currentTab) {
-      case "agents": return "एजेंट्स (Agents)";
-      case "suppliers": return "सप्लायर्स (Suppliers)";
-      case "customers": return "ग्राहक (Customers)";
-      case "brokers": return "ब्रोकर (Brokers)";
-      case "transporters": return "ट्रांसपोर्टर (Transporters)";
+      case "agents": return "Agents";
+      case "suppliers": return "Suppliers";
+      case "customers": return "Customers";
+      case "brokers": return "Brokers";
+      case "transporters": return "Transporters";
       default: return "";
     }
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige">
-      <Navigation title="मास्टर (Master)" showBackButton showHomeButton />
-      <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="agents" className="w-full" onValueChange={setCurrentTab}>
-          <TabsList className="grid grid-cols-5 mb-6">
-            <TabsTrigger value="agents">एजेंट्स</TabsTrigger>
-            <TabsTrigger value="suppliers">सप्लायर्स</TabsTrigger>
-            <TabsTrigger value="customers">ग्राहक</TabsTrigger>
-            <TabsTrigger value="brokers">ब्रोकर</TabsTrigger>
-            <TabsTrigger value="transporters">ट्रांसपोर्टर</TabsTrigger>
-          </TabsList>
-          
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">{getTabTitle()}</h2>
-            <Button 
-              onClick={handleAddEdit}
-              className="action-button flex items-center gap-2"
-            >
-              <PlusCircle size={24} />
-              नया जोड़ें (Add New)
-            </Button>
-          </div>
-          
-          {showForm ? (
-            <Card className="p-6 mb-6">
-              <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="form-group">
-                    <Label htmlFor="name" className="form-label">नाम (Name)</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      placeholder="Enter name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="text-lg p-6"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <Label htmlFor="contactNumber" className="form-label">फोन (Phone)</Label>
-                    <Input
-                      id="contactNumber"
-                      name="contactNumber"
-                      placeholder="Enter phone number"
-                      value={formData.contactNumber}
-                      onChange={handleChange}
-                      className="text-lg p-6"
-                    />
-                  </div>
-                  
-                  <div className="form-group md:col-span-2">
-                    <Label htmlFor="address" className="form-label">पता (Address)</Label>
-                    <Input
-                      id="address"
-                      name="address"
-                      placeholder="Enter address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      className="text-lg p-6"
-                    />
-                  </div>
-                </div>
-                
-                <div className="mt-6 flex justify-end gap-2">
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    onClick={() => setShowForm(false)}
-                  >
-                    रद्द करें (Cancel)
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="action-button flex gap-2 items-center"
-                  >
-                    <Save size={24} />
-                    {isEditing ? 'अपडेट करें (Update)' : 'सहेजें (Save)'}
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          ) : null}
-          
-          {parties.length === 0 ? (
-            <Card className="p-6 text-center">
-              <p className="text-xl text-ag-brown">
-                कोई डेटा नहीं मिला। नया जोड़ने के लिए ऊपर वाले बटन पर क्लिक करें।
-              </p>
-              <p className="text-lg text-ag-brown-light mt-2">
-                No data found. Click the button above to add new.
-              </p>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {parties.map((party) => (
-                <Card key={party.id} className="p-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold">{party.name}</h3>
-                    <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleEditClick(party)}
-                      >
-                        <Edit size={18} />
-                      </Button>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Trash size={18} />
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>क्या आप निश्चित हैं?</DialogTitle>
-                            <DialogDescription>
-                              {`${party.name} को हटाने की पुष्टि करें। यह क्रिया अपरिवर्तनीय है।`}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button variant="outline">रद्द करें (Cancel)</Button>
-                            <Button 
-                              variant="destructive"
-                              onClick={() => handleDelete(party.id, party.name)}
-                            >
-                              हटाएं (Delete)
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </div>
-                  {party.contactNumber && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Phone size={16} className="text-gray-500" />
-                      <span>{party.contactNumber}</span>
-                    </div>
-                  )}
-                  {party.address && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <MapPin size={16} className="text-gray-500" />
-                      <span className="text-gray-600">{party.address}</span>
-                    </div>
-                  )}
-                </Card>
-              ))}
+    <TooltipProvider>
+      <div className="min-h-screen bg-ag-beige">
+        <Navigation title="Master" showBackButton showHomeButton />
+        <div className="container mx-auto px-4 py-6">
+          <Tabs defaultValue="agents" className="w-full" onValueChange={setCurrentTab}>
+            <TabsList className="grid grid-cols-5 mb-6">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="agents">Agents</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage your business agents</p>
+                  <p className="text-sm text-muted-foreground">તમારા વ્યાપાર એજન્ટોનું સંચાલન કરો</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage your suppliers</p>
+                  <p className="text-sm text-muted-foreground">તમારા સપ્લાયર્સનું સંચાલન કરો</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="customers">Customers</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage your customers</p>
+                  <p className="text-sm text-muted-foreground">તમારા ગ્રાહકોનું સંચાલન કરો</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="brokers">Brokers</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage your brokers</p>
+                  <p className="text-sm text-muted-foreground">તમારા બ્રોકર્સનું સંચાલન કરો</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="transporters">Transporters</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Manage your transporters</p>
+                  <p className="text-sm text-muted-foreground">તમારા ટ્રાન્સપોર્ટર્સનું સંચાલન કરો</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsList>
+            
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">{getTabTitle()}</h2>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleAddEdit}
+                  className="action-button flex items-center gap-2"
+                >
+                  <PlusCircle size={24} />
+                  Add New
+                </Button>
+                <Button 
+                  onClick={() => setShowRestoreDialog(true)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  disabled={deletedParties.length === 0}
+                >
+                  Restore Deleted
+                </Button>
+              </div>
             </div>
-          )}
-        </Tabs>
+            
+            {showForm ? (
+              <Card className="p-6 mb-6">
+                <form onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="form-group">
+                      <Label htmlFor="name" className="form-label">Name</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        placeholder="Enter name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        className="text-lg p-6"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="form-group">
+                      <Label htmlFor="contactNumber" className="form-label">Phone</Label>
+                      <Input
+                        id="contactNumber"
+                        name="contactNumber"
+                        placeholder="Enter phone number"
+                        value={formData.contactNumber}
+                        onChange={handleChange}
+                        className="text-lg p-6"
+                      />
+                    </div>
+                    
+                    <div className="form-group md:col-span-2">
+                      <Label htmlFor="address" className="form-label">Address</Label>
+                      <Input
+                        id="address"
+                        name="address"
+                        placeholder="Enter address"
+                        value={formData.address}
+                        onChange={handleChange}
+                        className="text-lg p-6"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setShowForm(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="action-button flex gap-2 items-center"
+                    >
+                      <Save size={24} />
+                      {isEditing ? 'Update' : 'Save'}
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            ) : null}
+            
+            {parties.length === 0 ? (
+              <Card className="p-6 text-center">
+                <p className="text-xl text-ag-brown">
+                  No data found. Click the button above to add new.
+                </p>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {parties.map((party) => (
+                  <Card key={party.id} className="p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-bold">{party.name}</h3>
+                      <div className="flex gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleEditClick(party)}
+                            >
+                              <Edit size={18} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit this entry</p>
+                            <p className="text-sm text-muted-foreground">આ એન્ટ્રી સંપાદિત કરો</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        
+                        <Dialog>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <DialogTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <Trash size={18} />
+                                </Button>
+                              </DialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Delete this entry</p>
+                              <p className="text-sm text-muted-foreground">આ એન્ટ્રી કાઢી નાખો</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Are you sure?</DialogTitle>
+                              <DialogDescription>
+                                Confirm deletion of {party.name}. This action is irreversible.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button variant="outline">Cancel</Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={() => handleDelete(party.id, party.name)}
+                              >
+                                Delete
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
+                    {party.contactNumber && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Phone size={16} className="text-gray-500" />
+                        <span>{party.contactNumber}</span>
+                      </div>
+                    )}
+                    {party.address && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <MapPin size={16} className="text-gray-500" />
+                        <span className="text-gray-600">{party.address}</span>
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Tabs>
+        </div>
+        
+        {/* Restore Dialog */}
+        <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Restore Deleted Items</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-[300px] overflow-y-auto">
+              {deletedParties.length > 0 ? (
+                deletedParties.map(party => (
+                  <div key={party.id} className="flex justify-between items-center py-2 border-b">
+                    <div>
+                      <p className="font-medium">{party.name}</p>
+                      <p className="text-sm text-gray-500">{party.contactNumber || "No contact"}</p>
+                    </div>
+                    <Button 
+                      size="sm" 
+                      onClick={() => handleRestore(party)}
+                    >
+                      Restore
+                    </Button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center py-4">No deleted items to restore</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowRestoreDialog(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 

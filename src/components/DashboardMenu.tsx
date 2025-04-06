@@ -52,7 +52,7 @@ const DashboardMenu = () => {
     <TooltipProvider>
       <div className="container mx-auto px-4 mt-6">
         {/* First row - 4 buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <MenuItem 
             icon={<ShoppingCart size={56} />} 
             title="Sales" 
@@ -84,7 +84,7 @@ const DashboardMenu = () => {
         </div>
         
         {/* Second row - 4 buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MenuItem 
             icon={<Wallet size={56} />} 
             title="Payments" 

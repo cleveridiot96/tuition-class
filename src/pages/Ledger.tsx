@@ -36,6 +36,12 @@ import {
   getLedgerEntriesByParty,
   LedgerEntry as StorageLedgerEntry
 } from "@/services/storageService";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface LedgerEntry {
   id: string;
@@ -126,104 +132,155 @@ const Ledger = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige">
-      <Navigation title="लेजर (Ledger)" showBackButton showHomeButton />
-      <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="agent" className="w-full" onValueChange={loadParties}>
-          <TabsList className="grid grid-cols-5 mb-6">
-            <TabsTrigger value="agent" className="text-lg py-3">एजेंट्स</TabsTrigger>
-            <TabsTrigger value="supplier" className="text-lg py-3">सप्लायर्स</TabsTrigger>
-            <TabsTrigger value="customer" className="text-lg py-3">ग्राहक</TabsTrigger>
-            <TabsTrigger value="broker" className="text-lg py-3">ब्रोकर</TabsTrigger>
-            <TabsTrigger value="transporter" className="text-lg py-3">ट्रांसपोर्टर</TabsTrigger>
-          </TabsList>
-          
-          <div className="flex items-end gap-4 mb-6">
-            <div className="flex-1">
-              <Select value={selectedPartyId} onValueChange={setSelectedPartyId}>
-                <SelectTrigger className="text-lg p-6">
-                  <SelectValue placeholder="पार्टी चुनें (Select Party)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {parties.map((party) => (
-                    <SelectItem key={party.id} value={party.id}>
-                      {party.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button className="p-6">
-              <Search size={24} className="mr-2" /> खोज (Search)
-            </Button>
-          </div>
-          
-          {selectedPartyId ? (
-            <Card className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">
-                  {parties.find(p => p.id === selectedPartyId)?.name} का लेजर
-                </h3>
-                <div className="text-right">
-                  <p className="text-sm text-ag-brown">वर्तमान शेष (Current Balance):</p>
-                  <p className={`font-bold text-lg ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatCurrency(currentBalance)}
-                  </p>
-                </div>
-              </div>
+    <TooltipProvider>
+      <div className="min-h-screen bg-ag-beige">
+        <Navigation title="Ledger" showBackButton showHomeButton />
+        <div className="container mx-auto px-4 py-6">
+          <Tabs defaultValue="agent" className="w-full" onValueChange={loadParties}>
+            <TabsList className="grid grid-cols-5 mb-6">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="agent" className="text-lg py-3">Agents</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View ledger entries for agents</p>
+                  <p className="text-sm text-muted-foreground">એજન્ટો માટે લેજર એન્ટ્રીઓ જુઓ</p>
+                </TooltipContent>
+              </Tooltip>
               
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>दिनांक (Date)</TableHead>
-                      <TableHead>विवरण (Description)</TableHead>
-                      <TableHead className="text-right">डेबिट (Debit)</TableHead>
-                      <TableHead className="text-right">क्रेडिट (Credit)</TableHead>
-                      <TableHead className="text-right">शेष (Balance)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {ledgerEntries.length > 0 ? (
-                      ledgerEntries.map((entry) => (
-                        <TableRow key={entry.id}>
-                          <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{entry.description}</TableCell>
-                          <TableCell className="text-right">
-                            {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(entry.balance)}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="supplier" className="text-lg py-3">Suppliers</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View ledger entries for suppliers</p>
+                  <p className="text-sm text-muted-foreground">સપ્લાયર્સ માટે લેજર એન્ટ્રીઓ જુઓ</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="customer" className="text-lg py-3">Customers</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View ledger entries for customers</p>
+                  <p className="text-sm text-muted-foreground">ગ્રાહકો માટે લેજર એન્ટ્રીઓ જુઓ</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="broker" className="text-lg py-3">Brokers</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View ledger entries for brokers</p>
+                  <p className="text-sm text-muted-foreground">બ્રોકર્સ માટે લેજર એન્ટ્રીઓ જુઓ</p>
+                </TooltipContent>
+              </Tooltip>
+              
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <TabsTrigger value="transporter" className="text-lg py-3">Transporters</TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View ledger entries for transporters</p>
+                  <p className="text-sm text-muted-foreground">ટ્રાન્સપોર્ટર્સ માટે લેજર એન્ટ્રીઓ જુઓ</p>
+                </TooltipContent>
+              </Tooltip>
+            </TabsList>
+            
+            <div className="flex items-end gap-4 mb-6">
+              <div className="flex-1">
+                <Select value={selectedPartyId} onValueChange={setSelectedPartyId}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <SelectTrigger className="text-lg p-6">
+                        <SelectValue placeholder="Select Party" />
+                      </SelectTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Choose a party to view their ledger</p>
+                      <p className="text-sm text-muted-foreground">તેમની લેજર જોવા માટે પાર્ટી પસંદ કરો</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <SelectContent>
+                    {parties.map((party) => (
+                      <SelectItem key={party.id} value={party.id}>
+                        {party.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="p-6">
+                <Search size={24} className="mr-2" /> Search
+              </Button>
+            </div>
+            
+            {selectedPartyId ? (
+              <Card className="p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">
+                    Ledger for {parties.find(p => p.id === selectedPartyId)?.name}
+                  </h3>
+                  <div className="text-right">
+                    <p className="text-sm text-ag-brown">Current Balance:</p>
+                    <p className={`font-bold text-lg ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(currentBalance)}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead className="text-right">Debit</TableHead>
+                        <TableHead className="text-right">Credit</TableHead>
+                        <TableHead className="text-right">Balance</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ledgerEntries.length > 0 ? (
+                        ledgerEntries.map((entry) => (
+                          <TableRow key={entry.id}>
+                            <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
+                            <TableCell>{entry.description}</TableCell>
+                            <TableCell className="text-right">
+                              {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(entry.balance)}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-4">
+                            No transactions found
                           </TableCell>
                         </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-4">
-                          कोई लेन-देन नहीं मिला (No transactions found)
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          ) : (
-            <Card className="p-6 text-center">
-              <p className="text-xl text-ag-brown">
-                कृपया एक पार्टी चुनें लेजर देखने के लिए
-              </p>
-              <p className="text-ag-brown mt-2">
-                Please select a party to view their ledger
-              </p>
-            </Card>
-          )}
-        </Tabs>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-6 text-center">
+                <p className="text-xl text-ag-brown">
+                  Please select a party to view their ledger
+                </p>
+              </Card>
+            )}
+          </Tabs>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 };
 
