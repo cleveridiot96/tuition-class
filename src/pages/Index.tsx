@@ -4,7 +4,7 @@ import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
-import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory } from "@/services/storageService";
+import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory, getSales } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 
@@ -17,14 +17,14 @@ const Index = () => {
     stock: { mumbai: 0, chiplun: 0, sawantwadi: 0 }
   });
   
-  useEffect(() => {
+  const loadDashboardData = () => {
     // Seed initial data when the app first loads
     seedInitialData();
     
     // Load summary data
     const purchases = getPurchases();
-    // Since getSales doesn't exist yet, we'll handle it with empty array for now
-    const sales: any[] = []; // Will implement getSales later
+    // Get sales data
+    const sales = getSales() || [];
     
     // Get inventory by location
     const inventory = getInventory();
@@ -39,9 +39,9 @@ const Index = () => {
         kgs: purchases.reduce((sum, p) => sum + p.netWeight, 0)
       },
       sales: {
-        amount: sales.reduce((sum: number, s: any) => sum + (s.amount || 0), 0),
-        bags: sales.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0),
-        kgs: sales.reduce((sum: number, s: any) => sum + (s.netWeight || 0), 0)
+        amount: sales.reduce((sum, s) => sum + (s.amount || 0), 0),
+        bags: sales.reduce((sum, s) => sum + (s.quantity || 0), 0),
+        kgs: sales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
       },
       stock: {
         mumbai: mumbaiStock.reduce((sum, item) => sum + item.quantity, 0),
@@ -49,6 +49,18 @@ const Index = () => {
         sawantwadi: sawantwadiStock.reduce((sum, item) => sum + item.quantity, 0)
       }
     });
+  };
+  
+  useEffect(() => {
+    loadDashboardData();
+    
+    // Add event listener to refresh the dashboard data when the window gets focus
+    window.addEventListener('focus', loadDashboardData);
+    
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('focus', loadDashboardData);
+    };
   }, []);
   
   const handleImportClick = () => {
@@ -68,13 +80,14 @@ const Index = () => {
       
       if (success) {
         toast({
-          title: "डेटा इम्पोर्ट सफल",
-          description: "सभी डेटा सफलतापूर्वक इम्पोर्ट किया गया",
+          title: "Data Import Successful",
+          description: "All data successfully imported",
         });
+        loadDashboardData(); // Refresh data after import
       } else {
         toast({
-          title: "इम्पोर्ट विफल",
-          description: "डेटा इम्पोर्ट करने में समस्या आई",
+          title: "Import Failed",
+          description: "There was a problem importing data",
           variant: "destructive",
         });
       }
@@ -97,14 +110,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-ag-beige">
-      <Navigation title="होम (Home)" />
+      <Navigation title="Home" />
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-ag-brown-dark">
-            किसान खाता सहायक
+            Kisan Khata Sahayak
           </h2>
           <p className="text-lg text-ag-brown mt-2">
-            आपका कृषि व्यापार प्रबंधन सॉफ्टवेयर
+            Agricultural Business Management Software
           </p>
           <div className="mt-6 flex justify-center gap-4">
             <Button
@@ -113,7 +126,7 @@ const Index = () => {
               className="flex items-center gap-2"
             >
               <Download size={20} />
-              बैकअप (Backup)
+              Backup
             </Button>
             <Button
               onClick={handleImportClick}
@@ -121,7 +134,7 @@ const Index = () => {
               className="flex items-center gap-2"
             >
               <Upload size={20} />
-              रिस्टोर (Restore)
+              Restore
             </Button>
             <input
               type="file"
@@ -136,36 +149,36 @@ const Index = () => {
         
         <div className="mt-8 grid gap-6 md:grid-cols-2">
           <Card className="p-4 shadow-md">
-            <h3 className="text-lg font-semibold mb-2 border-b pb-1">खरीदी सारांश (Purchase Summary)</h3>
+            <h3 className="text-lg font-semibold mb-2 border-b pb-1">Purchase Summary</h3>
             <div className="grid grid-cols-3 gap-2">
               <div className="text-center">
-                <p className="text-sm text-ag-brown">राशि (Amount)</p>
+                <p className="text-sm text-ag-brown">Amount</p>
                 <p className="text-xl font-bold">{formatCurrency(summaryData.purchases.amount)}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-ag-brown">बैग (Bags)</p>
+                <p className="text-sm text-ag-brown">Bags</p>
                 <p className="text-xl font-bold">{summaryData.purchases.bags}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-ag-brown">किलो (Kgs)</p>
+                <p className="text-sm text-ag-brown">Kgs</p>
                 <p className="text-xl font-bold">{summaryData.purchases.kgs}</p>
               </div>
             </div>
           </Card>
           
           <Card className="p-4 shadow-md">
-            <h3 className="text-lg font-semibold mb-2 border-b pb-1">बिक्री सारांश (Sales Summary)</h3>
+            <h3 className="text-lg font-semibold mb-2 border-b pb-1">Sales Summary</h3>
             <div className="grid grid-cols-3 gap-2">
               <div className="text-center">
-                <p className="text-sm text-ag-brown">राशि (Amount)</p>
+                <p className="text-sm text-ag-brown">Amount</p>
                 <p className="text-xl font-bold">{formatCurrency(summaryData.sales.amount)}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-ag-brown">बैग (Bags)</p>
+                <p className="text-sm text-ag-brown">Bags</p>
                 <p className="text-xl font-bold">{summaryData.sales.bags}</p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-ag-brown">किलो (Kgs)</p>
+                <p className="text-sm text-ag-brown">Kgs</p>
                 <p className="text-xl font-bold">{summaryData.sales.kgs}</p>
               </div>
             </div>
@@ -173,30 +186,26 @@ const Index = () => {
         </div>
         
         <Card className="mt-6 p-4 shadow-md">
-          <h3 className="text-lg font-semibold mb-2 border-b pb-1">स्टॉक सारांश (Stock Summary)</h3>
+          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Stock Summary</h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <p className="text-sm text-ag-brown">Mumbai</p>
-              <p className="text-xl font-bold">{summaryData.stock.mumbai} बैग</p>
+              <p className="text-xl font-bold">{summaryData.stock.mumbai} bags</p>
             </div>
             <div className="text-center">
               <p className="text-sm text-ag-brown">Chiplun</p>
-              <p className="text-xl font-bold">{summaryData.stock.chiplun} बैग</p>
+              <p className="text-xl font-bold">{summaryData.stock.chiplun} bags</p>
             </div>
             <div className="text-center">
               <p className="text-sm text-ag-brown">Sawantwadi</p>
-              <p className="text-xl font-bold">{summaryData.stock.sawantwadi} बैग</p>
+              <p className="text-xl font-bold">{summaryData.stock.sawantwadi} bags</p>
             </div>
           </div>
         </Card>
         
         <div className="mt-8 p-4 bg-white rounded-lg shadow text-center">
-          <h3 className="text-lg font-semibold text-ag-brown-dark mb-2">ऑफलाइन मोड (Offline Mode)</h3>
+          <h3 className="text-lg font-semibold text-ag-brown-dark mb-2">Offline Mode</h3>
           <p className="text-ag-brown">
-            यह ऐप पूरी तरह से ऑफ़लाइन काम करता है। आपका सारा डेटा आपके कंप्यूटर में सुरक्षित है।
-            नियमित रूप से बैकअप लें।
-          </p>
-          <p className="text-ag-brown mt-2">
             This app works completely offline. All your data is securely stored on your computer.
             Remember to take regular backups.
           </p>

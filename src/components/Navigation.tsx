@@ -14,14 +14,14 @@ import {
 interface NavigationProps {
   title?: string;
   showBackButton?: boolean;
-  showHomeButton?: boolean; // This prop is already defined but not properly used
+  showHomeButton?: boolean;
   className?: string;
 }
 
 const Navigation = ({ 
   title = "Kisan Khata Sahayak", 
   showBackButton = false,
-  showHomeButton = true, // Default to true to show home button on all pages
+  showHomeButton = true,
   className 
 }: NavigationProps) => {
   return (
@@ -42,7 +42,6 @@ const Navigation = ({
               </TooltipTrigger>
               <TooltipContent>
                 <p>Go back</p>
-                <p className="text-sm text-muted-foreground">પાછા જાઓ</p>
               </TooltipContent>
             </Tooltip>
           )}
@@ -63,7 +62,6 @@ const Navigation = ({
               </TooltipTrigger>
               <TooltipContent>
                 <p>Return to dashboard</p>
-                <p className="text-sm text-muted-foreground">ડેશબોર્ડ પર પાછા ફરો</p>
               </TooltipContent>
             </Tooltip>
           )}
