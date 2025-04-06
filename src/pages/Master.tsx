@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Save, Edit, Trash, Phone, MapPin } from "lucide-react";
+import { PlusCircle, Save, Edit, Trash, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   getAgents, 
@@ -59,7 +59,6 @@ import {
 interface PartyFormData {
   id: string;
   name: string;
-  contactNumber: string;
   address: string;
 }
 
@@ -72,7 +71,6 @@ const Master = () => {
   const [formData, setFormData] = useState<PartyFormData>({
     id: "",
     name: "",
-    contactNumber: "",
     address: ""
   });
   const [deletedParties, setDeletedParties] = useState<(Agent | Supplier | Customer | Broker | Transporter)[]>([]);
@@ -118,7 +116,6 @@ const Master = () => {
     setFormData({
       id: "",
       name: "",
-      contactNumber: "",
       address: ""
     });
     setShowForm(true);
@@ -129,7 +126,6 @@ const Master = () => {
     setFormData({
       id: party.id,
       name: party.name,
-      contactNumber: party.contactNumber,
       address: party.address
     });
     setShowForm(true);
@@ -146,6 +142,7 @@ const Master = () => {
             updateAgent({
               ...formData,
               id: formData.id,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: (parties.find(p => p.id === formData.id) as Agent)?.balance || 0
             } as Agent);
             break;
@@ -153,6 +150,7 @@ const Master = () => {
             updateSupplier({
               ...formData,
               id: formData.id,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: (parties.find(p => p.id === formData.id) as Supplier)?.balance || 0
             } as Supplier);
             break;
@@ -160,6 +158,7 @@ const Master = () => {
             updateCustomer({
               ...formData,
               id: formData.id,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: (parties.find(p => p.id === formData.id) as Customer)?.balance || 0
             } as Customer);
             break;
@@ -167,6 +166,7 @@ const Master = () => {
             updateBroker({
               ...formData,
               id: formData.id,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: (parties.find(p => p.id === formData.id) as Broker)?.balance || 0
             } as Broker);
             break;
@@ -174,6 +174,7 @@ const Master = () => {
             updateTransporter({
               ...formData,
               id: formData.id,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: (parties.find(p => p.id === formData.id) as Transporter)?.balance || 0
             } as Transporter);
             break;
@@ -192,6 +193,7 @@ const Master = () => {
             addAgent({
               ...formData,
               id: newId,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: 0
             } as Agent);
             break;
@@ -199,6 +201,7 @@ const Master = () => {
             addSupplier({
               ...formData,
               id: newId,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: 0
             } as Supplier);
             break;
@@ -206,6 +209,7 @@ const Master = () => {
             addCustomer({
               ...formData,
               id: newId,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: 0
             } as Customer);
             break;
@@ -213,6 +217,7 @@ const Master = () => {
             addBroker({
               ...formData,
               id: newId,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: 0
             } as Broker);
             break;
@@ -220,6 +225,7 @@ const Master = () => {
             addTransporter({
               ...formData,
               id: newId,
+              contactNumber: "", // Keeping empty string for compatibility
               balance: 0
             } as Transporter);
             break;
@@ -237,7 +243,6 @@ const Master = () => {
       setFormData({
         id: "",
         name: "",
-        contactNumber: "",
         address: ""
       });
     } catch (error) {
@@ -349,7 +354,6 @@ const Master = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Manage your business agents</p>
-                  <p className="text-sm text-muted-foreground">તમારા વ્યાપાર એજન્ટોનું સંચાલન કરો</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -359,7 +363,6 @@ const Master = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Manage your suppliers</p>
-                  <p className="text-sm text-muted-foreground">તમારા સપ્લાયર્સનું સંચાલન કરો</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -369,7 +372,6 @@ const Master = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Manage your customers</p>
-                  <p className="text-sm text-muted-foreground">તમારા ગ્રાહકોનું સંચાલન કરો</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -379,7 +381,6 @@ const Master = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Manage your brokers</p>
-                  <p className="text-sm text-muted-foreground">તમારા બ્રોકર્સનું સંચાલન કરો</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -389,7 +390,6 @@ const Master = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Manage your transporters</p>
-                  <p className="text-sm text-muted-foreground">તમારા ટ્રાન્સપોર્ટર્સનું સંચાલન કરો</p>
                 </TooltipContent>
               </Tooltip>
             </TabsList>
@@ -418,7 +418,7 @@ const Master = () => {
             {showForm ? (
               <Card className="p-6 mb-6">
                 <form onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                     <div className="form-group">
                       <Label htmlFor="name" className="form-label">Name</Label>
                       <Input
@@ -433,18 +433,6 @@ const Master = () => {
                     </div>
                     
                     <div className="form-group">
-                      <Label htmlFor="contactNumber" className="form-label">Phone</Label>
-                      <Input
-                        id="contactNumber"
-                        name="contactNumber"
-                        placeholder="Enter phone number"
-                        value={formData.contactNumber}
-                        onChange={handleChange}
-                        className="text-lg p-6"
-                      />
-                    </div>
-                    
-                    <div className="form-group md:col-span-2">
                       <Label htmlFor="address" className="form-label">Address</Label>
                       <Input
                         id="address"
@@ -502,7 +490,6 @@ const Master = () => {
                           </TooltipTrigger>
                           <TooltipContent>
                             <p>Edit this entry</p>
-                            <p className="text-sm text-muted-foreground">આ એન્ટ્રી સંપાદિત કરો</p>
                           </TooltipContent>
                         </Tooltip>
                         
@@ -517,7 +504,6 @@ const Master = () => {
                             </TooltipTrigger>
                             <TooltipContent>
                               <p>Delete this entry</p>
-                              <p className="text-sm text-muted-foreground">આ એન્ટ્રી કાઢી નાખો</p>
                             </TooltipContent>
                           </Tooltip>
                           <DialogContent>
@@ -540,12 +526,6 @@ const Master = () => {
                         </Dialog>
                       </div>
                     </div>
-                    {party.contactNumber && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Phone size={16} className="text-gray-500" />
-                        <span>{party.contactNumber}</span>
-                      </div>
-                    )}
                     {party.address && (
                       <div className="flex items-center gap-2 mt-1">
                         <MapPin size={16} className="text-gray-500" />
@@ -571,7 +551,7 @@ const Master = () => {
                   <div key={party.id} className="flex justify-between items-center py-2 border-b">
                     <div>
                       <p className="font-medium">{party.name}</p>
-                      <p className="text-sm text-gray-500">{party.contactNumber || "No contact"}</p>
+                      {party.address && <p className="text-sm text-gray-500">{party.address}</p>}
                     </div>
                     <Button 
                       size="sm" 
