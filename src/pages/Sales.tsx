@@ -13,7 +13,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { PlusCircle, Save, ArrowLeft, Edit, Trash2, RefreshCcw } from "lucide-react";
+import { PlusCircle, Save, ArrowLeft, Edit, Trash2, RefreshCcw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -43,6 +43,7 @@ const SALES_STORAGE_KEY = "app_sales_data";
 const DELETED_SALES_STORAGE_KEY = "app_deleted_sales";
 const INVENTORY_STORAGE_KEY = "app_inventory_data";
 const CUSTOMERS_STORAGE_KEY = "app_customers_data";
+const BROKERS_STORAGE_KEY = "app_brokers_data";
 
 interface SaleEntry {
   id: string;
@@ -58,6 +59,8 @@ interface SaleEntry {
   billNumber: string;
   billAmount: number;
   cashAmount: number;
+  profit: number;
+  purchasePricePerUnit: number;
 }
 
 interface InventoryItem {
@@ -80,6 +83,11 @@ interface Customer {
   outstandingBalance: number;
 }
 
+interface Broker {
+  id: string;
+  name: string;
+}
+
 const Sales = () => {
   const { toast } = useToast();
   const [sales, setSales] = useState<SaleEntry[]>([]);
@@ -88,13 +96,18 @@ const Sales = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
+  const [showNewBrokerDialog, setShowNewBrokerDialog] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     phone: "",
     address: "",
     outstandingBalance: 0
+  });
+  const [newBroker, setNewBroker] = useState({
+    name: ""
   });
   
   const [formData, setFormData] = useState<Omit<SaleEntry, "id">>({
@@ -109,7 +122,9 @@ const Sales = () => {
     notes: "",
     billNumber: "",
     billAmount: 0,
-    cashAmount: 0
+    cashAmount: 0,
+    profit: 0,
+    purchasePricePerUnit: 0
   });
   
   // Load data from local storage
@@ -140,9 +155,20 @@ const Sales = () => {
       }
     };
     
+    const loadBrokersData = () => {
+      const savedBrokers = localStorage.getItem(BROKERS_STORAGE_KEY);
+      if (savedBrokers) {
+        setBrokers(JSON.parse(savedBrokers));
+      } else {
+        // Initialize with empty array if no brokers exist
+        setBrokers([]);
+      }
+    };
+    
     loadSalesData();
     loadInventoryData();
     loadCustomersData();
+    loadBrokersData();
   }, []);
 
   // Save data to local storage when it changes
@@ -161,6 +187,10 @@ const Sales = () => {
   useEffect(() => {
     localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
   }, [customers]);
+  
+  useEffect(() => {
+    localStorage.setItem(BROKERS_STORAGE_KEY, JSON.stringify(brokers));
+  }, [brokers]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -190,6 +220,27 @@ const Sales = () => {
         }));
       }
     }
+
+    // Calculate profit when quantity or amount changes
+    if (name === "quantity" || name === "amount") {
+      calculateProfit(
+        name === "quantity" ? Number(value) : formData.quantity,
+        name === "amount" ? Number(value) : formData.amount,
+        formData.purchasePricePerUnit
+      );
+    }
+  };
+
+  const calculateProfit = (quantity: number, totalAmount: number, purchasePricePerUnit: number) => {
+    if (quantity && totalAmount && purchasePricePerUnit) {
+      const totalPurchasePrice = purchasePricePerUnit * quantity;
+      const profit = totalAmount - totalPurchasePrice;
+      
+      setFormData(prev => ({
+        ...prev,
+        profit
+      }));
+    }
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -200,7 +251,8 @@ const Sales = () => {
         setFormData((prev) => ({
           ...prev,
           lotNumber: value,
-          quantity: 0 // Reset quantity when lot changes
+          quantity: 0, // Reset quantity when lot changes
+          purchasePricePerUnit: selectedItem.pricePerUnit
         }));
       }
     } else if (name === "customer") {
@@ -210,12 +262,24 @@ const Sales = () => {
         ...prev,
         customer: value,
       }));
+    } else if (name === "broker") {
+      setFormData((prev) => ({
+        ...prev,
+        broker: value
+      }));
     } else {
       setFormData((prev) => ({
         ...prev,
         [name]: value
       }));
     }
+  };
+
+  const handleClearBroker = () => {
+    setFormData(prev => ({
+      ...prev,
+      broker: ""
+    }));
   };
 
   const handleRadioChange = (value: "full" | "partial" | "cash") => {
@@ -343,7 +407,9 @@ const Sales = () => {
       notes: "",
       billNumber: "",
       billAmount: 0,
-      cashAmount: 0
+      cashAmount: 0,
+      profit: 0,
+      purchasePricePerUnit: 0
     });
     
     setShowForm(false);
@@ -355,14 +421,16 @@ const Sales = () => {
       lotNumber: sale.lotNumber,
       quantity: sale.quantity,
       customer: sale.customer,
-      broker: sale.broker,
+      broker: sale.broker || "",
       amount: sale.amount,
       paymentType: sale.paymentType,
       paymentReceived: sale.paymentReceived,
       notes: sale.notes,
       billNumber: sale.billNumber || "",
       billAmount: sale.billAmount || 0,
-      cashAmount: sale.cashAmount || 0
+      cashAmount: sale.cashAmount || 0,
+      profit: sale.profit || 0,
+      purchasePricePerUnit: sale.purchasePricePerUnit || 0
     });
     
     setEditingId(sale.id);
@@ -473,6 +541,48 @@ const Sales = () => {
       outstandingBalance: 0
     });
     setShowNewCustomerDialog(false);
+  };
+
+  const handleAddNewBroker = () => {
+    // Check for similar names to prevent duplicates
+    const similarBrokers = brokers.filter(b => 
+      isSimilarName(b.name, newBroker.name)
+    );
+    
+    if (similarBrokers.length > 0) {
+      // Show alert about similar names
+      if (window.confirm(`Similar broker "${similarBrokers[0].name}" already exists. Are you sure you want to add "${newBroker.name}"?`)) {
+        addBroker();
+      }
+    } else {
+      addBroker();
+    }
+  };
+  
+  const addBroker = () => {
+    const broker: Broker = {
+      id: Date.now().toString(),
+      name: newBroker.name
+    };
+    
+    setBrokers(prev => [...prev, broker]);
+    
+    toast({
+      title: "Broker Added",
+      description: `Broker ${newBroker.name} has been added.`
+    });
+    
+    // Set the new broker as selected
+    setFormData(prev => ({
+      ...prev,
+      broker: newBroker.name
+    }));
+    
+    // Reset and close dialog
+    setNewBroker({
+      name: ""
+    });
+    setShowNewBrokerDialog(false);
   };
   
   // Helper function to check for similar names
@@ -592,6 +702,14 @@ const Sales = () => {
                             ₹{sale.amount - sale.paymentReceived}
                           </p>
                         </div>
+                        {sale.profit !== undefined && (
+                          <div className="flex justify-between mt-1">
+                            <p className="font-semibold">Profit:</p>
+                            <p className={`font-bold ${sale.profit > 0 ? "text-green-600" : "text-red-500"}`}>
+                              ₹{sale.profit}
+                            </p>
+                          </div>
+                        )}
                       </div>
                       {sale.notes && (
                         <p className="mt-2 text-ag-brown text-sm">
@@ -689,6 +807,14 @@ const Sales = () => {
                             <p className="font-bold">₹{sale.cashAmount}</p>
                           </div>
                         )}
+                        {sale.profit !== undefined && (
+                          <div className="flex justify-between mt-1">
+                            <p className="font-semibold">Profit:</p>
+                            <p className={`font-bold ${sale.profit > 0 ? "text-green-600" : "text-red-500"}`}>
+                              ₹{sale.profit}
+                            </p>
+                          </div>
+                        )}
                       </div>
                       {sale.notes && (
                         <p className="mt-2 text-ag-brown text-sm">
@@ -750,7 +876,9 @@ const Sales = () => {
                     notes: "",
                     billNumber: "",
                     billAmount: 0,
-                    cashAmount: 0
+                    cashAmount: 0,
+                    profit: 0,
+                    purchasePricePerUnit: 0
                   });
                 }}
                 className="mr-2"
@@ -868,6 +996,15 @@ const Sales = () => {
                               onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
                             />
                           </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="newCustomerOutstanding">Outstanding Balance</Label>
+                            <Input
+                              id="newCustomerOutstanding"
+                              type="number"
+                              value={newCustomer.outstandingBalance}
+                              onChange={(e) => setNewCustomer({...newCustomer, outstandingBalance: Number(e.target.value)})}
+                            />
+                          </div>
                         </div>
                         <DialogFooter>
                           <Button variant="outline" onClick={() => setShowNewCustomerDialog(false)}>Cancel</Button>
@@ -909,15 +1046,69 @@ const Sales = () => {
                 </div>
                 
                 <div className="form-group">
-                  <Label htmlFor="broker" className="form-label">Broker (Optional)</Label>
-                  <Input
-                    id="broker"
-                    name="broker"
-                    placeholder="Broker name (if applicable)"
-                    value={formData.broker}
-                    onChange={handleChange}
-                    className="text-lg p-6"
-                  />
+                  <div className="flex justify-between">
+                    <Label htmlFor="broker" className="form-label">Broker</Label>
+                    <Dialog open={showNewBrokerDialog} onOpenChange={setShowNewBrokerDialog}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" className="flex gap-1 items-center">
+                          <PlusCircle size={16} />
+                          New Broker
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Broker</DialogTitle>
+                          <DialogDescription>
+                            Enter broker name to add to your list.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label htmlFor="newBrokerName">Broker Name</Label>
+                            <Input
+                              id="newBrokerName"
+                              value={newBroker.name}
+                              onChange={(e) => setNewBroker({...newBroker, name: e.target.value})}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setShowNewBrokerDialog(false)}>Cancel</Button>
+                          <Button onClick={handleAddNewBroker}>Add Broker</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                  
+                  <div className="relative">
+                    <Select
+                      value={formData.broker}
+                      onValueChange={(value) => handleSelectChange("broker", value)}
+                    >
+                      <SelectTrigger className="text-lg p-6">
+                        <SelectValue placeholder="Select a broker (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {brokers.map((broker) => (
+                          <SelectItem key={broker.id} value={broker.name}>
+                            {broker.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formData.broker && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleClearBroker}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                      >
+                        <X size={16} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="form-group">
@@ -994,6 +1185,37 @@ const Sales = () => {
                     </div>
                   </div>
                 )}
+
+                <div className="form-group md:col-span-2">
+                  <div className="bg-blue-50 p-4 rounded-md mb-4">
+                    <h4 className="text-lg font-semibold mb-2">Profit Calculation</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm font-medium">Purchase Price Per Unit</p>
+                        <p className="font-bold">₹{formData.purchasePricePerUnit}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Total Purchase Cost</p>
+                        <p className="font-bold">₹{(formData.purchasePricePerUnit * formData.quantity).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Total Sale Amount</p>
+                        <p className="font-bold">₹{formData.amount}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Profit/Loss</p>
+                        <p className={`font-bold ${formData.profit > 0 ? "text-green-600" : "text-red-500"}`}>
+                          ₹{formData.profit.toFixed(2)} 
+                          {formData.profit !== 0 && formData.quantity > 0 && (
+                            <span className="text-xs text-gray-500 ml-2">
+                              (₹{(formData.profit / formData.quantity).toFixed(2)}/unit)
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="form-group md:col-span-2">
                   <Label htmlFor="notes" className="form-label">Notes</Label>
