@@ -1,9 +1,15 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, ArrowLeft, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface NavigationProps {
   title?: string;
@@ -19,41 +25,67 @@ const Navigation = ({
   className 
 }: NavigationProps) => {
   return (
-    <header className={cn("bg-ag-green text-white p-4 flex items-center justify-between shadow-md", className)}>
-      <div className="flex items-center">
-        {showBackButton ? (
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="mr-2 text-white hover:bg-ag-green-dark"
-            onClick={() => window.history.back()}
-          >
-            <ArrowLeft size={24} />
-          </Button>
-        ) : showHomeButton ? (
-          <Link to="/">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="mr-2 text-white hover:bg-ag-green-dark"
-            >
-              <Home size={24} />
-            </Button>
-          </Link>
-        ) : (
-          <Link to="/">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="mr-2 text-white hover:bg-ag-green-dark"
-            >
-              <Home size={24} />
-            </Button>
-          </Link>
-        )}
-        <h1 className="text-2xl font-bold">{title}</h1>
-      </div>
-    </header>
+    <TooltipProvider>
+      <header className={cn("bg-ag-green text-white p-4 flex items-center justify-between shadow-md", className)}>
+        <div className="flex items-center">
+          {showBackButton ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="mr-2 text-white hover:bg-ag-green-dark"
+                  onClick={() => window.history.back()}
+                >
+                  <ArrowLeft size={24} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Go back</p>
+                <p className="text-sm text-muted-foreground">પાછા જાઓ</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : showHomeButton ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to="/">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="mr-2 text-white hover:bg-ag-green-dark"
+                  >
+                    <Home size={24} />
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Return to dashboard</p>
+                <p className="text-sm text-muted-foreground">ડેશબોર્ડ પર પાછા ફરો</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link to="/">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="mr-2 text-white hover:bg-ag-green-dark"
+                  >
+                    <Home size={24} />
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Return to dashboard</p>
+                <p className="text-sm text-muted-foreground">ડેશબોર્ડ પર પાછા ફરો</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          <h1 className="text-2xl font-bold">{title}</h1>
+        </div>
+      </header>
+    </TooltipProvider>
   );
 };
 
