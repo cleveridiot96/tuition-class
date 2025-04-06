@@ -49,8 +49,8 @@ const FormatConfirmationDialog = ({
           </AlertDialogTitle>
           <AlertDialogDescription>
             {confirmationStage === 1
-              ? "This will reset and reformat all your data. This action cannot be undone. A backup will be created automatically."
-              : "Your data will be reformatted and previous settings may be lost. A backup has been created for safety."}
+              ? "This will reset and reformat all your data. This action cannot be undone. A backup will be created automatically in both Excel format and software-readable format."
+              : "Your data will be reformatted and previous settings may be lost. A backup has been created in Excel and software-readable formats for safety."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

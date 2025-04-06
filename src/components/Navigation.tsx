@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Home, ArrowLeft, Info, RefreshCw } from "lucide-react";
+import { Home, ArrowLeft, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -78,15 +78,16 @@ const Navigation = ({
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
-                className="text-white hover:bg-ag-green-dark"
+                className="flex items-center gap-2 text-white hover:bg-ag-green-dark"
                 onClick={onFormatClick}
               >
                 <RefreshCw size={24} />
+                <span className="font-bold">FORMAT</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Format data</p>
+            <TooltipContent className="max-w-xs text-center">
+              <p className="font-bold text-red-500">USE ONLY UNDER EMERGENCY</p>
+              <p>This action cannot be undone. A backup will be created automatically.</p>
             </TooltipContent>
           </Tooltip>
         )}

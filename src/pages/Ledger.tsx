@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { 
   getAgents, 
   getTransporters, 
@@ -131,6 +131,12 @@ const Ledger = () => {
     }).format(amount);
   };
 
+  const clearSelectedParty = () => {
+    setSelectedPartyId('');
+    setLedgerEntries([]);
+    setCurrentBalance(0);
+  };
+
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-ag-beige">
@@ -144,7 +150,6 @@ const Ledger = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>View ledger entries for agents</p>
-                  <p className="text-sm text-muted-foreground">એજન્ટો માટે લેજર એન્ટ્રીઓ જુઓ</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -154,7 +159,6 @@ const Ledger = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>View ledger entries for suppliers</p>
-                  <p className="text-sm text-muted-foreground">સપ્લાયર્સ માટે લેજર એન્ટ્રીઓ જુઓ</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -164,7 +168,6 @@ const Ledger = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>View ledger entries for customers</p>
-                  <p className="text-sm text-muted-foreground">ગ્રાહકો માટે લેજર એન્ટ્રીઓ જુઓ</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -174,7 +177,6 @@ const Ledger = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>View ledger entries for brokers</p>
-                  <p className="text-sm text-muted-foreground">બ્રોકર્સ માટે લેજર એન્ટ્રીઓ જુઓ</p>
                 </TooltipContent>
               </Tooltip>
               
@@ -184,13 +186,12 @@ const Ledger = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>View ledger entries for transporters</p>
-                  <p className="text-sm text-muted-foreground">ટ્રાન્સપોર્ટર્સ માટે લેજર એન્ટ્રીઓ જુઓ</p>
                 </TooltipContent>
               </Tooltip>
             </TabsList>
             
             <div className="flex items-end gap-4 mb-6">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <Select value={selectedPartyId} onValueChange={setSelectedPartyId}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -200,7 +201,6 @@ const Ledger = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Choose a party to view their ledger</p>
-                      <p className="text-sm text-muted-foreground">તેમની લેજર જોવા માટે પાર્ટી પસંદ કરો</p>
                     </TooltipContent>
                   </Tooltip>
                   <SelectContent>
@@ -211,6 +211,16 @@ const Ledger = () => {
                     ))}
                   </SelectContent>
                 </Select>
+                {selectedPartyId && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-12 top-1/2 -translate-y-1/2"
+                    onClick={clearSelectedParty}
+                  >
+                    <X size={18} />
+                  </Button>
+                )}
               </div>
               <Button className="p-6">
                 <Search size={24} className="mr-2" /> Search
@@ -234,28 +244,29 @@ const Ledger = () => {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow>
+                      <TableRow className="bg-gray-50">
                         <TableHead>Date</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Debit</TableHead>
-                        <TableHead className="text-right">Credit</TableHead>
+                        <TableHead>Particulars</TableHead>
+                        <TableHead className="text-right">Debit (Dr)</TableHead>
+                        <TableHead className="text-right">Credit (Cr)</TableHead>
                         <TableHead className="text-right">Balance</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {ledgerEntries.length > 0 ? (
                         ledgerEntries.map((entry) => (
-                          <TableRow key={entry.id}>
+                          <TableRow key={entry.id} className="hover:bg-gray-50">
                             <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
                             <TableCell>{entry.description}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right font-medium">
                               {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
                             </TableCell>
-                            <TableCell className="text-right">
+                            <TableCell className="text-right font-medium">
                               {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
                             </TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(entry.balance)}
+                            <TableCell className={`text-right font-bold ${entry.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatCurrency(Math.abs(entry.balance))}
+                              <span className="ml-1 text-xs">{entry.balance >= 0 ? 'Cr' : 'Dr'}</span>
                             </TableCell>
                           </TableRow>
                         ))
@@ -263,6 +274,21 @@ const Ledger = () => {
                         <TableRow>
                           <TableCell colSpan={5} className="text-center py-4">
                             No transactions found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {ledgerEntries.length > 0 && (
+                        <TableRow className="font-bold border-t-2">
+                          <TableCell colSpan={2} className="text-right">Total</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(ledgerEntries.reduce((sum, entry) => sum + entry.debit, 0))}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(ledgerEntries.reduce((sum, entry) => sum + entry.credit, 0))}
+                          </TableCell>
+                          <TableCell className={`text-right ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(Math.abs(currentBalance))}
+                            <span className="ml-1 text-xs">{currentBalance >= 0 ? 'Cr' : 'Dr'}</span>
                           </TableCell>
                         </TableRow>
                       )}
