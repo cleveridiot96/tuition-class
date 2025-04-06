@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 
 // Define types
@@ -58,6 +57,27 @@ export interface Purchase {
   totalAfterExpenses: number;
   ratePerKgAfterExpenses: number;
   notes: string;
+}
+
+export interface Receipt {
+  id: string;
+  date: string;
+  receiptNumber: string;
+  partyName: string;
+  partyType: string;
+  amount: number;
+  paymentMethod: string;
+  notes?: string;
+}
+
+export interface Payment {
+  id: string;
+  date: string;
+  paymentNumber: string;
+  agent: string;
+  amount: number;
+  paymentMethod: string;
+  notes?: string;
 }
 
 export interface InventoryItem {
@@ -223,7 +243,7 @@ export const updateTransporter = (updatedTransporter: Transporter): void => {
 export const deleteTransporter = (id: string): void => {
   const transporters = getTransporters();
   const updatedTransporters = transporters.filter(t => t.id !== id);
-  localStorage.setItem('transporters', JSON.stringify(transporters));
+  localStorage.setItem('transporters', JSON.stringify(updatedTransporters));
 };
 
 // Purchase functions
@@ -466,6 +486,112 @@ export const addLedgerEntry = (entry: LedgerEntry): void => {
   localStorage.setItem('ledger', JSON.stringify(entries));
 };
 
+// Receipt functions
+export const getReceipts = (): Receipt[] => {
+  const receipts = localStorage.getItem('receipts');
+  return receipts ? JSON.parse(receipts) : [];
+};
+
+export const addReceipt = (receipt: Receipt): void => {
+  const receipts = getReceipts();
+  receipts.push(receipt);
+  localStorage.setItem('receipts', JSON.stringify(receipts));
+  
+  // Also update the ledger for this receipt
+  addLedgerEntry({
+    id: Date.now().toString(),
+    date: receipt.date,
+    partyName: receipt.partyName,
+    partyType: receipt.partyType,
+    description: `Receipt: ${receipt.receiptNumber}`,
+    debit: 0,
+    credit: receipt.amount,
+    balance: 0, // Will be calculated when retrieved
+    referenceId: receipt.id,
+    referenceType: 'receipt'
+  });
+
+  // If payment method is cash, add to cashbook
+  if (receipt.paymentMethod === 'cash') {
+    addCashbookEntry(
+      receipt.date,
+      `Receipt: ${receipt.partyName}`,
+      0, // Debit
+      receipt.amount, // Credit
+      receipt.id,
+      'receipt'
+    );
+  }
+};
+
+export const updateReceipt = (updatedReceipt: Receipt): void => {
+  const receipts = getReceipts();
+  const index = receipts.findIndex(r => r.id === updatedReceipt.id);
+  if (index !== -1) {
+    receipts[index] = updatedReceipt;
+    localStorage.setItem('receipts', JSON.stringify(receipts));
+  }
+};
+
+export const deleteReceipt = (id: string): void => {
+  const receipts = getReceipts();
+  const updatedReceipts = receipts.filter(r => r.id !== id);
+  localStorage.setItem('receipts', JSON.stringify(updatedReceipts));
+};
+
+// Payment functions
+export const getPayments = (): Payment[] => {
+  const payments = localStorage.getItem('payments');
+  return payments ? JSON.parse(payments) : [];
+};
+
+export const addPayment = (payment: Payment): void => {
+  const payments = getPayments();
+  payments.push(payment);
+  localStorage.setItem('payments', JSON.stringify(payments));
+  
+  // Also update the ledger for this payment
+  addLedgerEntry({
+    id: Date.now().toString(),
+    date: payment.date,
+    partyName: payment.agent,
+    partyType: 'agent',
+    description: `Payment: ${payment.paymentNumber}`,
+    debit: payment.amount,
+    credit: 0,
+    balance: 0, // Will be calculated when retrieved
+    referenceId: payment.id,
+    referenceType: 'payment'
+  });
+
+  // If payment method is cash, add to cashbook
+  if (payment.paymentMethod === 'cash') {
+    addCashbookEntry(
+      payment.date,
+      `Payment: ${payment.agent}`,
+      payment.amount, // Debit
+      0, // Credit
+      payment.id,
+      'payment'
+    );
+  }
+};
+
+export const updatePayment = (updatedPayment: Payment): void => {
+  const payments = getPayments();
+  const index = payments.findIndex(p => p.id === updatedPayment.id);
+  if (index !== -1) {
+    payments[index] = updatedPayment;
+    localStorage.setItem('payments', JSON.stringify(payments));
+  }
+};
+
+export const deletePayment = (id: string): void => {
+  const payments = getPayments();
+  const updatedPayments = payments.filter(p => p.id !== id);
+  localStorage.setItem('payments', JSON.stringify(updatedPayments));
+};
+
 // Function to create a cashbook entry
 export const addCashbookEntry = (
   date: string,
@@ -508,6 +634,8 @@ export const exportDataBackup = (silent = false) => {
       brokers: JSON.parse(localStorage.getItem('brokers') || '[]'),
       transporters: JSON.parse(localStorage.getItem('transporters') || '[]'),
       ledger: JSON.parse(localStorage.getItem('ledger') || '[]'),
+      receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
+      payments: JSON.parse(localStorage.getItem('payments') || '[]'),
       // Add any other data you want to include in the backup
     };
 
@@ -565,11 +693,29 @@ export const exportExcelBackup = (data: any) => {
       inventoryCSV += `${i.id},${i.lotNumber},${i.quantity},${i.location},${i.dateAdded},${i.netWeight || 0}\n`;
     });
 
+    // Receipts CSV
+    let receiptsCSV = "ID,Date,Receipt Number,Party Name,Party Type,Amount,Payment Method\n";
+    data.receipts.forEach((r: any) => {
+      receiptsCSV += `${r.id},${r.date},${r.receiptNumber},${r.partyName},${r.partyType},${r.amount},${r.paymentMethod}\n`;
+    });
+
+    // Payments CSV
+    let paymentsCSV = "ID,Date,Payment Number,Agent,Amount,Payment Method\n";
+    data.payments.forEach((p: any) => {
+      paymentsCSV += `${p.id},${p.date},${p.paymentNumber},${p.agent},${p.amount},${p.paymentMethod}\n`;
+    });
+
     // Download purchases CSV
     downloadCSV(purchasesCSV, `purchases-backup-${new Date().toISOString().split('T')[0]}.csv`);
     
     // Download inventory CSV
     downloadCSV(inventoryCSV, `inventory-backup-${new Date().toISOString().split('T')[0]}.csv`);
+    
+    // Download receipts CSV
+    downloadCSV(receiptsCSV, `receipts-backup-${new Date().toISOString().split('T')[0]}.csv`);
+    
+    // Download payments CSV
+    downloadCSV(paymentsCSV, `payments-backup-${new Date().toISOString().split('T')[0]}.csv`);
 
     return true;
   } catch (error) {
@@ -613,6 +759,8 @@ export const importDataBackup = (jsonData: string) => {
     if ('brokers' in data) localStorage.setItem('brokers', JSON.stringify(data.brokers));
     if ('transporters' in data) localStorage.setItem('transporters', JSON.stringify(data.transporters));
     if ('ledger' in data) localStorage.setItem('ledger', JSON.stringify(data.ledger));
+    if ('receipts' in data) localStorage.setItem('receipts', JSON.stringify(data.receipts));
+    if ('payments' in data) localStorage.setItem('payments', JSON.stringify(data.payments));
     
     return true;
   } catch (error) {
