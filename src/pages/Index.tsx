@@ -8,6 +8,7 @@ import { Download, Upload } from "lucide-react";
 import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory, getSales } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const { toast } = useToast();
@@ -157,6 +158,22 @@ const Index = () => {
     }).format(amount);
   };
 
+  const SummaryCard = ({ title, to, children }: { title: string; to: string; children: React.ReactNode }) => (
+    <Link to={to} className="block hover:opacity-90 transition-opacity">
+      <Card className="p-4 shadow-md hover:shadow-lg transition-shadow">
+        <h3 className="text-lg font-semibold mb-2 border-b pb-1">{title}</h3>
+        {children}
+      </Card>
+    </Link>
+  );
+
+  const SummaryItem = ({ label, value }: { label: string; value: string | number }) => (
+    <div className="text-center">
+      <p className="text-sm text-ag-brown">{label}</p>
+      <p className="text-xl font-bold">{value}</p>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation 
@@ -201,60 +218,30 @@ const Index = () => {
         <DashboardMenu />
         
         <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <Card className="p-4 shadow-md">
-            <h3 className="text-lg font-semibold mb-2 border-b pb-1">Purchase Summary</h3>
+          <SummaryCard title="Purchase Summary" to="/purchases">
             <div className="grid grid-cols-3 gap-2">
-              <div className="text-center">
-                <p className="text-sm text-ag-brown">Amount</p>
-                <p className="text-xl font-bold">{formatCurrency(summaryData.purchases.amount)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-ag-brown">Bags</p>
-                <p className="text-xl font-bold">{summaryData.purchases.bags}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-ag-brown">Kgs</p>
-                <p className="text-xl font-bold">{summaryData.purchases.kgs}</p>
-              </div>
+              <SummaryItem label="Amount" value={formatCurrency(summaryData.purchases.amount)} />
+              <SummaryItem label="Bags" value={summaryData.purchases.bags} />
+              <SummaryItem label="Kgs" value={summaryData.purchases.kgs} />
             </div>
-          </Card>
+          </SummaryCard>
           
-          <Card className="p-4 shadow-md">
-            <h3 className="text-lg font-semibold mb-2 border-b pb-1">Sales Summary</h3>
+          <SummaryCard title="Sales Summary" to="/sales">
             <div className="grid grid-cols-3 gap-2">
-              <div className="text-center">
-                <p className="text-sm text-ag-brown">Amount</p>
-                <p className="text-xl font-bold">{formatCurrency(summaryData.sales.amount)}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-ag-brown">Bags</p>
-                <p className="text-xl font-bold">{summaryData.sales.bags}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-ag-brown">Kgs</p>
-                <p className="text-xl font-bold">{summaryData.sales.kgs}</p>
-              </div>
+              <SummaryItem label="Amount" value={formatCurrency(summaryData.sales.amount)} />
+              <SummaryItem label="Bags" value={summaryData.sales.bags} />
+              <SummaryItem label="Kgs" value={summaryData.sales.kgs} />
             </div>
-          </Card>
+          </SummaryCard>
         </div>
         
-        <Card className="mt-6 p-4 shadow-md">
-          <h3 className="text-lg font-semibold mb-2 border-b pb-1">Stock Summary</h3>
+        <SummaryCard title="Stock Summary" to="/inventory" className="mt-6">
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center">
-              <p className="text-sm text-ag-brown">Mumbai</p>
-              <p className="text-xl font-bold">{summaryData.stock.mumbai} bags</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-ag-brown">Chiplun</p>
-              <p className="text-xl font-bold">{summaryData.stock.chiplun} bags</p>
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-ag-brown">Sawantwadi</p>
-              <p className="text-xl font-bold">{summaryData.stock.sawantwadi} bags</p>
-            </div>
+            <SummaryItem label="Mumbai" value={`${summaryData.stock.mumbai} bags`} />
+            <SummaryItem label="Chiplun" value={`${summaryData.stock.chiplun} bags`} />
+            <SummaryItem label="Sawantwadi" value={`${summaryData.stock.sawantwadi} bags`} />
           </div>
-        </Card>
+        </SummaryCard>
         
         <div className="mt-8 p-4 bg-white rounded-lg shadow text-center">
           <h3 className="text-lg font-semibold text-ag-brown-dark mb-2">Offline Mode</h3>
