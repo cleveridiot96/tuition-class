@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -41,11 +42,14 @@ import {
   Purchase 
 } from "@/services/storageService";
 import { Edit, Trash2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Agent {
   id: string;
   name: string;
 }
+
+const LOCATIONS = ["Mumbai", "Chiplun", "Sawantwadi", "Cold Storage"];
 
 const Purchases = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -280,16 +284,280 @@ const Purchases = () => {
             <DialogTrigger asChild>
               <Button>Add Purchase</Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[725px]">
-              <DialogHeader>
+            <DialogContent className="w-[90vw] max-w-[800px] max-h-[90vh] overflow-hidden p-0">
+              <DialogHeader className="px-6 pt-6">
                 <DialogTitle>Add New Purchase</DialogTitle>
               </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <ScrollArea className="max-h-[calc(90vh-130px)] px-6">
+                <form onSubmit={handleSubmit} className="space-y-6 py-4">
+                  <div>
+                    <Label htmlFor="date">Date</Label>
+                    <Input 
+                      type="date" 
+                      id="date" 
+                      name="date" 
+                      value={formData.date} 
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Label htmlFor="lotNumber">Lot Number *</Label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Unique identifier for this purchase lot</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Input 
+                        type="text" 
+                        id="lotNumber" 
+                        name="lotNumber" 
+                        value={formData.lotNumber} 
+                        onChange={handleInputChange}
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Label htmlFor="quantity">Quantity</Label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Number of items/bags/packages</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Input 
+                        type="number" 
+                        id="quantity" 
+                        name="quantity" 
+                        value={formData.quantity} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="agent">Agent *</Label>
+                      <select 
+                        id="agent" 
+                        name="agent" 
+                        className="w-full p-2 border rounded"
+                        value={formData.agent} 
+                        onChange={handleInputChange as any}
+                        required
+                      >
+                        <option value="">Select Agent</option>
+                        {agents.map(agent => (
+                          <option key={agent.id} value={agent.name}>
+                            {agent.name}
+                          </option>
+                        ))}
+                        <option value="None">None</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="party">Party Name</Label>
+                      <Input 
+                        type="text" 
+                        id="party" 
+                        name="party" 
+                        value={formData.party} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="location">Location</Label>
+                      <select 
+                        id="location" 
+                        name="location" 
+                        className="w-full p-2 border rounded"
+                        value={formData.location} 
+                        onChange={handleInputChange as any}
+                      >
+                        <option value="">Select Location</option>
+                        {LOCATIONS.map(location => (
+                          <option key={location} value={location}>
+                            {location}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Label htmlFor="netWeight">Net Weight (Kg) *</Label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Net weight in kilograms</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Input 
+                        type="number" 
+                        id="netWeight" 
+                        name="netWeight" 
+                        value={formData.netWeight} 
+                        onChange={handleInputChange}
+                        step="0.01"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Label htmlFor="rate">Rate (per Kg) *</Label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Price per kilogram</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Input 
+                        type="number" 
+                        id="rate" 
+                        name="rate" 
+                        value={formData.rate} 
+                        onChange={handleInputChange}
+                        step="0.01"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="transporter">Transporter</Label>
+                      <Input 
+                        type="text" 
+                        id="transporter" 
+                        name="transporter" 
+                        value={formData.transporter} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Label htmlFor="totalAmount">Total Amount (₹)</Label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Net Weight × Rate per Kg</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Input 
+                        type="number" 
+                        id="totalAmount" 
+                        name="totalAmount" 
+                        value={formData.totalAmount} 
+                        readOnly
+                        className="bg-gray-100"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="expenses">Other Expenses (₹)</Label>
+                      <Input 
+                        type="number" 
+                        id="expenses" 
+                        name="expenses" 
+                        value={formData.expenses} 
+                        onChange={handleInputChange}
+                        step="0.01"
+                      />
+                    </div>
+
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Label htmlFor="totalAfterExpenses">Total After Expenses (₹)</Label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Total Amount + Other Expenses</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Input 
+                        type="number" 
+                        id="totalAfterExpenses" 
+                        name="totalAfterExpenses" 
+                        value={formData.totalAfterExpenses} 
+                        readOnly
+                        className="bg-gray-100"
+                      />
+                    </div>
+
+                    <div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Label htmlFor="ratePerKgAfterExpenses">Rate/Kg After Expenses (₹)</Label>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Total After Expenses ÷ Net Weight</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                      <Input 
+                        type="number" 
+                        id="ratePerKgAfterExpenses" 
+                        name="ratePerKgAfterExpenses" 
+                        value={formData.ratePerKgAfterExpenses} 
+                        readOnly
+                        className="bg-gray-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Notes</Label>
+                    <textarea 
+                      id="notes" 
+                      name="notes" 
+                      className="w-full p-2 border rounded min-h-[100px]"
+                      value={formData.notes} 
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </form>
+              </ScrollArea>
+              <DialogFooter className="px-6 py-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="button" onClick={handleSubmit}>Add Purchase</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="w-[90vw] max-w-[800px] max-h-[90vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle>Edit Purchase</DialogTitle>
+            </DialogHeader>
+            <ScrollArea className="max-h-[calc(90vh-130px)] px-6">
+              <form onSubmit={handleUpdate} className="space-y-6 py-4">
                 <div>
-                  <Label htmlFor="date">Date</Label>
+                  <Label htmlFor="edit-date">Date</Label>
                   <Input 
                     type="date" 
-                    id="date" 
+                    id="edit-date" 
                     name="date" 
                     value={formData.date} 
                     onChange={handleInputChange}
@@ -297,21 +565,12 @@ const Purchases = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label htmlFor="lotNumber">Lot Number *</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Unique identifier for this purchase lot</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label htmlFor="edit-lotNumber">Lot Number *</Label>
                     <Input 
                       type="text" 
-                      id="lotNumber" 
+                      id="edit-lotNumber" 
                       name="lotNumber" 
                       value={formData.lotNumber} 
                       onChange={handleInputChange}
@@ -320,19 +579,10 @@ const Purchases = () => {
                   </div>
                   
                   <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label htmlFor="quantity">Quantity</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Number of items/bags/packages</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label htmlFor="edit-quantity">Quantity</Label>
                     <Input 
                       type="number" 
-                      id="quantity" 
+                      id="edit-quantity" 
                       name="quantity" 
                       value={formData.quantity} 
                       onChange={handleInputChange}
@@ -340,9 +590,9 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="agent">Agent *</Label>
+                    <Label htmlFor="edit-agent">Agent *</Label>
                     <select 
-                      id="agent" 
+                      id="edit-agent" 
                       name="agent" 
                       className="w-full p-2 border rounded"
                       value={formData.agent} 
@@ -360,10 +610,10 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="party">Party Name</Label>
+                    <Label htmlFor="edit-party">Party Name</Label>
                     <Input 
                       type="text" 
-                      id="party" 
+                      id="edit-party" 
                       name="party" 
                       value={formData.party} 
                       onChange={handleInputChange}
@@ -371,30 +621,28 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="location">Location</Label>
-                    <Input 
-                      type="text" 
-                      id="location" 
+                    <Label htmlFor="edit-location">Location</Label>
+                    <select 
+                      id="edit-location" 
                       name="location" 
+                      className="w-full p-2 border rounded"
                       value={formData.location} 
-                      onChange={handleInputChange}
-                    />
+                      onChange={handleInputChange as any}
+                    >
+                      <option value="">Select Location</option>
+                      {LOCATIONS.map(location => (
+                        <option key={location} value={location}>
+                          {location}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label htmlFor="netWeight">Net Weight (Kg) *</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Net weight in kilograms</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label htmlFor="edit-netWeight">Net Weight (Kg) *</Label>
                     <Input 
                       type="number" 
-                      id="netWeight" 
+                      id="edit-netWeight" 
                       name="netWeight" 
                       value={formData.netWeight} 
                       onChange={handleInputChange}
@@ -404,19 +652,10 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label htmlFor="rate">Rate (per Kg) *</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Price per kilogram</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label htmlFor="edit-rate">Rate (per Kg) *</Label>
                     <Input 
                       type="number" 
-                      id="rate" 
+                      id="edit-rate" 
                       name="rate" 
                       value={formData.rate} 
                       onChange={handleInputChange}
@@ -426,10 +665,10 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="transporter">Transporter</Label>
+                    <Label htmlFor="edit-transporter">Transporter</Label>
                     <Input 
                       type="text" 
-                      id="transporter" 
+                      id="edit-transporter" 
                       name="transporter" 
                       value={formData.transporter} 
                       onChange={handleInputChange}
@@ -437,19 +676,10 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label htmlFor="totalAmount">Total Amount (₹)</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Net Weight × Rate per Kg</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label htmlFor="edit-totalAmount">Total Amount (₹)</Label>
                     <Input 
                       type="number" 
-                      id="totalAmount" 
+                      id="edit-totalAmount" 
                       name="totalAmount" 
                       value={formData.totalAmount} 
                       readOnly
@@ -458,10 +688,10 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="expenses">Other Expenses (₹)</Label>
+                    <Label htmlFor="edit-expenses">Other Expenses (₹)</Label>
                     <Input 
                       type="number" 
-                      id="expenses" 
+                      id="edit-expenses" 
                       name="expenses" 
                       value={formData.expenses} 
                       onChange={handleInputChange}
@@ -470,19 +700,10 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label htmlFor="totalAfterExpenses">Total After Expenses (₹)</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Total Amount + Other Expenses</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label htmlFor="edit-totalAfterExpenses">Total After Expenses (₹)</Label>
                     <Input 
                       type="number" 
-                      id="totalAfterExpenses" 
+                      id="edit-totalAfterExpenses" 
                       name="totalAfterExpenses" 
                       value={formData.totalAfterExpenses} 
                       readOnly
@@ -491,19 +712,10 @@ const Purchases = () => {
                   </div>
 
                   <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Label htmlFor="ratePerKgAfterExpenses">Rate/Kg After Expenses (₹)</Label>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Total After Expenses ÷ Net Weight</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Label htmlFor="edit-ratePerKgAfterExpenses">Rate/Kg After Expenses (₹)</Label>
                     <Input 
                       type="number" 
-                      id="ratePerKgAfterExpenses" 
+                      id="edit-ratePerKgAfterExpenses" 
                       name="ratePerKgAfterExpenses" 
                       value={formData.ratePerKgAfterExpenses} 
                       readOnly
@@ -513,219 +725,27 @@ const Purchases = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="edit-notes">Notes</Label>
                   <textarea 
-                    id="notes" 
+                    id="edit-notes" 
                     name="notes" 
                     className="w-full p-2 border rounded min-h-[100px]"
                     value={formData.notes} 
                     onChange={handleInputChange}
                   />
                 </div>
-
-                <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit">Add Purchase</Button>
-                </div>
               </form>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[725px]">
-            <DialogHeader>
-              <DialogTitle>Edit Purchase</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleUpdate} className="space-y-6">
-              <div>
-                <Label htmlFor="edit-date">Date</Label>
-                <Input 
-                  type="date" 
-                  id="edit-date" 
-                  name="date" 
-                  value={formData.date} 
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit-lotNumber">Lot Number *</Label>
-                  <Input 
-                    type="text" 
-                    id="edit-lotNumber" 
-                    name="lotNumber" 
-                    value={formData.lotNumber} 
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="edit-quantity">Quantity</Label>
-                  <Input 
-                    type="number" 
-                    id="edit-quantity" 
-                    name="quantity" 
-                    value={formData.quantity} 
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-agent">Agent *</Label>
-                  <select 
-                    id="edit-agent" 
-                    name="agent" 
-                    className="w-full p-2 border rounded"
-                    value={formData.agent} 
-                    onChange={handleInputChange as any}
-                    required
-                  >
-                    <option value="">Select Agent</option>
-                    {agents.map(agent => (
-                      <option key={agent.id} value={agent.name}>
-                        {agent.name}
-                      </option>
-                    ))}
-                    <option value="None">None</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-party">Party Name</Label>
-                  <Input 
-                    type="text" 
-                    id="edit-party" 
-                    name="party" 
-                    value={formData.party} 
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-location">Location</Label>
-                  <Input 
-                    type="text" 
-                    id="edit-location" 
-                    name="location" 
-                    value={formData.location} 
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-netWeight">Net Weight (Kg) *</Label>
-                  <Input 
-                    type="number" 
-                    id="edit-netWeight" 
-                    name="netWeight" 
-                    value={formData.netWeight} 
-                    onChange={handleInputChange}
-                    step="0.01"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-rate">Rate (per Kg) *</Label>
-                  <Input 
-                    type="number" 
-                    id="edit-rate" 
-                    name="rate" 
-                    value={formData.rate} 
-                    onChange={handleInputChange}
-                    step="0.01"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-transporter">Transporter</Label>
-                  <Input 
-                    type="text" 
-                    id="edit-transporter" 
-                    name="transporter" 
-                    value={formData.transporter} 
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-totalAmount">Total Amount (₹)</Label>
-                  <Input 
-                    type="number" 
-                    id="edit-totalAmount" 
-                    name="totalAmount" 
-                    value={formData.totalAmount} 
-                    readOnly
-                    className="bg-gray-100"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-expenses">Other Expenses (₹)</Label>
-                  <Input 
-                    type="number" 
-                    id="edit-expenses" 
-                    name="expenses" 
-                    value={formData.expenses} 
-                    onChange={handleInputChange}
-                    step="0.01"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-totalAfterExpenses">Total After Expenses (₹)</Label>
-                  <Input 
-                    type="number" 
-                    id="edit-totalAfterExpenses" 
-                    name="totalAfterExpenses" 
-                    value={formData.totalAfterExpenses} 
-                    readOnly
-                    className="bg-gray-100"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-ratePerKgAfterExpenses">Rate/Kg After Expenses (₹)</Label>
-                  <Input 
-                    type="number" 
-                    id="edit-ratePerKgAfterExpenses" 
-                    name="ratePerKgAfterExpenses" 
-                    value={formData.ratePerKgAfterExpenses} 
-                    readOnly
-                    className="bg-gray-100"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="edit-notes">Notes</Label>
-                <textarea 
-                  id="edit-notes" 
-                  name="notes" 
-                  className="w-full p-2 border rounded min-h-[100px]"
-                  value={formData.notes} 
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => {
-                  setIsEditDialogOpen(false);
-                  resetForm();
-                  setEditingPurchase(null);
-                }}>
-                  Cancel
-                </Button>
-                <Button type="submit">Update Purchase</Button>
-              </DialogFooter>
-            </form>
+            </ScrollArea>
+            <DialogFooter className="px-6 py-4 border-t">
+              <Button type="button" variant="outline" onClick={() => {
+                setIsEditDialogOpen(false);
+                resetForm();
+                setEditingPurchase(null);
+              }}>
+                Cancel
+              </Button>
+              <Button type="button" onClick={handleUpdate}>Update Purchase</Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

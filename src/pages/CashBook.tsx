@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { 
   Table, 
   TableBody, 
+  TableCaption, 
   TableCell, 
   TableHead, 
   TableHeader, 
@@ -20,9 +21,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, parseISO, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCcw, Plus } from "lucide-react";
+import { RefreshCcw, Plus, Search } from "lucide-react";
 import { 
   getLedgerEntries,
   addCashbookEntry,
@@ -33,6 +35,8 @@ const CashBook = () => {
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [currentBalance, setCurrentBalance] = useState(0);
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [viewMode, setViewMode] = useState<"day" | "all">("all");
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
@@ -43,7 +47,7 @@ const CashBook = () => {
   
   useEffect(() => {
     loadCashEntries();
-  }, []);
+  }, [selectedDate, viewMode]);
   
   const loadCashEntries = () => {
     try {
@@ -51,7 +55,21 @@ const CashBook = () => {
       const allEntries = getLedgerEntries();
       
       // Filter for cash entries
-      const cashEntries = allEntries.filter(entry => entry.partyType === "cash");
+      let cashEntries = allEntries.filter(entry => entry.partyType === "cash");
+      
+      if (viewMode === "day") {
+        // Filter for entries on the selected date
+        const startDate = startOfDay(parseISO(selectedDate));
+        const endDate = endOfDay(parseISO(selectedDate));
+        
+        cashEntries = cashEntries.filter(entry => {
+          const entryDate = new Date(entry.date);
+          return isWithinInterval(entryDate, { start: startDate, end: endDate });
+        });
+      }
+
+      // Sort entries by date
+      cashEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       // Calculate running balance
       let runningBalance = 0;
@@ -63,11 +81,10 @@ const CashBook = () => {
       setEntries(entriesWithBalance);
       
       // Set current balance
-      if (entriesWithBalance.length > 0) {
-        setCurrentBalance(entriesWithBalance[entriesWithBalance.length - 1].balance);
-      } else {
-        setCurrentBalance(0);
-      }
+      // For the overall balance, we need to calculate from all entries regardless of view mode
+      const allCashEntries = allEntries.filter(entry => entry.partyType === "cash");
+      const overallBalance = allCashEntries.reduce((bal, entry) => bal + (entry.credit - entry.debit), 0);
+      setCurrentBalance(overallBalance);
     } catch (error) {
       console.error("Error loading cash entries:", error);
       toast({
@@ -151,6 +168,15 @@ const CashBook = () => {
     }).format(amount);
   };
 
+  // Calculate daily totals
+  const getDayTotals = () => {
+    const debitTotal = entries.reduce((sum, entry) => sum + entry.debit, 0);
+    const creditTotal = entries.reduce((sum, entry) => sum + entry.credit, 0);
+    return { debitTotal, creditTotal };
+  };
+
+  const { debitTotal, creditTotal } = getDayTotals();
+
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation title="Cash Book" showBackButton showHomeButton />
@@ -186,61 +212,133 @@ const CashBook = () => {
           </div>
         </Card>
         
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <Tabs defaultValue="all" className="w-full" onValueChange={(value) => setViewMode(value as "day" | "all")}>
+            <TabsList className="grid grid-cols-2 mb-4">
+              <TabsTrigger value="all">All Transactions</TabsTrigger>
+              <TabsTrigger value="day">Daily View</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="day" className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Label htmlFor="date-select">Select Date:</Label>
+                <Input
+                  id="date-select"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-auto"
+                />
+                <Button variant="outline" size="sm" onClick={() => loadCashEntries()}>
+                  <Search size={16} className="mr-2" />
+                  View
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+        
         <Card className="p-4">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead>Date</TableHead>
-                  <TableHead>Particulars</TableHead>
-                  <TableHead className="text-right">Debit (Dr)</TableHead>
-                  <TableHead className="text-right">Credit (Cr)</TableHead>
-                  <TableHead className="text-right">Balance</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.length > 0 ? (
-                  entries.map((entry) => (
-                    <TableRow key={entry.id} className="hover:bg-gray-50">
-                      <TableCell>{new Date(entry.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{entry.description}</TableCell>
-                      <TableCell className="text-right font-medium">
-                        {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
-                        {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                      </TableCell>
-                      <TableCell className={`text-right font-bold ${entry.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(Math.abs(entry.balance))}
-                        <span className="ml-1 text-xs">{entry.balance >= 0 ? 'Cr' : 'Dr'}</span>
-                      </TableCell>
+          {/* T-Account Style Cashbook */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Debit Side */}
+            <div className="border rounded-md overflow-hidden">
+              <div className="bg-gray-100 p-2 font-bold text-center border-b">
+                DEBIT (Payments Made)
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead>Date</TableHead>
+                      <TableHead>Particulars</TableHead>
+                      <TableHead className="text-right">Amount (₹)</TableHead>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-4">
-                      No entries found in cash book
-                    </TableCell>
-                  </TableRow>
-                )}
-                
-                {entries.length > 0 && (
-                  <TableRow className="font-bold border-t-2">
-                    <TableCell colSpan={2} className="text-right">Total</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(entries.reduce((sum, entry) => sum + entry.debit, 0))}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(entries.reduce((sum, entry) => sum + entry.credit, 0))}
-                    </TableCell>
-                    <TableCell className={`text-right ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(Math.abs(currentBalance))}
-                      <span className="ml-1 text-xs">{currentBalance >= 0 ? 'Cr' : 'Dr'}</span>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {entries.filter(entry => entry.debit > 0).length > 0 ? (
+                      entries
+                        .filter(entry => entry.debit > 0)
+                        .map((entry) => (
+                          <TableRow key={`debit-${entry.id}`} className="hover:bg-gray-50">
+                            <TableCell>{format(new Date(entry.date), "dd/MM/yyyy")}</TableCell>
+                            <TableCell>{entry.description}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(entry.debit).replace('₹', '')}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-4">
+                          No debit entries found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                  <TableCaption>
+                    <div className="flex justify-between font-bold p-2">
+                      <span>Total</span>
+                      <span>{formatCurrency(debitTotal).replace('₹', '')}</span>
+                    </div>
+                  </TableCaption>
+                </Table>
+              </div>
+            </div>
+            
+            {/* Credit Side */}
+            <div className="border rounded-md overflow-hidden">
+              <div className="bg-gray-100 p-2 font-bold text-center border-b">
+                CREDIT (Payments Received)
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-50">
+                      <TableHead>Date</TableHead>
+                      <TableHead>Particulars</TableHead>
+                      <TableHead className="text-right">Amount (₹)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {entries.filter(entry => entry.credit > 0).length > 0 ? (
+                      entries
+                        .filter(entry => entry.credit > 0)
+                        .map((entry) => (
+                          <TableRow key={`credit-${entry.id}`} className="hover:bg-gray-50">
+                            <TableCell>{format(new Date(entry.date), "dd/MM/yyyy")}</TableCell>
+                            <TableCell>{entry.description}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(entry.credit).replace('₹', '')}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center py-4">
+                          No credit entries found
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                  <TableCaption>
+                    <div className="flex justify-between font-bold p-2">
+                      <span>Total</span>
+                      <span>{formatCurrency(creditTotal).replace('₹', '')}</span>
+                    </div>
+                  </TableCaption>
+                </Table>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 bg-gray-100 p-4 rounded-md">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-bold">Balance:</span>
+              <span className={`text-lg font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(Math.abs(currentBalance))} {currentBalance >= 0 ? 'Cr' : 'Dr'}
+              </span>
+            </div>
           </div>
         </Card>
       </div>
@@ -286,8 +384,8 @@ const CashBook = () => {
                 onChange={handleInputChange}
                 className="col-span-3 w-full p-2 border rounded-md"
               >
-                <option value="debit">Debit (Dr)</option>
-                <option value="credit">Credit (Cr)</option>
+                <option value="debit">Debit (Payment Made)</option>
+                <option value="credit">Credit (Payment Received)</option>
               </select>
             </div>
             
