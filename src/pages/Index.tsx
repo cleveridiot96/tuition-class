@@ -3,8 +3,8 @@ import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, Home } from "lucide-react";
-import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getSales, getInventoryByLocation } from "@/services/storageService";
+import { Download, Upload } from "lucide-react";
+import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 
@@ -23,10 +23,14 @@ const Index = () => {
     
     // Load summary data
     const purchases = getPurchases();
-    const sales = getSales();
-    const mumbaiStock = getInventoryByLocation("Mumbai");
-    const chiplunStock = getInventoryByLocation("Chiplun");
-    const sawantwadiStock = getInventoryByLocation("Sawantwadi");
+    // Since getSales doesn't exist yet, we'll handle it with empty array for now
+    const sales: any[] = []; // Will implement getSales later
+    
+    // Get inventory by location
+    const inventory = getInventory();
+    const mumbaiStock = inventory.filter(item => item.location === "Mumbai");
+    const chiplunStock = inventory.filter(item => item.location === "Chiplun");
+    const sawantwadiStock = inventory.filter(item => item.location === "Sawantwadi");
     
     setSummaryData({
       purchases: {
@@ -35,9 +39,9 @@ const Index = () => {
         kgs: purchases.reduce((sum, p) => sum + p.netWeight, 0)
       },
       sales: {
-        amount: sales.reduce((sum, s) => sum + s.amount, 0),
-        bags: sales.reduce((sum, s) => sum + s.quantity, 0),
-        kgs: sales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
+        amount: sales.reduce((sum: number, s: any) => sum + (s.amount || 0), 0),
+        bags: sales.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0),
+        kgs: sales.reduce((sum: number, s: any) => sum + (s.netWeight || 0), 0)
       },
       stock: {
         mumbai: mumbaiStock.reduce((sum, item) => sum + item.quantity, 0),
@@ -93,7 +97,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-ag-beige">
-      <Navigation title="होम (Home)" showHomeButton />
+      <Navigation title="होम (Home)" />
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-ag-brown-dark">

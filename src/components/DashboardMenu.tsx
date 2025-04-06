@@ -2,13 +2,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { 
+  ShoppingBag,
   ShoppingCart, 
   PackageOpen, 
-  Truck, 
-  ShoppingBag,
   Wallet,
-  Users,
+  Receipt,
   BookOpen,
+  Users,
   Settings
 } from "lucide-react";
 
@@ -37,14 +37,14 @@ const DashboardMenu = () => {
       <div className="w-full flex justify-center mb-4">
         <div className="grid grid-cols-2 w-full max-w-2xl gap-4">
           <MenuItem 
-            icon={<ShoppingCart size={56} />} 
-            title="खरीदी (Purchase)" 
-            to="/purchases" 
-          />
-          <MenuItem 
             icon={<ShoppingBag size={56} />} 
             title="बिक्री (Sales)" 
             to="/sales" 
+          />
+          <MenuItem 
+            icon={<ShoppingCart size={56} />} 
+            title="खरीदी (Purchase)" 
+            to="/purchases" 
           />
         </div>
       </div>
@@ -55,9 +55,9 @@ const DashboardMenu = () => {
           to="/inventory" 
         />
         <MenuItem 
-          icon={<Truck size={56} />} 
-          title="ट्रांसपोर्ट (Transport)" 
-          to="/transport" 
+          icon={<Receipt size={56} />} 
+          title="प्राप्ति (Receipt)" 
+          to="/receipts" 
         />
         <MenuItem 
           icon={<Wallet size={56} />} 
@@ -65,14 +65,14 @@ const DashboardMenu = () => {
           to="/payments" 
         />
         <MenuItem 
-          icon={<Users size={56} />} 
-          title="एजेंट्स (Agents)" 
-          to="/agents" 
-        />
-        <MenuItem 
           icon={<BookOpen size={56} />} 
           title="लेजर (Ledger)" 
           to="/ledger" 
+        />
+        <MenuItem 
+          icon={<Users size={56} />} 
+          title="एजेंट्स (Agents)" 
+          to="/agents" 
         />
         <MenuItem 
           icon={<Settings size={56} />} 
