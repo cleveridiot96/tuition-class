@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, X } from "lucide-react";
+import { Search, X, RefreshCcw } from "lucide-react";
 import { 
   getAgents, 
   getTransporters, 
@@ -42,6 +42,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 
 interface LedgerEntry {
   id: string;
@@ -69,6 +70,7 @@ const Ledger = () => {
   const [selectedPartyType, setSelectedPartyType] = useState<string>('agent');
   const [ledgerEntries, setLedgerEntries] = useState<StorageLedgerEntry[]>([]);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
+  const { toast } = useToast();
   
   useEffect(() => {
     loadParties('agent');
@@ -76,9 +78,20 @@ const Ledger = () => {
   
   useEffect(() => {
     if (selectedPartyId) {
-      const selectedParty = parties.find(p => p.id === selectedPartyId);
-      if (selectedParty) {
+      loadLedgerData();
+    } else {
+      setLedgerEntries([]);
+      setCurrentBalance(0);
+    }
+  }, [selectedPartyId, parties]);
+  
+  const loadLedgerData = () => {
+    const selectedParty = parties.find(p => p.id === selectedPartyId);
+    if (selectedParty) {
+      try {
+        console.log("Loading ledger for", selectedParty.name, selectedParty.type);
         const entries = getLedgerEntriesByParty(selectedParty.name, selectedParty.type);
+        console.log("Found entries:", entries);
         setLedgerEntries(entries);
         
         // Calculate current balance
@@ -88,12 +101,16 @@ const Ledger = () => {
         } else {
           setCurrentBalance(0);
         }
+      } catch (error) {
+        console.error("Error loading ledger data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load ledger data. Please try again.",
+          variant: "destructive",
+        });
       }
-    } else {
-      setLedgerEntries([]);
-      setCurrentBalance(0);
     }
-  }, [selectedPartyId, parties]);
+  };
   
   const loadParties = (type: string) => {
     let partyList: any[] = [];
@@ -135,6 +152,16 @@ const Ledger = () => {
     setSelectedPartyId('');
     setLedgerEntries([]);
     setCurrentBalance(0);
+  };
+
+  const refreshLedger = () => {
+    if (selectedPartyId) {
+      loadLedgerData();
+      toast({
+        title: "Refreshed",
+        description: "Ledger data has been refreshed",
+      });
+    }
   };
 
   return (
@@ -222,6 +249,9 @@ const Ledger = () => {
                   </Button>
                 )}
               </div>
+              <Button className="p-6 mr-2" onClick={refreshLedger}>
+                <RefreshCcw size={24} className="mr-2" /> Refresh
+              </Button>
               <Button className="p-6">
                 <Search size={24} className="mr-2" /> Search
               </Button>
@@ -231,12 +261,13 @@ const Ledger = () => {
               <Card className="p-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold">
-                    Ledger for {parties.find(p => p.id === selectedPartyId)?.name}
+                    Ledger for {parties.find(p => p.id === selectedPartyId)?.name || "Unknown Party"}
                   </h3>
                   <div className="text-right">
                     <p className="text-sm text-ag-brown">Current Balance:</p>
                     <p className={`font-bold text-lg ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(currentBalance)}
+                      {formatCurrency(Math.abs(currentBalance))}
+                      <span className="ml-1">{currentBalance >= 0 ? 'Cr' : 'Dr'}</span>
                     </p>
                   </div>
                 </div>

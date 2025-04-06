@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, PackageOpen, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Package, PackageOpen, Edit, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -25,6 +26,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { getInventory, saveInventory } from "@/services/storageService";
 
 interface InventoryItem {
   id: string;
@@ -32,41 +34,11 @@ interface InventoryItem {
   quantity: number;
   location: string;
   dateAdded: string;
+  netWeight?: number;
 }
 
 const Inventory = () => {
-  // Mock inventory data
-  const [inventory, setInventory] = useState<InventoryItem[]>([
-    {
-      id: "1",
-      lotNumber: "AB/10",
-      quantity: 7,
-      location: "Chiplun",
-      dateAdded: "2025-04-01"
-    },
-    {
-      id: "2",
-      lotNumber: "CD/5",
-      quantity: 3,
-      location: "Mumbai",
-      dateAdded: "2025-04-02"
-    },
-    {
-      id: "3",
-      lotNumber: "EF/8",
-      quantity: 5,
-      location: "Chiplun",
-      dateAdded: "2025-04-03"
-    },
-    {
-      id: "4",
-      lotNumber: "GH/12",
-      quantity: 8,
-      location: "Mumbai",
-      dateAdded: "2025-04-05"
-    }
-  ]);
-
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -77,6 +49,15 @@ const Inventory = () => {
   const [itemBeingDeleted, setItemBeingDeleted] = useState<InventoryItem | null>(null);
   const { toast } = useToast();
 
+  useEffect(() => {
+    loadInventory();
+  }, []);
+
+  const loadInventory = () => {
+    const inventoryData = getInventory();
+    setInventory(inventoryData);
+  };
+
   const handleEdit = (item: InventoryItem) => {
     setEditItem({...item});
     setIsEditing(true);
@@ -84,11 +65,13 @@ const Inventory = () => {
 
   const handleEditSave = () => {
     if (editItem) {
-      setInventory(prev => 
-        prev.map(item => 
-          item.id === editItem.id ? editItem : item
-        )
+      const updatedInventory = inventory.map(item => 
+        item.id === editItem.id ? editItem : item
       );
+      
+      setInventory(updatedInventory);
+      saveInventory(updatedInventory);
+      
       setIsEditing(false);
       setEditItem(null);
       toast({
@@ -121,12 +104,20 @@ const Inventory = () => {
   };
 
   const confirmDeleteOperation = (item: InventoryItem) => {
-    setDeletedItems(prev => [...prev, item]);
-    setInventory(prev => prev.filter(i => i.id !== item.id));
+    const newDeletedItems = [...deletedItems, item];
+    setDeletedItems(newDeletedItems);
+    
+    const newInventory = inventory.filter(i => i.id !== item.id);
+    setInventory(newInventory);
+    
+    // Update storage
+    saveInventory(newInventory);
+    
     toast({
       title: "Item Deleted",
       description: `${item.lotNumber} has been removed from inventory.`,
     });
+    
     setConfirmDelete(false);
     setItemBeingDeleted(null);
     setShowDeleteConfirm(false);
@@ -134,8 +125,13 @@ const Inventory = () => {
   };
 
   const handleRestore = (item: InventoryItem) => {
-    setInventory(prev => [...prev, item]);
-    setDeletedItems(prev => prev.filter(i => i.id !== item.id));
+    const updatedInventory = [...inventory, item];
+    setInventory(updatedInventory);
+    saveInventory(updatedInventory);
+    
+    const updatedDeletedItems = deletedItems.filter(i => i.id !== item.id);
+    setDeletedItems(updatedDeletedItems);
+    
     toast({
       title: "Item Restored",
       description: `${item.lotNumber} has been restored to inventory.`
@@ -152,21 +148,40 @@ const Inventory = () => {
     }
   };
 
-  // Calculate total stock by location
+  const refreshInventory = () => {
+    loadInventory();
+    toast({
+      title: "Inventory Refreshed",
+      description: "Inventory data has been refreshed"
+    });
+  };
+
+  // Calculate total stock by location correctly
   const chiplunStock = inventory
     .filter(item => item.location === "Chiplun")
-    .reduce((total, item) => total + item.quantity, 0);
+    .reduce((total, item) => total + (item.quantity || 0), 0);
   
   const mumbaiStock = inventory
     .filter(item => item.location === "Mumbai")
-    .reduce((total, item) => total + item.quantity, 0);
+    .reduce((total, item) => total + (item.quantity || 0), 0);
 
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation title="Inventory" showBackButton />
       <div className="container mx-auto px-4 py-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Inventory Management</h2>
+          <div className="flex items-center">
+            <h2 className="text-2xl font-bold mr-4">Inventory Management</h2>
+            <Button 
+              onClick={refreshInventory}
+              variant="outline"
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <RefreshCw size={16} />
+              Refresh
+            </Button>
+          </div>
           <Button 
             onClick={() => setShowRestoreDialog(true)}
             variant="outline"
@@ -344,6 +359,11 @@ const Inventory = () => {
             <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete {itemBeingDeleted?.lotNumber}? This action cannot be undone.
+              {itemBeingDeleted && itemBeingDeleted.quantity > 0 && (
+                <p className="text-red-500 mt-2 font-semibold">
+                  Warning: This item still has {itemBeingDeleted.quantity} bags in stock!
+                </p>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -425,6 +445,9 @@ const InventoryCard = ({ item, onEdit, onDelete }: InventoryCardProps) => {
         <p className="text-ag-brown text-sm mt-1">
           Added on: {new Date(item.dateAdded).toLocaleDateString()}
         </p>
+        {item.netWeight && (
+          <p className="text-ag-brown text-sm">Net Weight: {item.netWeight} Kg</p>
+        )}
       </div>
       <div className="mt-4 flex space-x-2">
         <Button 

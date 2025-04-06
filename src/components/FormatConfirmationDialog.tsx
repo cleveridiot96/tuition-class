@@ -55,7 +55,7 @@ const FormatConfirmationDialog = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleClose}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm}>
+          <AlertDialogAction onClick={handleConfirm} className="bg-red-600 hover:bg-red-700">
             {confirmationStage === 1 ? "Format Data" : "Yes, Format Data"}
           </AlertDialogAction>
         </AlertDialogFooter>

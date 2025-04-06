@@ -236,15 +236,49 @@ export const addPurchase = (purchase: Purchase): void => {
   const purchases = getPurchases();
   purchases.push(purchase);
   localStorage.setItem('purchases', JSON.stringify(purchases));
+  
+  // Update inventory
+  updateInventoryAfterPurchase(purchase);
+};
+
+export const updatePurchase = (updatedPurchase: Purchase): void => {
+  const purchases = getPurchases();
+  const index = purchases.findIndex(p => p.id === updatedPurchase.id);
+  
+  if (index !== -1) {
+    // Get old purchase to update inventory correctly
+    const oldPurchase = purchases[index];
+    
+    // Update purchase
+    purchases[index] = updatedPurchase;
+    localStorage.setItem('purchases', JSON.stringify(purchases));
+    
+    // Update inventory based on changes
+    updateInventoryAfterPurchaseEdit(oldPurchase, updatedPurchase);
+  }
+};
+
+export const deletePurchase = (id: string): void => {
+  const purchases = getPurchases();
+  const purchaseToDelete = purchases.find(p => p.id === id);
+  
+  if (purchaseToDelete) {
+    // Remove from purchases
+    const updatedPurchases = purchases.filter(p => p.id !== id);
+    localStorage.setItem('purchases', JSON.stringify(updatedPurchases));
+    
+    // Update inventory
+    updateInventoryAfterPurchaseDelete(purchaseToDelete);
+  }
 };
 
 export const savePurchases = (purchases: any[]) => {
   localStorage.setItem('purchases', JSON.stringify(purchases));
 };
 
-export const checkDuplicateLot = (lotNumber: string): Purchase | null => {
+export const checkDuplicateLot = (lotNumber: string, excludeId?: string): Purchase | null => {
   const purchases = getPurchases();
-  return purchases.find(p => p.lotNumber === lotNumber) || null;
+  return purchases.find(p => p.lotNumber === lotNumber && (excludeId ? p.id !== excludeId : true)) || null;
 };
 
 // Sales functions
@@ -273,6 +307,137 @@ export const addInventoryItem = (item: InventoryItem): void => {
   localStorage.setItem('inventory', JSON.stringify(inventory));
 };
 
+export const getInventoryItem = (lotNumber: string): InventoryItem | undefined => {
+  const inventory = getInventory();
+  return inventory.find(item => item.lotNumber === lotNumber);
+};
+
+export const updateInventoryItem = (updatedItem: InventoryItem): void => {
+  const inventory = getInventory();
+  const index = inventory.findIndex(item => item.lotNumber === updatedItem.lotNumber);
+  
+  if (index !== -1) {
+    inventory[index] = updatedItem;
+    saveInventory(inventory);
+  } else {
+    // Item doesn't exist, add it
+    addInventoryItem(updatedItem);
+  }
+};
+
+export const updateInventoryAfterPurchase = (purchase: Purchase): void => {
+  const inventory = getInventory();
+  const existingItemIndex = inventory.findIndex(item => item.lotNumber === purchase.lotNumber);
+  
+  if (existingItemIndex !== -1) {
+    // Update existing item
+    inventory[existingItemIndex].quantity += purchase.quantity;
+    inventory[existingItemIndex].netWeight = (inventory[existingItemIndex].netWeight || 0) + purchase.netWeight;
+  } else {
+    // Add new item
+    inventory.push({
+      id: Date.now().toString() + '-inv',
+      lotNumber: purchase.lotNumber,
+      quantity: purchase.quantity,
+      location: purchase.location,
+      dateAdded: purchase.date,
+      netWeight: purchase.netWeight
+    });
+  }
+  
+  saveInventory(inventory);
+};
+
+export const updateInventoryAfterPurchaseEdit = (
+  oldPurchase: Purchase, 
+  newPurchase: Purchase
+): void => {
+  const inventory = getInventory();
+  
+  // First remove the old purchase from inventory
+  const existingItemIndex = inventory.findIndex(item => item.lotNumber === oldPurchase.lotNumber);
+  
+  if (existingItemIndex !== -1) {
+    // If lot number didn't change, just update the quantities
+    if (oldPurchase.lotNumber === newPurchase.lotNumber) {
+      inventory[existingItemIndex].quantity = 
+        inventory[existingItemIndex].quantity - oldPurchase.quantity + newPurchase.quantity;
+      
+      inventory[existingItemIndex].netWeight = 
+        (inventory[existingItemIndex].netWeight || 0) - oldPurchase.netWeight + newPurchase.netWeight;
+        
+      inventory[existingItemIndex].location = newPurchase.location;
+    } else {
+      // Lot number changed, need to adjust old item and maybe create new one
+      inventory[existingItemIndex].quantity -= oldPurchase.quantity;
+      inventory[existingItemIndex].netWeight = 
+        (inventory[existingItemIndex].netWeight || 0) - oldPurchase.netWeight;
+      
+      // If old item has zero quantity, remove it
+      if (inventory[existingItemIndex].quantity <= 0) {
+        inventory.splice(existingItemIndex, 1);
+      }
+      
+      // Look for the new lot number
+      const newItemIndex = inventory.findIndex(item => item.lotNumber === newPurchase.lotNumber);
+      if (newItemIndex !== -1) {
+        // Update existing new lot
+        inventory[newItemIndex].quantity += newPurchase.quantity;
+        inventory[newItemIndex].netWeight = 
+          (inventory[newItemIndex].netWeight || 0) + newPurchase.netWeight;
+      } else {
+        // Create new inventory item
+        inventory.push({
+          id: Date.now().toString() + '-inv',
+          lotNumber: newPurchase.lotNumber,
+          quantity: newPurchase.quantity,
+          location: newPurchase.location,
+          dateAdded: newPurchase.date,
+          netWeight: newPurchase.netWeight
+        });
+      }
+    }
+  } else {
+    // Old lot not found, just add as new
+    const newItemIndex = inventory.findIndex(item => item.lotNumber === newPurchase.lotNumber);
+    if (newItemIndex !== -1) {
+      // Update existing 
+      inventory[newItemIndex].quantity += newPurchase.quantity;
+      inventory[newItemIndex].netWeight = 
+        (inventory[newItemIndex].netWeight || 0) + newPurchase.netWeight;
+    } else {
+      // Create new
+      inventory.push({
+        id: Date.now().toString() + '-inv',
+        lotNumber: newPurchase.lotNumber,
+        quantity: newPurchase.quantity,
+        location: newPurchase.location,
+        dateAdded: newPurchase.date,
+        netWeight: newPurchase.netWeight
+      });
+    }
+  }
+  
+  saveInventory(inventory);
+};
+
+export const updateInventoryAfterPurchaseDelete = (purchase: Purchase): void => {
+  const inventory = getInventory();
+  const existingItemIndex = inventory.findIndex(item => item.lotNumber === purchase.lotNumber);
+  
+  if (existingItemIndex !== -1) {
+    inventory[existingItemIndex].quantity -= purchase.quantity;
+    inventory[existingItemIndex].netWeight = 
+      (inventory[existingItemIndex].netWeight || 0) - purchase.netWeight;
+    
+    if (inventory[existingItemIndex].quantity <= 0) {
+      inventory.splice(existingItemIndex, 1); // Remove item if quantity is zero or negative
+    }
+    
+    saveInventory(inventory);
+  }
+};
+
 // Ledger functions
 export const getLedgerEntries = (): LedgerEntry[] => {
   const entries = localStorage.getItem('ledger');
@@ -281,7 +446,53 @@ export const getLedgerEntries = (): LedgerEntry[] => {
 
 export const getLedgerEntriesByParty = (partyName: string, partyType: string): LedgerEntry[] => {
   const entries = getLedgerEntries();
-  return entries.filter(entry => entry.partyName === partyName && entry.partyType === partyType);
+  const filteredEntries = entries.filter(entry => 
+    entry.partyName === partyName && entry.partyType === partyType
+  );
+  
+  // Calculate running balance for each entry
+  let runningBalance = 0;
+  const entriesWithBalance = filteredEntries.map(entry => {
+    runningBalance += entry.credit - entry.debit;
+    return { ...entry, balance: runningBalance };
+  });
+  
+  return entriesWithBalance;
+};
+
+export const addLedgerEntry = (entry: LedgerEntry): void => {
+  const entries = getLedgerEntries();
+  entries.push(entry);
+  localStorage.setItem('ledger', JSON.stringify(entries));
+};
+
+// Function to create a cashbook entry
+export const addCashbookEntry = (
+  date: string,
+  description: string, 
+  debit: number = 0, 
+  credit: number = 0, 
+  referenceId?: string,
+  referenceType?: string
+): void => {
+  const entries = getLedgerEntries();
+  
+  // Create a new entry with "Cash" as the party
+  const newEntry: LedgerEntry = {
+    id: Date.now().toString(),
+    date,
+    partyName: "Cash",
+    partyType: "cash",
+    description,
+    debit,
+    credit,
+    balance: 0, // Will be calculated when retrieved
+    referenceId,
+    referenceType
+  };
+  
+  entries.push(newEntry);
+  localStorage.setItem('ledger', JSON.stringify(entries));
 };
 
 // Modify the exportDataBackup function to accept a silent parameter
@@ -323,13 +534,60 @@ export const exportDataBackup = (silent = false) => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    // This is safer than referencing toast directly - we'll tell users to
-    // handle toasts in their consuming component
+    // Try to export Excel format as well
+    try {
+      exportExcelBackup(data);
+    } catch (excelError) {
+      console.error('Error exporting Excel backup:', excelError);
+    }
+
     return jsonData;
   } catch (error) {
     console.error('Error exporting data:', error);
     return null;
   }
+};
+
+// Function to export data in Excel-compatible format
+export const exportExcelBackup = (data: any) => {
+  // This is a simplified version - in a real app you'd use a library like xlsx
+  // For now we'll create a CSV format which Excel can open
+  try {
+    // Purchases CSV
+    let purchasesCSV = "ID,Date,Lot Number,Quantity,Agent,Party,Location,Net Weight,Rate,Total Amount\n";
+    data.purchases.forEach((p: any) => {
+      purchasesCSV += `${p.id},${p.date},${p.lotNumber},${p.quantity},${p.agent},${p.party},${p.location},${p.netWeight},${p.rate},${p.totalAmount}\n`;
+    });
+
+    // Inventory CSV
+    let inventoryCSV = "ID,Lot Number,Quantity,Location,Date Added,Net Weight\n";
+    data.inventory.forEach((i: any) => {
+      inventoryCSV += `${i.id},${i.lotNumber},${i.quantity},${i.location},${i.dateAdded},${i.netWeight || 0}\n`;
+    });
+
+    // Download purchases CSV
+    downloadCSV(purchasesCSV, `purchases-backup-${new Date().toISOString().split('T')[0]}.csv`);
+    
+    // Download inventory CSV
+    downloadCSV(inventoryCSV, `inventory-backup-${new Date().toISOString().split('T')[0]}.csv`);
+
+    return true;
+  } catch (error) {
+    console.error('Error creating Excel backup:', error);
+    return false;
+  }
+};
+
+// Helper function to download CSV
+const downloadCSV = (csvContent: string, filename: string) => {
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
 
 export const importDataBackup = (jsonData: string) => {
@@ -341,6 +599,9 @@ export const importDataBackup = (jsonData: string) => {
       console.error('Invalid backup data format');
       return false;
     }
+    
+    // Create a backup before importing
+    exportDataBackup(true);
     
     // Set each data item in localStorage if present
     if ('purchases' in data) localStorage.setItem('purchases', JSON.stringify(data.purchases));
@@ -369,6 +630,11 @@ export const seedInitialData = (force = false) => {
   
   // If force is true or any of the required data is missing, seed the data
   if (force || !purchases || !sales || !inventory) {
+    // Create a backup first if data exists
+    if (purchases || sales || inventory) {
+      exportDataBackup(true);
+    }
+    
     // Seed initial data
     const initialPurchases = [
       {
@@ -419,21 +685,27 @@ export const seedInitialData = (force = false) => {
     const initialInventory = [
       {
         id: '201',
+        lotNumber: 'LOT001',
         location: 'Mumbai',
-        item: 'Rice',
-        quantity: 100
+        quantity: 100,
+        dateAdded: '2024-01-01',
+        netWeight: 1000
       },
       {
         id: '202',
+        lotNumber: 'LOT002',
         location: 'Chiplun',
-        item: 'Wheat',
-        quantity: 50
+        quantity: 50,
+        dateAdded: '2024-01-05',
+        netWeight: 500
       },
       {
         id: '203',
+        lotNumber: 'LOT003',
         location: 'Sawantwadi',
-        item: 'Sugar',
-        quantity: 75
+        quantity: 75,
+        dateAdded: '2024-01-10',
+        netWeight: 750
       },
     ];
     
@@ -469,7 +741,38 @@ export const seedInitialData = (force = false) => {
     }
     
     if (!localStorage.getItem('ledger')) {
-      localStorage.setItem('ledger', JSON.stringify([]));
+      localStorage.setItem('ledger', JSON.stringify([
+        {
+          id: '1001',
+          date: '2024-01-01',
+          partyName: 'Agent A',
+          partyType: 'agent',
+          description: 'Initial transaction',
+          debit: 5000,
+          credit: 0,
+          balance: -5000
+        },
+        {
+          id: '1002',
+          date: '2024-01-05',
+          partyName: 'Agent B',
+          partyType: 'agent',
+          description: 'Initial transaction',
+          debit: 0,
+          credit: 3000,
+          balance: 3000
+        },
+        {
+          id: '1003',
+          date: '2024-01-10',
+          partyName: 'Cash',
+          partyType: 'cash',
+          description: 'Opening balance',
+          debit: 0,
+          credit: 10000,
+          balance: 10000
+        }
+      ]));
     }
   }
 };

@@ -9,7 +9,8 @@ import {
   Receipt,
   BookOpen,
   Users,
-  Settings
+  Settings,
+  CreditCard
 } from "lucide-react";
 import {
   Tooltip,
@@ -92,10 +93,10 @@ const DashboardMenu = () => {
             description="View account records and balances"
           />
           <MenuItem 
-            icon={<Users size={56} />} 
-            title="Agents" 
-            to="/agents" 
-            description="Manage your business agents"
+            icon={<CreditCard size={56} />} 
+            title="Cash Book" 
+            to="/cashbook" 
+            description="Manage cash transactions"
           />
           <MenuItem 
             icon={<Settings size={56} />} 
