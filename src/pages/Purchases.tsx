@@ -13,20 +13,34 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle, 
+  DialogTitle,
+  DialogFooter,
   DialogTrigger 
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { 
   getPurchases, 
-  addPurchase, 
+  addPurchase,
+  updatePurchase,
+  deletePurchase,
   getAgents, 
   updateAgentBalance,
   addInventoryItem,
   checkDuplicateLot,
   Purchase 
 } from "@/services/storageService";
+import { Edit, Trash2 } from "lucide-react";
 
 interface Agent {
   id: string;
@@ -37,6 +51,10 @@ const Purchases = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [purchaseToDelete, setPurchaseToDelete] = useState<string | null>(null);
+  const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [formData, setFormData] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
     lotNumber: "",
@@ -55,9 +73,13 @@ const Purchases = () => {
   });
 
   useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = () => {
     setPurchases(getPurchases());
     setAgents(getAgents().map(a => ({ id: a.id, name: a.name })));
-  }, []);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -86,13 +108,13 @@ const Purchases = () => {
     setFormData(updated);
   };
 
-  const validateForm = () => {
+  const validateForm = (isEdit = false) => {
     if (!formData.date || !formData.lotNumber || !formData.agent || formData.netWeight <= 0 || formData.rate <= 0) {
       toast.error("Please fill all required fields");
       return false;
     }
 
-    const duplicate = checkDuplicateLot(formData.lotNumber);
+    const duplicate = checkDuplicateLot(formData.lotNumber, isEdit ? editingPurchase?.id : undefined);
     if (duplicate) {
       toast.error(`Lot number ${formData.lotNumber} already exists`);
       return false;
@@ -122,7 +144,6 @@ const Purchases = () => {
       totalAfterExpenses: formData.totalAfterExpenses,
       ratePerKgAfterExpenses: formData.ratePerKgAfterExpenses,
       notes: formData.notes,
-      ...formData
     };
     
     addPurchase(newPurchase);
@@ -146,6 +167,87 @@ const Purchases = () => {
     toast.success("Purchase added successfully");
     setIsAddDialogOpen(false);
     resetForm();
+  };
+
+  const handleEdit = (purchase: Purchase) => {
+    setEditingPurchase(purchase);
+    setFormData({
+      date: purchase.date,
+      lotNumber: purchase.lotNumber,
+      quantity: purchase.quantity,
+      agent: purchase.agent,
+      party: purchase.party || "",
+      location: purchase.location || "",
+      netWeight: purchase.netWeight,
+      rate: purchase.rate,
+      transporter: purchase.transporter || "",
+      totalAmount: purchase.totalAmount,
+      expenses: purchase.expenses,
+      totalAfterExpenses: purchase.totalAfterExpenses,
+      ratePerKgAfterExpenses: purchase.ratePerKgAfterExpenses,
+      notes: purchase.notes || ""
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingPurchase || !validateForm(true)) return;
+    
+    const updatedPurchase: Purchase = {
+      ...editingPurchase,
+      date: formData.date,
+      lotNumber: formData.lotNumber,
+      quantity: formData.quantity,
+      agent: formData.agent,
+      party: formData.party,
+      location: formData.location,
+      netWeight: formData.netWeight,
+      rate: formData.rate,
+      transporter: formData.transporter,
+      totalAmount: formData.totalAmount,
+      expenses: formData.expenses,
+      totalAfterExpenses: formData.totalAfterExpenses,
+      ratePerKgAfterExpenses: formData.ratePerKgAfterExpenses,
+      notes: formData.notes
+    };
+    
+    updatePurchase(updatedPurchase);
+    
+    setPurchases(purchases.map(p => 
+      p.id === updatedPurchase.id ? updatedPurchase : p
+    ));
+    
+    toast.success("Purchase updated successfully");
+    setIsEditDialogOpen(false);
+    resetForm();
+    setEditingPurchase(null);
+  };
+
+  const confirmDeletePurchase = (id: string) => {
+    setPurchaseToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDelete = () => {
+    if (!purchaseToDelete) return;
+    
+    const purchaseToRemove = purchases.find(p => p.id === purchaseToDelete);
+    if (purchaseToRemove) {
+      deletePurchase(purchaseToDelete);
+      
+      const agentId = getAgents().find(a => a.name === purchaseToRemove.agent)?.id;
+      if (agentId) {
+        updateAgentBalance(agentId, purchaseToRemove.totalAfterExpenses);
+      }
+      
+      setPurchases(purchases.filter(p => p.id !== purchaseToDelete));
+      toast.success("Purchase deleted successfully");
+    }
+    
+    setShowDeleteConfirm(false);
+    setPurchaseToDelete(null);
   };
 
   const resetForm = () => {
@@ -178,13 +280,11 @@ const Purchases = () => {
             <DialogTrigger asChild>
               <Button>Add Purchase</Button>
             </DialogTrigger>
-            {/* Purchase form dialog */}
             <DialogContent className="sm:max-w-[725px]">
               <DialogHeader>
                 <DialogTitle>Add New Purchase</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Date selection */}
                 <div>
                   <Label htmlFor="date">Date</Label>
                   <Input 
@@ -198,7 +298,6 @@ const Purchases = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Lot Number */}
                   <div>
                     <TooltipProvider>
                       <Tooltip>
@@ -220,7 +319,6 @@ const Purchases = () => {
                     />
                   </div>
                   
-                  {/* Quantity */}
                   <div>
                     <TooltipProvider>
                       <Tooltip>
@@ -241,7 +339,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Agent */}
                   <div>
                     <Label htmlFor="agent">Agent *</Label>
                     <select 
@@ -258,10 +355,10 @@ const Purchases = () => {
                           {agent.name}
                         </option>
                       ))}
+                      <option value="None">None</option>
                     </select>
                   </div>
 
-                  {/* Party Name */}
                   <div>
                     <Label htmlFor="party">Party Name</Label>
                     <Input 
@@ -273,7 +370,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Location */}
                   <div>
                     <Label htmlFor="location">Location</Label>
                     <Input 
@@ -285,7 +381,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Net Weight */}
                   <div>
                     <TooltipProvider>
                       <Tooltip>
@@ -294,7 +389,6 @@ const Purchases = () => {
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Net weight in kilograms</p>
-                          <p className="text-sm text-muted-foreground">Net weight in kilograms</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -309,7 +403,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Rate */}
                   <div>
                     <TooltipProvider>
                       <Tooltip>
@@ -332,7 +425,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Transporter */}
                   <div>
                     <Label htmlFor="transporter">Transporter</Label>
                     <Input 
@@ -344,7 +436,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Total Amount (calculated) */}
                   <div>
                     <TooltipProvider>
                       <Tooltip>
@@ -366,7 +457,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Other Expenses */}
                   <div>
                     <Label htmlFor="expenses">Other Expenses (₹)</Label>
                     <Input 
@@ -379,7 +469,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Total after expenses (calculated) */}
                   <div>
                     <TooltipProvider>
                       <Tooltip>
@@ -401,7 +490,6 @@ const Purchases = () => {
                     />
                   </div>
 
-                  {/* Rate per KG after expenses (calculated) */}
                   <div>
                     <TooltipProvider>
                       <Tooltip>
@@ -424,7 +512,6 @@ const Purchases = () => {
                   </div>
                 </div>
 
-                {/* Notes */}
                 <div>
                   <Label htmlFor="notes">Notes</Label>
                   <textarea 
@@ -436,7 +523,6 @@ const Purchases = () => {
                   />
                 </div>
 
-                {/* Form Actions */}
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                     Cancel
@@ -448,7 +534,224 @@ const Purchases = () => {
           </Dialog>
         </div>
 
-        {/* Purchases List */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[725px]">
+            <DialogHeader>
+              <DialogTitle>Edit Purchase</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdate} className="space-y-6">
+              <div>
+                <Label htmlFor="edit-date">Date</Label>
+                <Input 
+                  type="date" 
+                  id="edit-date" 
+                  name="date" 
+                  value={formData.date} 
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-lotNumber">Lot Number *</Label>
+                  <Input 
+                    type="text" 
+                    id="edit-lotNumber" 
+                    name="lotNumber" 
+                    value={formData.lotNumber} 
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="edit-quantity">Quantity</Label>
+                  <Input 
+                    type="number" 
+                    id="edit-quantity" 
+                    name="quantity" 
+                    value={formData.quantity} 
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-agent">Agent *</Label>
+                  <select 
+                    id="edit-agent" 
+                    name="agent" 
+                    className="w-full p-2 border rounded"
+                    value={formData.agent} 
+                    onChange={handleInputChange as any}
+                    required
+                  >
+                    <option value="">Select Agent</option>
+                    {agents.map(agent => (
+                      <option key={agent.id} value={agent.name}>
+                        {agent.name}
+                      </option>
+                    ))}
+                    <option value="None">None</option>
+                  </select>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-party">Party Name</Label>
+                  <Input 
+                    type="text" 
+                    id="edit-party" 
+                    name="party" 
+                    value={formData.party} 
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-location">Location</Label>
+                  <Input 
+                    type="text" 
+                    id="edit-location" 
+                    name="location" 
+                    value={formData.location} 
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-netWeight">Net Weight (Kg) *</Label>
+                  <Input 
+                    type="number" 
+                    id="edit-netWeight" 
+                    name="netWeight" 
+                    value={formData.netWeight} 
+                    onChange={handleInputChange}
+                    step="0.01"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-rate">Rate (per Kg) *</Label>
+                  <Input 
+                    type="number" 
+                    id="edit-rate" 
+                    name="rate" 
+                    value={formData.rate} 
+                    onChange={handleInputChange}
+                    step="0.01"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-transporter">Transporter</Label>
+                  <Input 
+                    type="text" 
+                    id="edit-transporter" 
+                    name="transporter" 
+                    value={formData.transporter} 
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-totalAmount">Total Amount (₹)</Label>
+                  <Input 
+                    type="number" 
+                    id="edit-totalAmount" 
+                    name="totalAmount" 
+                    value={formData.totalAmount} 
+                    readOnly
+                    className="bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-expenses">Other Expenses (₹)</Label>
+                  <Input 
+                    type="number" 
+                    id="edit-expenses" 
+                    name="expenses" 
+                    value={formData.expenses} 
+                    onChange={handleInputChange}
+                    step="0.01"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-totalAfterExpenses">Total After Expenses (₹)</Label>
+                  <Input 
+                    type="number" 
+                    id="edit-totalAfterExpenses" 
+                    name="totalAfterExpenses" 
+                    value={formData.totalAfterExpenses} 
+                    readOnly
+                    className="bg-gray-100"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-ratePerKgAfterExpenses">Rate/Kg After Expenses (₹)</Label>
+                  <Input 
+                    type="number" 
+                    id="edit-ratePerKgAfterExpenses" 
+                    name="ratePerKgAfterExpenses" 
+                    value={formData.ratePerKgAfterExpenses} 
+                    readOnly
+                    className="bg-gray-100"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-notes">Notes</Label>
+                <textarea 
+                  id="edit-notes" 
+                  name="notes" 
+                  className="w-full p-2 border rounded min-h-[100px]"
+                  value={formData.notes} 
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => {
+                  setIsEditDialogOpen(false);
+                  resetForm();
+                  setEditingPurchase(null);
+                }}>
+                  Cancel
+                </Button>
+                <Button type="submit">Update Purchase</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this purchase? This action cannot be undone.
+                This will update inventory and agent balances accordingly.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setShowDeleteConfirm(false);
+                setPurchaseToDelete(null);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         <div className="space-y-4">
           {purchases.length === 0 ? (
             <p className="text-center py-8 text-gray-500">No purchases recorded yet. Add your first purchase.</p>
@@ -456,7 +759,6 @@ const Purchases = () => {
             purchases.map((purchase) => (
               <div key={purchase.id} className="bg-white p-4 rounded-md shadow">
                 <div className="flex flex-col lg:flex-row lg:justify-between">
-                  {/* Purchase Info */}
                   <div className="mb-4 lg:mb-0">
                     <div className="font-bold text-lg">{purchase.lotNumber}</div>
                     <div className="text-sm text-gray-500">
@@ -468,7 +770,6 @@ const Purchases = () => {
                     <div>Transporter: {purchase.transporter || "N/A"}</div>
                   </div>
 
-                  {/* Quantity & Weight Info */}
                   <div className="mb-4 lg:mb-0">
                     <div>Quantity: {purchase.quantity}</div>
                     <div>Net Weight: {purchase.netWeight} Kg</div>
@@ -476,8 +777,7 @@ const Purchases = () => {
                     <div>Amount: ₹{purchase.totalAmount}</div>
                   </div>
 
-                  {/* Expense & Total Info */}
-                  <div>
+                  <div className="mb-4 lg:mb-0">
                     <div>Expenses: ₹{purchase.expenses}</div>
                     <div className="flex flex-col">
                       <div className="font-semibold">Total: ₹{purchase.totalAfterExpenses}</div>
@@ -486,6 +786,24 @@ const Purchases = () => {
                         <p>₹{purchase.ratePerKgAfterExpenses?.toFixed(2) || '0.00'}/Kg</p>
                       </div>
                     </div>
+                  </div>
+                  
+                  <div className="flex gap-2 items-start">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => handleEdit(purchase)}
+                    >
+                      <Edit size={18} />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => confirmDeletePurchase(purchase.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 size={18} />
+                    </Button>
                   </div>
                 </div>
 

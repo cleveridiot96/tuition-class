@@ -44,10 +44,13 @@ const FormatConfirmationDialog = ({
     <AlertDialog open={isOpen} onOpenChange={handleClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>
-            {confirmationStage === 1 ? "Format Data?" : "Are You Absolutely Sure?"}
+          <AlertDialogTitle className={confirmationStage === 2 ? "text-red-600" : ""}>
+            {confirmationStage === 1 ? "Format Data?" : "EMERGENCY: Are You Absolutely Sure?"}
           </AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="space-y-2">
+            <p className="font-medium text-red-500">
+              FOR EMERGENCY USE ONLY! THIS ACTION CANNOT BE UNDONE!
+            </p>
             {confirmationStage === 1
               ? "This will reset and reformat all your data. This action cannot be undone. A backup will be created automatically in both Excel format and software-readable format."
               : "Your data will be reformatted and previous settings may be lost. A backup has been created in Excel and software-readable formats for safety."}

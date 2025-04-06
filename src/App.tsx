@@ -10,7 +10,7 @@ import Inventory from "./pages/Inventory";
 import Transport from "./pages/Transport";
 import Sales from "./pages/Sales";
 import Payments from "./pages/Payments";
-import Agents from "./pages/Agents";
+import CashBook from "./pages/CashBook";
 import Ledger from "./pages/Ledger";
 import Master from "./pages/Master";
 import Receipts from "./pages/Receipts";
@@ -31,10 +31,11 @@ const App = () => (
           <Route path="/transport" element={<Transport />} />
           <Route path="/sales" element={<Sales />} />
           <Route path="/payments" element={<Payments />} />
-          <Route path="/agents" element={<Agents />} />
+          <Route path="/cashbook" element={<CashBook />} />
           <Route path="/ledger" element={<Ledger />} />
           <Route path="/master" element={<Master />} />
           <Route path="/receipts" element={<Receipts />} />
+          <Route path="/agents" element={<CashBook />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

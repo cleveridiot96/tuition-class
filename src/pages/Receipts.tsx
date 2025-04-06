@@ -18,8 +18,20 @@ import {
   DialogTitle, 
   DialogFooter 
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Edit, Trash2, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ReceiptItem {
   id: string;
@@ -60,17 +72,83 @@ const Receipts = () => {
   ]);
   const [deletedReceipts, setDeletedReceipts] = useState<ReceiptItem[]>([]);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [receiptToDelete, setReceiptToDelete] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingReceipt, setEditingReceipt] = useState<ReceiptItem | null>(null);
+  const [editForm, setEditForm] = useState({
+    date: "",
+    receiptNumber: "",
+    partyName: "",
+    amount: 0,
+    notes: ""
+  });
   
-  const handleDelete = (id: string) => {
-    const receiptToDelete = receipts.find(r => r.id === id);
-    if (receiptToDelete) {
-      setDeletedReceipts(prev => [...prev, receiptToDelete]);
-      setReceipts(prev => prev.filter(r => r.id !== id));
+  const handleDeleteConfirm = (id: string) => {
+    setReceiptToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+  
+  const handleDelete = () => {
+    if (!receiptToDelete) return;
+    
+    const receiptToRemove = receipts.find(r => r.id === receiptToDelete);
+    if (receiptToRemove) {
+      setDeletedReceipts(prev => [...prev, receiptToRemove]);
+      setReceipts(prev => prev.filter(r => r.id !== receiptToDelete));
       toast({
         title: "Receipt Deleted",
-        description: `Receipt ${receiptToDelete.receiptNumber} has been deleted.`
+        description: `Receipt ${receiptToRemove.receiptNumber} has been deleted.`
       });
     }
+    
+    setShowDeleteConfirm(false);
+    setReceiptToDelete(null);
+  };
+  
+  const handleEdit = (receipt: ReceiptItem) => {
+    setEditingReceipt(receipt);
+    setEditForm({
+      date: receipt.date,
+      receiptNumber: receipt.receiptNumber,
+      partyName: receipt.partyName,
+      amount: receipt.amount,
+      notes: receipt.notes
+    });
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!editingReceipt) return;
+    
+    const updatedReceipt: ReceiptItem = {
+      ...editingReceipt,
+      date: editForm.date,
+      receiptNumber: editForm.receiptNumber,
+      partyName: editForm.partyName,
+      amount: editForm.amount,
+      notes: editForm.notes
+    };
+    
+    setReceipts(prev => prev.map(r => r.id === updatedReceipt.id ? updatedReceipt : r));
+    
+    toast({
+      title: "Receipt Updated",
+      description: `Receipt ${updatedReceipt.receiptNumber} has been updated.`
+    });
+    
+    setIsEditDialogOpen(false);
+    setEditingReceipt(null);
+  };
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: name === 'amount' ? Number(value) : value
+    }));
   };
   
   const handleRestore = (receipt: ReceiptItem) => {
@@ -143,13 +221,17 @@ const Receipts = () => {
                     <TableCell className="max-w-[200px] truncate">{receipt.notes}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => handleEdit(receipt)}
+                        >
                           <Edit size={16} />
                         </Button>
                         <Button 
                           variant="ghost" 
                           size="icon"
-                          onClick={() => handleDelete(receipt.id)}
+                          onClick={() => handleDeleteConfirm(receipt.id)}
                         >
                           <Trash2 size={16} className="text-red-500" />
                         </Button>
@@ -162,6 +244,100 @@ const Receipts = () => {
           </Card>
         )}
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this receipt? This action can be undone by using the Restore function.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setShowDeleteConfirm(false);
+              setReceiptToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Edit Receipt Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Receipt</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="date">Date</Label>
+              <Input 
+                type="date" 
+                id="date" 
+                name="date" 
+                value={editForm.date} 
+                onChange={handleInputChange} 
+                required 
+              />
+            </div>
+            <div>
+              <Label htmlFor="receiptNumber">Receipt Number</Label>
+              <Input 
+                type="text" 
+                id="receiptNumber" 
+                name="receiptNumber" 
+                value={editForm.receiptNumber} 
+                onChange={handleInputChange} 
+                required 
+              />
+            </div>
+            <div>
+              <Label htmlFor="partyName">Party Name</Label>
+              <Input 
+                type="text" 
+                id="partyName" 
+                name="partyName" 
+                value={editForm.partyName} 
+                onChange={handleInputChange} 
+                required 
+              />
+            </div>
+            <div>
+              <Label htmlFor="amount">Amount (₹)</Label>
+              <Input 
+                type="number" 
+                id="amount" 
+                name="amount" 
+                value={editForm.amount} 
+                onChange={handleInputChange} 
+                required 
+              />
+            </div>
+            <div>
+              <Label htmlFor="notes">Notes</Label>
+              <textarea 
+                id="notes" 
+                name="notes" 
+                className="w-full h-20 p-2 border rounded" 
+                value={editForm.notes} 
+                onChange={handleInputChange}
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Update Receipt</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
       
       {/* Restore Dialog */}
       <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
