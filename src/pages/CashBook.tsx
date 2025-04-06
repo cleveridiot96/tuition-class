@@ -22,37 +22,21 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, parseISO, startOfDay, endOfDay, isWithinInterval, subDays } from "date-fns";
+import { format, parseISO, startOfDay, endOfDay, isWithinInterval } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { RefreshCcw, Plus, Search } from "lucide-react";
 import { 
   getLedgerEntries,
   addCashbookEntry,
-  LedgerEntry,
-  getReceipts,
-  getPayments
+  LedgerEntry
 } from "@/services/storageService";
 
-// Define a type for our combined cash transactions
-interface CashTransaction {
-  id: string;
-  date: string;
-  description: string;
-  debit: number;
-  credit: number;
-  balance?: number;
-  source: 'receipt' | 'payment' | 'manual';
-  referenceId?: string;
-}
-
 const CashBook = () => {
-  const [entries, setEntries] = useState<CashTransaction[]>([]);
+  const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [currentBalance, setCurrentBalance] = useState(0);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
   const [viewMode, setViewMode] = useState<"day" | "all">("all");
-  const [openingBalance, setOpeningBalance] = useState(0);
-  const [closingBalance, setClosingBalance] = useState(0);
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
@@ -67,108 +51,40 @@ const CashBook = () => {
   
   const loadCashEntries = () => {
     try {
-      // Get all transactions from different sources
-      const cashLedgerEntries = getLedgerEntries().filter(entry => entry.partyType === "cash");
-      const receipts = getReceipts();
-      const payments = getPayments();
+      // Get all ledger entries
+      const allEntries = getLedgerEntries();
       
-      // Convert receipts to our common format
-      const receiptTransactions: CashTransaction[] = receipts.map(receipt => ({
-        id: `receipt-${receipt.id}`,
-        date: receipt.date,
-        description: `Receipt: ${receipt.partyName} - ${receipt.receiptNumber}`,
-        credit: receipt.amount, // Receipts are credits (money in)
-        debit: 0,
-        source: 'receipt',
-        referenceId: receipt.id
-      }));
+      // Filter for cash entries
+      let cashEntries = allEntries.filter(entry => entry.partyType === "cash");
       
-      // Convert payments to our common format
-      const paymentTransactions: CashTransaction[] = payments
-        .filter(payment => payment.paymentMethod === "cash") // Only include cash payments
-        .map(payment => ({
-          id: `payment-${payment.id}`,
-          date: payment.date,
-          description: `Payment: ${payment.agent}`,
-          credit: 0,
-          debit: payment.amount, // Payments are debits (money out)
-          source: 'payment',
-          referenceId: payment.id
-        }));
-      
-      // Convert ledger entries to our common format
-      const ledgerTransactions: CashTransaction[] = cashLedgerEntries.map(entry => ({
-        id: `ledger-${entry.id}`,
-        date: entry.date,
-        description: entry.description,
-        credit: entry.credit,
-        debit: entry.debit,
-        source: 'manual',
-        referenceId: entry.id
-      }));
-      
-      // Combine all transactions
-      let allTransactions = [
-        ...receiptTransactions,
-        ...paymentTransactions,
-        ...ledgerTransactions
-      ];
-      
-      // Filter for the selected date if in day view
       if (viewMode === "day") {
+        // Filter for entries on the selected date
         const startDate = startOfDay(parseISO(selectedDate));
         const endDate = endOfDay(parseISO(selectedDate));
         
-        allTransactions = allTransactions.filter(entry => {
+        cashEntries = cashEntries.filter(entry => {
           const entryDate = new Date(entry.date);
           return isWithinInterval(entryDate, { start: startDate, end: endDate });
         });
-        
-        // Calculate opening balance for this day
-        // This is the sum of all transactions before this day
-        const previousDayTransactions = [
-          ...receiptTransactions,
-          ...paymentTransactions,
-          ...ledgerTransactions
-        ].filter(entry => {
-          const entryDate = new Date(entry.date);
-          return entryDate < startDate;
-        });
-        
-        const calculatedOpeningBalance = previousDayTransactions.reduce(
-          (balance, entry) => balance + entry.credit - entry.debit, 
-          0
-        );
-        setOpeningBalance(calculatedOpeningBalance);
-      } else {
-        // In "all" view, opening balance is 0
-        setOpeningBalance(0);
       }
-      
-      // Sort all transactions by date
-      allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      // Sort entries by date
+      cashEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       // Calculate running balance
-      let runningBalance = openingBalance;
-      const transactionsWithBalance = allTransactions.map(entry => {
+      let runningBalance = 0;
+      const entriesWithBalance = cashEntries.map(entry => {
         runningBalance += entry.credit - entry.debit;
         return { ...entry, balance: runningBalance };
       });
       
-      setEntries(transactionsWithBalance);
+      setEntries(entriesWithBalance);
       
-      // Set current balance - this is always the overall balance regardless of view mode
-      const overallBalance = [
-        ...receiptTransactions,
-        ...paymentTransactions,
-        ...ledgerTransactions
-      ].reduce((bal, entry) => bal + (entry.credit - entry.debit), 0);
+      // Set current balance
+      // For the overall balance, we need to calculate from all entries regardless of view mode
+      const allCashEntries = allEntries.filter(entry => entry.partyType === "cash");
+      const overallBalance = allCashEntries.reduce((bal, entry) => bal + (entry.credit - entry.debit), 0);
       setCurrentBalance(overallBalance);
-      
-      // Set closing balance
-      setClosingBalance(viewMode === "day" ? openingBalance + 
-        allTransactions.reduce((bal, entry) => bal + (entry.credit - entry.debit), 0) : overallBalance);
-      
     } catch (error) {
       console.error("Error loading cash entries:", error);
       toast({
@@ -323,18 +239,6 @@ const CashBook = () => {
         </div>
         
         <Card className="p-4">
-          {/* Opening Balance Row */}
-          {viewMode === "day" && (
-            <div className="mb-4 p-3 bg-gray-50 rounded-md">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-bold">Opening Balance:</span>
-                <span className={`font-bold ${openingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(Math.abs(openingBalance))} {openingBalance >= 0 ? 'Cr' : 'Dr'}
-                </span>
-              </div>
-            </div>
-          )}
-        
           {/* T-Account Style Cashbook */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Debit Side */}
@@ -356,15 +260,9 @@ const CashBook = () => {
                       entries
                         .filter(entry => entry.debit > 0)
                         .map((entry) => (
-                          <TableRow key={entry.id} className="hover:bg-gray-50">
+                          <TableRow key={`debit-${entry.id}`} className="hover:bg-gray-50">
                             <TableCell>{format(new Date(entry.date), "dd/MM/yyyy")}</TableCell>
-                            <TableCell>
-                              {entry.description}
-                              <span className="ml-2 text-xs text-gray-500">
-                                {entry.source === 'payment' ? '(Payment)' : 
-                                 entry.source === 'receipt' ? '(Receipt)' : '(Manual)'}
-                              </span>
-                            </TableCell>
+                            <TableCell>{entry.description}</TableCell>
                             <TableCell className="text-right font-medium">
                               {formatCurrency(entry.debit).replace('₹', '')}
                             </TableCell>
@@ -407,15 +305,9 @@ const CashBook = () => {
                       entries
                         .filter(entry => entry.credit > 0)
                         .map((entry) => (
-                          <TableRow key={entry.id} className="hover:bg-gray-50">
+                          <TableRow key={`credit-${entry.id}`} className="hover:bg-gray-50">
                             <TableCell>{format(new Date(entry.date), "dd/MM/yyyy")}</TableCell>
-                            <TableCell>
-                              {entry.description}
-                              <span className="ml-2 text-xs text-gray-500">
-                                {entry.source === 'payment' ? '(Payment)' : 
-                                 entry.source === 'receipt' ? '(Receipt)' : '(Manual)'}
-                              </span>
-                            </TableCell>
+                            <TableCell>{entry.description}</TableCell>
                             <TableCell className="text-right font-medium">
                               {formatCurrency(entry.credit).replace('₹', '')}
                             </TableCell>
@@ -440,12 +332,11 @@ const CashBook = () => {
             </div>
           </div>
           
-          {/* Closing Balance Row */}
           <div className="mt-6 bg-gray-100 p-4 rounded-md">
             <div className="flex justify-between items-center">
-              <span className="text-lg font-bold">Closing Balance:</span>
-              <span className={`text-lg font-bold ${closingBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(Math.abs(closingBalance))} {closingBalance >= 0 ? 'Cr' : 'Dr'}
+              <span className="text-lg font-bold">Balance:</span>
+              <span className={`text-lg font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {formatCurrency(Math.abs(currentBalance))} {currentBalance >= 0 ? 'Cr' : 'Dr'}
               </span>
             </div>
           </div>

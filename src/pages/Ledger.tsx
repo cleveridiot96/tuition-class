@@ -35,7 +35,7 @@ import {
   getLedgerEntries,
   getLedgerEntriesByParty,
   LedgerEntry as StorageLedgerEntry
-} from "@/services";
+} from "@/services/storageService";
 import {
   Tooltip,
   TooltipContent,
