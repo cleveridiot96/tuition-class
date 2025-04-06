@@ -1,3 +1,4 @@
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
@@ -19,4 +20,14 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: './', // This ensures all assets are loaded using relative paths
+  build: {
+    outDir: 'pendrive-app',
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks: undefined, // Prevents code splitting for a single bundle
+      }
+    }
+  }
 }));

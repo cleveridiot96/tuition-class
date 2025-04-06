@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,22 +8,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Save, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface PurchaseEntry {
-  id: string;
-  date: string;
-  lotNumber: string;
-  quantity: number;
-  agent: string;
-  location: string;
-  notes: string;
-}
+import { 
+  Purchase, 
+  getPurchases, 
+  addPurchase,
+  getAgents,
+  updateAgentBalance,
+  addInventoryItem
+} from "@/services/storageService";
 
 const Purchases = () => {
   const { toast } = useToast();
-  const [purchases, setPurchases] = useState<PurchaseEntry[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [agents, setAgents] = useState<{id: string, name: string}[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [formData, setFormData] = useState<Omit<PurchaseEntry, "id">>({
+  const [formData, setFormData] = useState<Omit<Purchase, "id">>({
     date: new Date().toISOString().split('T')[0],
     lotNumber: "",
     quantity: 0,
@@ -31,6 +30,12 @@ const Purchases = () => {
     location: "",
     notes: ""
   });
+
+  // Load purchases and agents on component mount
+  useEffect(() => {
+    setPurchases(getPurchases());
+    setAgents(getAgents().map(a => ({ id: a.id, name: a.name })));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -50,12 +55,33 @@ const Purchases = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const newPurchase: PurchaseEntry = {
+    const newPurchase: Purchase = {
       id: Date.now().toString(),
       ...formData
     };
     
-    setPurchases((prev) => [newPurchase, ...prev]);
+    // Add the purchase to storage
+    addPurchase(newPurchase);
+    
+    // Update the list in UI
+    setPurchases([newPurchase, ...purchases]);
+    
+    // Add to inventory
+    addInventoryItem({
+      id: Date.now().toString() + '-inv',
+      lotNumber: newPurchase.lotNumber,
+      quantity: newPurchase.quantity,
+      location: newPurchase.location,
+      dateAdded: newPurchase.date
+    });
+    
+    // Update agent balance - consider this a debit to agent (negative amount)
+    // In a real app, you would have pricing information here
+    const agentId = getAgents().find(a => a.name === newPurchase.agent)?.id;
+    if (agentId) {
+      // This is just a placeholder - in real usage, you would calculate the actual amount
+      updateAgentBalance(agentId, -5000);
+    }
     
     toast({
       title: "Purchase Added",
@@ -197,9 +223,11 @@ const Purchases = () => {
                       <SelectValue placeholder="एजेंट चुनें (Select Agent)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Arvind">Arvind</SelectItem>
-                      <SelectItem value="Ramesh">Ramesh</SelectItem>
-                      <SelectItem value="Suresh">Suresh</SelectItem>
+                      {agents.map(agent => (
+                        <SelectItem key={agent.id} value={agent.name}>
+                          {agent.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

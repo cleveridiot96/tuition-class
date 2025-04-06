@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,46 +7,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PlusCircle, Save, ArrowLeft, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Agent {
-  id: string;
-  name: string;
-  contactNumber: string;
-  address: string;
-  balance: number;
-}
+import { Agent, getAgents, addAgent } from "@/services/storageService";
 
 const Agents = () => {
   const { toast } = useToast();
-  const [agents, setAgents] = useState<Agent[]>([
-    {
-      id: "1",
-      name: "Arvind",
-      contactNumber: "9876543210",
-      address: "Chiplun",
-      balance: 25000
-    },
-    {
-      id: "2",
-      name: "Ramesh",
-      contactNumber: "8765432109",
-      address: "Mumbai",
-      balance: -10000
-    },
-    {
-      id: "3",
-      name: "Suresh",
-      contactNumber: "7654321098",
-      address: "Sawantwadi",
-      balance: 5000
-    }
-  ]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Omit<Agent, "id" | "balance">>({
     name: "",
     contactNumber: "",
     address: ""
   });
+
+  // Load agents on component mount
+  useEffect(() => {
+    setAgents(getAgents());
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -65,6 +41,10 @@ const Agents = () => {
       balance: 0
     };
     
+    // Add to storage
+    addAgent(newAgent);
+    
+    // Update UI
     setAgents((prev) => [...prev, newAgent]);
     
     toast({
