@@ -29,7 +29,7 @@ const Navigation = ({
       <header className={cn("bg-ag-green text-white p-4 flex items-center justify-between shadow-md", className)}>
         <div className="flex items-center">
           {showBackButton && (
-            <Tooltip>
+            <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <Button 
                   variant="ghost" 
@@ -48,7 +48,7 @@ const Navigation = ({
           
           {/* Always show home button unless explicitly disabled */}
           {showHomeButton && (
-            <Tooltip>
+            <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <Link to="/">
                   <Button 
