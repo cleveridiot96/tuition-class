@@ -13,18 +13,10 @@ export default defineConfig(({ mode }) => ({
     react({
       // Use minimal React features
       jsxImportSource: undefined,
-      // Use faster SWC transforms
-      swcOptions: {
-        jsc: {
-          transform: {
-            react: {
-              runtime: "automatic",
-              development: mode === 'development',
-              refresh: mode === 'development',
-            },
-          },
-        },
-      },
+      // SWC options are already integrated in the plugin
+      tsDecorators: false,
+      babel: mode === 'development' ? {} : false,
+      refresh: mode === 'development',
     }),
     mode === 'development' && componentTagger(),
   ].filter(Boolean),
