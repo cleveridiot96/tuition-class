@@ -13,9 +13,8 @@ export default defineConfig(({ mode }) => ({
     react({
       // Use minimal React features
       jsxImportSource: undefined,
-      // SWC options are already integrated in the plugin
+      // SWC options
       tsDecorators: false,
-      babel: mode === 'development' ? {} : false,
       refresh: mode === 'development',
     }),
     mode === 'development' && componentTagger(),
