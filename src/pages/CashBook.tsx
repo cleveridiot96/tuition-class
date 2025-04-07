@@ -35,7 +35,7 @@ const CashBook = () => {
   const [newEntry, setNewEntry] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
     description: "",
-    type: "debit", // debit = outflow, credit = inflow
+    type: "debit" as "debit" | "credit", // Explicitly type this as "debit" | "credit"
     amount: "",
   });
   const [totalDebit, setTotalDebit] = useState(0);
@@ -97,7 +97,7 @@ const CashBook = () => {
       updateCashBookEntry({
         ...editingEntry,
         description: newEntry.description,
-        type: newEntry.type,
+        type: newEntry.type as "debit" | "credit", // Ensure correct type
         amount: Number(newEntry.amount)
       });
       setEditingEntry(null);
@@ -107,7 +107,7 @@ const CashBook = () => {
         id: Date.now().toString(),
         date: newEntry.date,
         description: newEntry.description,
-        type: newEntry.type,
+        type: newEntry.type as "debit" | "credit", // Ensure correct type
         amount: Number(newEntry.amount)
       });
     }
@@ -116,7 +116,7 @@ const CashBook = () => {
     setNewEntry({
       date: format(selectedDate, "yyyy-MM-dd"),
       description: "",
-      type: "debit",
+      type: "debit" as "debit" | "credit", // Reset with explicit type
       amount: "",
     });
     loadEntries();
@@ -127,7 +127,7 @@ const CashBook = () => {
     setNewEntry({
       date: entry.date,
       description: entry.description,
-      type: entry.type,
+      type: entry.type as "debit" | "credit", // Fix the type here
       amount: entry.amount.toString(),
     });
   };
@@ -151,7 +151,7 @@ const CashBook = () => {
     setNewEntry({
       date: format(selectedDate, "yyyy-MM-dd"),
       description: "",
-      type: "debit",
+      type: "debit" as "debit" | "credit", // Reset with explicit type
       amount: "",
     });
   };
