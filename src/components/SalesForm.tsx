@@ -348,7 +348,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No Broker</SelectItem>
+                      <SelectItem value="none">No Broker</SelectItem>
                       {brokers.map((broker) => (
                         <SelectItem key={broker.id} value={broker.id}>
                           {broker.name}
