@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -8,6 +9,14 @@ import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getI
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
+
+interface ProfitData {
+  purchase: number;
+  sale: number;
+  profit: number;
+  date: string;
+}
 
 const Index = () => {
   const { toast } = useToast();
@@ -18,6 +27,9 @@ const Index = () => {
     stock: { mumbai: 0, chiplun: 0, sawantwadi: 0 }
   });
   const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
+  const [profitByTransaction, setProfitByTransaction] = useState<ProfitData[]>([]);
+  const [profitByMonth, setProfitByMonth] = useState<{month: string, profit: number}[]>([]);
+  const [totalProfit, setTotalProfit] = useState(0);
   
   const loadDashboardData = () => {
     // Ensure initial data is seeded
@@ -31,8 +43,51 @@ const Index = () => {
     const chiplunStock = inventory.filter(item => item.location === "Chiplun");
     const sawantwadiStock = inventory.filter(item => item.location === "Sawantwadi");
     
+    console.log("Purchases data loaded:", purchases);
     console.log("Sales data loaded:", sales);
-    console.log("Sales amount calculation:", sales.map(s => s.amount || 0));
+    
+    // Calculate profits by transaction
+    const transactionProfits: ProfitData[] = sales.map(sale => {
+      const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber);
+      const purchaseCost = relatedPurchase ? relatedPurchase.totalAfterExpenses : 0;
+      const saleRevenue = sale.totalAmount || 0;
+      const profit = saleRevenue - purchaseCost;
+      
+      return {
+        purchase: purchaseCost,
+        sale: saleRevenue,
+        profit: profit,
+        date: sale.date
+      };
+    });
+    
+    // Calculate profits by month
+    const profitsByMonth: Record<string, number> = {};
+    transactionProfits.forEach(transaction => {
+      if (!transaction.date) return;
+      
+      const date = parseISO(transaction.date);
+      const monthKey = format(date, 'yyyy-MM');
+      const monthDisplay = format(date, 'MMM yyyy');
+      
+      if (!profitsByMonth[monthKey]) {
+        profitsByMonth[monthKey] = {
+          profit: 0,
+          display: monthDisplay
+        };
+      }
+      
+      profitsByMonth[monthKey].profit += transaction.profit;
+    });
+    
+    const monthlyProfits = Object.entries(profitsByMonth).map(([key, data]) => ({
+      month: data.display,
+      profit: data.profit
+    })).sort((a, b) => a.month.localeCompare(b.month));
+    
+    setProfitByTransaction(transactionProfits);
+    setProfitByMonth(monthlyProfits);
+    setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
     
     setSummaryData({
       purchases: {
@@ -247,6 +302,75 @@ const Index = () => {
             <SummaryItem label="Sawantwadi" value={`${summaryData.stock.sawantwadi} bags`} />
           </div>
         </SummaryCard>
+        
+        {/* Profit and Loss Section */}
+        <Card className="mt-6 p-4 shadow-md">
+          <h3 className="text-lg font-semibold mb-4 border-b pb-1">Profit & Loss Statement</h3>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Transaction-wise profit */}
+            <div>
+              <h4 className="font-medium text-ag-brown mb-2">Transaction-wise</h4>
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 grid grid-cols-4 font-medium">
+                  <div className="p-2">Date</div>
+                  <div className="p-2">Purchase</div>
+                  <div className="p-2">Sale</div>
+                  <div className="p-2">Profit</div>
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  {profitByTransaction.length === 0 ? (
+                    <div className="p-2 text-center text-gray-500">No transaction data available</div>
+                  ) : (
+                    profitByTransaction.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-4 border-t">
+                        <div className="p-2">{format(parseISO(item.date), 'dd/MM/yy')}</div>
+                        <div className="p-2">{formatCurrency(item.purchase)}</div>
+                        <div className="p-2">{formatCurrency(item.sale)}</div>
+                        <div className={`p-2 ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(item.profit)}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* Monthly profit */}
+            <div>
+              <h4 className="font-medium text-ag-brown mb-2">Month-wise</h4>
+              <div className="border rounded-md overflow-hidden">
+                <div className="bg-gray-50 grid grid-cols-2 font-medium">
+                  <div className="p-2">Month</div>
+                  <div className="p-2">Profit</div>
+                </div>
+                <div className="max-h-40 overflow-y-auto">
+                  {profitByMonth.length === 0 ? (
+                    <div className="p-2 text-center text-gray-500">No monthly data available</div>
+                  ) : (
+                    profitByMonth.map((item, idx) => (
+                      <div key={idx} className="grid grid-cols-2 border-t">
+                        <div className="p-2">{item.month}</div>
+                        <div className={`p-2 ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatCurrency(item.profit)}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Total profit */}
+          <div className="mt-4 bg-gray-50 p-3 rounded-md flex justify-between items-center">
+            <span className="font-medium">Total Profit/Loss:</span>
+            <span className={`font-bold text-xl ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(totalProfit)}
+            </span>
+          </div>
+        </Card>
         
         <div className="mt-8 p-4 bg-white rounded-lg shadow text-center">
           <h3 className="text-lg font-semibold text-ag-brown-dark mb-2">Offline Mode</h3>

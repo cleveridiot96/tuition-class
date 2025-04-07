@@ -20,12 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 import { getAgents, getBrokers, getCustomers, getTransporters, getPurchases, getSales, getPayments, getReceipts } from "@/services/storageService";
 
 const Ledger = () => {
   const [activeTab, setActiveTab] = useState("agents");
   const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredData, setFilteredData] = useState<any[]>([]);
   const [partiesWithTransactions, setPartiesWithTransactions] = useState<Record<string, any[]>>({
     agents: [],
     brokers: [],
@@ -44,6 +48,9 @@ const Ledger = () => {
     const sales = getSales();
     const payments = getPayments();
     const receipts = getReceipts();
+    
+    console.log("Loaded purchases:", purchases);
+    console.log("Loaded sales:", sales);
     
     // Process agent transactions
     const agentTransactions = agents.map(agent => {
@@ -197,12 +204,35 @@ const Ledger = () => {
     
     // Set initial ledger data based on active tab
     setLedgerData(agentTransactions);
+    setFilteredData(agentTransactions);
   }, []);
   
   // Update ledger data when tab changes
   useEffect(() => {
-    setLedgerData(partiesWithTransactions[activeTab as keyof typeof partiesWithTransactions]);
+    const newData = partiesWithTransactions[activeTab as keyof typeof partiesWithTransactions];
+    setLedgerData(newData);
+    filterData(newData, searchTerm);
   }, [activeTab, partiesWithTransactions]);
+  
+  // Filter data when search term changes
+  const filterData = (data: any[], term: string) => {
+    if (!term.trim()) {
+      setFilteredData(data);
+      return;
+    }
+    
+    const filtered = data.filter(party => 
+      party.name.toLowerCase().includes(term.toLowerCase()) ||
+      party.contactNumber?.toLowerCase().includes(term.toLowerCase()) ||
+      party.address?.toLowerCase().includes(term.toLowerCase())
+    );
+    
+    setFilteredData(filtered);
+  };
+  
+  useEffect(() => {
+    filterData(ledgerData, searchTerm);
+  }, [searchTerm]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
@@ -215,20 +245,32 @@ const Ledger = () => {
         <Card>
           <CardContent className="p-6">
             <Tabs defaultValue="agents" value={activeTab} onValueChange={handleTabChange}>
-              <TabsList className="grid grid-cols-4 w-full mb-6">
-                <TabsTrigger value="agents" className="data-[state=active]:bg-F2FCE2">
-                  Agents
-                </TabsTrigger>
-                <TabsTrigger value="brokers" className="data-[state=active]:bg-F2FCE2">
-                  Brokers
-                </TabsTrigger>
-                <TabsTrigger value="customers" className="data-[state=active]:bg-F2FCE2">
-                  Customers
-                </TabsTrigger>
-                <TabsTrigger value="transporters" className="data-[state=active]:bg-F2FCE2">
-                  Transporters
-                </TabsTrigger>
-              </TabsList>
+              <div className="flex justify-between items-center mb-6">
+                <TabsList className="grid grid-cols-4 w-auto">
+                  <TabsTrigger value="agents" className="data-[state=active]:bg-F2FCE2">
+                    Agents
+                  </TabsTrigger>
+                  <TabsTrigger value="brokers" className="data-[state=active]:bg-F2FCE2">
+                    Brokers
+                  </TabsTrigger>
+                  <TabsTrigger value="customers" className="data-[state=active]:bg-F2FCE2">
+                    Customers
+                  </TabsTrigger>
+                  <TabsTrigger value="transporters" className="data-[state=active]:bg-F2FCE2">
+                    Transporters
+                  </TabsTrigger>
+                </TabsList>
+                
+                <div className="relative w-full max-w-xs">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search parties..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+              </div>
               
               {['agents', 'brokers', 'customers', 'transporters'].map((tabValue) => (
                 <TabsContent key={tabValue} value={tabValue}>
@@ -243,14 +285,14 @@ const Ledger = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {ledgerData.length === 0 ? (
+                        {filteredData.length === 0 ? (
                           <TableRow>
                             <TableCell colSpan={4} className="text-center py-4 text-gray-500">
-                              No {tabValue} with transactions found
+                              {searchTerm ? "No matching parties found" : `No ${tabValue} with transactions found`}
                             </TableCell>
                           </TableRow>
                         ) : (
-                          ledgerData.map((party) => (
+                          filteredData.map((party) => (
                             <React.Fragment key={party.id}>
                               <TableRow className="bg-muted/50">
                                 <TableCell className="font-medium">{party.name}</TableCell>
@@ -262,45 +304,62 @@ const Ledger = () => {
                                 </TableCell>
                               </TableRow>
                               
-                              {/* Transaction details */}
+                              {/* Transaction details in T-account format */}
                               <TableRow>
                                 <TableCell colSpan={4} className="p-0 border-b-0">
-                                  <Table className="border-collapse">
-                                    <TableHeader>
-                                      <TableRow className="bg-gray-50">
-                                        <TableHead className="py-2">Date</TableHead>
-                                        <TableHead className="py-2">Description</TableHead>
-                                        <TableHead className="py-2 text-right">Debit</TableHead>
-                                        <TableHead className="py-2 text-right">Credit</TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {party.transactions.map((transaction: any, idx: number) => (
-                                        <TableRow key={idx} className="border-t border-gray-100">
-                                          <TableCell className="py-2">{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
-                                          <TableCell className="py-2">{transaction.description}</TableCell>
-                                          <TableCell className="py-2 text-right">
-                                            {transaction.type === 'debit' ? `₹${transaction.amount.toLocaleString()}` : ''}
-                                          </TableCell>
-                                          <TableCell className="py-2 text-right">
-                                            {transaction.type === 'credit' ? `₹${transaction.amount.toLocaleString()}` : ''}
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                      {/* Balance row */}
-                                      <TableRow className="border-t border-gray-300 bg-gray-50 font-medium">
-                                        <TableCell colSpan={2} className="py-2 text-right">Balance</TableCell>
-                                        <TableCell className={`py-2 text-right ${party.balance > 0 ? 'text-red-600' : ''}`}>
-                                          {party.balance > 0 ? `₹${party.balance.toLocaleString()}` : ''}
-                                        </TableCell>
-                                        <TableCell className={`py-2 text-right ${party.balance < 0 ? 'text-green-600' : ''}`}>
-                                          {party.balance < 0 ? `₹${Math.abs(party.balance).toLocaleString()}` : ''}
-                                        </TableCell>
-                                      </TableRow>
-                                    </TableBody>
-                                  </Table>
+                                  <div className="border rounded-md my-2 overflow-hidden">
+                                    <div className="grid grid-cols-2 border-b">
+                                      <div className="p-2 font-medium bg-gray-50 border-r text-center">Debit</div>
+                                      <div className="p-2 font-medium bg-gray-50 text-center">Credit</div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 min-h-[100px]">
+                                      {/* Debit side */}
+                                      <div className="border-r">
+                                        {party.transactions
+                                          .filter((t: any) => t.type === 'debit')
+                                          .map((transaction: any, idx: number) => (
+                                            <div key={`debit-${idx}`} className="grid grid-cols-3 border-b p-2">
+                                              <div>{format(new Date(transaction.date), 'dd/MM/yyyy')}</div>
+                                              <div>{transaction.description}</div>
+                                              <div className="text-right">₹{transaction.amount.toLocaleString()}</div>
+                                            </div>
+                                          ))}
+                                        {/* Total debit */}
+                                        {party.balance > 0 && (
+                                          <div className="grid grid-cols-3 p-2 bg-gray-50 font-medium">
+                                            <div></div>
+                                            <div>Balance</div>
+                                            <div className="text-right text-red-600">₹{party.balance.toLocaleString()}</div>
+                                          </div>
+                                        )}
+                                      </div>
+                                      
+                                      {/* Credit side */}
+                                      <div>
+                                        {party.transactions
+                                          .filter((t: any) => t.type === 'credit')
+                                          .map((transaction: any, idx: number) => (
+                                            <div key={`credit-${idx}`} className="grid grid-cols-3 border-b p-2">
+                                              <div>{format(new Date(transaction.date), 'dd/MM/yyyy')}</div>
+                                              <div>{transaction.description}</div>
+                                              <div className="text-right">₹{transaction.amount.toLocaleString()}</div>
+                                            </div>
+                                          ))}
+                                        {/* Total credit */}
+                                        {party.balance < 0 && (
+                                          <div className="grid grid-cols-3 p-2 bg-gray-50 font-medium">
+                                            <div></div>
+                                            <div>Balance</div>
+                                            <div className="text-right text-green-600">₹{Math.abs(party.balance).toLocaleString()}</div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </TableCell>
                               </TableRow>
+                              
                               {/* Spacer row */}
                               <TableRow>
                                 <TableCell colSpan={4} className="h-4"></TableCell>
