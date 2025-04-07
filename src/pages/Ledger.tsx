@@ -1,335 +1,323 @@
 
 import React, { useState, useEffect } from "react";
+import { format } from "date-fns";
 import Navigation from "@/components/Navigation";
-import { Card } from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, X, RefreshCcw } from "lucide-react";
-import { 
-  getAgents, 
-  getTransporters, 
-  getSuppliers, 
-  getCustomers, 
-  getBrokers, 
-  getLedgerEntries,
-  getLedgerEntriesByParty,
-  LedgerEntry as StorageLedgerEntry
-} from "@/services/storageService";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useToast } from "@/hooks/use-toast";
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
-interface LedgerEntry {
-  id: string;
-  date: string;
-  partyId: string;
-  partyName: string;
-  partyType: 'agent' | 'supplier' | 'customer' | 'broker' | 'transporter';
-  description: string;
-  debit: number;
-  credit: number;
-  balance: number;
-  referenceId?: string;
-  referenceType?: string;
-}
-
-interface Party {
-  id: string;
-  name: string;
-  type: string;
-}
+import { getAgents, getBrokers, getCustomers, getTransporters, getPurchases, getSales, getPayments, getReceipts } from "@/services/storageService";
 
 const Ledger = () => {
-  const [parties, setParties] = useState<Party[]>([]);
-  const [selectedPartyId, setSelectedPartyId] = useState<string>('');
-  const [selectedPartyType, setSelectedPartyType] = useState<string>('agent');
-  const [ledgerEntries, setLedgerEntries] = useState<StorageLedgerEntry[]>([]);
-  const [currentBalance, setCurrentBalance] = useState<number>(0);
-  const { toast } = useToast();
-  
+  const [activeTab, setActiveTab] = useState("agents");
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [partiesWithTransactions, setPartiesWithTransactions] = useState<Record<string, any[]>>({
+    agents: [],
+    brokers: [],
+    customers: [],
+    transporters: []
+  });
+
   useEffect(() => {
-    loadParties('agent');
+    // Fetch all data
+    const agents = getAgents();
+    const brokers = getBrokers();
+    const customers = getCustomers();
+    const transporters = getTransporters();
+    
+    const purchases = getPurchases();
+    const sales = getSales();
+    const payments = getPayments();
+    const receipts = getReceipts();
+    
+    // Process agent transactions
+    const agentTransactions = agents.map(agent => {
+      const relatedPurchases = purchases.filter(p => p.agentId === agent.id);
+      const relatedPayments = payments.filter(p => p.partyId === agent.id);
+      
+      const totalPurchases = relatedPurchases.reduce((sum, p) => sum + p.totalAfterExpenses, 0);
+      const totalPayments = relatedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const balance = totalPurchases - totalPayments;
+      
+      return {
+        ...agent,
+        totalPurchases,
+        totalPayments,
+        balance,
+        transactions: [
+          ...relatedPurchases.map(p => ({
+            date: p.date,
+            description: `Purchase: ${p.lotNumber}`,
+            amount: p.totalAfterExpenses,
+            type: 'debit'
+          })),
+          ...relatedPayments.map(p => ({
+            date: p.date,
+            description: `Payment: ${p.reference || 'Cash'}`,
+            amount: p.amount,
+            type: 'credit'
+          }))
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      };
+    }).filter(agent => agent.transactions.length > 0);
+    
+    // Process broker transactions
+    const brokerTransactions = brokers.map(broker => {
+      const relatedSales = sales.filter(s => s.brokerId === broker.id);
+      const relatedPayments = payments.filter(p => p.partyId === broker.id);
+      const relatedReceipts = receipts.filter(r => r.customerId === broker.id);
+      
+      const totalSales = relatedSales.reduce((sum, s) => sum + s.totalAmount * (broker.commissionRate / 100), 0);
+      const totalPayments = relatedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalReceipts = relatedReceipts.reduce((sum, r) => sum + r.amount, 0);
+      const balance = totalSales - totalPayments + totalReceipts;
+      
+      return {
+        ...broker,
+        totalSales,
+        totalPayments,
+        totalReceipts,
+        balance,
+        transactions: [
+          ...relatedSales.map(s => ({
+            date: s.date,
+            description: `Sale Commission: ${s.lotNumber}`,
+            amount: s.totalAmount * (broker.commissionRate / 100),
+            type: 'debit'
+          })),
+          ...relatedPayments.map(p => ({
+            date: p.date,
+            description: `Payment: ${p.reference || 'Cash'}`,
+            amount: p.amount,
+            type: 'credit'
+          })),
+          ...relatedReceipts.map(r => ({
+            date: r.date,
+            description: `Receipt: ${r.reference || 'Cash'}`,
+            amount: r.amount,
+            type: 'debit'
+          }))
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      };
+    }).filter(broker => broker.transactions.length > 0);
+    
+    // Process customer transactions
+    const customerTransactions = customers.map(customer => {
+      const relatedSales = sales.filter(s => s.customerId === customer.id);
+      const relatedReceipts = receipts.filter(r => r.customerId === customer.id);
+      
+      const totalSales = relatedSales.reduce((sum, s) => sum + s.totalAmount, 0);
+      const totalReceipts = relatedReceipts.reduce((sum, r) => sum + r.amount, 0);
+      const balance = totalSales - totalReceipts;
+      
+      return {
+        ...customer,
+        totalSales,
+        totalReceipts,
+        balance,
+        transactions: [
+          ...relatedSales.map(s => ({
+            date: s.date,
+            description: `Sale: ${s.lotNumber}`,
+            amount: s.totalAmount,
+            type: 'debit'
+          })),
+          ...relatedReceipts.map(r => ({
+            date: r.date,
+            description: `Receipt: ${r.reference || 'Cash'}`,
+            amount: r.amount,
+            type: 'credit'
+          }))
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      };
+    }).filter(customer => customer.transactions.length > 0);
+    
+    // Process transporter transactions
+    const transporterTransactions = transporters.map(transporter => {
+      const relatedPurchases = purchases.filter(p => p.transporterId === transporter.id);
+      const relatedSales = sales.filter(s => s.transporterId === transporter.id);
+      const relatedPayments = payments.filter(p => p.partyId === transporter.id);
+      
+      const totalPurchaseTransport = relatedPurchases.reduce((sum, p) => sum + p.transportCost, 0);
+      const totalSaleTransport = relatedSales.reduce((sum, s) => sum + (s.transportCost || 0), 0);
+      const totalTransport = totalPurchaseTransport + totalSaleTransport;
+      const totalPayments = relatedPayments.reduce((sum, p) => sum + p.amount, 0);
+      const balance = totalTransport - totalPayments;
+      
+      return {
+        ...transporter,
+        totalTransport,
+        totalPayments,
+        balance,
+        transactions: [
+          ...relatedPurchases.map(p => ({
+            date: p.date,
+            description: `Transport: ${p.lotNumber}`,
+            amount: p.transportCost,
+            type: 'debit'
+          })),
+          ...relatedSales.map(s => ({
+            date: s.date,
+            description: `Transport: ${s.lotNumber}`,
+            amount: s.transportCost || 0,
+            type: 'debit'
+          })),
+          ...relatedPayments.map(p => ({
+            date: p.date,
+            description: `Payment: ${p.reference || 'Cash'}`,
+            amount: p.amount,
+            type: 'credit'
+          }))
+        ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      };
+    }).filter(transporter => transporter.transactions.length > 0);
+    
+    // Update state
+    setPartiesWithTransactions({
+      agents: agentTransactions,
+      brokers: brokerTransactions,
+      customers: customerTransactions,
+      transporters: transporterTransactions
+    });
+    
+    // Set initial ledger data based on active tab
+    setLedgerData(agentTransactions);
   }, []);
   
+  // Update ledger data when tab changes
   useEffect(() => {
-    if (selectedPartyId) {
-      loadLedgerData();
-    } else {
-      setLedgerEntries([]);
-      setCurrentBalance(0);
-    }
-  }, [selectedPartyId, parties]);
+    setLedgerData(partiesWithTransactions[activeTab as keyof typeof partiesWithTransactions]);
+  }, [activeTab, partiesWithTransactions]);
   
-  const loadLedgerData = () => {
-    const selectedParty = parties.find(p => p.id === selectedPartyId);
-    if (selectedParty) {
-      try {
-        console.log("Loading ledger for", selectedParty.name, selectedParty.type);
-        const entries = getLedgerEntriesByParty(selectedParty.name, selectedParty.type);
-        console.log("Found entries:", entries);
-        setLedgerEntries(entries);
-        
-        // Calculate running balance
-        let runningBalance = 0;
-        const entriesWithBalance = entries.map(entry => {
-          // For tally-like format: add to running balance
-          runningBalance += entry.credit - entry.debit;
-          return {...entry, balance: runningBalance};
-        });
-        
-        setLedgerEntries(entriesWithBalance);
-        setCurrentBalance(runningBalance);
-      } catch (error) {
-        console.error("Error loading ledger data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load ledger data. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-  
-  const loadParties = (type: string) => {
-    let partyList: any[] = [];
-    
-    switch (type) {
-      case 'agent':
-        partyList = getAgents();
-        break;
-      case 'supplier':
-        partyList = getSuppliers();
-        break;
-      case 'customer':
-        partyList = getCustomers();
-        break;
-      case 'broker':
-        partyList = getBrokers();
-        break;
-      case 'transporter':
-        partyList = getTransporters();
-        break;
-      default:
-        partyList = [];
-    }
-    
-    setParties(partyList.map(p => ({ id: p.id, name: p.name, type })));
-    setSelectedPartyId('');
-    setSelectedPartyType(type);
-  };
-  
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 2
-    }).format(amount);
-  };
-
-  const clearSelectedParty = () => {
-    setSelectedPartyId('');
-    setLedgerEntries([]);
-    setCurrentBalance(0);
-  };
-
-  const refreshLedger = () => {
-    if (selectedPartyId) {
-      loadLedgerData();
-      toast({
-        title: "Refreshed",
-        description: "Ledger data has been refreshed",
-      });
-    }
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-ag-beige">
-        <Navigation title="Ledger" showBackButton showHomeButton />
-        <div className="container mx-auto px-4 py-6">
-          <Tabs defaultValue="agent" className="w-full" onValueChange={loadParties}>
-            <TabsList className="grid grid-cols-5 mb-6">
-              <TabsTrigger 
-                value="agent" 
-                className={`text-lg py-3 ${selectedPartyType === 'agent' ? 'bg-primary text-primary-foreground' : ''}`}
-              >
-                Agents
-              </TabsTrigger>
-              <TabsTrigger 
-                value="supplier" 
-                className={`text-lg py-3 ${selectedPartyType === 'supplier' ? 'bg-primary text-primary-foreground' : ''}`}
-              >
-                Suppliers
-              </TabsTrigger>
-              <TabsTrigger 
-                value="customer" 
-                className={`text-lg py-3 ${selectedPartyType === 'customer' ? 'bg-primary text-primary-foreground' : ''}`}
-              >
-                Customers
-              </TabsTrigger>
-              <TabsTrigger 
-                value="broker" 
-                className={`text-lg py-3 ${selectedPartyType === 'broker' ? 'bg-primary text-primary-foreground' : ''}`}
-              >
-                Brokers
-              </TabsTrigger>
-              <TabsTrigger 
-                value="transporter" 
-                className={`text-lg py-3 ${selectedPartyType === 'transporter' ? 'bg-primary text-primary-foreground' : ''}`}
-              >
-                Transporters
-              </TabsTrigger>
-            </TabsList>
-            
-            <div className="flex items-end gap-4 mb-6">
-              <div className="flex-1 relative">
-                <Select value={selectedPartyId} onValueChange={setSelectedPartyId}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <SelectTrigger className="text-lg p-6">
-                        <SelectValue placeholder="Select Party" />
-                      </SelectTrigger>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Choose a party to view their ledger</p>
-                    </TooltipContent>
-                  </Tooltip>
-                  <SelectContent>
-                    {parties.map((party) => (
-                      <SelectItem key={party.id} value={party.id}>
-                        {party.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedPartyId && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-12 top-1/2 -translate-y-1/2"
-                    onClick={clearSelectedParty}
-                  >
-                    <X size={18} />
-                  </Button>
-                )}
-              </div>
-              <Button className="p-6 mr-2" onClick={refreshLedger}>
-                <RefreshCcw size={24} className="mr-2" /> Refresh
-              </Button>
-              <Button className="p-6">
-                <Search size={24} className="mr-2" /> Search
-              </Button>
-            </div>
-            
-            {selectedPartyId ? (
-              <Card className="p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">
-                    Ledger for {parties.find(p => p.id === selectedPartyId)?.name || "Unknown Party"}
-                  </h3>
-                  <div className="text-right">
-                    <p className="text-sm text-ag-brown">Current Balance:</p>
-                    <p className={`font-bold text-lg ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(Math.abs(currentBalance))}
-                      <span className="ml-1">{currentBalance >= 0 ? 'Cr' : 'Dr'}</span>
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-100">
-                        <TableHead className="whitespace-nowrap">Date</TableHead>
-                        <TableHead className="whitespace-nowrap">Particulars</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Debit (Dr)</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Credit (Cr)</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Running Balance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ledgerEntries.length > 0 ? (
-                        ledgerEntries.map((entry, index) => {
-                          // Calculate running balance up to this point
-                          return (
-                            <TableRow key={entry.id} className="hover:bg-gray-50">
-                              <TableCell className="whitespace-nowrap">{new Date(entry.date).toLocaleDateString()}</TableCell>
-                              <TableCell>{entry.description}</TableCell>
-                              <TableCell className="text-right font-medium">
-                                {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">
-                                {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                              </TableCell>
-                              <TableCell className={`text-right font-bold ${entry.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatCurrency(Math.abs(entry.balance))}
-                                <span className="ml-1 text-xs">{entry.balance >= 0 ? 'Cr' : 'Dr'}</span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      ) : (
+    <div className="min-h-screen bg-ag-beige">
+      <Navigation title="Ledger" showBackButton />
+      <div className="container mx-auto px-4 py-6">
+        <Card>
+          <CardContent className="p-6">
+            <Tabs defaultValue="agents" value={activeTab} onValueChange={handleTabChange}>
+              <TabsList className="grid grid-cols-4 w-full mb-6">
+                <TabsTrigger value="agents" className="data-[state=active]:bg-F2FCE2">
+                  Agents
+                </TabsTrigger>
+                <TabsTrigger value="brokers" className="data-[state=active]:bg-F2FCE2">
+                  Brokers
+                </TabsTrigger>
+                <TabsTrigger value="customers" className="data-[state=active]:bg-F2FCE2">
+                  Customers
+                </TabsTrigger>
+                <TabsTrigger value="transporters" className="data-[state=active]:bg-F2FCE2">
+                  Transporters
+                </TabsTrigger>
+              </TabsList>
+              
+              {['agents', 'brokers', 'customers', 'transporters'].map((tabValue) => (
+                <TabsContent key={tabValue} value={tabValue}>
+                  <div className="space-y-8">
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={5} className="text-center py-4">
-                            No transactions found
-                          </TableCell>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Address</TableHead>
+                          <TableHead className="text-right">Balance</TableHead>
                         </TableRow>
-                      )}
-                      {ledgerEntries.length > 0 && (
-                        <TableRow className="font-bold border-t-2 bg-gray-50">
-                          <TableCell colSpan={2} className="text-right">Total</TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(ledgerEntries.reduce((sum, entry) => sum + entry.debit, 0))}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatCurrency(ledgerEntries.reduce((sum, entry) => sum + entry.credit, 0))}
-                          </TableCell>
-                          <TableCell className={`text-right ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(Math.abs(currentBalance))}
-                            <span className="ml-1 text-xs">{currentBalance >= 0 ? 'Cr' : 'Dr'}</span>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-              </Card>
-            ) : (
-              <Card className="p-6 text-center">
-                <p className="text-xl text-ag-brown">
-                  Please select a party to view their ledger
-                </p>
-              </Card>
-            )}
-          </Tabs>
-        </div>
+                      </TableHeader>
+                      <TableBody>
+                        {ledgerData.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                              No {tabValue} with transactions found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          ledgerData.map((party) => (
+                            <React.Fragment key={party.id}>
+                              <TableRow className="bg-muted/50">
+                                <TableCell className="font-medium">{party.name}</TableCell>
+                                <TableCell>{party.contactNumber}</TableCell>
+                                <TableCell>{party.address}</TableCell>
+                                <TableCell className={`text-right font-bold ${party.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                  ₹{Math.abs(party.balance).toLocaleString()}
+                                  {party.balance > 0 ? ' DR' : party.balance < 0 ? ' CR' : ''}
+                                </TableCell>
+                              </TableRow>
+                              
+                              {/* Transaction details */}
+                              <TableRow>
+                                <TableCell colSpan={4} className="p-0 border-b-0">
+                                  <Table className="border-collapse">
+                                    <TableHeader>
+                                      <TableRow className="bg-gray-50">
+                                        <TableHead className="py-2">Date</TableHead>
+                                        <TableHead className="py-2">Description</TableHead>
+                                        <TableHead className="py-2 text-right">Debit</TableHead>
+                                        <TableHead className="py-2 text-right">Credit</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {party.transactions.map((transaction: any, idx: number) => (
+                                        <TableRow key={idx} className="border-t border-gray-100">
+                                          <TableCell className="py-2">{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
+                                          <TableCell className="py-2">{transaction.description}</TableCell>
+                                          <TableCell className="py-2 text-right">
+                                            {transaction.type === 'debit' ? `₹${transaction.amount.toLocaleString()}` : ''}
+                                          </TableCell>
+                                          <TableCell className="py-2 text-right">
+                                            {transaction.type === 'credit' ? `₹${transaction.amount.toLocaleString()}` : ''}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                      {/* Balance row */}
+                                      <TableRow className="border-t border-gray-300 bg-gray-50 font-medium">
+                                        <TableCell colSpan={2} className="py-2 text-right">Balance</TableCell>
+                                        <TableCell className={`py-2 text-right ${party.balance > 0 ? 'text-red-600' : ''}`}>
+                                          {party.balance > 0 ? `₹${party.balance.toLocaleString()}` : ''}
+                                        </TableCell>
+                                        <TableCell className={`py-2 text-right ${party.balance < 0 ? 'text-green-600' : ''}`}>
+                                          {party.balance < 0 ? `₹${Math.abs(party.balance).toLocaleString()}` : ''}
+                                        </TableCell>
+                                      </TableRow>
+                                    </TableBody>
+                                  </Table>
+                                </TableCell>
+                              </TableRow>
+                              {/* Spacer row */}
+                              <TableRow>
+                                <TableCell colSpan={4} className="h-4"></TableCell>
+                              </TableRow>
+                            </React.Fragment>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
 

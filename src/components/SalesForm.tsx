@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { RefreshCw } from "lucide-react";
 import { 
   Form, 
   FormControl, 
@@ -33,8 +34,8 @@ import {
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   lotNumber: z.string().min(1, "Lot number is required"),
-  billNumber: z.string().min(1, "Bill number is required"),
-  billAmount: z.coerce.number().min(0, "Bill amount is required"),
+  billNumber: z.string().optional(),
+  billAmount: z.coerce.number().optional(),
   customerId: z.string().min(1, "Customer is required"),
   quantity: z.coerce.number().min(1, "Quantity is required"),
   netWeight: z.coerce.number().min(1, "Net weight is required"),
@@ -61,6 +62,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [transportCost, setTransportCost] = useState<number>(0);
   const [netAmount, setNetAmount] = useState<number>(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -76,7 +78,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
       date: format(new Date(), 'yyyy-MM-dd'),
       lotNumber: "",
       billNumber: "",
-      billAmount: 0,
+      billAmount: undefined,
       customerId: "",
       quantity: 0,
       netWeight: 0,
@@ -92,15 +94,25 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
   // Load data
   useEffect(() => {
     // Immediately update inventory when the component loads
-    refreshInventory();
+    refreshData();
+    
+    // Set up auto-refresh every 60 seconds
+    const intervalId = setInterval(() => {
+      refreshData();
+    }, 60000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const refreshData = () => {
+    setIsRefreshing(true);
+    const currentInventory = getInventory().filter(item => item.quantity > 0);
+    console.log("Available inventory:", currentInventory);
+    setInventory(currentInventory);
     setCustomers(getCustomers());
     setBrokers(getBrokers());
     setTransporters(getTransporters());
-  }, []);
-
-  const refreshInventory = () => {
-    const currentInventory = getInventory().filter(item => item.quantity > 0);
-    setInventory(currentInventory);
+    setIsRefreshing(false);
   };
 
   // Auto-populate fields when lot number changes
@@ -141,10 +153,13 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
       totalAmount,
       transportCost,
       netAmount,
+      billAmount: data.billAmount || 0,
       // Ensure amount field is set - this is crucial for the dashboard summary
       amount: totalAmount,
       id: initialData?.id || Date.now().toString()
     };
+    
+    console.log("Submitting sale data:", submitData);
     
     // Submit the data
     onSubmit(submitData);
@@ -152,6 +167,20 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
 
   return (
     <Card className="p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">Sale Details</h2>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-1"
+          onClick={refreshData}
+          disabled={isRefreshing}
+        >
+          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+          Refresh Data
+        </Button>
+      </div>
+      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -160,7 +189,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Date</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
@@ -174,7 +203,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="lotNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Lot Number</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Lot Number</FormLabel>
                   <Select 
                     onValueChange={(value) => {
                       field.onChange(value);
@@ -188,11 +217,15 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {inventory.map((item) => (
-                        <SelectItem key={item.id} value={item.lotNumber}>
-                          {item.lotNumber} - {item.quantity} bags
-                        </SelectItem>
-                      ))}
+                      {inventory.length === 0 ? (
+                        <SelectItem value="no-lots">No lots available</SelectItem>
+                      ) : (
+                        inventory.map((item) => (
+                          <SelectItem key={item.id} value={item.lotNumber}>
+                            {item.lotNumber} - {item.quantity} bags
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -205,7 +238,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="billNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bill Number</FormLabel>
+                  <FormLabel>Bill Number (Optional)</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Enter bill number" />
                   </FormControl>
@@ -219,9 +252,16 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="billAmount"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Bill Amount (₹)</FormLabel>
+                  <FormLabel>Bill Amount (₹) (Optional)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} placeholder="0.00" step="0.01" />
+                    <Input 
+                      type="number" 
+                      {...field} 
+                      value={field.value === undefined ? '' : field.value}
+                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+                      placeholder="0.00" 
+                      step="0.01" 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -233,7 +273,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="customerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Customer</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Customer</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -258,7 +298,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="quantity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Quantity (Bags)</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Quantity (Bags)</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} placeholder="0" />
                   </FormControl>
@@ -272,7 +312,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="netWeight"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Net Weight (kg)</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Net Weight (kg)</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} placeholder="0.00" />
                   </FormControl>
@@ -286,7 +326,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="rate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Rate per kg (₹)</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Rate per kg (₹)</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} placeholder="0.00" step="0.01" />
                   </FormControl>
@@ -326,7 +366,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="transporterId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Transporter</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Transporter</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -351,7 +391,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="transportRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Transport Rate per kg (₹)</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Transport Rate per kg (₹)</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} placeholder="0.00" step="0.01" />
                   </FormControl>
@@ -365,7 +405,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel><span className="text-red-500">*</span> Location</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>

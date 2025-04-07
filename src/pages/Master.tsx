@@ -1,579 +1,648 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Navigation from "@/components/Navigation";
-import { Card } from "@/components/ui/card";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
-} from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { PlusCircle, Save, Edit, Trash, MapPin } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  getAgents, 
-  addAgent, 
-  updateAgent, 
-  deleteAgent,
-  getSuppliers,
-  addSupplier,
-  updateSupplier,
-  deleteSupplier,
-  getCustomers,
-  addCustomer,
-  updateCustomer,
-  deleteCustomer,
-  getBrokers,
-  addBroker,
-  updateBroker,
-  deleteBroker,
-  getTransporters,
-  addTransporter,
-  updateTransporter,
-  deleteTransporter,
-  Agent,
-  Supplier,
-  Customer,
-  Broker,
-  Transporter
-} from "@/services/storageService";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
-interface PartyFormData {
-  id: string;
-  name: string;
-  address: string;
-}
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+
+import {
+  getAgents,
+  getBrokers,
+  getCustomers,
+  getTransporters,
+  addAgent,
+  addBroker,
+  addCustomer,
+  addTransporter
+} from "@/services/storageService";
 
 const Master = () => {
   const { toast } = useToast();
-  const [currentTab, setCurrentTab] = useState("agents");
-  const [parties, setParties] = useState<(Agent | Supplier | Customer | Broker | Transporter)[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<PartyFormData>({
-    id: "",
+  const [activeTab, setActiveTab] = useState("agents");
+  
+  // Form states
+  const [agentForm, setAgentForm] = useState({
     name: "",
-    address: ""
+    contactNumber: "",
+    address: "",
   });
-  const [deletedParties, setDeletedParties] = useState<(Agent | Supplier | Customer | Broker | Transporter)[]>([]);
-  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   
-  useEffect(() => {
-    loadParties(currentTab);
-  }, [currentTab]);
+  const [brokerForm, setBrokerForm] = useState({
+    name: "",
+    contactNumber: "",
+    address: "",
+    commissionRate: 1,
+  });
   
-  const loadParties = (type: string) => {
-    let partyList: (Agent | Supplier | Customer | Broker | Transporter)[] = [];
-    
-    switch (type) {
-      case "agents":
-        partyList = getAgents();
-        break;
-      case "suppliers":
-        partyList = getSuppliers();
-        break;
-      case "customers":
-        partyList = getCustomers();
-        break;
-      case "brokers":
-        partyList = getBrokers();
-        break;
-      case "transporters":
-        partyList = getTransporters();
-        break;
-      default:
-        partyList = [];
-    }
-    
-    setParties(partyList);
-  };
+  const [customerForm, setCustomerForm] = useState({
+    name: "",
+    contactNumber: "",
+    address: "",
+  });
   
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [transporterForm, setTransporterForm] = useState({
+    name: "",
+    contactNumber: "",
+    address: "",
+  });
+  
+  // Data states
+  const [agents, setAgents] = useState(getAgents());
+  const [brokers, setBrokers] = useState(getBrokers());
+  const [customers, setCustomers] = useState(getCustomers());
+  const [transporters, setTransporters] = useState(getTransporters());
+  
+  // Form handlers
+  const handleAgentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setAgentForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
   
-  const handleAddEdit = () => {
-    setIsEditing(false);
-    setFormData({
-      id: "",
-      name: "",
-      address: ""
-    });
-    setShowForm(true);
+  const handleBrokerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setBrokerForm(prev => ({
+      ...prev,
+      [name]: name === 'commissionRate' ? parseFloat(value) : value
+    }));
   };
   
-  const handleEditClick = (party: Agent | Supplier | Customer | Broker | Transporter) => {
-    setIsEditing(true);
-    setFormData({
-      id: party.id,
-      name: party.name,
-      address: party.address
-    });
-    setShowForm(true);
+  const handleCustomerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setCustomerForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleTransporterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setTransporterForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Form submissions
+  const handleAgentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    try {
-      if (isEditing) {
-        // Update existing party
-        switch (currentTab) {
-          case "agents":
-            updateAgent({
-              ...formData,
-              id: formData.id,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: (parties.find(p => p.id === formData.id) as Agent)?.balance || 0
-            } as Agent);
-            break;
-          case "suppliers":
-            updateSupplier({
-              ...formData,
-              id: formData.id,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: (parties.find(p => p.id === formData.id) as Supplier)?.balance || 0
-            } as Supplier);
-            break;
-          case "customers":
-            updateCustomer({
-              ...formData,
-              id: formData.id,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: (parties.find(p => p.id === formData.id) as Customer)?.balance || 0
-            } as Customer);
-            break;
-          case "brokers":
-            updateBroker({
-              ...formData,
-              id: formData.id,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: (parties.find(p => p.id === formData.id) as Broker)?.balance || 0
-            } as Broker);
-            break;
-          case "transporters":
-            updateTransporter({
-              ...formData,
-              id: formData.id,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: (parties.find(p => p.id === formData.id) as Transporter)?.balance || 0
-            } as Transporter);
-            break;
-        }
-        
-        toast({
-          title: "Updated",
-          description: `${formData.name} successfully updated.`,
-        });
-      } else {
-        // Add new party
-        const newId = Date.now().toString();
-        
-        switch (currentTab) {
-          case "agents":
-            addAgent({
-              ...formData,
-              id: newId,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: 0
-            } as Agent);
-            break;
-          case "suppliers":
-            addSupplier({
-              ...formData,
-              id: newId,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: 0
-            } as Supplier);
-            break;
-          case "customers":
-            addCustomer({
-              ...formData,
-              id: newId,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: 0
-            } as Customer);
-            break;
-          case "brokers":
-            addBroker({
-              ...formData,
-              id: newId,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: 0
-            } as Broker);
-            break;
-          case "transporters":
-            addTransporter({
-              ...formData,
-              id: newId,
-              contactNumber: "", // Keeping empty string for compatibility
-              balance: 0
-            } as Transporter);
-            break;
-        }
-        
-        toast({
-          title: "Added",
-          description: `${formData.name} successfully added.`,
-        });
-      }
-      
-      // Reload parties and reset form
-      loadParties(currentTab);
-      setShowForm(false);
-      setFormData({
-        id: "",
-        name: "",
-        address: ""
-      });
-    } catch (error) {
+    if (!agentForm.name || !agentForm.contactNumber) {
       toast({
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: "Validation Error",
+        description: "Name and contact number are required",
         variant: "destructive"
       });
+      return;
     }
+    
+    const newAgent = {
+      id: `agent-${Date.now()}`,
+      ...agentForm,
+      balance: 0
+    };
+    
+    addAgent(newAgent);
+    
+    toast({
+      title: "Agent Added",
+      description: `${newAgent.name} has been added successfully`
+    });
+    
+    // Reset form and refresh data
+    setAgentForm({
+      name: "",
+      contactNumber: "",
+      address: "",
+    });
+    
+    setAgents(getAgents());
   };
   
-  const handleDelete = (id: string, name: string) => {
-    try {
-      const partyToDelete = parties.find(p => p.id === id);
-      if (partyToDelete) {
-        setDeletedParties(prev => [...prev, partyToDelete]);
-      }
-      
-      switch (currentTab) {
-        case "agents":
-          deleteAgent(id);
-          break;
-        case "suppliers":
-          deleteSupplier(id);
-          break;
-        case "customers":
-          deleteCustomer(id);
-          break;
-        case "brokers":
-          deleteBroker(id);
-          break;
-        case "transporters":
-          deleteTransporter(id);
-          break;
-      }
-      
+  const handleBrokerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!brokerForm.name || !brokerForm.contactNumber) {
       toast({
-        title: "Deleted",
-        description: `${name} successfully deleted.`,
-      });
-      
-      loadParties(currentTab);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not delete. This party might be referenced in transactions.",
+        title: "Validation Error",
+        description: "Name and contact number are required",
         variant: "destructive"
       });
+      return;
     }
+    
+    const newBroker = {
+      id: `broker-${Date.now()}`,
+      ...brokerForm,
+      balance: 0
+    };
+    
+    addBroker(newBroker);
+    
+    toast({
+      title: "Broker Added",
+      description: `${newBroker.name} has been added successfully`
+    });
+    
+    // Reset form and refresh data
+    setBrokerForm({
+      name: "",
+      contactNumber: "",
+      address: "",
+      commissionRate: 1,
+    });
+    
+    setBrokers(getBrokers());
   };
   
-  const handleRestore = (party: Agent | Supplier | Customer | Broker | Transporter) => {
-    try {
-      switch (currentTab) {
-        case "agents":
-          addAgent(party as Agent);
-          break;
-        case "suppliers":
-          addSupplier(party as Supplier);
-          break;
-        case "customers":
-          addCustomer(party as Customer);
-          break;
-        case "brokers":
-          addBroker(party as Broker);
-          break;
-        case "transporters":
-          addTransporter(party as Transporter);
-          break;
-      }
-      
-      setDeletedParties(prev => prev.filter(p => p.id !== party.id));
-      loadParties(currentTab);
-      
+  const handleCustomerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!customerForm.name || !customerForm.contactNumber) {
       toast({
-        title: "Restored",
-        description: `${party.name} successfully restored.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Could not restore. Please try again.",
+        title: "Validation Error",
+        description: "Name and contact number are required",
         variant: "destructive"
       });
+      return;
     }
+    
+    const newCustomer = {
+      id: `customer-${Date.now()}`,
+      ...customerForm,
+      balance: 0
+    };
+    
+    addCustomer(newCustomer);
+    
+    toast({
+      title: "Customer Added",
+      description: `${newCustomer.name} has been added successfully`
+    });
+    
+    // Reset form and refresh data
+    setCustomerForm({
+      name: "",
+      contactNumber: "",
+      address: "",
+    });
+    
+    setCustomers(getCustomers());
   };
   
-  const getTabTitle = () => {
-    switch (currentTab) {
-      case "agents": return "Agents";
-      case "suppliers": return "Suppliers";
-      case "customers": return "Customers";
-      case "brokers": return "Brokers";
-      case "transporters": return "Transporters";
-      default: return "";
+  const handleTransporterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!transporterForm.name || !transporterForm.contactNumber) {
+      toast({
+        title: "Validation Error",
+        description: "Name and contact number are required",
+        variant: "destructive"
+      });
+      return;
     }
+    
+    const newTransporter = {
+      id: `transporter-${Date.now()}`,
+      ...transporterForm,
+      balance: 0
+    };
+    
+    addTransporter(newTransporter);
+    
+    toast({
+      title: "Transporter Added",
+      description: `${newTransporter.name} has been added successfully`
+    });
+    
+    // Reset form and refresh data
+    setTransporterForm({
+      name: "",
+      contactNumber: "",
+      address: "",
+    });
+    
+    setTransporters(getTransporters());
   };
 
   return (
-    <TooltipProvider>
-      <div className="min-h-screen bg-ag-beige">
-        <Navigation title="Master" showBackButton showHomeButton />
-        <div className="container mx-auto px-4 py-6">
-          <Tabs defaultValue="agents" className="w-full" onValueChange={setCurrentTab}>
-            <TabsList className="grid grid-cols-5 mb-6">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="agents">Agents</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manage your business agents</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manage your suppliers</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="customers">Customers</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manage your customers</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="brokers">Brokers</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manage your brokers</p>
-                </TooltipContent>
-              </Tooltip>
-              
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <TabsTrigger value="transporters">Transporters</TabsTrigger>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Manage your transporters</p>
-                </TooltipContent>
-              </Tooltip>
-            </TabsList>
-            
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">{getTabTitle()}</h2>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={handleAddEdit}
-                  className="action-button flex items-center gap-2"
-                >
-                  <PlusCircle size={24} />
-                  Add New
-                </Button>
-                <Button 
-                  onClick={() => setShowRestoreDialog(true)}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                  disabled={deletedParties.length === 0}
-                >
-                  Restore Deleted
-                </Button>
-              </div>
-            </div>
-            
-            {showForm ? (
-              <Card className="p-6 mb-6">
-                <form onSubmit={handleSubmit}>
-                  <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                    <div className="form-group">
-                      <Label htmlFor="name" className="form-label">Name</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        placeholder="Enter name"
-                        value={formData.name}
-                        onChange={handleChange}
-                        className="text-lg p-6"
-                        required
+    <div className="min-h-screen bg-ag-beige">
+      <Navigation title="Master Data" showBackButton />
+      <div className="container mx-auto px-4 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="agents" className="data-[state=active]:bg-F2FCE2">
+              Agents
+            </TabsTrigger>
+            <TabsTrigger value="brokers" className="data-[state=active]:bg-F2FCE2">
+              Brokers
+            </TabsTrigger>
+            <TabsTrigger value="customers" className="data-[state=active]:bg-F2FCE2">
+              Customers
+            </TabsTrigger>
+            <TabsTrigger value="transporters" className="data-[state=active]:bg-F2FCE2">
+              Transporters
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Agents Tab Content */}
+          <TabsContent value="agents">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add Agent</CardTitle>
+                  <CardDescription>
+                    Enter details to add a new agent to your system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleAgentSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="agent-name">
+                        <span className="text-red-500">*</span> Name
+                      </Label>
+                      <Input 
+                        id="agent-name" 
+                        name="name" 
+                        value={agentForm.name} 
+                        onChange={handleAgentChange} 
+                        placeholder="Agent name"
                       />
                     </div>
-                    
-                    <div className="form-group">
-                      <Label htmlFor="address" className="form-label">Address</Label>
-                      <Input
-                        id="address"
-                        name="address"
-                        placeholder="Enter address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        className="text-lg p-6"
+                    <div className="space-y-2">
+                      <Label htmlFor="agent-contact">
+                        <span className="text-red-500">*</span> Contact Number
+                      </Label>
+                      <Input 
+                        id="agent-contact" 
+                        name="contactNumber" 
+                        value={agentForm.contactNumber} 
+                        onChange={handleAgentChange} 
+                        placeholder="Phone number"
                       />
                     </div>
-                  </div>
-                  
-                  <div className="mt-6 flex justify-end gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline"
-                      onClick={() => setShowForm(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      className="action-button flex gap-2 items-center"
-                    >
-                      <Save size={24} />
-                      {isEditing ? 'Update' : 'Save'}
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            ) : null}
-            
-            {parties.length === 0 ? (
-              <Card className="p-6 text-center">
-                <p className="text-xl text-ag-brown">
-                  No data found. Click the button above to add new.
-                </p>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {parties.map((party) => (
-                  <Card key={party.id} className="p-4">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-bold">{party.name}</h3>
-                      <div className="flex gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleEditClick(party)}
-                            >
-                              <Edit size={18} />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit this entry</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        
-                        <Dialog>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <Trash size={18} />
-                                </Button>
-                              </DialogTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Delete this entry</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <DialogContent>
-                            <DialogHeader>
-                              <DialogTitle>Are you sure?</DialogTitle>
-                              <DialogDescription>
-                                Confirm deletion of {party.name}. This action is irreversible.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <Button variant="outline">Cancel</Button>
-                              <Button 
-                                variant="destructive"
-                                onClick={() => handleDelete(party.id, party.name)}
-                              >
-                                Delete
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="agent-address">Address</Label>
+                      <Input 
+                        id="agent-address" 
+                        name="address" 
+                        value={agentForm.address} 
+                        onChange={handleAgentChange} 
+                        placeholder="Address"
+                      />
                     </div>
-                    {party.address && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <MapPin size={16} className="text-gray-500" />
-                        <span className="text-gray-600">{party.address}</span>
-                      </div>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            )}
-          </Tabs>
-        </div>
-        
-        {/* Restore Dialog */}
-        <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Restore Deleted Items</DialogTitle>
-            </DialogHeader>
-            <div className="max-h-[300px] overflow-y-auto">
-              {deletedParties.length > 0 ? (
-                deletedParties.map(party => (
-                  <div key={party.id} className="flex justify-between items-center py-2 border-b">
-                    <div>
-                      <p className="font-medium">{party.name}</p>
-                      {party.address && <p className="text-sm text-gray-500">{party.address}</p>}
-                    </div>
-                    <Button 
-                      size="sm" 
-                      onClick={() => handleRestore(party)}
-                    >
-                      Restore
-                    </Button>
+                    <Button type="submit" className="w-full">Add Agent</Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Agents List</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Address</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {agents.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-4 text-gray-500">
+                              No agents found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          agents.map(agent => (
+                            <TableRow key={agent.id}>
+                              <TableCell className="font-medium">{agent.name}</TableCell>
+                              <TableCell>{agent.contactNumber}</TableCell>
+                              <TableCell>{agent.address || "-"}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
                   </div>
-                ))
-              ) : (
-                <p className="text-center py-4">No deleted items to restore</p>
-              )}
+                </CardContent>
+              </Card>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowRestoreDialog(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          </TabsContent>
+          
+          {/* Brokers Tab Content */}
+          <TabsContent value="brokers">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add Broker</CardTitle>
+                  <CardDescription>
+                    Enter details to add a new broker to your system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleBrokerSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="broker-name">
+                        <span className="text-red-500">*</span> Name
+                      </Label>
+                      <Input 
+                        id="broker-name" 
+                        name="name" 
+                        value={brokerForm.name} 
+                        onChange={handleBrokerChange} 
+                        placeholder="Broker name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="broker-contact">
+                        <span className="text-red-500">*</span> Contact Number
+                      </Label>
+                      <Input 
+                        id="broker-contact" 
+                        name="contactNumber" 
+                        value={brokerForm.contactNumber} 
+                        onChange={handleBrokerChange} 
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="broker-address">Address</Label>
+                      <Input 
+                        id="broker-address" 
+                        name="address" 
+                        value={brokerForm.address} 
+                        onChange={handleBrokerChange} 
+                        placeholder="Address"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="broker-commission">Commission Rate (%)</Label>
+                      <Input 
+                        id="broker-commission" 
+                        name="commissionRate" 
+                        type="number" 
+                        min="0" 
+                        step="0.1" 
+                        value={brokerForm.commissionRate} 
+                        onChange={handleBrokerChange} 
+                        placeholder="1.0"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full">Add Broker</Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Brokers List</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Commission</TableHead>
+                          <TableHead>Address</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {brokers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                              No brokers found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          brokers.map(broker => (
+                            <TableRow key={broker.id}>
+                              <TableCell className="font-medium">{broker.name}</TableCell>
+                              <TableCell>{broker.contactNumber}</TableCell>
+                              <TableCell>{broker.commissionRate}%</TableCell>
+                              <TableCell>{broker.address || "-"}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          {/* Customers Tab Content */}
+          <TabsContent value="customers">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add Customer</CardTitle>
+                  <CardDescription>
+                    Enter details to add a new customer to your system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleCustomerSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customer-name">
+                        <span className="text-red-500">*</span> Name
+                      </Label>
+                      <Input 
+                        id="customer-name" 
+                        name="name" 
+                        value={customerForm.name} 
+                        onChange={handleCustomerChange} 
+                        placeholder="Customer name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customer-contact">
+                        <span className="text-red-500">*</span> Contact Number
+                      </Label>
+                      <Input 
+                        id="customer-contact" 
+                        name="contactNumber" 
+                        value={customerForm.contactNumber} 
+                        onChange={handleCustomerChange} 
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="customer-address">Address</Label>
+                      <Input 
+                        id="customer-address" 
+                        name="address" 
+                        value={customerForm.address} 
+                        onChange={handleCustomerChange} 
+                        placeholder="Address"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full">Add Customer</Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Customers List</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Address</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {customers.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-4 text-gray-500">
+                              No customers found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          customers.map(customer => (
+                            <TableRow key={customer.id}>
+                              <TableCell className="font-medium">{customer.name}</TableCell>
+                              <TableCell>{customer.contactNumber}</TableCell>
+                              <TableCell>{customer.address || "-"}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          {/* Transporters Tab Content */}
+          <TabsContent value="transporters">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Add Transporter</CardTitle>
+                  <CardDescription>
+                    Enter details to add a new transporter to your system
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleTransporterSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="transporter-name">
+                        <span className="text-red-500">*</span> Name
+                      </Label>
+                      <Input 
+                        id="transporter-name" 
+                        name="name" 
+                        value={transporterForm.name} 
+                        onChange={handleTransporterChange} 
+                        placeholder="Transporter name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="transporter-contact">
+                        <span className="text-red-500">*</span> Contact Number
+                      </Label>
+                      <Input 
+                        id="transporter-contact" 
+                        name="contactNumber" 
+                        value={transporterForm.contactNumber} 
+                        onChange={handleTransporterChange} 
+                        placeholder="Phone number"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="transporter-address">Address</Label>
+                      <Input 
+                        id="transporter-address" 
+                        name="address" 
+                        value={transporterForm.address} 
+                        onChange={handleTransporterChange} 
+                        placeholder="Address"
+                      />
+                    </div>
+                    <Button type="submit" className="w-full">Add Transporter</Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transporters List</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Contact</TableHead>
+                          <TableHead>Address</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transporters.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center py-4 text-gray-500">
+                              No transporters found
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          transporters.map(transporter => (
+                            <TableRow key={transporter.id}>
+                              <TableCell className="font-medium">{transporter.name}</TableCell>
+                              <TableCell>{transporter.contactNumber}</TableCell>
+                              <TableCell>{transporter.address || "-"}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
 

@@ -1,415 +1,717 @@
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  Edit, 
+  Trash2,
+  Save,
+  X
+} from "lucide-react";
 import Navigation from "@/components/Navigation";
-import { Card } from "@/components/ui/card";
-import { 
-  Table, 
-  TableBody, 
-  TableCaption, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent
+} from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { format, parseISO, startOfDay, endOfDay, isWithinInterval } from "date-fns";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { RefreshCcw, Plus, Search } from "lucide-react";
 import { 
-  getLedgerEntries,
-  addCashbookEntry,
-  LedgerEntry
-} from "@/services/storageService";
+  AlertDialog,
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
+
+import { getReceipts, getPayments, updateReceipt, updatePayment, deleteReceipt, deletePayment } from "@/services/storageService";
 
 const CashBook = () => {
-  const [entries, setEntries] = useState<LedgerEntry[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [currentBalance, setCurrentBalance] = useState(0);
-  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [viewMode, setViewMode] = useState<"day" | "all">("all");
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    date: format(new Date(), "yyyy-MM-dd"),
-    description: "",
-    type: "debit",
-    amount: 0,
-  });
-  
+  const [cashEntries, setCashEntries] = useState<any[]>([]);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editFormData, setEditFormData] = useState<any>({});
+  const [activeTab, setActiveTab] = useState("all");
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
   useEffect(() => {
     loadCashEntries();
-  }, [selectedDate, viewMode]);
-  
-  const loadCashEntries = () => {
-    try {
-      // Get all ledger entries
-      const allEntries = getLedgerEntries();
-      
-      // Filter for cash entries
-      let cashEntries = allEntries.filter(entry => entry.partyType === "cash");
-      
-      if (viewMode === "day") {
-        // Filter for entries on the selected date
-        const startDate = startOfDay(parseISO(selectedDate));
-        const endDate = endOfDay(parseISO(selectedDate));
-        
-        cashEntries = cashEntries.filter(entry => {
-          const entryDate = new Date(entry.date);
-          return isWithinInterval(entryDate, { start: startDate, end: endDate });
-        });
-      }
+  }, [currentMonth, currentYear]);
 
-      // Sort entries by date
-      cashEntries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      
-      // Calculate running balance
-      let runningBalance = 0;
-      const entriesWithBalance = cashEntries.map(entry => {
-        runningBalance += entry.credit - entry.debit;
-        return { ...entry, balance: runningBalance };
-      });
-      
-      setEntries(entriesWithBalance);
-      
-      // Set current balance
-      // For the overall balance, we need to calculate from all entries regardless of view mode
-      const allCashEntries = allEntries.filter(entry => entry.partyType === "cash");
-      const overallBalance = allCashEntries.reduce((bal, entry) => bal + (entry.credit - entry.debit), 0);
-      setCurrentBalance(overallBalance);
-    } catch (error) {
-      console.error("Error loading cash entries:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load cash book entries",
-        variant: "destructive"
-      });
-    }
+  const loadCashEntries = () => {
+    const allReceipts = getReceipts().map(receipt => ({
+      ...receipt,
+      type: 'receipt'
+    }));
+    
+    const allPayments = getPayments().map(payment => ({
+      ...payment,
+      type: 'payment'
+    }));
+    
+    // Combine and sort by date (newest first)
+    let combined = [...allReceipts, ...allPayments];
+    
+    // Filter by month/year
+    combined = combined.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate.getMonth() === currentMonth && 
+             entryDate.getFullYear() === currentYear;
+    });
+    
+    combined.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setCashEntries(combined);
+    
+    console.log("Loaded cash entries:", combined);
   };
-  
-  const handleRefresh = () => {
-    loadCashEntries();
-    toast({
-      title: "Refreshed",
-      description: "Cash book entries have been refreshed"
+
+  const handleEdit = (entry: any) => {
+    setEditingEntryId(entry.id);
+    setEditFormData({
+      date: entry.date,
+      amount: entry.amount,
+      paymentMethod: entry.paymentMethod,
+      notes: entry.notes || "",
     });
   };
-  
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: name === "amount" ? parseFloat(value) : value
-    });
+
+  const handleCancelEdit = () => {
+    setEditingEntryId(null);
+    setEditFormData({});
   };
-  
-  const handleSubmit = () => {
-    if (!formData.description || formData.amount <= 0) {
+
+  const handleSaveEdit = (entry: any) => {
+    const updatedEntry = {
+      ...entry,
+      ...editFormData
+    };
+    
+    if (entry.type === 'receipt') {
+      updateReceipt(updatedEntry);
       toast({
-        title: "Validation Error",
-        description: "Please fill all required fields with valid values",
-        variant: "destructive"
+        title: "Receipt Updated",
+        description: `Receipt for ${updatedEntry.amount} has been updated.`
       });
-      return;
+    } else {
+      updatePayment(updatedEntry);
+      toast({
+        title: "Payment Updated",
+        description: `Payment of ${updatedEntry.amount} has been updated.`
+      });
     }
     
-    try {
-      const debitAmount = formData.type === "debit" ? formData.amount : 0;
-      const creditAmount = formData.type === "credit" ? formData.amount : 0;
-      
-      addCashbookEntry(
-        formData.date,
-        formData.description,
-        debitAmount,
-        creditAmount
-      );
-      
-      loadCashEntries();
-      
+    setEditingEntryId(null);
+    loadCashEntries();
+  };
+
+  const handleDelete = (entry: any) => {
+    if (entry.type === 'receipt') {
+      deleteReceipt(entry.id);
       toast({
-        title: "Entry Added",
-        description: `Cash book entry for ${formatCurrency(formData.amount)} has been added`
+        title: "Receipt Deleted",
+        description: `Receipt has been deleted.`
       });
-      
-      setIsAddDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error adding entry:", error);
+    } else {
+      deletePayment(entry.id);
       toast({
-        title: "Error",
-        description: "Failed to add cash book entry",
-        variant: "destructive"
+        title: "Payment Deleted",
+        description: `Payment has been deleted.`
       });
     }
-  };
-  
-  const resetForm = () => {
-    setFormData({
-      date: format(new Date(), "yyyy-MM-dd"),
-      description: "",
-      type: "debit",
-      amount: 0,
-    });
-  };
-  
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 2
-    }).format(amount);
+    
+    loadCashEntries();
   };
 
-  // Calculate daily totals
-  const getDayTotals = () => {
-    const debitTotal = entries.reduce((sum, entry) => sum + entry.debit, 0);
-    const creditTotal = entries.reduce((sum, entry) => sum + entry.credit, 0);
-    return { debitTotal, creditTotal };
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: name === 'amount' ? parseFloat(value) : value
+    }));
   };
 
-  const { debitTotal, creditTotal } = getDayTotals();
+  const handleSelectChange = (name: string, value: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const navigateMonth = (direction: number) => {
+    let newMonth = currentMonth + direction;
+    let newYear = currentYear;
+    
+    if (newMonth > 11) {
+      newMonth = 0;
+      newYear += 1;
+    } else if (newMonth < 0) {
+      newMonth = 11;
+      newYear -= 1;
+    }
+    
+    setCurrentMonth(newMonth);
+    setCurrentYear(newYear);
+  };
+
+  const getMonthName = (month: number) => {
+    return new Date(2000, month, 1).toLocaleString('default', { month: 'long' });
+  };
+
+  // Calculate summary
+  const totalReceipts = cashEntries
+    .filter(entry => entry.type === 'receipt')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+    
+  const totalPayments = cashEntries
+    .filter(entry => entry.type === 'payment')
+    .reduce((sum, entry) => sum + entry.amount, 0);
+    
+  const balance = totalReceipts - totalPayments;
+
+  const filteredEntries = activeTab === 'all' 
+    ? cashEntries 
+    : cashEntries.filter(entry => entry.type === activeTab);
 
   return (
     <div className="min-h-screen bg-ag-beige">
-      <Navigation title="Cash Book" showBackButton showHomeButton />
+      <Navigation title="Cash Book" showBackButton />
       <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Cash Book</h2>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={handleRefresh}
-              className="flex items-center gap-2"
-            >
-              <RefreshCcw size={20} />
-              Refresh
-            </Button>
-            <Button
-              onClick={() => setIsAddDialogOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus size={20} />
-              Add Entry
-            </Button>
-          </div>
-        </div>
-        
-        <Card className="p-4 mb-6 flex justify-between items-center">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-600">Current Cash Balance</h3>
-          </div>
-          <div className={`text-2xl font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {formatCurrency(Math.abs(currentBalance))}
-            <span className="ml-2 text-sm">{currentBalance >= 0 ? 'Cr' : 'Dr'}</span>
-          </div>
-        </Card>
-        
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <Tabs defaultValue="all" className="w-full" onValueChange={(value) => setViewMode(value as "day" | "all")}>
-            <TabsList className="grid grid-cols-2 mb-4">
-              <TabsTrigger value="all">All Transactions</TabsTrigger>
-              <TabsTrigger value="day">Daily View</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="day" className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="date-select">Select Date:</Label>
-                <Input
-                  id="date-select"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-auto"
-                />
-                <Button variant="outline" size="sm" onClick={() => loadCashEntries()}>
-                  <Search size={16} className="mr-2" />
-                  View
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        <Card className="p-4">
-          {/* T-Account Style Cashbook */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Debit Side */}
-            <div className="border rounded-md overflow-hidden">
-              <div className="bg-gray-100 p-2 font-bold text-center border-b">
-                DEBIT (Payments Made)
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead>Date</TableHead>
-                      <TableHead>Particulars</TableHead>
-                      <TableHead className="text-right">Amount (₹)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {entries.filter(entry => entry.debit > 0).length > 0 ? (
-                      entries
-                        .filter(entry => entry.debit > 0)
-                        .map((entry) => (
-                          <TableRow key={`debit-${entry.id}`} className="hover:bg-gray-50">
-                            <TableCell>{format(new Date(entry.date), "dd/MM/yyyy")}</TableCell>
-                            <TableCell>{entry.description}</TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(entry.debit).replace('₹', '')}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-4">
-                          No debit entries found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                  <TableCaption>
-                    <div className="flex justify-between font-bold p-2">
-                      <span>Total</span>
-                      <span>{formatCurrency(debitTotal).replace('₹', '')}</span>
+        <div className="mb-6 grid gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex gap-2 items-center">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigateMonth(-1)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ArrowLeft size={16} />
+                  </Button>
+                  
+                  <h2 className="text-xl font-bold">
+                    {getMonthName(currentMonth)} {currentYear}
+                  </h2>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => navigateMonth(1)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <ArrowRight size={16} />
+                  </Button>
+                </div>
+                
+                <div className="text-right">
+                  <div className="flex gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Total Receipts</p>
+                      <p className="font-bold text-green-600">₹{totalReceipts.toLocaleString()}</p>
                     </div>
-                  </TableCaption>
-                </Table>
-              </div>
-            </div>
-            
-            {/* Credit Side */}
-            <div className="border rounded-md overflow-hidden">
-              <div className="bg-gray-100 p-2 font-bold text-center border-b">
-                CREDIT (Payments Received)
-              </div>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead>Date</TableHead>
-                      <TableHead>Particulars</TableHead>
-                      <TableHead className="text-right">Amount (₹)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {entries.filter(entry => entry.credit > 0).length > 0 ? (
-                      entries
-                        .filter(entry => entry.credit > 0)
-                        .map((entry) => (
-                          <TableRow key={`credit-${entry.id}`} className="hover:bg-gray-50">
-                            <TableCell>{format(new Date(entry.date), "dd/MM/yyyy")}</TableCell>
-                            <TableCell>{entry.description}</TableCell>
-                            <TableCell className="text-right font-medium">
-                              {formatCurrency(entry.credit).replace('₹', '')}
-                            </TableCell>
-                          </TableRow>
-                        ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center py-4">
-                          No credit entries found
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                  <TableCaption>
-                    <div className="flex justify-between font-bold p-2">
-                      <span>Total</span>
-                      <span>{formatCurrency(creditTotal).replace('₹', '')}</span>
+                    <div>
+                      <p className="text-sm text-gray-500">Total Payments</p>
+                      <p className="font-bold text-red-600">₹{totalPayments.toLocaleString()}</p>
                     </div>
-                  </TableCaption>
-                </Table>
+                    <div>
+                      <p className="text-sm text-gray-500">Balance</p>
+                      <p className={`font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ₹{balance.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          
-          <div className="mt-6 bg-gray-100 p-4 rounded-md">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-bold">Balance:</span>
-              <span className={`text-lg font-bold ${currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {formatCurrency(Math.abs(currentBalance))} {currentBalance >= 0 ? 'Cr' : 'Dr'}
-              </span>
-            </div>
-          </div>
-        </Card>
+              
+              <Tabs defaultValue="all" className="w-full" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid grid-cols-3 w-full">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-F2FCE2">All</TabsTrigger>
+                  <TabsTrigger value="receipt" className="data-[state=active]:bg-F2FCE2">Receipts</TabsTrigger>
+                  <TabsTrigger value="payment" className="data-[state=active]:bg-F2FCE2">Payments</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="all" className="mt-4">
+                  <div className="space-y-4">
+                    {filteredEntries.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No cash entries found for this month.</p>
+                      </div>
+                    ) : (
+                      filteredEntries.map((entry) => (
+                        <div 
+                          key={`${entry.type}-${entry.id}`} 
+                          className={`p-4 rounded-lg border ${
+                            entry.type === 'receipt' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+                          }`}
+                        >
+                          {editingEntryId === entry.id ? (
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="date">Date</Label>
+                                  <Input 
+                                    id="date" 
+                                    name="date" 
+                                    type="date" 
+                                    value={editFormData.date} 
+                                    onChange={handleInputChange} 
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="amount">Amount</Label>
+                                  <Input 
+                                    id="amount" 
+                                    name="amount" 
+                                    type="number" 
+                                    value={editFormData.amount} 
+                                    onChange={handleInputChange} 
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="paymentMethod">Payment Method</Label>
+                                <Select 
+                                  value={editFormData.paymentMethod} 
+                                  onValueChange={(value) => handleSelectChange("paymentMethod", value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select payment method" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                    <SelectItem value="UPI">UPI</SelectItem>
+                                    <SelectItem value="Check">Check</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="notes">Notes</Label>
+                                <Input 
+                                  id="notes" 
+                                  name="notes" 
+                                  value={editFormData.notes} 
+                                  onChange={handleInputChange} 
+                                />
+                              </div>
+                              
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={handleCancelEdit}
+                                >
+                                  <X size={16} className="mr-1" /> Cancel
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleSaveEdit(entry)}
+                                >
+                                  <Save size={16} className="mr-1" /> Save
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex justify-between">
+                                <div>
+                                  <p className="font-semibold">
+                                    {entry.type === 'receipt' 
+                                      ? `Receipt from ${entry.customer}` 
+                                      : `Payment to ${entry.party}`}
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    {format(new Date(entry.date), 'dd MMM yyyy')} &bull; {entry.paymentMethod}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className={`font-bold text-lg ${entry.type === 'receipt' ? 'text-green-600' : 'text-red-600'}`}>
+                                    {entry.type === 'receipt' ? '+' : '-'}₹{entry.amount.toLocaleString()}
+                                  </p>
+                                  <p className="text-xs text-gray-500">{entry.reference || ''}</p>
+                                </div>
+                              </div>
+                              {entry.notes && (
+                                <div className="mt-2">
+                                  <p className="text-sm text-gray-600">
+                                    <span className="font-medium">Notes:</span> {entry.notes}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="flex justify-end gap-2 mt-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleEdit(entry)}
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>
+                                        Delete {entry.type === 'receipt' ? 'Receipt' : 'Payment'}
+                                      </AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this {entry.type}? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDelete(entry)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="receipt" className="mt-4">
+                  <div className="space-y-4">
+                    {filteredEntries.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No receipts found for this month.</p>
+                      </div>
+                    ) : (
+                      filteredEntries.map((entry) => (
+                        <div 
+                          key={`receipt-${entry.id}`} 
+                          className="p-4 rounded-lg border bg-green-50 border-green-200"
+                        >
+                          {editingEntryId === entry.id ? (
+                            // Edit form - Same as above
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="date">Date</Label>
+                                  <Input 
+                                    id="date" 
+                                    name="date" 
+                                    type="date" 
+                                    value={editFormData.date} 
+                                    onChange={handleInputChange} 
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="amount">Amount</Label>
+                                  <Input 
+                                    id="amount" 
+                                    name="amount" 
+                                    type="number" 
+                                    value={editFormData.amount} 
+                                    onChange={handleInputChange} 
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="paymentMethod">Payment Method</Label>
+                                <Select 
+                                  value={editFormData.paymentMethod} 
+                                  onValueChange={(value) => handleSelectChange("paymentMethod", value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select payment method" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                    <SelectItem value="UPI">UPI</SelectItem>
+                                    <SelectItem value="Check">Check</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="notes">Notes</Label>
+                                <Input 
+                                  id="notes" 
+                                  name="notes" 
+                                  value={editFormData.notes} 
+                                  onChange={handleInputChange} 
+                                />
+                              </div>
+                              
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={handleCancelEdit}
+                                >
+                                  <X size={16} className="mr-1" /> Cancel
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleSaveEdit(entry)}
+                                >
+                                  <Save size={16} className="mr-1" /> Save
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            // Display view - Same as above
+                            <>
+                              <div className="flex justify-between">
+                                <div>
+                                  <p className="font-semibold">
+                                    Receipt from {entry.customer}
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    {format(new Date(entry.date), 'dd MMM yyyy')} &bull; {entry.paymentMethod}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-lg text-green-600">
+                                    +₹{entry.amount.toLocaleString()}
+                                  </p>
+                                  <p className="text-xs text-gray-500">{entry.reference || ''}</p>
+                                </div>
+                              </div>
+                              {entry.notes && (
+                                <div className="mt-2">
+                                  <p className="text-sm text-gray-600">
+                                    <span className="font-medium">Notes:</span> {entry.notes}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="flex justify-end gap-2 mt-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleEdit(entry)}
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Receipt</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this receipt? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDelete(entry)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="payment" className="mt-4">
+                  <div className="space-y-4">
+                    {filteredEntries.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500">No payments found for this month.</p>
+                      </div>
+                    ) : (
+                      filteredEntries.map((entry) => (
+                        <div 
+                          key={`payment-${entry.id}`} 
+                          className="p-4 rounded-lg border bg-red-50 border-red-200"
+                        >
+                          {editingEntryId === entry.id ? (
+                            // Edit form - Same as above
+                            <div className="grid grid-cols-1 gap-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="date">Date</Label>
+                                  <Input 
+                                    id="date" 
+                                    name="date" 
+                                    type="date" 
+                                    value={editFormData.date} 
+                                    onChange={handleInputChange} 
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="amount">Amount</Label>
+                                  <Input 
+                                    id="amount" 
+                                    name="amount" 
+                                    type="number" 
+                                    value={editFormData.amount} 
+                                    onChange={handleInputChange} 
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="paymentMethod">Payment Method</Label>
+                                <Select 
+                                  value={editFormData.paymentMethod} 
+                                  onValueChange={(value) => handleSelectChange("paymentMethod", value)}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select payment method" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Cash">Cash</SelectItem>
+                                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                                    <SelectItem value="UPI">UPI</SelectItem>
+                                    <SelectItem value="Check">Check</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="notes">Notes</Label>
+                                <Input 
+                                  id="notes" 
+                                  name="notes" 
+                                  value={editFormData.notes} 
+                                  onChange={handleInputChange} 
+                                />
+                              </div>
+                              
+                              <div className="flex justify-end gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={handleCancelEdit}
+                                >
+                                  <X size={16} className="mr-1" /> Cancel
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleSaveEdit(entry)}
+                                >
+                                  <Save size={16} className="mr-1" /> Save
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            // Display view - Same as above
+                            <>
+                              <div className="flex justify-between">
+                                <div>
+                                  <p className="font-semibold">
+                                    Payment to {entry.party}
+                                  </p>
+                                  <p className="text-sm text-gray-600">
+                                    {format(new Date(entry.date), 'dd MMM yyyy')} &bull; {entry.paymentMethod}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-bold text-lg text-red-600">
+                                    -₹{entry.amount.toLocaleString()}
+                                  </p>
+                                  <p className="text-xs text-gray-500">{entry.reference || ''}</p>
+                                </div>
+                              </div>
+                              {entry.notes && (
+                                <div className="mt-2">
+                                  <p className="text-sm text-gray-600">
+                                    <span className="font-medium">Notes:</span> {entry.notes}
+                                  </p>
+                                </div>
+                              )}
+                              <div className="flex justify-end gap-2 mt-2">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  onClick={() => handleEdit(entry)}
+                                >
+                                  <Edit size={16} />
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="text-red-500 hover:text-red-700"
+                                    >
+                                      <Trash2 size={16} />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete Payment</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this payment? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction 
+                                        onClick={() => handleDelete(entry)}
+                                        className="bg-red-600 hover:bg-red-700"
+                                      >
+                                        Delete
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-      
-      {/* Add Entry Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add Cash Book Entry</DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">Date</Label>
-              <Input 
-                id="date" 
-                name="date" 
-                type="date" 
-                value={formData.date} 
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">Description</Label>
-              <Input 
-                id="description" 
-                name="description" 
-                value={formData.description} 
-                onChange={handleInputChange}
-                className="col-span-3"
-                placeholder="Enter transaction description"
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">Type</Label>
-              <select 
-                id="type" 
-                name="type" 
-                value={formData.type} 
-                onChange={handleInputChange}
-                className="col-span-3 w-full p-2 border rounded-md"
-              >
-                <option value="debit">Debit (Payment Made)</option>
-                <option value="credit">Credit (Payment Received)</option>
-              </select>
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount" className="text-right">Amount (₹)</Label>
-              <Input 
-                id="amount" 
-                name="amount" 
-                type="number" 
-                value={formData.amount || ''} 
-                onChange={handleInputChange}
-                className="col-span-3"
-                min="0"
-                step="0.01"
-              />
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSubmit}>Add Entry</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

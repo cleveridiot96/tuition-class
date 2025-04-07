@@ -137,6 +137,17 @@ export interface LedgerEntry {
   referenceType?: string;
 }
 
+// Update storage keys
+export const PURCHASES_STORAGE_KEY = "app_purchases_data";
+export const INVENTORY_STORAGE_KEY = "app_inventory_data";
+export const SALES_STORAGE_KEY = "app_sales_data";
+export const PAYMENTS_STORAGE_KEY = "app_payments_data";
+export const RECEIPTS_STORAGE_KEY = "app_receipts_data";
+export const AGENTS_STORAGE_KEY = "app_agents_data";
+export const BROKERS_STORAGE_KEY = "app_brokers_data";
+export const CUSTOMERS_STORAGE_KEY = "app_customers_data";
+export const TRANSPORTERS_STORAGE_KEY = "app_transporters_data";
+
 // Agent functions
 export const getAgents = (): Agent[] => {
   const agents = localStorage.getItem('agents');
@@ -403,6 +414,21 @@ export const addPayment = (payment: Payment): void => {
   );
 };
 
+// Update Payment functions
+export const updatePayment = (payment: Payment): void => {
+  const payments = getPayments();
+  const updatedPayments = payments.map(p => 
+    p.id === payment.id ? payment : p
+  );
+  localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(updatedPayments));
+};
+
+export const deletePayment = (id: string): void => {
+  const payments = getPayments();
+  const updatedPayments = payments.filter(p => p.id !== id);
+  localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(updatedPayments));
+};
+
 // Receipt functions
 export const getReceipts = () => {
   const receipts = localStorage.getItem('receipts');
@@ -423,6 +449,20 @@ export const addReceipt = (receipt: Receipt): void => {
     receipt.id,
     'receipt'
   );
+};
+
+export const updateReceipt = (receipt: Receipt): void => {
+  const receipts = getReceipts();
+  const updatedReceipts = receipts.map(r => 
+    r.id === receipt.id ? receipt : r
+  );
+  localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(updatedReceipts));
+};
+
+export const deleteReceipt = (id: string): void => {
+  const receipts = getReceipts();
+  const updatedReceipts = receipts.filter(r => r.id !== id);
+  localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(updatedReceipts));
 };
 
 // Inventory functions
