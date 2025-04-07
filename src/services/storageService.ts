@@ -864,3 +864,19 @@ export const seedInitialData = (force = false) => {
   localStorage.setItem('brokers', JSON.stringify(brokers));
   localStorage.setItem('transporters', JSON.stringify(transporters));
 };
+
+// This function needs to be added if it doesn't exist yet
+export const clearAllData = () => {
+  localStorage.removeItem('app_purchases_data');
+  localStorage.removeItem('app_sales_data');
+  localStorage.removeItem('app_inventory_data');
+  localStorage.removeItem('app_payments_data');
+  localStorage.removeItem('app_receipts_data');
+  localStorage.removeItem('app_agents_data');
+  localStorage.removeItem('app_brokers_data');
+  localStorage.removeItem('app_customers_data');
+  localStorage.removeItem('app_transporters_data');
+  localStorage.removeItem('app_cashbook_data');
+  localStorage.removeItem('app_deleted_purchases');
+  localStorage.removeItem('app_deleted_sales');
+};

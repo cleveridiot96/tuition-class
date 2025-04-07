@@ -141,6 +141,8 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
       totalAmount,
       transportCost,
       netAmount,
+      // Ensure amount field is set - this is crucial for the dashboard summary
+      amount: totalAmount,
       id: initialData?.id || Date.now().toString()
     };
     

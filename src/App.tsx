@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,6 +27,7 @@ import {
   addInventoryItem,
   getPurchases,
   getInventory,
+  getSales,
   clearAllData
 } from "@/services/storageService";
 
@@ -37,20 +37,17 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Initialize demo data
     initializeDemoData();
     setIsLoading(false);
   }, []);
 
   const initializeDemoData = () => {
-    // Check if demo data already exists
     const purchases = getPurchases();
-    if (purchases.length > 0) return;
+    const existingSales = getSales();
+    if (purchases.length > 0 && existingSales.length > 0) return;
 
-    // Clear any partial data to ensure a clean slate
     clearAllData();
 
-    // Add entities for the demo
     const arAgentId = "agent-001";
     const sudhaTransporterId = "transporter-001";
     const kanayaCustomerId = "customer-001";
@@ -58,7 +55,6 @@ const App = () => {
     const rbSonsCustomerId = "customer-002";
     const lbBrokerId = "broker-002";
 
-    // Add agents, transporters, customers, brokers
     addAgent({
       id: arAgentId,
       name: "AR Agent",
@@ -109,15 +105,12 @@ const App = () => {
       balance: 0
     });
 
-    // Scene 1: Purchase from AR Agent
     const purchaseDate = new Date().toISOString().split('T')[0];
     const purchaseId = "purchase-001";
     const lotNumber = "VK/33";
-    
-    // Calculate total amount: 33 bags at ₹300 per kg
-    // Assuming each bag is around 50 kg (adjust if needed)
+
     const bagsQuantity = 33;
-    const weightPerBag = 50; // kg
+    const weightPerBag = 50;
     const ratePerKg = 300;
     const transportRatePerKg = 17;
     const totalWeight = bagsQuantity * weightPerBag;
@@ -125,7 +118,6 @@ const App = () => {
     const transportCost = totalWeight * transportRatePerKg;
     const totalPurchaseAmount = totalAmountBeforeTransport + transportCost;
 
-    // Add purchase transaction
     const purchase = {
       id: purchaseId,
       date: purchaseDate,
@@ -151,7 +143,6 @@ const App = () => {
     
     addPurchase(purchase);
     
-    // Add to inventory
     addInventoryItem({
       id: `inv-${purchaseId}`,
       lotNumber: lotNumber,
@@ -161,16 +152,14 @@ const App = () => {
       netWeight: totalWeight
     });
 
-    // Scene 1: Sale to Kanaiya
     const saleDate = purchaseDate;
     const saleId1 = "sale-001";
     const saleBagsQuantity1 = 3;
-    const saleWeightPerBag = 50; // kg
+    const saleWeightPerBag = 50;
     const saleRatePerKg1 = 415;
     const saleTotalWeight1 = saleBagsQuantity1 * saleWeightPerBag;
     const saleTotalAmount1 = saleTotalWeight1 * saleRatePerKg1;
     
-    // Add sale transaction
     const sale1 = {
       id: saleId1,
       date: saleDate,
@@ -191,21 +180,18 @@ const App = () => {
       totalAmount: saleTotalAmount1,
       netAmount: saleTotalAmount1,
       amount: saleTotalAmount1,
-      location: "Mumbai",
       notes: "Demo sale of 3 bags to Kanaiya through broker Anil"
     };
     
     addSale(sale1);
     
-    // Scene 1: Receipt from Anil (after deducting 1% cash discount and 1% brokerage)
     const receiptDate = purchaseDate;
-    const brokerageRate = 0.01; // 1%
-    const cashDiscountRate = 0.01; // 1%
+    const brokerageRate = 0.01;
+    const cashDiscountRate = 0.01;
     const brokerageAmount = saleTotalAmount1 * brokerageRate;
     const cashDiscountAmount = saleTotalAmount1 * cashDiscountRate;
     const receiptAmount = saleTotalAmount1 - brokerageAmount - cashDiscountAmount;
     
-    // Add receipt transaction
     addReceipt({
       id: `receipt-${saleId1}`,
       date: receiptDate,
@@ -217,11 +203,9 @@ const App = () => {
       notes: `Receipt from Anil for Kanaiya sale. Deducted: ₹${brokerageAmount} (1% brokerage) and ₹${cashDiscountAmount} (1% cash discount)`
     });
     
-    // Scene 1: Payment to AR Agent
     const paymentDate = purchaseDate;
     const paymentAmount = 50000;
     
-    // Add payment transaction
     addPayment({
       id: `payment-${purchaseId}`,
       date: paymentDate,
@@ -233,16 +217,14 @@ const App = () => {
       notes: "Payment to AR Agent for lot VK/33"
     });
     
-    // Scene 2: Sale to RB Sons
     const saleDate2 = purchaseDate;
     const saleId2 = "sale-002";
     const saleBagsQuantity2 = 2;
     const saleRatePerKg2 = 421;
     const saleTotalWeight2 = saleBagsQuantity2 * saleWeightPerBag;
     const saleTotalAmount2 = saleTotalWeight2 * saleRatePerKg2;
-    const billAmount2 = 42100; // As per the scenario
+    const billAmount2 = 42100;
     
-    // Add sale transaction
     const sale2 = {
       id: saleId2,
       date: saleDate2,
@@ -261,13 +243,14 @@ const App = () => {
       transportRate: 0,
       transportCost: 0,
       totalAmount: saleTotalAmount2,
-      netAmount: billAmount2, // Actual billed amount
+      netAmount: billAmount2,
       amount: billAmount2,
-      location: "Mumbai",
       notes: "Demo sale of 2 bags to RB Sons through broker LB"
     };
     
     addSale(sale2);
+    
+    console.log("Demo sales added:", getSales());
   };
 
   if (isLoading) {

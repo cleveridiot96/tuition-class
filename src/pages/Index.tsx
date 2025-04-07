@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -24,13 +23,16 @@ const Index = () => {
     // Ensure initial data is seeded
     seedInitialData();
     
-    const purchases = getPurchases();
+    const purchases = getPurchases() || [];
     const sales = getSales() || [];
     
     const inventory = getInventory() || [];
     const mumbaiStock = inventory.filter(item => item.location === "Mumbai");
     const chiplunStock = inventory.filter(item => item.location === "Chiplun");
     const sawantwadiStock = inventory.filter(item => item.location === "Sawantwadi");
+    
+    console.log("Sales data loaded:", sales);
+    console.log("Sales amount calculation:", sales.map(s => s.amount || 0));
     
     setSummaryData({
       purchases: {
