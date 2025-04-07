@@ -18,6 +18,11 @@ interface ProfitData {
   date: string;
 }
 
+interface MonthlyProfitData {
+  month: string;
+  profit: number;
+}
+
 const Index = () => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -28,7 +33,7 @@ const Index = () => {
   });
   const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
   const [profitByTransaction, setProfitByTransaction] = useState<ProfitData[]>([]);
-  const [profitByMonth, setProfitByMonth] = useState<{month: string, profit: number}[]>([]);
+  const [profitByMonth, setProfitByMonth] = useState<MonthlyProfitData[]>([]);
   const [totalProfit, setTotalProfit] = useState(0);
   
   const loadDashboardData = () => {
@@ -62,7 +67,7 @@ const Index = () => {
     });
     
     // Calculate profits by month
-    const profitsByMonth: Record<string, number> = {};
+    const profitsByMonth: Record<string, { profit: number; display: string }> = {};
     transactionProfits.forEach(transaction => {
       if (!transaction.date) return;
       
@@ -80,7 +85,7 @@ const Index = () => {
       profitsByMonth[monthKey].profit += transaction.profit;
     });
     
-    const monthlyProfits = Object.entries(profitsByMonth).map(([key, data]) => ({
+    const monthlyProfits: MonthlyProfitData[] = Object.entries(profitsByMonth).map(([key, data]) => ({
       month: data.display,
       profit: data.profit
     })).sort((a, b) => a.month.localeCompare(b.month));

@@ -137,6 +137,14 @@ export interface LedgerEntry {
   referenceType?: string;
 }
 
+export interface CashBookEntry {
+  id: string;
+  date: string;
+  description: string;
+  type: "debit" | "credit"; // debit = outflow, credit = inflow
+  amount: number;
+}
+
 // Update storage keys
 export const PURCHASES_STORAGE_KEY = "app_purchases_data";
 export const INVENTORY_STORAGE_KEY = "app_inventory_data";
@@ -147,6 +155,7 @@ export const AGENTS_STORAGE_KEY = "app_agents_data";
 export const BROKERS_STORAGE_KEY = "app_brokers_data";
 export const CUSTOMERS_STORAGE_KEY = "app_customers_data";
 export const TRANSPORTERS_STORAGE_KEY = "app_transporters_data";
+export const CASHBOOK_STORAGE_KEY = "app_cashbook_data";
 
 // Agent functions
 export const getAgents = (): Agent[] => {
@@ -650,6 +659,34 @@ export const addLedgerEntry = (entry: LedgerEntry): void => {
   localStorage.setItem('ledger', JSON.stringify(entries));
 };
 
+// Cash book entries functions
+export const getCashBookEntries = (): CashBookEntry[] => {
+  const entries = localStorage.getItem(CASHBOOK_STORAGE_KEY);
+  return entries ? JSON.parse(entries) : [];
+};
+
+export const addCashBookEntry = (entry: CashBookEntry): void => {
+  const entries = getCashBookEntries();
+  entries.push(entry);
+  localStorage.setItem(CASHBOOK_STORAGE_KEY, JSON.stringify(entries));
+};
+
+export const updateCashBookEntry = (updatedEntry: CashBookEntry): void => {
+  const entries = getCashBookEntries();
+  const index = entries.findIndex(e => e.id === updatedEntry.id);
+  
+  if (index !== -1) {
+    entries[index] = updatedEntry;
+    localStorage.setItem(CASHBOOK_STORAGE_KEY, JSON.stringify(entries));
+  }
+};
+
+export const deleteCashBookEntry = (id: string): void => {
+  const entries = getCashBookEntries();
+  const updatedEntries = entries.filter(e => e.id !== id);
+  localStorage.setItem(CASHBOOK_STORAGE_KEY, JSON.stringify(updatedEntries));
+};
+
 // Function to create a cashbook entry
 export const addCashbookEntry = (
   date: string,
@@ -694,6 +731,7 @@ export const exportDataBackup = (silent = false) => {
       ledger: JSON.parse(localStorage.getItem('ledger') || '[]'),
       payments: JSON.parse(localStorage.getItem('payments') || '[]'),
       receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
+      cashbook: JSON.parse(localStorage.getItem(CASHBOOK_STORAGE_KEY) || '[]'),
       // Add any other data you want to include in the backup
     };
 
@@ -801,6 +839,7 @@ export const importDataBackup = (jsonData: string) => {
     if ('ledger' in data) localStorage.setItem('ledger', JSON.stringify(data.ledger));
     if ('payments' in data) localStorage.setItem('payments', JSON.stringify(data.payments));
     if ('receipts' in data) localStorage.setItem('receipts', JSON.stringify(data.receipts));
+    if ('cashbook' in data) localStorage.setItem(CASHBOOK_STORAGE_KEY, JSON.stringify(data.cashbook));
     
     return true;
   } catch (error) {
