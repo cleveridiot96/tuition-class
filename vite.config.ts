@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => ({
   },
   base: './', // This ensures all assets are loaded using relative paths
   build: {
-    outDir: 'pendrive-app',
+    outDir: 'dist', // Changed from 'pendrive-app' to standard 'dist'
     emptyOutDir: true,
     rollupOptions: {
       output: {
