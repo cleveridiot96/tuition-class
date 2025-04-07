@@ -16,16 +16,250 @@ import Ledger from "./pages/Ledger";
 import Master from "./pages/Master";
 import Receipts from "./pages/Receipts";
 import NotFound from "./pages/NotFound";
+import { 
+  addPurchase, 
+  addSale, 
+  addPayment, 
+  addReceipt,
+  addAgent, 
+  addBroker, 
+  addCustomer, 
+  addTransporter,
+  addInventoryItem,
+  getPurchases,
+  getInventory
+} from "@/services/storageService";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    // Any initialization logic can go here if needed in the future
-    // The app will immediately render without a loading screen
+    // Initialize demo data
+    initializeDemoData();
+    setIsLoading(false);
   }, []);
+
+  const initializeDemoData = () => {
+    // Check if demo data already exists
+    const purchases = getPurchases();
+    if (purchases.length > 0) return;
+
+    // Add entities for the demo
+    const arAgentId = "agent-001";
+    const sudhaTransporterId = "transporter-001";
+    const kanayaCustomerId = "customer-001";
+    const anilBrokerId = "broker-001";
+    const rbSonsCustomerId = "customer-002";
+    const lbBrokerId = "broker-002";
+
+    // Add agents, transporters, customers, brokers
+    addAgent({
+      id: arAgentId,
+      name: "AR Agent",
+      contactNumber: "",
+      address: "",
+      balance: 0
+    });
+
+    addTransporter({
+      id: sudhaTransporterId,
+      name: "SUDHA",
+      contactNumber: "",
+      address: "",
+      balance: 0
+    });
+
+    addCustomer({
+      id: kanayaCustomerId,
+      name: "Kanaiya",
+      contactNumber: "",
+      address: "",
+      balance: 0
+    });
+
+    addBroker({
+      id: anilBrokerId,
+      name: "Anil",
+      contactNumber: "",
+      address: "",
+      commissionRate: 1,
+      balance: 0
+    });
+
+    addCustomer({
+      id: rbSonsCustomerId,
+      name: "RB Sons",
+      contactNumber: "",
+      address: "",
+      balance: 0
+    });
+
+    addBroker({
+      id: lbBrokerId,
+      name: "LB",
+      contactNumber: "",
+      address: "",
+      commissionRate: 1,
+      balance: 0
+    });
+
+    // Scene 1: Purchase from AR Agent
+    const purchaseDate = new Date().toISOString().split('T')[0];
+    const purchaseId = "purchase-001";
+    const lotNumber = "VK/33";
+    
+    // Calculate total amount: 33 bags at ₹300 per kg
+    // Assuming each bag is around 50 kg (adjust if needed)
+    const bagsQuantity = 33;
+    const weightPerBag = 50; // kg
+    const ratePerKg = 300;
+    const transportRatePerKg = 17;
+    const totalWeight = bagsQuantity * weightPerBag;
+    const totalAmountBeforeTransport = totalWeight * ratePerKg;
+    const transportCost = totalWeight * transportRatePerKg;
+    const totalPurchaseAmount = totalAmountBeforeTransport + transportCost;
+
+    // Add purchase transaction
+    const purchase = {
+      id: purchaseId,
+      date: purchaseDate,
+      lotNumber: lotNumber,
+      quantity: bagsQuantity,
+      agent: "AR Agent",
+      party: "AR Agent",
+      location: "Mumbai",
+      netWeight: totalWeight,
+      rate: ratePerKg,
+      transporter: "SUDHA",
+      transportRate: transportRatePerKg,
+      transportCost: transportCost,
+      totalAmount: totalAmountBeforeTransport,
+      expenses: 0,
+      totalAfterExpenses: totalPurchaseAmount,
+      ratePerKgAfterExpenses: totalPurchaseAmount / totalWeight,
+      notes: "Demo purchase of 33 bags from AR Agent"
+    };
+    
+    addPurchase(purchase);
+    
+    // Add to inventory
+    addInventoryItem({
+      id: `inv-${purchaseId}`,
+      lotNumber: lotNumber,
+      quantity: bagsQuantity,
+      location: "Mumbai",
+      dateAdded: purchaseDate,
+      netWeight: totalWeight
+    });
+
+    // Scene 1: Sale to Kanaiya
+    const saleDate = purchaseDate;
+    const saleId1 = "sale-001";
+    const saleBagsQuantity1 = 3;
+    const saleWeightPerBag = 50; // kg
+    const saleRatePerKg1 = 415;
+    const saleTotalWeight1 = saleBagsQuantity1 * saleWeightPerBag;
+    const saleTotalAmount1 = saleTotalWeight1 * saleRatePerKg1;
+    
+    // Add sale transaction
+    const sale1 = {
+      id: saleId1,
+      date: saleDate,
+      lotNumber: lotNumber,
+      billNumber: "KA001",
+      billAmount: saleTotalAmount1,
+      customer: "Kanaiya",
+      customerId: kanayaCustomerId,
+      broker: "Anil",
+      brokerId: anilBrokerId,
+      quantity: saleBagsQuantity1,
+      netWeight: saleTotalWeight1,
+      rate: saleRatePerKg1,
+      transporter: "Self",
+      transporterId: "",
+      transportRate: 0,
+      transportCost: 0,
+      totalAmount: saleTotalAmount1,
+      netAmount: saleTotalAmount1,
+      location: "Mumbai",
+      notes: "Demo sale of 3 bags to Kanaiya through broker Anil"
+    };
+    
+    addSale(sale1);
+    
+    // Scene 1: Receipt from Anil (after deducting 1% cash discount and 1% brokerage)
+    const receiptDate = purchaseDate;
+    const brokerageRate = 0.01; // 1%
+    const cashDiscountRate = 0.01; // 1%
+    const brokerageAmount = saleTotalAmount1 * brokerageRate;
+    const cashDiscountAmount = saleTotalAmount1 * cashDiscountRate;
+    const receiptAmount = saleTotalAmount1 - brokerageAmount - cashDiscountAmount;
+    
+    // Add receipt transaction
+    addReceipt({
+      id: `receipt-${saleId1}`,
+      date: receiptDate,
+      customer: "Anil (for Kanaiya)",
+      customerId: anilBrokerId, 
+      amount: receiptAmount,
+      paymentMethod: "Cash",
+      reference: `Sale ${saleId1}`,
+      notes: `Receipt from Anil for Kanaiya sale. Deducted: ₹${brokerageAmount} (1% brokerage) and ₹${cashDiscountAmount} (1% cash discount)`
+    });
+    
+    // Scene 1: Payment to AR Agent
+    const paymentDate = purchaseDate;
+    const paymentAmount = 50000;
+    
+    // Add payment transaction
+    addPayment({
+      id: `payment-${purchaseId}`,
+      date: paymentDate,
+      party: "AR Agent",
+      partyId: arAgentId,
+      amount: paymentAmount,
+      paymentMethod: "Cash",
+      reference: `Purchase ${purchaseId}`,
+      notes: "Payment to AR Agent for lot VK/33"
+    });
+    
+    // Scene 2: Sale to RB Sons
+    const saleDate2 = purchaseDate;
+    const saleId2 = "sale-002";
+    const saleBagsQuantity2 = 2;
+    const saleRatePerKg2 = 421;
+    const saleTotalWeight2 = saleBagsQuantity2 * saleWeightPerBag;
+    const saleTotalAmount2 = saleTotalWeight2 * saleRatePerKg2;
+    const billAmount2 = 5310; // As per the scenario
+    
+    // Add sale transaction
+    const sale2 = {
+      id: saleId2,
+      date: saleDate2,
+      lotNumber: lotNumber,
+      billNumber: "YI/006/25-26",
+      billAmount: billAmount2,
+      customer: "RB Sons",
+      customerId: rbSonsCustomerId,
+      broker: "LB",
+      brokerId: lbBrokerId,
+      quantity: saleBagsQuantity2,
+      netWeight: saleTotalWeight2,
+      rate: saleRatePerKg2,
+      transporter: "Self",
+      transporterId: "",
+      transportRate: 0,
+      transportCost: 0,
+      totalAmount: saleTotalAmount2,
+      netAmount: billAmount2, // Actual billed amount
+      location: "Mumbai",
+      notes: "Demo sale of 2 bags to RB Sons through broker LB"
+    };
+    
+    addSale(sale2);
+  };
 
   if (isLoading) {
     return (
