@@ -466,8 +466,9 @@ const Ledger = () => {
         </Card>
       </div>
       
-      {/* Print-only styles */}
-      <style jsx global>{`
+      {/* Print-only styles - Fix the style element here by removing jsx and global props */}
+      <style>
+        {`
         @media print {
           body * {
             visibility: hidden;
@@ -505,7 +506,8 @@ const Ledger = () => {
         .excel-style th, .excel-style td {
           border: 1px solid #ddd;
         }
-      `}</style>
+        `}
+      </style>
     </div>
   );
 };
