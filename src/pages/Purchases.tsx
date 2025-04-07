@@ -143,6 +143,8 @@ const Purchases = () => {
       netWeight: formData.netWeight,
       rate: formData.rate,
       transporter: formData.transporter,
+      transportRate: 0, // Adding default value for transportRate
+      transportCost: 0, // Adding the missing transportCost property
       totalAmount: formData.totalAmount,
       expenses: formData.expenses,
       totalAfterExpenses: formData.totalAfterExpenses,
@@ -210,6 +212,8 @@ const Purchases = () => {
       netWeight: formData.netWeight,
       rate: formData.rate,
       transporter: formData.transporter,
+      transportRate: editingPurchase.transportRate || 0, // Preserve transport rate or set default
+      transportCost: editingPurchase.transportCost || 0, // Preserve transport cost or set default
       totalAmount: formData.totalAmount,
       expenses: formData.expenses,
       totalAfterExpenses: formData.totalAfterExpenses,
