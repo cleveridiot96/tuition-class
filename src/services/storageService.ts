@@ -33,6 +33,7 @@ export interface Broker {
   name: string;
   contactNumber: string;
   address: string;
+  commissionRate: number;
   balance: number;
 }
 
@@ -55,10 +56,60 @@ export interface Purchase {
   netWeight: number;
   rate: number;
   transporter: string;
+  transportRate?: number;
+  transportCost: number;
   totalAmount: number;
   expenses: number;
   totalAfterExpenses: number;
   ratePerKgAfterExpenses: number;
+  notes: string;
+  isDeleted?: boolean;
+}
+
+export interface Sale {
+  id: string;
+  date: string;
+  lotNumber: string;
+  billNumber: string;
+  billAmount: number;
+  customer: string;
+  customerId: string;
+  broker: string;
+  brokerId: string;
+  quantity: number;
+  netWeight: number;
+  rate: number;
+  transporter: string;
+  transporterId: string;
+  transportRate: number;
+  transportCost: number;
+  totalAmount: number;
+  netAmount: number;
+  location: string;
+  notes: string;
+  isDeleted?: boolean;
+}
+
+export interface Payment {
+  id: string;
+  date: string;
+  party: string;
+  partyId: string;
+  amount: number;
+  paymentMethod: string;
+  reference: string;
+  notes: string;
+  isDeleted?: boolean;
+}
+
+export interface Receipt {
+  id: string;
+  date: string;
+  customer: string;
+  customerId: string;
+  amount: number;
+  paymentMethod: string;
+  reference: string;
   notes: string;
   isDeleted?: boolean;
 }
@@ -303,6 +354,77 @@ export const saveSales = (sales: any[]) => {
   localStorage.setItem('sales', JSON.stringify(sales));
 };
 
+export const addSale = (sale: Sale): void => {
+  const sales = getSales();
+  sales.push(sale);
+  localStorage.setItem('sales', JSON.stringify(sales));
+  
+  // Update inventory - reduce quantity after sale
+  updateInventoryAfterSale(sale);
+};
+
+export const updateInventoryAfterSale = (sale: Sale): void => {
+  const inventory = getInventory();
+  const itemIndex = inventory.findIndex(item => item.lotNumber === sale.lotNumber && !item.isDeleted);
+  
+  if (itemIndex !== -1) {
+    // Update inventory quantity
+    inventory[itemIndex].quantity -= sale.quantity;
+    inventory[itemIndex].netWeight -= sale.netWeight;
+    
+    // If sold out, mark as deleted
+    if (inventory[itemIndex].quantity <= 0) {
+      inventory[itemIndex].isDeleted = true;
+    }
+    
+    saveInventory(inventory);
+  }
+};
+
+// Payment functions
+export const getPayments = () => {
+  const payments = localStorage.getItem('payments');
+  return payments ? JSON.parse(payments) : [];
+};
+
+export const addPayment = (payment: Payment): void => {
+  const payments = getPayments();
+  payments.push(payment);
+  localStorage.setItem('payments', JSON.stringify(payments));
+  
+  // Create a cashbook entry for this payment
+  addCashbookEntry(
+    payment.date,
+    `Payment to ${payment.party}: ${payment.notes}`,
+    payment.amount, // debit
+    0, // credit
+    payment.id,
+    'payment'
+  );
+};
+
+// Receipt functions
+export const getReceipts = () => {
+  const receipts = localStorage.getItem('receipts');
+  return receipts ? JSON.parse(receipts) : [];
+};
+
+export const addReceipt = (receipt: Receipt): void => {
+  const receipts = getReceipts();
+  receipts.push(receipt);
+  localStorage.setItem('receipts', JSON.stringify(receipts));
+  
+  // Create a cashbook entry for this receipt
+  addCashbookEntry(
+    receipt.date,
+    `Receipt from ${receipt.customer}: ${receipt.notes}`,
+    0, // debit
+    receipt.amount, // credit
+    receipt.id,
+    'receipt'
+  );
+};
+
 // Inventory functions
 export const getInventory = () => {
   const inventory = localStorage.getItem('inventory');
@@ -530,6 +652,8 @@ export const exportDataBackup = (silent = false) => {
       brokers: JSON.parse(localStorage.getItem('brokers') || '[]'),
       transporters: JSON.parse(localStorage.getItem('transporters') || '[]'),
       ledger: JSON.parse(localStorage.getItem('ledger') || '[]'),
+      payments: JSON.parse(localStorage.getItem('payments') || '[]'),
+      receipts: JSON.parse(localStorage.getItem('receipts') || '[]'),
       // Add any other data you want to include in the backup
     };
 
@@ -635,6 +759,8 @@ export const importDataBackup = (jsonData: string) => {
     if ('brokers' in data) localStorage.setItem('brokers', JSON.stringify(data.brokers));
     if ('transporters' in data) localStorage.setItem('transporters', JSON.stringify(data.transporters));
     if ('ledger' in data) localStorage.setItem('ledger', JSON.stringify(data.ledger));
+    if ('payments' in data) localStorage.setItem('payments', JSON.stringify(data.payments));
+    if ('receipts' in data) localStorage.setItem('receipts', JSON.stringify(data.receipts));
     
     return true;
   } catch (error) {
