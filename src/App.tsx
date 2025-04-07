@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -180,6 +181,7 @@ const App = () => {
       totalAmount: saleTotalAmount1,
       netAmount: saleTotalAmount1,
       amount: saleTotalAmount1,
+      location: "Mumbai", // Add the missing location property
       notes: "Demo sale of 3 bags to Kanaiya through broker Anil"
     };
     
@@ -245,6 +247,7 @@ const App = () => {
       totalAmount: saleTotalAmount2,
       netAmount: billAmount2,
       amount: billAmount2,
+      location: "Mumbai", // Add the missing location property
       notes: "Demo sale of 2 bags to RB Sons through broker LB"
     };
     
