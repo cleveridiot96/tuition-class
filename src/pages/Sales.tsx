@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -37,12 +36,24 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  getBrokers
+} from "@/services/storageService";
 
 // Storage keys
 const SALES_STORAGE_KEY = "app_sales_data";
 const DELETED_SALES_STORAGE_KEY = "app_deleted_sales";
 const INVENTORY_STORAGE_KEY = "app_inventory_data";
 const CUSTOMERS_STORAGE_KEY = "app_customers_data";
+const BROKERS_STORAGE_KEY = "app_brokers_data";
 
 interface SaleEntry {
   id: string;
@@ -78,6 +89,12 @@ interface Customer {
   phone: string;
   address: string;
   outstandingBalance: number;
+  broker?: string;
+}
+
+interface Broker {
+  id: string;
+  name: string;
 }
 
 const Sales = () => {
@@ -88,13 +105,15 @@ const Sales = () => {
   const [showDeleted, setShowDeleted] = useState(false);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showNewCustomerDialog, setShowNewCustomerDialog] = useState(false);
   const [newCustomer, setNewCustomer] = useState({
     name: "",
     phone: "",
     address: "",
-    outstandingBalance: 0
+    outstandingBalance: 0,
+    broker: ""
   });
   
   const [formData, setFormData] = useState<Omit<SaleEntry, "id">>({
@@ -139,10 +158,15 @@ const Sales = () => {
         setCustomers(JSON.parse(savedCustomers));
       }
     };
+
+    const loadBrokersData = () => {
+      setBrokers(getBrokers());
+    };
     
     loadSalesData();
     loadInventoryData();
     loadCustomersData();
+    loadBrokersData();
   }, []);
 
   // Save data to local storage when it changes
@@ -470,7 +494,8 @@ const Sales = () => {
       name: "",
       phone: "",
       address: "",
-      outstandingBalance: 0
+      outstandingBalance: 0,
+      broker: ""
     });
     setShowNewCustomerDialog(false);
   };
@@ -542,190 +567,144 @@ const Sales = () => {
             </div>
 
             {showDeleted ? (
-              // Deleted Sales List
+              // Deleted Sales List - Changed to Table Format
               deletedSales.length === 0 ? (
                 <Card className="p-6 text-center">
                   <p className="text-xl text-ag-brown">No deleted sales found.</p>
                 </Card>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {deletedSales.map((sale) => (
-                    <Card key={sale.id} className="p-4 border-dashed border-red-300">
-                      <div className="flex justify-between items-center border-b pb-2 mb-2">
-                        <h3 className="text-xl font-bold">Lot: {sale.lotNumber}</h3>
-                        <p className="text-ag-brown">{new Date(sale.date).toLocaleDateString()}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="font-semibold">Quantity:</p>
-                          <p>{sale.quantity} units</p>
-                        </div>
-                        <div>
-                          <p className="font-semibold">Customer:</p>
-                          <p>{sale.customer}</p>
-                        </div>
-                        {sale.broker && (
-                          <div>
-                            <p className="font-semibold">Broker:</p>
-                            <p>{sale.broker}</p>
-                          </div>
-                        )}
-                        {sale.billNumber && (
-                          <div>
-                            <p className="font-semibold">Bill Number:</p>
-                            <p>{sale.billNumber}</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-3 p-2 bg-ag-beige-light rounded-md">
-                        <div className="flex justify-between">
-                          <p className="font-semibold">Total:</p>
-                          <p className="font-bold">₹{sale.amount}</p>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <p className="font-semibold">Received:</p>
-                          <p className="font-bold">₹{sale.paymentReceived}</p>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <p className="font-semibold">Balance:</p>
-                          <p className={`font-bold ${sale.amount - sale.paymentReceived > 0 ? "text-red-500" : ""}`}>
+                <Card className="p-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Lot</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Broker</TableHead>
+                        <TableHead>Bill #</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Received</TableHead>
+                        <TableHead>Balance</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {deletedSales.map((sale) => (
+                        <TableRow key={sale.id} className="border-dashed border-red-300">
+                          <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{sale.lotNumber}</TableCell>
+                          <TableCell>{sale.quantity}</TableCell>
+                          <TableCell>{sale.customer}</TableCell>
+                          <TableCell>{sale.broker || "-"}</TableCell>
+                          <TableCell>{sale.billNumber || "-"}</TableCell>
+                          <TableCell>₹{sale.amount}</TableCell>
+                          <TableCell>₹{sale.paymentReceived}</TableCell>
+                          <TableCell className={sale.amount - sale.paymentReceived > 0 ? "text-red-500 font-bold" : ""}>
                             ₹{sale.amount - sale.paymentReceived}
-                          </p>
-                        </div>
-                      </div>
-                      {sale.notes && (
-                        <p className="mt-2 text-ag-brown text-sm">
-                          <span className="font-semibold">Notes:</span> {sale.notes}
-                        </p>
-                      )}
-                      <div className="flex justify-end mt-3">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="sm" className="flex items-center gap-1">
-                              <RefreshCcw size={16} />
-                              Restore
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Restore Sale</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to restore this sale? This will update inventory quantities.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleRestore(sale.id)}>
-                                Restore Sale
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                          </TableCell>
+                          <TableCell>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="sm" className="flex items-center gap-1">
+                                  <RefreshCcw size={16} />
+                                  Restore
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Restore Sale</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to restore this sale? This will update inventory quantities.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleRestore(sale.id)}>
+                                    Restore Sale
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
               )
             ) : (
-              // Active Sales List
+              // Active Sales List - Changed to Table Format
               sales.length === 0 ? (
                 <Card className="p-6 text-center">
                   <p className="text-xl text-ag-brown">No sales found. Click the button above to add a new sale.</p>
                 </Card>
               ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {sales.map((sale) => (
-                    <Card key={sale.id} className="p-4">
-                      <div className="flex justify-between items-center border-b pb-2 mb-2">
-                        <h3 className="text-xl font-bold">Lot: {sale.lotNumber}</h3>
-                        <p className="text-ag-brown">{new Date(sale.date).toLocaleDateString()}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <p className="font-semibold">Quantity:</p>
-                          <p>{sale.quantity} units</p>
-                        </div>
-                        <div>
-                          <p className="font-semibold">Customer:</p>
-                          <p>{sale.customer}</p>
-                        </div>
-                        {sale.broker && (
-                          <div>
-                            <p className="font-semibold">Broker:</p>
-                            <p>{sale.broker}</p>
-                          </div>
-                        )}
-                        {sale.billNumber && (
-                          <div>
-                            <p className="font-semibold">Bill Number:</p>
-                            <p>{sale.billNumber}</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="mt-3 p-2 bg-ag-beige-light rounded-md">
-                        <div className="flex justify-between">
-                          <p className="font-semibold">Total:</p>
-                          <p className="font-bold">₹{sale.amount}</p>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <p className="font-semibold">Received:</p>
-                          <p className="font-bold">₹{sale.paymentReceived}</p>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <p className="font-semibold">Balance:</p>
-                          <p className={`font-bold ${sale.amount - sale.paymentReceived > 0 ? "text-red-500" : ""}`}>
+                <Card className="p-4">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Lot</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Broker</TableHead>
+                        <TableHead>Bill #</TableHead>
+                        <TableHead>Total</TableHead>
+                        <TableHead>Received</TableHead>
+                        <TableHead>Balance</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sales.map((sale) => (
+                        <TableRow key={sale.id}>
+                          <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{sale.lotNumber}</TableCell>
+                          <TableCell>{sale.quantity}</TableCell>
+                          <TableCell>{sale.customer}</TableCell>
+                          <TableCell>{sale.broker || "-"}</TableCell>
+                          <TableCell>{sale.billNumber || "-"}</TableCell>
+                          <TableCell>₹{sale.amount}</TableCell>
+                          <TableCell>₹{sale.paymentReceived}</TableCell>
+                          <TableCell className={sale.amount - sale.paymentReceived > 0 ? "text-red-500 font-bold" : ""}>
                             ₹{sale.amount - sale.paymentReceived}
-                          </p>
-                        </div>
-                        {sale.billAmount > 0 && (
-                          <div className="flex justify-between mt-1">
-                            <p className="font-semibold">Bill Amount:</p>
-                            <p className="font-bold">₹{sale.billAmount}</p>
-                          </div>
-                        )}
-                        {sale.cashAmount > 0 && (
-                          <div className="flex justify-between mt-1">
-                            <p className="font-semibold">Cash Amount:</p>
-                            <p className="font-bold">₹{sale.cashAmount}</p>
-                          </div>
-                        )}
-                      </div>
-                      {sale.notes && (
-                        <p className="mt-2 text-ag-brown text-sm">
-                          <span className="font-semibold">Notes:</span> {sale.notes}
-                        </p>
-                      )}
-                      <div className="flex justify-end gap-2 mt-3">
-                        <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => handleEdit(sale)}>
-                          <Edit size={16} />
-                          Edit
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="destructive" size="sm" className="flex items-center gap-1">
-                              <Trash2 size={16} />
-                              Delete
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Sale</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this sale? This will update inventory quantities.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(sale.id)}>
-                                Delete Sale
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => handleEdit(sale)}>
+                                <Edit size={16} />
+                                Edit
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="destructive" size="sm" className="flex items-center gap-1">
+                                    <Trash2 size={16} />
+                                    Delete
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Sale</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this sale? This will update inventory quantities.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(sale.id)}>
+                                      Delete Sale
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
               )
             )}
           </>
@@ -851,6 +830,25 @@ const Sales = () => {
                               value={newCustomer.name}
                               onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
                             />
+                          </div>
+                          <div className="grid gap-2">
+                            <Label htmlFor="newCustomerBroker">Broker</Label>
+                            <Select
+                              value={newCustomer.broker}
+                              onValueChange={(value) => setNewCustomer({...newCustomer, broker: value})}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select broker (optional)" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">No Broker</SelectItem>
+                                {brokers.map((broker) => (
+                                  <SelectItem key={broker.id} value={broker.name}>
+                                    {broker.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                           <div className="grid gap-2">
                             <Label htmlFor="newCustomerPhone">Phone</Label>
@@ -1021,6 +1019,66 @@ const Sales = () => {
           </Card>
         )}
       </div>
+      {/* Add New Customer Dialog - Updated to include broker dropdown */}
+      <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>
+              Enter customer details to add them to your list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="newCustomerName">Customer Name</Label>
+              <Input
+                id="newCustomerName"
+                value={newCustomer.name}
+                onChange={(e) => setNewCustomer({...newCustomer, name: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="newCustomerBroker">Broker</Label>
+              <Select
+                value={newCustomer.broker}
+                onValueChange={(value) => setNewCustomer({...newCustomer, broker: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select broker (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No Broker</SelectItem>
+                  {brokers.map((broker) => (
+                    <SelectItem key={broker.id} value={broker.name}>
+                      {broker.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="newCustomerPhone">Phone</Label>
+              <Input
+                id="newCustomerPhone"
+                value={newCustomer.phone}
+                onChange={(e) => setNewCustomer({...newCustomer, phone: e.target.value})}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="newCustomerAddress">Address</Label>
+              <Input
+                id="newCustomerAddress"
+                value={newCustomer.address}
+                onChange={(e) => setNewCustomer({...newCustomer, address: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewCustomerDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNewCustomer}>Add Customer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
