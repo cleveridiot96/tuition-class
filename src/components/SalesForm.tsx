@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Save } from "lucide-react";
 import { 
   Form, 
   FormControl, 
@@ -24,6 +24,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import {
   getInventory,
   getCustomers,
@@ -55,6 +56,7 @@ interface SalesFormProps {
 }
 
 const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
+  const { toast } = useToast();
   const [inventory, setInventory] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [brokers, setBrokers] = useState<any[]>([]);
@@ -63,6 +65,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
   const [transportCost, setTransportCost] = useState<number>(0);
   const [netAmount, setNetAmount] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [formChanged, setFormChanged] = useState(false);
   
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -90,6 +93,19 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
       notes: "",
     }
   });
+
+  // Reset the form change flag when the form is reset or initialized
+  useEffect(() => {
+    setFormChanged(false);
+  }, [initialData]);
+
+  // Track form changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setFormChanged(true);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   // Load data
   useEffect(() => {
@@ -122,6 +138,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
       form.setValue("location", selectedLot.location);
       form.setValue("quantity", selectedLot.quantity);
       form.setValue("netWeight", selectedLot.netWeight);
+      setFormChanged(true);
     }
   };
 
@@ -163,22 +180,40 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     
     // Submit the data
     onSubmit(submitData);
+    setFormChanged(false);
+  };
+
+  const handleSave = () => {
+    form.handleSubmit(handleFormSubmit)();
   };
 
   return (
     <Card className="p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-bold">Sale Details</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex items-center gap-1"
-          onClick={refreshData}
-          disabled={isRefreshing}
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh Data
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={refreshData}
+            disabled={isRefreshing}
+          >
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            Refresh Data
+          </Button>
+          
+          {formChanged && (
+            <Button 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={handleSave}
+            >
+              <Save size={16} />
+              Save Changes
+            </Button>
+          )}
+        </div>
       </div>
       
       <Form {...form}>
@@ -216,7 +251,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                         <SelectValue placeholder="Select lot" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent searchable>
                       {inventory.length === 0 ? (
                         <SelectItem value="no-lots">No lots available</SelectItem>
                       ) : (
@@ -280,7 +315,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                         <SelectValue placeholder="Select customer" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent searchable>
                       {customers.map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name}
@@ -347,7 +382,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                         <SelectValue placeholder="Select broker (optional)" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent searchable>
                       <SelectItem value="none">No Broker</SelectItem>
                       {brokers.map((broker) => (
                         <SelectItem key={broker.id} value={broker.id}>
@@ -373,7 +408,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                         <SelectValue placeholder="Select transporter" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
+                    <SelectContent searchable>
                       {transporters.map((transporter) => (
                         <SelectItem key={transporter.id} value={transporter.id}>
                           {transporter.name}
@@ -455,7 +490,18 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
             )}
           />
           
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            {formChanged && (
+              <Button 
+                type="button" 
+                onClick={handleSave} 
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <Save size={20} />
+                Save Changes
+              </Button>
+            )}
             <Button type="submit" size="lg">
               {initialData ? "Update Sale" : "Add Sale"}
             </Button>
