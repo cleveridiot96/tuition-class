@@ -27,7 +27,8 @@ import {
   addTransporter,
   addInventoryItem,
   getPurchases,
-  getInventory
+  getInventory,
+  clearAllData
 } from "@/services/storageService";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,9 @@ const App = () => {
     const purchases = getPurchases();
     if (purchases.length > 0) return;
 
+    // Clear any partial data to ensure a clean slate
+    clearAllData();
+
     // Add entities for the demo
     const arAgentId = "agent-001";
     const sudhaTransporterId = "transporter-001";
@@ -58,32 +62,32 @@ const App = () => {
     addAgent({
       id: arAgentId,
       name: "AR Agent",
-      contactNumber: "",
-      address: "",
+      contactNumber: "9876543210",
+      address: "Mumbai",
       balance: 0
     });
 
     addTransporter({
       id: sudhaTransporterId,
       name: "SUDHA",
-      contactNumber: "",
-      address: "",
+      contactNumber: "8765432109",
+      address: "Mumbai",
       balance: 0
     });
 
     addCustomer({
       id: kanayaCustomerId,
       name: "Kanaiya",
-      contactNumber: "",
-      address: "",
+      contactNumber: "7654321098",
+      address: "Mumbai",
       balance: 0
     });
 
     addBroker({
       id: anilBrokerId,
       name: "Anil",
-      contactNumber: "",
-      address: "",
+      contactNumber: "6543210987",
+      address: "Mumbai",
       commissionRate: 1,
       balance: 0
     });
@@ -91,16 +95,16 @@ const App = () => {
     addCustomer({
       id: rbSonsCustomerId,
       name: "RB Sons",
-      contactNumber: "",
-      address: "",
+      contactNumber: "5432109876",
+      address: "Mumbai",
       balance: 0
     });
 
     addBroker({
       id: lbBrokerId,
       name: "LB",
-      contactNumber: "",
-      address: "",
+      contactNumber: "4321098765",
+      address: "Mumbai",
       commissionRate: 1,
       balance: 0
     });
@@ -128,11 +132,14 @@ const App = () => {
       lotNumber: lotNumber,
       quantity: bagsQuantity,
       agent: "AR Agent",
+      agentId: arAgentId, 
       party: "AR Agent",
+      partyId: arAgentId,
       location: "Mumbai",
       netWeight: totalWeight,
       rate: ratePerKg,
       transporter: "SUDHA",
+      transporterId: sudhaTransporterId,
       transportRate: transportRatePerKg,
       transportCost: transportCost,
       totalAmount: totalAmountBeforeTransport,
@@ -183,6 +190,7 @@ const App = () => {
       transportCost: 0,
       totalAmount: saleTotalAmount1,
       netAmount: saleTotalAmount1,
+      amount: saleTotalAmount1,
       location: "Mumbai",
       notes: "Demo sale of 3 bags to Kanaiya through broker Anil"
     };
@@ -232,7 +240,7 @@ const App = () => {
     const saleRatePerKg2 = 421;
     const saleTotalWeight2 = saleBagsQuantity2 * saleWeightPerBag;
     const saleTotalAmount2 = saleTotalWeight2 * saleRatePerKg2;
-    const billAmount2 = 5310; // As per the scenario
+    const billAmount2 = 42100; // As per the scenario
     
     // Add sale transaction
     const sale2 = {
@@ -254,6 +262,7 @@ const App = () => {
       transportCost: 0,
       totalAmount: saleTotalAmount2,
       netAmount: billAmount2, // Actual billed amount
+      amount: billAmount2,
       location: "Mumbai",
       notes: "Demo sale of 2 bags to RB Sons through broker LB"
     };

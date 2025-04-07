@@ -1,10 +1,11 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
-import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory, getSales } from "@/services/storageService";
+import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory, getSales, clearAllData } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -20,21 +21,22 @@ const Index = () => {
   const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
   
   const loadDashboardData = () => {
+    // Ensure initial data is seeded
     seedInitialData();
     
     const purchases = getPurchases();
     const sales = getSales() || [];
     
-    const inventory = getInventory();
+    const inventory = getInventory() || [];
     const mumbaiStock = inventory.filter(item => item.location === "Mumbai");
     const chiplunStock = inventory.filter(item => item.location === "Chiplun");
     const sawantwadiStock = inventory.filter(item => item.location === "Sawantwadi");
     
     setSummaryData({
       purchases: {
-        amount: purchases.reduce((sum, p) => sum + p.totalAfterExpenses, 0),
-        bags: purchases.reduce((sum, p) => sum + p.quantity, 0),
-        kgs: purchases.reduce((sum, p) => sum + p.netWeight, 0)
+        amount: purchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
+        bags: purchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
+        kgs: purchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
       },
       sales: {
         amount: sales.reduce((sum, s) => sum + (s.amount || 0), 0),
@@ -42,9 +44,9 @@ const Index = () => {
         kgs: sales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
       },
       stock: {
-        mumbai: mumbaiStock.reduce((sum, item) => sum + item.quantity, 0),
-        chiplun: chiplunStock.reduce((sum, item) => sum + item.quantity, 0),
-        sawantwadi: sawantwadiStock.reduce((sum, item) => sum + item.quantity, 0)
+        mumbai: mumbaiStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
+        chiplun: chiplunStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
+        sawantwadi: sawantwadiStock.reduce((sum, item) => sum + (item.quantity || 0), 0)
       }
     });
   };
@@ -120,6 +122,7 @@ const Index = () => {
       const backupData = exportDataBackup(true);
       if (backupData) {
         localStorage.setItem('preFormatBackup', backupData);
+        clearAllData();
         seedInitialData(true);
         loadDashboardData();
         
