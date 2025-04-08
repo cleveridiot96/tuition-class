@@ -289,9 +289,9 @@ const Payments = () => {
                     <SelectValue placeholder="Filter by party" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Parties</SelectItem>
+                    <SelectItem value="all-parties">All Parties</SelectItem>
                     {parties.map((party) => (
-                      <SelectItem key={party.id + party.type} value={party.id}>
+                      <SelectItem key={party.id + "-" + party.type} value={party.id}>
                         {party.name}
                       </SelectItem>
                     ))}

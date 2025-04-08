@@ -204,11 +204,15 @@ const PaymentForm = ({ onSubmit, initialData }: PaymentFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {parties.map((party) => (
-                        <SelectItem key={party.id} value={party.id}>
-                          {party.name}
-                        </SelectItem>
-                      ))}
+                      {parties.length > 0 ? (
+                        parties.map((party) => (
+                          <SelectItem key={party.id} value={party.id}>
+                            {party.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-parties-found">No parties found</SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
