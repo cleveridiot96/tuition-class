@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 
 // This file re-exports all functionality from individual service files 
@@ -156,6 +157,7 @@ export const BROKERS_STORAGE_KEY = "app_brokers_data";
 export const CUSTOMERS_STORAGE_KEY = "app_customers_data";
 export const TRANSPORTERS_STORAGE_KEY = "app_transporters_data";
 export const CASHBOOK_STORAGE_KEY = "app_cashbook_data";
+export const SUPPLIERS_STORAGE_KEY = "app_suppliers_data"; // Added missing key
 
 // Agent functions
 export const getAgents = (): Agent[] => {
@@ -1014,17 +1016,17 @@ export const seedInitialData = (force = false) => {
 // This function completely clears all data
 export const clearAllData = () => {
   // Clear both old and new storage keys
-  localStorage.removeItem('app_purchases_data');
-  localStorage.removeItem('app_sales_data');
-  localStorage.removeItem('app_inventory_data');
-  localStorage.removeItem('app_payments_data');
-  localStorage.removeItem('app_receipts_data');
-  localStorage.removeItem('app_agents_data');
-  localStorage.removeItem('app_brokers_data');
-  localStorage.removeItem('app_customers_data');
-  localStorage.removeItem('app_transporters_data');
-  localStorage.removeItem('app_cashbook_data');
-  localStorage.removeItem('app_suppliers_data');
+  localStorage.removeItem(PURCHASES_STORAGE_KEY);
+  localStorage.removeItem(SALES_STORAGE_KEY);
+  localStorage.removeItem(INVENTORY_STORAGE_KEY);
+  localStorage.removeItem(PAYMENTS_STORAGE_KEY);
+  localStorage.removeItem(RECEIPTS_STORAGE_KEY);
+  localStorage.removeItem(AGENTS_STORAGE_KEY);
+  localStorage.removeItem(BROKERS_STORAGE_KEY);
+  localStorage.removeItem(CUSTOMERS_STORAGE_KEY);
+  localStorage.removeItem(TRANSPORTERS_STORAGE_KEY);
+  localStorage.removeItem(CASHBOOK_STORAGE_KEY);
+  localStorage.removeItem(SUPPLIERS_STORAGE_KEY);
   
   // Also clear old keys for backward compatibility
   localStorage.removeItem('purchases');
