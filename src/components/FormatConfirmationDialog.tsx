@@ -36,6 +36,7 @@ const FormatConfirmationDialog = ({
   };
 
   const handleClose = () => {
+    // Reset to first stage whenever dialog is closed
     setConfirmationStage(1);
     onClose();
   };

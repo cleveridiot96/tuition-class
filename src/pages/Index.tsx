@@ -41,14 +41,12 @@ const Index = () => {
   const loadDashboardData = () => {
     setIsRefreshing(true);
     
-    // Ensure initial data is seeded
     seedInitialData();
     
     const purchases = getPurchases() || [];
     const sales = getSales() || [];
     
     const inventory = getInventory() || [];
-    // Filter active inventory items (not deleted)
     const activeInventory = inventory.filter(item => !item.isDeleted);
     const mumbaiStock = activeInventory.filter(item => item.location === "Mumbai");
     const chiplunStock = activeInventory.filter(item => item.location === "Chiplun");
@@ -58,21 +56,17 @@ const Index = () => {
     console.log("Sales data loaded:", sales);
     console.log("Active inventory:", activeInventory);
     
-    // Calculate profits by transaction
     const transactionProfits: ProfitData[] = sales.map(sale => {
       const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber && !p.isDeleted);
       const purchaseCost = relatedPurchase ? relatedPurchase.totalAfterExpenses : 0;
       const purchaseCostPerKg = relatedPurchase ? purchaseCost / relatedPurchase.netWeight : 0;
       
-      // Calculate purchase cost for this sale's quantity
       const effectivePurchaseCost = purchaseCostPerKg * sale.netWeight;
       
-      // Calculate sale revenue considering brokerage (1%)
       const saleRevenue = sale.totalAmount || 0;
       const brokerage = sale.broker ? saleRevenue * 0.01 : 0;
       const netSaleRevenue = saleRevenue - brokerage;
       
-      // Calculate profit
       const profit = Math.round(netSaleRevenue - effectivePurchaseCost);
       
       return {
@@ -85,7 +79,6 @@ const Index = () => {
       };
     });
     
-    // Calculate profits by month
     const profitsByMonth: Record<string, { profit: number; display: string }> = {};
     transactionProfits.forEach(transaction => {
       if (!transaction.date) return;
@@ -113,7 +106,6 @@ const Index = () => {
     setProfitByMonth(monthlyProfits);
     setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
     
-    // Only consider active purchases (not deleted)
     const activePurchases = purchases.filter(p => !p.isDeleted);
     
     setSummaryData({
@@ -140,7 +132,6 @@ const Index = () => {
   useEffect(() => {
     loadDashboardData();
     
-    // Set up auto-refresh every 300ms
     const intervalId = setInterval(() => {
       loadDashboardData();
     }, 300);
@@ -160,6 +151,7 @@ const Index = () => {
   const handleFormatConfirm = () => {
     try {
       const backupData = exportDataBackup(true);
+      
       if (backupData) {
         localStorage.setItem('preFormatBackup', backupData);
         clearAllData();
@@ -167,20 +159,22 @@ const Index = () => {
         loadDashboardData();
         
         toast({
-          title: "Data Formatted",
-          description: "All data has been successfully formatted. A backup was automatically created.",
+          title: "Data Formatted Successfully",
+          description: "All data has been reset to initial state. A backup was automatically created.",
         });
+      } else {
+        throw new Error("Failed to create backup data");
       }
     } catch (error) {
       console.error("Error during formatting:", error);
       toast({
         title: "Format Error",
-        description: "There was a problem formatting the data.",
+        description: "There was a problem formatting the data. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsFormatDialogOpen(false);
     }
-    
-    setIsFormatDialogOpen(false);
   };
 
   return (
