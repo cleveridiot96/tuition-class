@@ -1,10 +1,10 @@
+
 import React, { useEffect, useState, useCallback } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Card } from "@/components/ui/card";
 import { 
   seedInitialData, 
   getPurchases, 
@@ -19,6 +19,7 @@ import { format, parseISO } from "date-fns";
 import BackupRestoreControls from "@/components/BackupRestoreControls";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
 import DashboardSummary from "@/components/DashboardSummary";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface ProfitData {
   purchase: number;
@@ -27,6 +28,7 @@ interface ProfitData {
   date: string;
   quantity: number;
   netWeight: number;
+  id?: string;
 }
 
 interface MonthlyProfitData {
@@ -73,8 +75,8 @@ const Index = () => {
         const effectivePurchaseCost = purchaseCostPerKg * sale.netWeight;
         
         const saleRevenue = sale.totalAmount || 0;
-        const brokerage = sale.broker ? saleRevenue * 0.01 : 0;
-        const netSaleRevenue = saleRevenue - brokerage;
+        // We don't subtract brokerage anymore, just record it
+        const netSaleRevenue = saleRevenue;
         
         const profit = Math.round(netSaleRevenue - effectivePurchaseCost);
         
@@ -84,7 +86,8 @@ const Index = () => {
           profit: profit,
           date: sale.date,
           quantity: sale.quantity,
-          netWeight: sale.netWeight
+          netWeight: sale.netWeight,
+          id: sale.id,
         };
       });
       
@@ -159,14 +162,23 @@ const Index = () => {
       console.error("Error during initialization:", error);
     }
     
+    // Add both focus and visibility change events
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        loadDashboardData();
+      }
+    };
+    
     const handleFocus = () => {
       loadDashboardData();
     };
     
     window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
     
     return () => {
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [loadDashboardData]);
 
@@ -194,6 +206,7 @@ const Index = () => {
       if (backupData) {
         localStorage.setItem('preFormatBackup', backupData);
         
+        // Clear all data including master data
         clearAllData();
         clearAllMasterData();
         
@@ -203,6 +216,7 @@ const Index = () => {
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
+        // Dispatch event for other components to refresh
         window.dispatchEvent(new Event('storage'));
         
         setDataVersion(prev => prev + 1);
@@ -211,6 +225,9 @@ const Index = () => {
           title: "Data Formatted Successfully",
           description: "All data has been reset to initial state. A backup was created automatically.",
         });
+        
+        // Force a reload for a clean slate
+        loadDashboardData();
       } else {
         throw new Error("Failed to create backup data");
       }
@@ -227,44 +244,46 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige">
-      <Navigation 
-        title="Dashboard" 
-        showFormatButton={true}
-        onFormatClick={handleFormatClick}
-      />
-      <div className="container mx-auto px-4 py-6">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-ag-brown-dark">
-            Business Management Software
-          </h2>
-          <p className="text-lg text-ag-brown mt-2">
-            Agricultural Business Management System
-          </p>
+    <TooltipProvider>
+      <div className="min-h-screen bg-ag-beige">
+        <Navigation 
+          title="Dashboard" 
+          showFormatButton={true}
+          onFormatClick={handleFormatClick}
+        />
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold text-ag-brown-dark">
+              Business Management Software
+            </h2>
+            <p className="text-lg text-ag-brown mt-2">
+              Agricultural Business Management System
+            </p>
+            
+            <BackupRestoreControls 
+              onRefresh={loadDashboardData} 
+              isRefreshing={isRefreshing} 
+            />
+          </div>
           
-          <BackupRestoreControls 
-            onRefresh={loadDashboardData} 
-            isRefreshing={isRefreshing} 
+          <DashboardMenu />
+          
+          <DashboardSummary summaryData={summaryData} />
+          
+          <ProfitLossStatement 
+            profitByTransaction={profitByTransaction}
+            profitByMonth={profitByMonth}
+            totalProfit={totalProfit}
           />
         </div>
-        
-        <DashboardMenu />
-        
-        <DashboardSummary summaryData={summaryData} />
-        
-        <ProfitLossStatement 
-          profitByTransaction={profitByTransaction}
-          profitByMonth={profitByMonth}
-          totalProfit={totalProfit}
+
+        <FormatConfirmationDialog
+          isOpen={isFormatDialogOpen}
+          onClose={() => setIsFormatDialogOpen(false)}
+          onConfirm={handleFormatConfirm}
         />
       </div>
-
-      <FormatConfirmationDialog
-        isOpen={isFormatDialogOpen}
-        onClose={() => setIsFormatDialogOpen(false)}
-        onConfirm={handleFormatConfirm}
-      />
-    </div>
+    </TooltipProvider>
   );
 };
 

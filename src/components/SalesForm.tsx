@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -38,9 +39,9 @@ const formSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
   netWeight: z.coerce.number().min(1, "Net weight is required"),
   rate: z.coerce.number().min(1, "Rate is required"),
-  transporterId: z.string().min(1, "Transporter is required"),
+  transporterId: z.string().optional(), // Made optional
   transportRate: z.coerce.number().min(0, "Transport rate must be valid"),
-  location: z.string().optional(),
+  location: z.string().optional(), // Already optional
   brokerId: z.string().optional(),
   brokerageType: z.enum(["percentage", "fixed"]).optional(),
   brokerageValue: z.coerce.number().min(0, "Brokerage value must be valid").optional(),
@@ -169,7 +170,8 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     }
     setBrokerageAmount(calculatedBrokerageAmount);
     
-    const calculatedNetAmount = calculatedTotalAmount - calculatedBrokerageAmount;
+    // No longer subtracting brokerage from net amount, just recording it
+    const calculatedNetAmount = calculatedTotalAmount;
     setNetAmount(calculatedNetAmount);
   }, [form.watch(), showBrokerage]);
 
@@ -180,7 +182,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       ...data,
       customer: customer ? customer.name : data.customerId,
       customerId: data.customerId,
-      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
+      transporter: data.transporterId ? transporters.find(t => t.id === data.transporterId)?.name || "" : "",
       broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
       brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
       brokerageType: data.brokerageType || "percentage",
@@ -335,11 +337,11 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="transporterId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Transporter</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Transporter (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select transporter" />
+                        <SelectValue placeholder="Select transporter (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -368,7 +370,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                       {...field}
                       placeholder="0.00"
                       step="0.01"
-                      disabled={form.watch('transporterId') === 'self'}
+                      disabled={form.watch('transporterId') === 'self' || !form.watch('transporterId')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -381,7 +383,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>Location (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
@@ -522,7 +524,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               </div>
               {showBrokerage && (
                 <div>
-                  <p className="text-sm text-gray-500">Brokerage</p>
+                  <p className="text-sm text-gray-500">Brokerage (recorded)</p>
                   <p className="font-bold">₹{brokerageAmount.toFixed(2)}</p>
                 </div>
               )}

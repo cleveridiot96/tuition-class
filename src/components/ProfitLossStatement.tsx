@@ -1,8 +1,20 @@
 
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, ExternalLink } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useNavigate } from "react-router-dom";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 interface ProfitData {
   purchase: number;
@@ -11,6 +23,7 @@ interface ProfitData {
   date: string;
   quantity: number;
   netWeight: number;
+  id?: string; // Sale ID
 }
 
 interface MonthlyProfitData {
@@ -30,6 +43,7 @@ const ProfitLossStatement = ({
   totalProfit 
 }: ProfitLossStatementProps) => {
   const [expandedProfitSection, setExpandedProfitSection] = useState(true);
+  const navigate = useNavigate();
 
   const toggleProfitSection = () => {
     setExpandedProfitSection(!expandedProfitSection);
@@ -41,6 +55,12 @@ const ProfitLossStatement = ({
       currency: 'INR',
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  const handleTransactionClick = (saleId: string | undefined) => {
+    if (saleId) {
+      navigate('/sales', { state: { highlightSaleId: saleId } });
+    }
   };
 
   return (
@@ -74,15 +94,60 @@ const ProfitLossStatement = ({
                   <div className="p-2 text-center text-gray-500">No transaction data available</div>
                 ) : (
                   profitByTransaction.map((item, idx) => (
-                    <div key={idx} className="grid grid-cols-5 border-t">
-                      <div className="p-2">{format(parseISO(item.date), 'dd/MM/yy')}</div>
-                      <div className="p-2">{formatCurrency(item.purchase)}</div>
-                      <div className="p-2">{formatCurrency(item.sale)}</div>
-                      <div className="p-2">{item.netWeight}</div>
-                      <div className={`p-2 ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(item.profit)}
-                      </div>
-                    </div>
+                    <TooltipProvider key={idx}>
+                      <Tooltip>
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
+                            <TooltipTrigger asChild>
+                              <div 
+                                className="grid grid-cols-5 border-t hover:bg-gray-100 cursor-pointer" 
+                                onClick={() => handleTransactionClick(item.id)}
+                              >
+                                <div className="p-2">{format(parseISO(item.date), 'dd/MM/yy')}</div>
+                                <div className="p-2">{formatCurrency(item.purchase)}</div>
+                                <div className="p-2">{formatCurrency(item.sale)}</div>
+                                <div className="p-2">{item.netWeight}</div>
+                                <div className={`p-2 ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {formatCurrency(item.profit)}
+                                </div>
+                              </div>
+                            </TooltipTrigger>
+                          </HoverCardTrigger>
+                          <TooltipContent>
+                            <span>Click to view transaction details</span>
+                          </TooltipContent>
+                          <HoverCardContent className="w-80">
+                            <div className="space-y-1">
+                              <h4 className="text-sm font-semibold">Transaction Details</h4>
+                              <div className="text-sm">
+                                <div className="grid grid-cols-2 gap-1">
+                                  <span className="font-medium">Date:</span>
+                                  <span>{format(parseISO(item.date), 'dd MMM yyyy')}</span>
+                                  
+                                  <span className="font-medium">Purchase Cost:</span>
+                                  <span>{formatCurrency(item.purchase)}</span>
+                                  
+                                  <span className="font-medium">Sale Revenue:</span>
+                                  <span>{formatCurrency(item.sale)}</span>
+                                  
+                                  <span className="font-medium">Quantity:</span>
+                                  <span>{item.netWeight} kg</span>
+                                  
+                                  <span className="font-medium">Profit/Loss:</span>
+                                  <span className={item.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                    {formatCurrency(item.profit)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center pt-2">
+                                <ExternalLink size={14} className="mr-1" /> 
+                                <span className="text-xs text-blue-600">Click to view full details</span>
+                              </div>
+                            </div>
+                          </HoverCardContent>
+                        </HoverCard>
+                      </Tooltip>
+                    </TooltipProvider>
                   ))
                 )}
               </div>
