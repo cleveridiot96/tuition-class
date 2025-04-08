@@ -143,11 +143,11 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   }, []);
 
   const loadData = () => {
-    setCustomers(getCustomers());
-    setBrokers(getBrokers());
-    setTransporters(getTransporters());
-    setInventory(getInventory().filter(item => !item.isDeleted && item.quantity > 0));
-    setLocations(getLocations());
+    setCustomers(getCustomers() || []);
+    setBrokers(getBrokers() || []);
+    setTransporters(getTransporters() || []);
+    setInventory((getInventory() || []).filter(item => !item.isDeleted && item.quantity > 0));
+    setLocations(getLocations() || []);
   };
 
   useEffect(() => {
@@ -395,28 +395,28 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     setShowSimilarCustomerDialog(false);
   };
 
-  // Transform data for combobox
-  const customerOptions = customers.map(customer => ({
+  // Transform data for combobox - ensure we never pass undefined to map functions
+  const customerOptions = (customers || []).map(customer => ({
     value: customer.id,
     label: customer.name
   }));
 
-  const brokerOptions = brokers.map(broker => ({
+  const brokerOptions = (brokers || []).map(broker => ({
     value: broker.id,
     label: broker.name
   }));
 
-  const transporterOptions = transporters.map(transporter => ({
+  const transporterOptions = (transporters || []).map(transporter => ({
     value: transporter.id,
     label: transporter.name
   }));
 
-  const inventoryOptions = inventory.map(item => ({
+  const inventoryOptions = (inventory || []).map(item => ({
     value: item.lotNumber,
     label: `${item.lotNumber} (${item.quantity} bags available) - ${item.location}`
   }));
 
-  const locationOptions = locations.map(location => ({
+  const locationOptions = (locations || []).map(location => ({
     value: location,
     label: location
   }));

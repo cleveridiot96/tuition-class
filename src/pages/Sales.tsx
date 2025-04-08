@@ -112,7 +112,7 @@ const Sales = () => {
   const loadData = () => {
     setIsRefreshing(true);
     
-    const allSales = getSales();
+    const allSales = getSales() || [];
     const activeSales = allSales.filter(s => !s.isDeleted);
     const deletedSalesData = allSales.filter(s => s.isDeleted);
     

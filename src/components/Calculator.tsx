@@ -119,7 +119,7 @@ const Calculator = () => {
           <Button variant="destructive" onClick={clearDisplay}>C</Button>
           <Button variant="secondary" onClick={() => handleOperator('+')}>+</Button>
           
-          <Button variant="primary" onClick={handleEquals} className="col-span-4 bg-blue-600 hover:bg-blue-700 text-white">=</Button>
+          <Button variant="default" onClick={handleEquals} className="col-span-4 bg-blue-600 hover:bg-blue-700 text-white">=</Button>
         </div>
       </CardContent>
     </Card>
