@@ -41,6 +41,25 @@ export function Combobox({
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
 
+  // Close dropdown when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = () => {
+      if (open) {
+        setOpen(false);
+      }
+    };
+    
+    // Add a small delay to allow for selection before closing
+    const handleWindowClick = () => {
+      setTimeout(handleClickOutside, 100);
+    };
+    
+    if (open) {
+      window.addEventListener('click', handleWindowClick);
+      return () => window.removeEventListener('click', handleWindowClick);
+    }
+  }, [open]);
+
   React.useEffect(() => {
     if (value !== undefined && value !== null) {
       setSelectedValue(value);
@@ -49,81 +68,87 @@ export function Combobox({
     }
   }, [value]);
 
-  const handleSelect = (currentValue: string) => {
-    if (currentValue) {
-      setSelectedValue(currentValue);
-      setOpen(false);
-      if (onSelect) onSelect(currentValue);
-      if (onChange) onChange(currentValue);
+  const handleSelect = React.useCallback((currentValue: string) => {
+    try {
+      if (currentValue) {
+        setSelectedValue(currentValue);
+        setOpen(false);
+        if (onSelect) onSelect(currentValue);
+        if (onChange) onChange(currentValue);
+      }
+    } catch (error) {
+      console.error("Error in combobox handleSelect:", error);
     }
-  };
+  }, [onSelect, onChange]);
 
-  const handleInputChange = (newValue: string) => {
-    setInputValue(newValue);
-    if (onInputChange) onInputChange(newValue);
-    
-    // If the input is cleared, also clear the selected value
-    if (!newValue) {
-      setSelectedValue("");
-      if (onChange) onChange("");
+  const handleInputChange = React.useCallback((newValue: string) => {
+    try {
+      setInputValue(newValue);
+      if (onInputChange) onInputChange(newValue);
+      
+      // If the input is cleared, also clear the selected value
+      if (!newValue) {
+        setSelectedValue("");
+        if (onChange) onChange("");
+      }
+    } catch (error) {
+      console.error("Error in combobox handleInputChange:", error);
     }
-  };
+  }, [onInputChange, onChange]);
 
   // Filter options based on input value - with additional safety checks
   const filteredOptions = React.useMemo(() => {
-    // Ensure options is always a valid array
-    const safeOptions = Array.isArray(options) ? options : [];
-    
-    // Early return if no input or empty options
-    if (!inputValue || safeOptions.length === 0) return safeOptions;
-    
     try {
-      return safeOptions.filter(option => 
-        option && 
-        option.label && 
-        option.value && 
-        (option.label.toLowerCase().includes(inputValue.toLowerCase()) ||
-        option.value.toLowerCase().includes(inputValue.toLowerCase()))
-      );
+      // Ensure options is always a valid array
+      const safeOptions = Array.isArray(options) ? options : [];
+      
+      // Early return if no input or empty options
+      if (!inputValue || safeOptions.length === 0) return safeOptions;
+      
+      return safeOptions.filter(option => {
+        if (!option) return false;
+        
+        const label = option.label?.toLowerCase() || '';
+        const value = option.value?.toLowerCase() || '';
+        const search = inputValue.toLowerCase();
+        
+        return label.includes(search) || value.includes(search);
+      });
     } catch (error) {
       console.error("Error filtering options:", error);
-      return safeOptions; // Return all options if filtering fails
+      return Array.isArray(options) ? options : []; // Return all options if filtering fails
     }
   }, [options, inputValue]);
 
   // Find the display text with additional safety
   const displayText = React.useMemo(() => {
-    if (!selectedValue) return "";
-    
-    // Ensure options is always a valid array
-    const safeOptions = Array.isArray(options) ? options : [];
-    
     try {
+      if (!selectedValue) return "";
+      
+      // Ensure options is always a valid array
+      const safeOptions = Array.isArray(options) ? options : [];
+      
       const foundOption = safeOptions.find(option => option && option.value === selectedValue);
       return foundOption ? foundOption.label : selectedValue;
     } catch (error) {
       console.error("Error finding display text:", error);
-      return selectedValue; // Fallback to selected value if lookup fails
+      return selectedValue || ""; // Fallback to selected value if lookup fails
     }
   }, [selectedValue, options]);
 
-  // Safety check for if options is not iterable at all
-  if (options === undefined || options === null) {
-    return (
-      <Button
-        variant="outline"
-        role="combobox"
-        className={cn("w-full justify-between", className)}
-        disabled={true}
-      >
-        No options available
-        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-      </Button>
-    );
-  }
-
+  // Safely render component with error boundaries
   return (
-    <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
+    <Popover 
+      open={disabled ? false : open} 
+      onOpenChange={disabled ? undefined : (isOpen) => {
+        try {
+          setOpen(isOpen);
+        } catch (error) {
+          console.error("Error changing popover state:", error);
+          setOpen(false);
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -131,6 +156,9 @@ export function Combobox({
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
           disabled={disabled}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent event bubbling
+          }}
         >
           {selectedValue ? displayText : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -148,10 +176,13 @@ export function Combobox({
             value={inputValue}
             onValueChange={handleInputChange}
             className="h-9"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event bubbling
+            }}
           />
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
-            {(filteredOptions || []).map((option) => 
+            {(Array.isArray(filteredOptions) ? filteredOptions : []).map((option) => 
               option && option.value ? (
                 <CommandItem
                   key={option.value}

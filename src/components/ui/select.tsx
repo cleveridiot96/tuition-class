@@ -91,18 +91,20 @@ const SelectContent = React.forwardRef<
   
   // Filter children based on search query with error handling
   const filteredChildren = React.useMemo(() => {
-    if (!searchable || !searchQuery || !safeChildren || safeChildren.length === 0) {
-      return safeChildren;
-    }
-    
     try {
+      if (!searchable || !searchQuery || !safeChildren || safeChildren.length === 0) {
+        return safeChildren;
+      }
+      
+      const lowerSearchQuery = searchQuery.toLowerCase();
+      
       return React.Children.map(safeChildren, (child) => {
         if (!React.isValidElement(child)) return null;
         
         // For direct SelectItem children
         if (child.type === SelectItem) {
           const childText = String(child.props.children || '').toLowerCase();
-          return childText.includes(searchQuery.toLowerCase()) ? child : null;
+          return childText.includes(lowerSearchQuery) ? child : null;
         }
         
         // For SelectGroup or other container elements
@@ -111,31 +113,25 @@ const SelectContent = React.forwardRef<
           
           if (!groupChildren || groupChildren.length === 0) return child;
           
-          try {
-            const filteredGroupChildren = React.Children.toArray(groupChildren)
-              .filter(groupChild => {
-                if (!React.isValidElement(groupChild)) return false;
-                
-                try {
-                  const groupChildText = String(groupChild.props?.children || '').toLowerCase();
-                  return groupChildText.includes(searchQuery.toLowerCase());
-                } catch (e) {
-                  console.error("Error filtering group child:", e);
-                  return false;
-                }
-              });
+          const filteredGroupChildren = React.Children.map(groupChildren, (groupChild) => {
+            if (!React.isValidElement(groupChild)) return null;
             
-            if (filteredGroupChildren.length === 0) return null;
-            
-            return React.cloneElement(child, {}, filteredGroupChildren);
-          } catch (groupError) {
-            console.error("Error filtering group children:", groupError);
-            return child; // Return original child if filtering fails
-          }
+            try {
+              const groupChildText = String(groupChild.props?.children || '').toLowerCase();
+              return groupChildText.includes(lowerSearchQuery) ? groupChild : null;
+            } catch (e) {
+              console.error("Error filtering group child:", e);
+              return null;
+            }
+          }).filter(Boolean);
+          
+          if (!filteredGroupChildren || filteredGroupChildren.length === 0) return null;
+          
+          return React.cloneElement(child, {}, filteredGroupChildren);
         }
         
         return child;
-      });
+      }).filter(Boolean);
     } catch (error) {
       console.error("Error filtering select options:", error);
       return safeChildren; // Return all children if filtering fails
@@ -153,6 +149,14 @@ const SelectContent = React.forwardRef<
           className
         )}
         position={position}
+        onCloseAutoFocus={(e) => {
+          // Prevent focus issues that might cause re-renders
+          e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          // Prevent issues with escape key
+          e.stopPropagation();
+        }}
         {...props}
       >
         <SelectScrollUpButton />
@@ -162,9 +166,19 @@ const SelectContent = React.forwardRef<
               <Search className="h-3.5 w-3.5 text-muted-foreground" />
               <Input 
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  try {
+                    setSearchQuery(e.target.value);
+                  } catch (error) {
+                    console.error("Error setting search query:", error);
+                  }
+                }}
                 placeholder="Search..."
                 className="h-8 p-0 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                onClick={(e) => {
+                  // Prevent event bubbling
+                  e.stopPropagation();
+                }}
               />
             </div>
           </div>
@@ -204,25 +218,35 @@ SelectLabel.displayName = SelectPrimitive.Label.displayName
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
-  <SelectPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-      className
-    )}
-    {...props}
-    value={props.value || "placeholder-value"} // Ensure value is never empty string
-  >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <SelectPrimitive.ItemIndicator>
-        <Check className="h-4 w-4" />
-      </SelectPrimitive.ItemIndicator>
-    </span>
+>(({ className, children, ...props }, ref) => {
+  // Ensure value is never undefined or null which can cause rendering issues
+  const safeValue = props.value || "placeholder-value";
+  
+  return (
+    <SelectPrimitive.Item
+      ref={ref}
+      className={cn(
+        "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+        className
+      )}
+      {...props}
+      value={safeValue}
+      onSelect={(event) => {
+        // Prevent any potential bubbling issues
+        event.stopPropagation();
+        if (props.onSelect) props.onSelect(event);
+      }}
+    >
+      <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+        <SelectPrimitive.ItemIndicator>
+          <Check className="h-4 w-4" />
+        </SelectPrimitive.ItemIndicator>
+      </span>
 
-    <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
-  </SelectPrimitive.Item>
-))
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+    </SelectPrimitive.Item>
+  );
+})
 SelectItem.displayName = SelectPrimitive.Item.displayName
 
 const SelectSeparator = React.forwardRef<

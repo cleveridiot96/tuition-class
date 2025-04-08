@@ -31,6 +31,11 @@ const DropdownMenuSubTrigger = React.forwardRef<
       className
     )}
     {...props}
+    onClick={(e) => {
+      // Prevent event bubbling
+      e.stopPropagation();
+      if (props.onClick) props.onClick(e);
+    }}
   >
     {children}
     <ChevronRight className="ml-auto h-4 w-4" />
@@ -50,6 +55,11 @@ const DropdownMenuSubContent = React.forwardRef<
       className
     )}
     {...props}
+    onCloseAutoFocus={(e) => {
+      // Prevent focus issues that might cause re-renders
+      e.preventDefault();
+      if (props.onCloseAutoFocus) props.onCloseAutoFocus(e);
+    }}
   />
 ))
 DropdownMenuSubContent.displayName =
@@ -67,6 +77,16 @@ const DropdownMenuContent = React.forwardRef<
         "z-[100] min-w-[8rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
         className
       )}
+      onCloseAutoFocus={(e) => {
+        // Prevent focus issues that might cause re-renders
+        e.preventDefault();
+        if (props.onCloseAutoFocus) props.onCloseAutoFocus(e);
+      }}
+      onEscapeKeyDown={(e) => {
+        // Ensure escape key events don't cause issues
+        e.stopPropagation();
+        if (props.onEscapeKeyDown) props.onEscapeKeyDown(e);
+      }}
       {...props}
     />
   </DropdownMenuPrimitive.Portal>
@@ -86,6 +106,11 @@ const DropdownMenuItem = React.forwardRef<
       inset && "pl-8",
       className
     )}
+    onClick={(e) => {
+      // Prevent event bubbling
+      e.stopPropagation();
+      if (props.onClick) props.onClick(e);
+    }}
     {...props}
   />
 ))
@@ -102,6 +127,11 @@ const DropdownMenuCheckboxItem = React.forwardRef<
       className
     )}
     checked={checked}
+    onClick={(e) => {
+      // Prevent event bubbling
+      e.stopPropagation();
+      if (props.onClick) props.onClick(e);
+    }}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
@@ -125,6 +155,11 @@ const DropdownMenuRadioItem = React.forwardRef<
       "relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}
+    onClick={(e) => {
+      // Prevent event bubbling
+      e.stopPropagation();
+      if (props.onClick) props.onClick(e);
+    }}
     {...props}
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
