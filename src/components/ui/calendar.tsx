@@ -70,7 +70,7 @@ Calendar.displayName = "Calendar";
 
 export { Calendar };
 
-function format(date: Date, format: string, options?: { locale?: Locale }): string {
+function format(date: Date, format: string, options?: { locale?: any }): string {
   // Format date using DD/MM/YY format or other formats as needed
   if (format === 'MMMM yyyy') {
     const month = date.toLocaleDateString('en-US', { month: 'long' });
