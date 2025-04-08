@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { PlusCircle, Edit, Trash2, RefreshCw } from "lucide-react";
+import { PlusCircle, Edit, Trash2, RefreshCw, PrinterIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SalesForm from "@/components/SalesForm";
 import {
@@ -44,6 +44,8 @@ import {
   updateInventoryAfterSale,
   getInventory,
 } from "@/services/storageService";
+import { useReactToPrint } from "react-to-print";
+import SalesReceipt from "@/components/SalesReceipt";
 
 interface Sale {
   id: string;
@@ -61,12 +63,12 @@ interface Sale {
   transporter: string;
   transporterId: string;
   transportRate: number;
-  location: string;
   notes?: string;
   totalAmount: number;
   transportCost: number;
   netAmount: number;
   isDeleted?: boolean;
+  brokerage?: number;
 }
 
 const Sales = () => {
@@ -79,6 +81,19 @@ const Sales = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deletedSales, setDeletedSales] = useState<Sale[]>([]);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [saleToPrint, setSaleToPrint] = useState<Sale | null>(null);
+  const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    documentTitle: `Sale Receipt ${saleToPrint?.billNumber || saleToPrint?.id || ""}`,
+    onAfterPrint: () => {
+      setIsPrintDialogOpen(false);
+      setSaleToPrint(null);
+    },
+  });
 
   useEffect(() => {
     loadData();
@@ -192,6 +207,18 @@ const Sales = () => {
     
     toast.success("Sale restored successfully");
   };
+  
+  const handlePrintSale = (sale: Sale) => {
+    setSaleToPrint(sale);
+    setIsPrintDialogOpen(true);
+    
+    // Allow a little time for the dialog to show before printing
+    setTimeout(() => {
+      if (printRef.current) {
+        handlePrint();
+      }
+    }, 300);
+  };
 
   return (
     <div className="min-h-screen">
@@ -249,7 +276,16 @@ const Sales = () => {
               <DialogTitle>Edit Sale</DialogTitle>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
-              {editingSale && <SalesForm onSubmit={handleUpdate} initialData={editingSale} />}
+              {editingSale && (
+                <SalesForm 
+                  onSubmit={handleUpdate} 
+                  initialData={editingSale} 
+                  onPrint={() => {
+                    setIsEditDialogOpen(false);
+                    setTimeout(() => handlePrintSale(editingSale), 300);
+                  }}
+                />
+              )}
             </ScrollArea>
           </DialogContent>
         </Dialog>
@@ -275,6 +311,23 @@ const Sales = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Dialog 
+          open={isPrintDialogOpen} 
+          onOpenChange={setIsPrintDialogOpen}
+        >
+          <DialogContent className="w-[90vw] max-w-[800px] max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle>Print Sale Receipt</DialogTitle>
+            </DialogHeader>
+            <div ref={printRef} className="p-4">
+              {saleToPrint && <SalesReceipt sale={saleToPrint} />}
+            </div>
+            <DialogFooter>
+              <Button onClick={handlePrint}>Print Now</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <div className="space-y-4">
           {showDeleted ? (
@@ -337,7 +390,9 @@ const Sales = () => {
                           <TableHead className="sticky top-0 bg-white">Quantity</TableHead>
                           <TableHead className="sticky top-0 bg-white">Net Weight</TableHead>
                           <TableHead className="sticky top-0 bg-white">Rate</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Amount</TableHead>
+                          <TableHead className="sticky top-0 bg-white">Total</TableHead>
+                          <TableHead className="sticky top-0 bg-white">Bill Amt</TableHead>
+                          <TableHead className="sticky top-0 bg-white">Net Amt</TableHead>
                           <TableHead className="sticky top-0 bg-white">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -351,20 +406,32 @@ const Sales = () => {
                             <TableCell>{sale.netWeight}</TableCell>
                             <TableCell>₹{sale.rate}</TableCell>
                             <TableCell>₹{sale.totalAmount.toFixed(2)}</TableCell>
+                            <TableCell>₹{sale.billAmount ? sale.billAmount.toFixed(2) : "0.00"}</TableCell>
+                            <TableCell>₹{sale.netAmount.toFixed(2)}</TableCell>
                             <TableCell>
                               <div className="flex gap-2">
                                 <Button 
                                   variant="ghost" 
                                   size="icon"
                                   onClick={() => handleEdit(sale)}
+                                  title="Edit"
                                 >
                                   <Edit size={16} />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
                                   size="icon"
+                                  onClick={() => handlePrintSale(sale)}
+                                  title="Print"
+                                >
+                                  <PrinterIcon size={16} />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon"
                                   onClick={() => confirmDeleteSale(sale.id)}
                                   className="text-red-500 hover:text-red-700"
+                                  title="Delete"
                                 >
                                   <Trash2 size={16} />
                                 </Button>

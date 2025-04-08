@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw, Save } from "lucide-react";
+import { RefreshCw, Save, Plus, PrinterIcon } from "lucide-react";
 import { 
   Form, 
   FormControl, 
@@ -24,13 +24,23 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   getInventory,
   getCustomers,
   getBrokers,
-  getTransporters
+  getTransporters,
+  addCustomer,
+  addBroker
 } from "@/services/storageService";
+import NewEntityForm from "./NewEntityForm";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -42,9 +52,8 @@ const formSchema = z.object({
   netWeight: z.coerce.number().min(1, "Net weight is required"),
   rate: z.coerce.number().min(1, "Rate is required"),
   brokerId: z.string().optional(),
-  transporterId: z.string().min(1, "Transporter is required"),
+  transporterId: z.string().optional(),
   transportRate: z.coerce.number().min(0, "Transport rate is required"),
-  location: z.string().min(1, "Location is required"),
   notes: z.string().optional(),
 });
 
@@ -53,9 +62,10 @@ type FormData = z.infer<typeof formSchema>;
 interface SalesFormProps {
   onSubmit: (data: any) => void;
   initialData?: any;
+  onPrint?: (data: any) => void;
 }
 
-const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
+const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const { toast } = useToast();
   const [inventory, setInventory] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
@@ -66,6 +76,9 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
   const [netAmount, setNetAmount] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [formChanged, setFormChanged] = useState(false);
+  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
+  const [isAddBrokerOpen, setIsAddBrokerOpen] = useState(false);
+  const [selectedLotStock, setSelectedLotStock] = useState<number>(0);
   
   // Set default values based on initialData
   const defaultValues = initialData ? {
@@ -80,7 +93,6 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     brokerId: initialData.brokerId || "",
     transporterId: initialData.transporterId || "",
     transportRate: initialData.transportRate || 0,
-    location: initialData.location || "",
     notes: initialData.notes || "",
   } : {
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -94,7 +106,6 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     brokerId: "",
     transporterId: "",
     transportRate: 0,
-    location: "",
     notes: "",
   };
   
@@ -126,10 +137,13 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
 
   const refreshData = () => {
     setIsRefreshing(true);
+    
+    // Get all inventory with quantity > 0
     const currentInventory = getInventory().filter(item => !item.isDeleted && item.quantity > 0);
     console.log("Available inventory:", currentInventory);
     setInventory(currentInventory);
     
+    // Get both customers and brokers for the customer dropdown
     const allCustomers = getCustomers();
     console.log("Available customers:", allCustomers);
     setCustomers(allCustomers);
@@ -142,13 +156,21 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     console.log("Available transporters:", allTransporters);
     setTransporters(allTransporters);
     
+    // Check if there's a selected lot and update its stock display
+    const lotNumber = form.getValues("lotNumber");
+    if (lotNumber) {
+      const selectedLot = currentInventory.find(item => item.lotNumber === lotNumber);
+      if (selectedLot) {
+        setSelectedLotStock(selectedLot.quantity || 0);
+      }
+    }
+    
     setIsRefreshing(false);
   };
 
   const handleLotChange = (lotNumber: string) => {
     const selectedLot = inventory.find(item => item.lotNumber === lotNumber);
     if (selectedLot) {
-      form.setValue("location", selectedLot.location || "");
       form.setValue("quantity", selectedLot.quantity);
       form.setValue("netWeight", selectedLot.netWeight || 0);
       
@@ -157,6 +179,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
         form.setValue("rate", selectedLot.rate);
       }
       
+      setSelectedLotStock(selectedLot.quantity || 0);
       setFormChanged(true);
     }
   };
@@ -173,7 +196,10 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
-    setNetAmount(calculatedTotalAmount - calculatedTransportCost);
+    // Calculate net amount
+    const brokerId = values.brokerId;
+    const brokerage = brokerId ? calculatedTotalAmount * 0.01 : 0; // 1% brokerage if broker is selected
+    setNetAmount(calculatedTotalAmount - calculatedTransportCost - brokerage);
   }, [form.watch()]);
 
   // Set initial calculation values if we have initialData
@@ -186,16 +212,32 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
   }, [initialData]);
 
   const handleFormSubmit = (data: FormData) => {
+    const customerId = data.customerId;
+    const isCustomer = customerId.startsWith('customer_');
+    const isBroker = customerId.startsWith('broker_');
+    
+    let customerName = "";
+    if (isCustomer) {
+      customerName = customers.find(c => c.id === customerId)?.name || "";
+    } else if (isBroker) {
+      customerName = brokers.find(b => b.id === customerId)?.name || "";
+    }
+    
+    // Calculate brokerage if a broker is selected
+    const brokerName = data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "";
+    const brokerage = data.brokerId ? totalAmount * 0.01 : 0; // 1% brokerage
+    
     const submitData = {
       ...data,
-      customer: customers.find(c => c.id === data.customerId)?.name || data.customerId,
-      broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
-      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
+      customer: customerName,
+      broker: brokerName,
+      transporter: data.transporterId ? transporters.find(t => t.id === data.transporterId)?.name || "" : "",
       totalAmount,
       transportCost,
       netAmount,
       billAmount: data.billAmount || 0,
-      amount: totalAmount,
+      brokerage,
+      location: "", // We're removing the location field as requested
       id: initialData?.id || Date.now().toString()
     };
     
@@ -205,9 +247,69 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     setFormChanged(false);
   };
 
+  const handleAddCustomer = (customerData: any) => {
+    const newCustomer = addCustomer(customerData);
+    if (newCustomer) {
+      toast.success(`Customer ${newCustomer.name} added successfully`);
+      refreshData();
+      setIsAddCustomerOpen(false);
+      
+      // Set the newly added customer as selected
+      form.setValue("customerId", newCustomer.id);
+      setFormChanged(true);
+    } else {
+      toast.error("Failed to add customer");
+    }
+  };
+  
+  const handleAddBroker = (brokerData: any) => {
+    const newBroker = addBroker(brokerData);
+    if (newBroker) {
+      toast.success(`Broker ${newBroker.name} added successfully`);
+      refreshData();
+      setIsAddBrokerOpen(false);
+      
+      // Set the newly added broker as selected
+      form.setValue("brokerId", newBroker.id);
+      setFormChanged(true);
+    } else {
+      toast.error("Failed to add broker");
+    }
+  };
+
   const handleSave = () => {
     form.handleSubmit(handleFormSubmit)();
   };
+  
+  const handlePrint = () => {
+    if (onPrint && formChanged) {
+      // Save first
+      handleSave();
+    } else if (onPrint) {
+      const data = {
+        ...form.getValues(),
+        totalAmount,
+        transportCost,
+        netAmount,
+        id: initialData?.id || Date.now().toString()
+      };
+      onPrint(data);
+    }
+  };
+
+  // Combine customers and brokers for the customer dropdown
+  const combinedCustomers = [
+    ...customers.map(c => ({
+      id: c.id,
+      name: c.name,
+      type: "customer"
+    })),
+    ...brokers.map(b => ({
+      id: b.id,
+      name: b.name,
+      type: "broker"
+    }))
+  ];
 
   return (
     <Card className="p-6">
@@ -235,6 +337,18 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               Save Changes
             </Button>
           )}
+          
+          {onPrint && (
+            <Button 
+              variant="outline"
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={handlePrint}
+            >
+              <PrinterIcon size={16} />
+              Print
+            </Button>
+          )}
         </div>
       </div>
       
@@ -260,7 +374,14 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="lotNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Lot Number</FormLabel>
+                  <FormLabel>
+                    <span className="text-red-500">*</span> Lot Number 
+                    {selectedLotStock > 0 && (
+                      <span className="ml-2 text-sm text-green-600">
+                        (Available: {selectedLotStock} bags)
+                      </span>
+                    )}
+                  </FormLabel>
                   <Select 
                     onValueChange={(value) => {
                       field.onChange(value);
@@ -279,7 +400,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                       ) : (
                         inventory.map((item) => (
                           <SelectItem key={item.id} value={item.lotNumber}>
-                            {item.lotNumber} - {item.quantity} bags ({item.location})
+                            {item.lotNumber} - {item.quantity} bags
                           </SelectItem>
                         ))
                       )}
@@ -331,24 +452,43 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel><span className="text-red-500">*</span> Customer</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent searchable>
-                      {customers.length === 0 ? (
-                        <SelectItem value="no-customers" disabled>No customers available</SelectItem>
-                      ) : (
-                        customers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 items-center">
+                    <Select onValueChange={field.onChange} value={field.value} className="flex-grow">
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select customer" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent searchable>
+                        {combinedCustomers.length === 0 ? (
+                          <SelectItem value="no-customers" disabled>No customers available</SelectItem>
+                        ) : (
+                          combinedCustomers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name} {customer.type === "broker" ? "(Broker)" : ""}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" type="button">
+                          <Plus size={16} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Customer</DialogTitle>
+                        </DialogHeader>
+                        <NewEntityForm 
+                          onSubmit={handleAddCustomer} 
+                          entityType="customer"
+                          existingNames={customers.map(c => c.name)}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -402,21 +542,40 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Broker (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || "none"}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select broker (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent searchable>
-                      <SelectItem value="none">No Broker</SelectItem>
-                      {brokers.map((broker) => (
-                        <SelectItem key={broker.id} value={broker.id}>
-                          {broker.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2 items-center">
+                    <Select onValueChange={field.onChange} value={field.value || "none"} className="flex-grow">
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select broker (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent searchable>
+                        <SelectItem value="none">No Broker</SelectItem>
+                        {brokers.map((broker) => (
+                          <SelectItem key={broker.id} value={broker.id}>
+                            {broker.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Dialog open={isAddBrokerOpen} onOpenChange={setIsAddBrokerOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="sm" type="button">
+                          <Plus size={16} />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Add New Broker</DialogTitle>
+                        </DialogHeader>
+                        <NewEntityForm 
+                          onSubmit={handleAddBroker} 
+                          entityType="broker"
+                          existingNames={brokers.map(b => b.name)}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -427,14 +586,15 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="transporterId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Transporter</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Transporter (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || "none"}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select transporter" />
+                        <SelectValue placeholder="Select transporter (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent searchable>
+                      <SelectItem value="none">No Transporter</SelectItem>
                       {transporters.map((transporter) => (
                         <SelectItem key={transporter.id} value={transporter.id}>
                           {transporter.name}
@@ -452,7 +612,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               name="transportRate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Transport Rate per kg (₹)</FormLabel>
+                  <FormLabel>Transport Rate per kg (₹)</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} placeholder="0.00" step="0.01" />
                   </FormControl>
@@ -460,33 +620,10 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                 </FormItem>
               )}
             />
-            
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Location</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Mumbai">Mumbai</SelectItem>
-                      <SelectItem value="Chiplun">Chiplun</SelectItem>
-                      <SelectItem value="Sawantwadi">Sawantwadi</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
           
           <div className="bg-gray-50 p-4 rounded-md">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Total Amount</p>
                 <p className="font-bold">₹{totalAmount.toFixed(2)}</p>
@@ -494,6 +631,10 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               <div>
                 <p className="text-sm text-gray-500">Transport Cost</p>
                 <p className="font-bold">₹{transportCost.toFixed(2)}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Brokerage (1%)</p>
+                <p className="font-bold">₹{(form.getValues("brokerId") ? totalAmount * 0.01 : 0).toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Net Amount</p>
@@ -517,6 +658,18 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
           />
           
           <div className="flex justify-end gap-2">
+            {onPrint && (
+              <Button 
+                type="button" 
+                onClick={handlePrint}
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <PrinterIcon size={20} />
+                Print
+              </Button>
+            )}
             {formChanged && (
               <Button 
                 type="button" 

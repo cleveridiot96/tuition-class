@@ -1,20 +1,23 @@
+
 import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { Button } from "@/components/ui/button";
-import { Download, Upload } from "lucide-react";
+import { Download, Upload, RefreshCw } from "lucide-react";
 import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory, getSales, clearAllData } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { format, startOfMonth, endOfMonth, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 interface ProfitData {
   purchase: number;
   sale: number;
   profit: number;
   date: string;
+  quantity: number;
+  netWeight: number;
 }
 
 interface MonthlyProfitData {
@@ -34,8 +37,11 @@ const Index = () => {
   const [profitByTransaction, setProfitByTransaction] = useState<ProfitData[]>([]);
   const [profitByMonth, setProfitByMonth] = useState<MonthlyProfitData[]>([]);
   const [totalProfit, setTotalProfit] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const loadDashboardData = () => {
+    setIsRefreshing(true);
+    
     // Ensure initial data is seeded
     seedInitialData();
     
@@ -54,14 +60,23 @@ const Index = () => {
     const transactionProfits: ProfitData[] = sales.map(sale => {
       const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber);
       const purchaseCost = relatedPurchase ? relatedPurchase.totalAfterExpenses : 0;
+      
+      // Calculate sale revenue considering brokerage (1%)
       const saleRevenue = sale.totalAmount || 0;
-      const profit = saleRevenue - purchaseCost;
+      const brokerage = sale.broker ? saleRevenue * 0.01 : 0;
+      const netSaleRevenue = saleRevenue - brokerage;
+      
+      const profit = Math.round(netSaleRevenue - purchaseCost);
+      const profitPerKg = profit / (sale.netWeight || 1);
+      const totalProfit = profitPerKg * sale.netWeight;
       
       return {
         purchase: purchaseCost,
-        sale: saleRevenue,
-        profit: profit,
-        date: sale.date
+        sale: netSaleRevenue,
+        profit: totalProfit,
+        date: sale.date,
+        quantity: sale.quantity,
+        netWeight: sale.netWeight
       };
     });
     
@@ -110,14 +125,22 @@ const Index = () => {
         sawantwadi: sawantwadiStock.reduce((sum, item) => sum + (item.quantity || 0), 0)
       }
     });
+    
+    setIsRefreshing(false);
   };
   
   useEffect(() => {
     loadDashboardData();
     
+    // Set up auto-refresh every 300ms
+    const intervalId = setInterval(() => {
+      loadDashboardData();
+    }, 300);
+    
     window.addEventListener('focus', loadDashboardData);
     
     return () => {
+      clearInterval(intervalId);
       window.removeEventListener('focus', loadDashboardData);
     };
   }, []);
@@ -270,6 +293,14 @@ const Index = () => {
               <Upload size={20} />
               Restore
             </Button>
+            <Button
+              onClick={loadDashboardData}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
+              Refresh
+            </Button>
             <input
               type="file"
               ref={fileInputRef}
@@ -316,10 +347,11 @@ const Index = () => {
             <div>
               <h4 className="font-medium text-ag-brown mb-2">Transaction-wise</h4>
               <div className="border rounded-md overflow-hidden">
-                <div className="bg-gray-50 grid grid-cols-4 font-medium">
+                <div className="bg-gray-50 grid grid-cols-5 font-medium">
                   <div className="p-2">Date</div>
                   <div className="p-2">Purchase</div>
                   <div className="p-2">Sale</div>
+                  <div className="p-2">Qty (kg)</div>
                   <div className="p-2">Profit</div>
                 </div>
                 <div className="max-h-40 overflow-y-auto">
@@ -327,10 +359,11 @@ const Index = () => {
                     <div className="p-2 text-center text-gray-500">No transaction data available</div>
                   ) : (
                     profitByTransaction.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-4 border-t">
+                      <div key={idx} className="grid grid-cols-5 border-t">
                         <div className="p-2">{format(parseISO(item.date), 'dd/MM/yy')}</div>
                         <div className="p-2">{formatCurrency(item.purchase)}</div>
                         <div className="p-2">{formatCurrency(item.sale)}</div>
+                        <div className="p-2">{item.netWeight}</div>
                         <div className={`p-2 ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {formatCurrency(item.profit)}
                         </div>
