@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -39,10 +38,18 @@ import {
   updateAgentBalance,
   addInventoryItem,
   checkDuplicateLot,
-  Purchase 
+  Purchase
 } from "@/services/storageService";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { 
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from "@/components/ui/table";
 
 interface Agent {
   id: string;
@@ -59,6 +66,7 @@ const Purchases = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [purchaseToDelete, setPurchaseToDelete] = useState<string | null>(null);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [formData, setFormData] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
     lotNumber: "",
@@ -81,8 +89,16 @@ const Purchases = () => {
   }, []);
 
   const loadData = () => {
-    setPurchases(getPurchases());
-    setAgents(getAgents().map(a => ({ id: a.id, name: a.name })));
+    setIsRefreshing(true);
+    
+    const freshPurchases = getPurchases().filter(p => !p.isDeleted);
+    setPurchases(freshPurchases);
+    
+    const agentsList = getAgents().map(a => ({ id: a.id, name: a.name }));
+    setAgents(agentsList);
+    
+    setIsRefreshing(false);
+    console.log("Purchases data refreshed:", freshPurchases);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -143,8 +159,8 @@ const Purchases = () => {
       netWeight: formData.netWeight,
       rate: formData.rate,
       transporter: formData.transporter,
-      transportRate: 0, // Adding default value for transportRate
-      transportCost: 0, // Adding the missing transportCost property
+      transportRate: 0,
+      transportCost: 0,
       totalAmount: formData.totalAmount,
       expenses: formData.expenses,
       totalAfterExpenses: formData.totalAfterExpenses,
@@ -154,7 +170,7 @@ const Purchases = () => {
     
     addPurchase(newPurchase);
     
-    setPurchases([newPurchase, ...purchases]);
+    loadData();
     
     addInventoryItem({
       id: Date.now().toString() + '-inv',
@@ -212,8 +228,8 @@ const Purchases = () => {
       netWeight: formData.netWeight,
       rate: formData.rate,
       transporter: formData.transporter,
-      transportRate: editingPurchase.transportRate || 0, // Preserve transport rate or set default
-      transportCost: editingPurchase.transportCost || 0, // Preserve transport cost or set default
+      transportRate: editingPurchase.transportRate || 0,
+      transportCost: editingPurchase.transportCost || 0,
       totalAmount: formData.totalAmount,
       expenses: formData.expenses,
       totalAfterExpenses: formData.totalAfterExpenses,
@@ -223,9 +239,7 @@ const Purchases = () => {
     
     updatePurchase(updatedPurchase);
     
-    setPurchases(purchases.map(p => 
-      p.id === updatedPurchase.id ? updatedPurchase : p
-    ));
+    loadData();
     
     toast.success("Purchase updated successfully");
     setIsEditDialogOpen(false);
@@ -250,7 +264,8 @@ const Purchases = () => {
         updateAgentBalance(agentId, purchaseToRemove.totalAfterExpenses);
       }
       
-      setPurchases(purchases.filter(p => p.id !== purchaseToDelete));
+      loadData();
+      
       toast.success("Purchase deleted successfully");
     }
     
@@ -282,272 +297,284 @@ const Purchases = () => {
       <Navigation title="Purchases" showBackButton={true} />
       
       <div className="container mx-auto py-8 px-4">
-        <div className="flex justify-between mb-6">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Purchase Entries</h1>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>Add Purchase</Button>
-            </DialogTrigger>
-            <DialogContent className="w-[90vw] max-w-[800px] max-h-[90vh] overflow-hidden p-0">
-              <DialogHeader className="px-6 pt-6">
-                <DialogTitle>Add New Purchase</DialogTitle>
-              </DialogHeader>
-              <ScrollArea className="max-h-[calc(90vh-130px)] px-6">
-                <form onSubmit={handleSubmit} className="space-y-6 py-4">
-                  <div>
-                    <Label htmlFor="date">Date</Label>
-                    <Input 
-                      type="date" 
-                      id="date" 
-                      name="date" 
-                      value={formData.date} 
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={loadData}
+              disabled={isRefreshing}
+              title="Refresh data"
+              className="mr-2"
+            >
+              <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>Add Purchase</Button>
+              </DialogTrigger>
+              <DialogContent className="w-[90vw] max-w-[800px] max-h-[90vh] overflow-hidden p-0">
+                <DialogHeader className="px-6 pt-6">
+                  <DialogTitle>Add New Purchase</DialogTitle>
+                </DialogHeader>
+                <ScrollArea className="max-h-[calc(90vh-130px)] px-6">
+                  <form onSubmit={handleSubmit} className="space-y-6 py-4">
                     <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label htmlFor="lotNumber">Lot Number *</Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Unique identifier for this purchase lot</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <Label htmlFor="date">Date</Label>
                       <Input 
-                        type="text" 
-                        id="lotNumber" 
-                        name="lotNumber" 
-                        value={formData.lotNumber} 
+                        type="date" 
+                        id="date" 
+                        name="date" 
+                        value={formData.date} 
                         onChange={handleInputChange}
                         required
                       />
                     </div>
-                    
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="lotNumber">Lot Number *</Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Unique identifier for this purchase lot</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Input 
+                          type="text" 
+                          id="lotNumber" 
+                          name="lotNumber" 
+                          value={formData.lotNumber} 
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      
+                      <div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="quantity">Quantity</Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Number of items/bags/packages</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Input 
+                          type="number" 
+                          id="quantity" 
+                          name="quantity" 
+                          value={formData.quantity} 
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="agent">Agent *</Label>
+                        <select 
+                          id="agent" 
+                          name="agent" 
+                          className="w-full p-2 border rounded"
+                          value={formData.agent} 
+                          onChange={handleInputChange as any}
+                          required
+                        >
+                          <option value="">Select Agent</option>
+                          {agents.map(agent => (
+                            <option key={agent.id} value={agent.name}>
+                              {agent.name}
+                            </option>
+                          ))}
+                          <option value="None">None</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="party">Party Name</Label>
+                        <Input 
+                          type="text" 
+                          id="party" 
+                          name="party" 
+                          value={formData.party} 
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="location">Location</Label>
+                        <select 
+                          id="location" 
+                          name="location" 
+                          className="w-full p-2 border rounded"
+                          value={formData.location} 
+                          onChange={handleInputChange as any}
+                        >
+                          <option value="">Select Location</option>
+                          {LOCATIONS.map(location => (
+                            <option key={location} value={location}>
+                              {location}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="netWeight">Net Weight (Kg) *</Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Net weight in kilograms</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Input 
+                          type="number" 
+                          id="netWeight" 
+                          name="netWeight" 
+                          value={formData.netWeight} 
+                          onChange={handleInputChange}
+                          step="0.01"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="rate">Rate (per Kg) *</Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Price per kilogram</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Input 
+                          type="number" 
+                          id="rate" 
+                          name="rate" 
+                          value={formData.rate} 
+                          onChange={handleInputChange}
+                          step="0.01"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="transporter">Transporter</Label>
+                        <Input 
+                          type="text" 
+                          id="transporter" 
+                          name="transporter" 
+                          value={formData.transporter} 
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                      <div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="totalAmount">Total Amount (₹)</Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Net Weight × Rate per Kg</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Input 
+                          type="number" 
+                          id="totalAmount" 
+                          name="totalAmount" 
+                          value={formData.totalAmount} 
+                          readOnly
+                          className="bg-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="expenses">Other Expenses (₹)</Label>
+                        <Input 
+                          type="number" 
+                          id="expenses" 
+                          name="expenses" 
+                          value={formData.expenses} 
+                          onChange={handleInputChange}
+                          step="0.01"
+                        />
+                      </div>
+
+                      <div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="totalAfterExpenses">Total After Expenses (₹)</Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Total Amount + Other Expenses</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Input 
+                          type="number" 
+                          id="totalAfterExpenses" 
+                          name="totalAfterExpenses" 
+                          value={formData.totalAfterExpenses} 
+                          readOnly
+                          className="bg-gray-100"
+                        />
+                      </div>
+
+                      <div>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Label htmlFor="ratePerKgAfterExpenses">Rate/Kg After Expenses (₹)</Label>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Total After Expenses ÷ Net Weight</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <Input 
+                          type="number" 
+                          id="ratePerKgAfterExpenses" 
+                          name="ratePerKgAfterExpenses" 
+                          value={formData.ratePerKgAfterExpenses} 
+                          readOnly
+                          className="bg-gray-100"
+                        />
+                      </div>
+                    </div>
+
                     <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label htmlFor="quantity">Quantity</Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Number of items/bags/packages</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Input 
-                        type="number" 
-                        id="quantity" 
-                        name="quantity" 
-                        value={formData.quantity} 
+                      <Label htmlFor="notes">Notes</Label>
+                      <textarea 
+                        id="notes" 
+                        name="notes" 
+                        className="w-full p-2 border rounded min-h-[100px]"
+                        value={formData.notes} 
                         onChange={handleInputChange}
                       />
                     </div>
-
-                    <div>
-                      <Label htmlFor="agent">Agent *</Label>
-                      <select 
-                        id="agent" 
-                        name="agent" 
-                        className="w-full p-2 border rounded"
-                        value={formData.agent} 
-                        onChange={handleInputChange as any}
-                        required
-                      >
-                        <option value="">Select Agent</option>
-                        {agents.map(agent => (
-                          <option key={agent.id} value={agent.name}>
-                            {agent.name}
-                          </option>
-                        ))}
-                        <option value="None">None</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="party">Party Name</Label>
-                      <Input 
-                        type="text" 
-                        id="party" 
-                        name="party" 
-                        value={formData.party} 
-                        onChange={handleInputChange}
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="location">Location</Label>
-                      <select 
-                        id="location" 
-                        name="location" 
-                        className="w-full p-2 border rounded"
-                        value={formData.location} 
-                        onChange={handleInputChange as any}
-                      >
-                        <option value="">Select Location</option>
-                        {LOCATIONS.map(location => (
-                          <option key={location} value={location}>
-                            {location}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label htmlFor="netWeight">Net Weight (Kg) *</Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Net weight in kilograms</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Input 
-                        type="number" 
-                        id="netWeight" 
-                        name="netWeight" 
-                        value={formData.netWeight} 
-                        onChange={handleInputChange}
-                        step="0.01"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label htmlFor="rate">Rate (per Kg) *</Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Price per kilogram</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Input 
-                        type="number" 
-                        id="rate" 
-                        name="rate" 
-                        value={formData.rate} 
-                        onChange={handleInputChange}
-                        step="0.01"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="transporter">Transporter</Label>
-                      <Input 
-                        type="text" 
-                        id="transporter" 
-                        name="transporter" 
-                        value={formData.transporter} 
-                        onChange={handleInputChange}
-                      />
-                    </div>
-
-                    <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label htmlFor="totalAmount">Total Amount (₹)</Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Net Weight × Rate per Kg</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Input 
-                        type="number" 
-                        id="totalAmount" 
-                        name="totalAmount" 
-                        value={formData.totalAmount} 
-                        readOnly
-                        className="bg-gray-100"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="expenses">Other Expenses (₹)</Label>
-                      <Input 
-                        type="number" 
-                        id="expenses" 
-                        name="expenses" 
-                        value={formData.expenses} 
-                        onChange={handleInputChange}
-                        step="0.01"
-                      />
-                    </div>
-
-                    <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label htmlFor="totalAfterExpenses">Total After Expenses (₹)</Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Total Amount + Other Expenses</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Input 
-                        type="number" 
-                        id="totalAfterExpenses" 
-                        name="totalAfterExpenses" 
-                        value={formData.totalAfterExpenses} 
-                        readOnly
-                        className="bg-gray-100"
-                      />
-                    </div>
-
-                    <div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Label htmlFor="ratePerKgAfterExpenses">Rate/Kg After Expenses (₹)</Label>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Total After Expenses ÷ Net Weight</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                      <Input 
-                        type="number" 
-                        id="ratePerKgAfterExpenses" 
-                        name="ratePerKgAfterExpenses" 
-                        value={formData.ratePerKgAfterExpenses} 
-                        readOnly
-                        className="bg-gray-100"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="notes">Notes</Label>
-                    <textarea 
-                      id="notes" 
-                      name="notes" 
-                      className="w-full p-2 border rounded min-h-[100px]"
-                      value={formData.notes} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </form>
-              </ScrollArea>
-              <DialogFooter className="px-6 py-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="button" onClick={handleSubmit}>Add Purchase</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                  </form>
+                </ScrollArea>
+                <DialogFooter className="px-6 py-4 border-t">
+                  <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick={handleSubmit}>Add Purchase</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -780,65 +807,60 @@ const Purchases = () => {
           {purchases.length === 0 ? (
             <p className="text-center py-8 text-gray-500">No purchases recorded yet. Add your first purchase.</p>
           ) : (
-            purchases.map((purchase) => (
-              <div key={purchase.id} className="bg-white p-4 rounded-md shadow">
-                <div className="flex flex-col lg:flex-row lg:justify-between">
-                  <div className="mb-4 lg:mb-0">
-                    <div className="font-bold text-lg">{purchase.lotNumber}</div>
-                    <div className="text-sm text-gray-500">
-                      {format(new Date(purchase.date), "dd MMM yyyy")}
-                    </div>
-                    <div>Agent: {purchase.agent}</div>
-                    {purchase.party && <div>Party: {purchase.party}</div>}
-                    <div>Location: {purchase.location || "N/A"}</div>
-                    <div>Transporter: {purchase.transporter || "N/A"}</div>
-                  </div>
-
-                  <div className="mb-4 lg:mb-0">
-                    <div>Quantity: {purchase.quantity}</div>
-                    <div>Net Weight: {purchase.netWeight} Kg</div>
-                    <div>Rate: ₹{purchase.rate}/Kg</div>
-                    <div>Amount: ₹{purchase.totalAmount}</div>
-                  </div>
-
-                  <div className="mb-4 lg:mb-0">
-                    <div>Expenses: ₹{purchase.expenses}</div>
-                    <div className="flex flex-col">
-                      <div className="font-semibold">Total: ₹{purchase.totalAfterExpenses}</div>
-                      <div>
-                        <p className="font-semibold">Rate/Kg After:</p>
-                        <p>₹{purchase.ratePerKgAfterExpenses?.toFixed(2) || '0.00'}/Kg</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2 items-start">
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => handleEdit(purchase)}
-                    >
-                      <Edit size={18} />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon"
-                      onClick={() => confirmDeletePurchase(purchase.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 size={18} />
-                    </Button>
-                  </div>
-                </div>
-
-                {purchase.notes && (
-                  <div className="mt-2 pt-2 border-t">
-                    <div className="font-semibold">Notes:</div>
-                    <p className="text-gray-700">{purchase.notes}</p>
-                  </div>
-                )}
-              </div>
-            ))
+            <ScrollArea className="h-[calc(100vh-220px)] border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Lot Number</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Agent</TableHead>
+                    <TableHead>Party</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Net Weight (kg)</TableHead>
+                    <TableHead>Rate (₹/kg)</TableHead>
+                    <TableHead>Amount (₹)</TableHead>
+                    <TableHead>Total After Exp. (₹)</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {purchases.map((purchase) => (
+                    <TableRow key={purchase.id}>
+                      <TableCell className="font-medium">{purchase.lotNumber}</TableCell>
+                      <TableCell>{format(new Date(purchase.date), "dd MMM yyyy")}</TableCell>
+                      <TableCell>{purchase.agent || "None"}</TableCell>
+                      <TableCell>{purchase.party || "-"}</TableCell>
+                      <TableCell>{purchase.location || "-"}</TableCell>
+                      <TableCell>{purchase.quantity}</TableCell>
+                      <TableCell>{purchase.netWeight}</TableCell>
+                      <TableCell>{purchase.rate}</TableCell>
+                      <TableCell>{purchase.totalAmount}</TableCell>
+                      <TableCell>{purchase.totalAfterExpenses}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEdit(purchase)}
+                          >
+                            <Edit size={16} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => confirmDeletePurchase(purchase.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           )}
         </div>
       </div>
