@@ -77,8 +77,9 @@ const Navigation = ({
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                className="bg-red-600/20 hover:bg-red-700/30 text-white border border-red-300/30 flex items-center gap-2 font-bold group px-4 py-2 rounded-md transition-all hover:shadow-glow"
+                variant="danger"
+                animation="pulse"
+                className="border border-red-300/30 flex items-center gap-2 group"
                 onClick={onFormatClick}
               >
                 <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />

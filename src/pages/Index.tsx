@@ -38,6 +38,7 @@ const Index = () => {
   const [profitByMonth, setProfitByMonth] = useState<MonthlyProfitData[]>([]);
   const [totalProfit, setTotalProfit] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0); // Add version tracking
   
   const loadDashboardData = () => {
     setIsRefreshing(true);
@@ -133,17 +134,22 @@ const Index = () => {
     seedInitialData();
     loadDashboardData();
     
-    const intervalId = setInterval(() => {
-      loadDashboardData();
-    }, 300);
+    // Remove the interval that might be causing issues
+    // and just rely on window focus events and manual refresh
     
     window.addEventListener('focus', loadDashboardData);
     
     return () => {
-      clearInterval(intervalId);
       window.removeEventListener('focus', loadDashboardData);
     };
   }, []);
+
+  // Add effect to reload data when version changes
+  useEffect(() => {
+    if (dataVersion > 0) {
+      loadDashboardData();
+    }
+  }, [dataVersion]);
 
   const handleFormatClick = () => {
     setIsFormatDialogOpen(true);
@@ -151,25 +157,47 @@ const Index = () => {
 
   const handleFormatConfirm = () => {
     try {
-      // Create backup first
+      console.log("Format operation starting...");
+      
+      // Create backup first - important to do before clearing
       const backupData = exportDataBackup(true);
+      console.log("Backup created:", backupData ? "Success" : "Failed");
       
       if (backupData) {
         // Store backup in localStorage
         localStorage.setItem('preFormatBackup', backupData);
         
-        // Clear everything from storage
+        // Clear everything from storage - CRITICAL STEP
+        console.log("Clearing all data...");
         clearAllData();
+        localStorage.removeItem("purchases");
+        localStorage.removeItem("sales");
+        localStorage.removeItem("inventory");
+        localStorage.removeItem("payments");
+        localStorage.removeItem("receipts");
+        localStorage.removeItem("agents");
+        localStorage.removeItem("brokers");
+        localStorage.removeItem("customers");
+        localStorage.removeItem("transporters");
         
-        // Reseed with fresh data
+        // Explicitly check if data is cleared
+        const checkPurchases = getPurchases();
+        console.log("Purchases after clear:", checkPurchases);
+        
+        // Reseed with fresh data - make sure force is true
+        console.log("Reseeding with fresh data...");
         seedInitialData(true);
         
-        // Force refresh dashboard data
+        // Increment version to trigger data reload
+        setDataVersion(prev => prev + 1);
+        
+        // Force refresh dashboard data immediately
+        console.log("Reloading dashboard data...");
         loadDashboardData();
         
         toast({
           title: "Data Formatted Successfully",
-          description: "All data has been reset to initial state. A backup was automatically created.",
+          description: "All data has been reset to initial state. A backup was created automatically.",
         });
       } else {
         throw new Error("Failed to create backup data");
