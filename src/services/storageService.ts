@@ -1,5 +1,5 @@
-
 import { useToast } from "@/hooks/use-toast";
+import { getYearSpecificKey, getActiveFinancialYear } from "@/services/financialYearService";
 
 // Types
 export interface Agent {
@@ -91,7 +91,7 @@ export interface Sale {
   notes?: string;
   totalAmount: number;
   netAmount: number;
-  amount: number; // Added to match existing usage
+  amount: number;
   isDeleted?: boolean;
 }
 
@@ -100,11 +100,11 @@ export interface Payment {
   date: string;
   party: string;
   partyId: string;
-  partyName?: string;  // Added to match PaymentEntry
-  partyType?: string;  // Added to match PaymentEntry
+  partyName?: string;
+  partyType?: string;
   amount: number;
   paymentMethod: string;
-  paymentMode?: string; // Added to match usage in accountingService
+  paymentMode?: string;
   reference: string;
   notes: string;
   billNumber?: string;
@@ -118,10 +118,10 @@ export interface Receipt {
   date: string;
   customer: string;
   customerId: string;
-  customerName?: string; // Added to match usage in accountingService
+  customerName?: string;
   amount: number;
   paymentMethod: string;
-  paymentMode?: string; // Added to match usage in accountingService
+  paymentMode?: string;
   reference: string;
   notes: string;
   isDeleted?: boolean;
@@ -154,17 +154,15 @@ export interface CashBookEntry {
   id: string;
   date: string;
   description: string;
-  type: "debit" | "credit"; // debit = outflow, credit = inflow
+  type: "debit" | "credit";
   amount: number;
 }
 
-// Locations function
 export const getLocations = (): string[] => {
   const savedLocations = localStorage.getItem('locations');
   return savedLocations ? JSON.parse(savedLocations) : ['Mumbai', 'Chiplun', 'Sawantwadi'];
 };
 
-// Storage service functions
 export const getAgents = (): Agent[] => {
   const savedAgents = localStorage.getItem('agents');
   return savedAgents ? JSON.parse(savedAgents) : [];
@@ -311,70 +309,80 @@ export const deleteTransporter = (id: string): void => {
 };
 
 export const getPurchases = (): Purchase[] => {
-  const savedPurchases = localStorage.getItem('purchases');
+  const key = getYearSpecificKey('purchases');
+  const savedPurchases = localStorage.getItem(key);
   return savedPurchases ? JSON.parse(savedPurchases) : [];
 };
 
 export const addPurchase = (purchase: Purchase): void => {
+  const key = getYearSpecificKey('purchases');
   const purchases = getPurchases();
   purchases.push(purchase);
-  localStorage.setItem('purchases', JSON.stringify(purchases));
+  localStorage.setItem(key, JSON.stringify(purchases));
 };
 
 export const updatePurchase = (updatedPurchase: Purchase): void => {
+  const key = getYearSpecificKey('purchases');
   const purchases = getPurchases();
   const index = purchases.findIndex(purchase => purchase.id === updatedPurchase.id);
   if (index !== -1) {
     purchases[index] = updatedPurchase;
-    localStorage.setItem('purchases', JSON.stringify(purchases));
+    localStorage.setItem(key, JSON.stringify(purchases));
   }
 };
 
 export const deletePurchase = (id: string): void => {
+  const key = getYearSpecificKey('purchases');
   const purchases = getPurchases();
   const index = purchases.findIndex(purchase => purchase.id === id);
   if (index !== -1) {
     purchases[index] = { ...purchases[index], isDeleted: true };
-    localStorage.setItem('purchases', JSON.stringify(purchases));
+    localStorage.setItem(key, JSON.stringify(purchases));
   }
 };
 
 export const getSales = (): Sale[] => {
-  const savedSales = localStorage.getItem('sales');
+  const key = getYearSpecificKey('sales');
+  const savedSales = localStorage.getItem(key);
   return savedSales ? JSON.parse(savedSales) : [];
 };
 
 export const addSale = (sale: Sale): void => {
+  const key = getYearSpecificKey('sales');
   const sales = getSales();
   sales.push(sale);
-  localStorage.setItem('sales', JSON.stringify(sales));
+  localStorage.setItem(key, JSON.stringify(sales));
 };
 
 export const updateSale = (updatedSale: Sale): void => {
+  const key = getYearSpecificKey('sales');
   const sales = getSales();
   const index = sales.findIndex(sale => sale.id === updatedSale.id);
   if (index !== -1) {
     sales[index] = updatedSale;
-    localStorage.setItem('sales', JSON.stringify(sales));
+    localStorage.setItem(key, JSON.stringify(sales));
   }
 };
 
 export const deleteSale = (id: string): void => {
+  const key = getYearSpecificKey('sales');
   const sales = getSales();
   const index = sales.findIndex(sale => sale.id === id);
   if (index !== -1) {
     sales[index] = { ...sales[index], isDeleted: true };
-    localStorage.setItem('sales', JSON.stringify(sales));
+    localStorage.setItem(key, JSON.stringify(sales));
   }
 };
 
 export const getInventory = (): any[] => {
-  const savedInventory = localStorage.getItem('inventory');
+  const key = getYearSpecificKey('inventory');
+  const savedInventory = localStorage.getItem(key);
   return savedInventory ? JSON.parse(savedInventory) : [];
 };
 
 export const saveInventory = (inventory: any[]): void => {
-  localStorage.setItem('inventory', JSON.stringify(inventory));
+  const key = getYearSpecificKey('inventory');
+  localStorage.setItem(key, JSON.stringify(inventory));
 };
 
 export const addInventoryItem = (item: any): void => {
@@ -394,7 +402,7 @@ export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number
     inventory[index] = {
       ...item,
       remainingQuantity,
-      isDeleted: remainingQuantity === 0 // Mark as deleted if no quantity remains
+      isDeleted: remainingQuantity === 0
     };
     
     saveInventory(inventory);
@@ -402,60 +410,68 @@ export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number
 };
 
 export const getPayments = (): Payment[] => {
-  const savedPayments = localStorage.getItem('payments');
+  const key = getYearSpecificKey('payments');
+  const savedPayments = localStorage.getItem(key);
   return savedPayments ? JSON.parse(savedPayments) : [];
 };
 
 export const addPayment = (payment: Payment): void => {
+  const key = getYearSpecificKey('payments');
   const payments = getPayments();
   payments.push(payment);
-  localStorage.setItem('payments', JSON.stringify(payments));
+  localStorage.setItem(key, JSON.stringify(payments));
 };
 
 export const updatePayment = (updatedPayment: Payment): void => {
+  const key = getYearSpecificKey('payments');
   const payments = getPayments();
   const index = payments.findIndex(payment => payment.id === updatedPayment.id);
   if (index !== -1) {
     payments[index] = updatedPayment;
-    localStorage.setItem('payments', JSON.stringify(payments));
+    localStorage.setItem(key, JSON.stringify(payments));
   }
 };
 
 export const deletePayment = (id: string): void => {
+  const key = getYearSpecificKey('payments');
   const payments = getPayments();
   const index = payments.findIndex(payment => payment.id === id);
   if (index !== -1) {
     payments[index] = { ...payments[index], isDeleted: true };
-    localStorage.setItem('payments', JSON.stringify(payments));
+    localStorage.setItem(key, JSON.stringify(payments));
   }
 };
 
 export const getReceipts = (): Receipt[] => {
-  const savedReceipts = localStorage.getItem('receipts');
+  const key = getYearSpecificKey('receipts');
+  const savedReceipts = localStorage.getItem(key);
   return savedReceipts ? JSON.parse(savedReceipts) : [];
 };
 
 export const addReceipt = (receipt: Receipt): void => {
+  const key = getYearSpecificKey('receipts');
   const receipts = getReceipts();
   receipts.push(receipt);
-  localStorage.setItem('receipts', JSON.stringify(receipts));
+  localStorage.setItem(key, JSON.stringify(receipts));
 };
 
 export const updateReceipt = (updatedReceipt: Receipt): void => {
+  const key = getYearSpecificKey('receipts');
   const receipts = getReceipts();
   const index = receipts.findIndex(receipt => receipt.id === updatedReceipt.id);
   if (index !== -1) {
     receipts[index] = updatedReceipt;
-    localStorage.setItem('receipts', JSON.stringify(receipts));
+    localStorage.setItem(key, JSON.stringify(receipts));
   }
 };
 
 export const deleteReceipt = (id: string): void => {
+  const key = getYearSpecificKey('receipts');
   const receipts = getReceipts();
   const index = receipts.findIndex(receipt => receipt.id === id);
   if (index !== -1) {
     receipts[index] = { ...receipts[index], isDeleted: true };
-    localStorage.setItem('receipts', JSON.stringify(receipts));
+    localStorage.setItem(key, JSON.stringify(receipts));
   }
 };
 
@@ -479,31 +495,40 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
 };
 
 export const seedInitialData = (forceReset = false): void => {
-  // Check if data already exists
   const hasAgents = localStorage.getItem('agents') !== null;
   
   if (!hasAgents || forceReset) {
-    // Initialize each data type with empty arrays if not exists
     if (!localStorage.getItem('agents')) localStorage.setItem('agents', JSON.stringify([]));
     if (!localStorage.getItem('suppliers')) localStorage.setItem('suppliers', JSON.stringify([]));
     if (!localStorage.getItem('customers')) localStorage.setItem('customers', JSON.stringify([]));
     if (!localStorage.getItem('brokers')) localStorage.setItem('brokers', JSON.stringify([]));
     if (!localStorage.getItem('transporters')) localStorage.setItem('transporters', JSON.stringify([]));
-    if (!localStorage.getItem('purchases')) localStorage.setItem('purchases', JSON.stringify([]));
-    if (!localStorage.getItem('sales')) localStorage.setItem('sales', JSON.stringify([]));
-    if (!localStorage.getItem('inventory')) localStorage.setItem('inventory', JSON.stringify([]));
-    if (!localStorage.getItem('payments')) localStorage.setItem('payments', JSON.stringify([]));
-    if (!localStorage.getItem('receipts')) localStorage.setItem('receipts', JSON.stringify([]));
+    
+    const yearKeys = [
+      getYearSpecificKey('purchases'),
+      getYearSpecificKey('sales'),
+      getYearSpecificKey('inventory'),
+      getYearSpecificKey('payments'),
+      getYearSpecificKey('receipts')
+    ];
+    
+    yearKeys.forEach(key => {
+      if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify([]));
+    });
+    
     if (!localStorage.getItem('locations')) localStorage.setItem('locations', JSON.stringify(['Mumbai', 'Chiplun', 'Sawantwadi']));
   }
 };
 
 export const clearAllData = (): void => {
-  localStorage.removeItem('purchases');
-  localStorage.removeItem('sales');
-  localStorage.removeItem('inventory');
-  localStorage.removeItem('payments');
-  localStorage.removeItem('receipts');
+  const activeYear = getActiveFinancialYear();
+  if (!activeYear) return;
+  
+  localStorage.removeItem(getYearSpecificKey('purchases'));
+  localStorage.removeItem(getYearSpecificKey('sales'));
+  localStorage.removeItem(getYearSpecificKey('inventory'));
+  localStorage.removeItem(getYearSpecificKey('payments'));
+  localStorage.removeItem(getYearSpecificKey('receipts'));
 };
 
 export const clearAllMasterData = (): void => {
@@ -517,20 +542,38 @@ export const clearAllMasterData = (): void => {
 export const exportDataBackup = (includeAll = true): string => {
   const backup: Record<string, any> = {};
   
-  // Always include these
-  backup.purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
-  backup.sales = JSON.parse(localStorage.getItem('sales') || '[]');
-  backup.inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
-  backup.payments = JSON.parse(localStorage.getItem('payments') || '[]');
-  backup.receipts = JSON.parse(localStorage.getItem('receipts') || '[]');
+  const activeYear = getActiveFinancialYear();
+  if (activeYear) {
+    backup.activeYear = activeYear.id;
+    backup.purchases = JSON.parse(localStorage.getItem(getYearSpecificKey('purchases')) || '[]');
+    backup.sales = JSON.parse(localStorage.getItem(getYearSpecificKey('sales')) || '[]');
+    backup.inventory = JSON.parse(localStorage.getItem(getYearSpecificKey('inventory')) || '[]');
+    backup.payments = JSON.parse(localStorage.getItem(getYearSpecificKey('payments')) || '[]');
+    backup.receipts = JSON.parse(localStorage.getItem(getYearSpecificKey('receipts')) || '[]');
+  }
   
   if (includeAll) {
+    backup.financialYears = JSON.parse(localStorage.getItem('financialYears') || '[]');
+    
     backup.agents = JSON.parse(localStorage.getItem('agents') || '[]');
     backup.suppliers = JSON.parse(localStorage.getItem('suppliers') || '[]');
     backup.customers = JSON.parse(localStorage.getItem('customers') || '[]');
     backup.brokers = JSON.parse(localStorage.getItem('brokers') || '[]');
     backup.transporters = JSON.parse(localStorage.getItem('transporters') || '[]');
     backup.locations = JSON.parse(localStorage.getItem('locations') || '["Mumbai", "Chiplun", "Sawantwadi"]');
+    
+    const years = backup.financialYears || [];
+    const openingBalances: Record<string, any> = {};
+    
+    years.forEach((year: any) => {
+      const key = `openingBalances_${year.id}`;
+      const balancesStr = localStorage.getItem(key);
+      if (balancesStr) {
+        openingBalances[year.id] = JSON.parse(balancesStr);
+      }
+    });
+    
+    backup.openingBalances = openingBalances;
   }
   
   return JSON.stringify(backup);
@@ -540,11 +583,17 @@ export const importDataBackup = (backupData: string): boolean => {
   try {
     const backup = JSON.parse(backupData);
     
-    if (backup.purchases) localStorage.setItem('purchases', JSON.stringify(backup.purchases));
-    if (backup.sales) localStorage.setItem('sales', JSON.stringify(backup.sales));
-    if (backup.inventory) localStorage.setItem('inventory', JSON.stringify(backup.inventory));
-    if (backup.payments) localStorage.setItem('payments', JSON.stringify(backup.payments));
-    if (backup.receipts) localStorage.setItem('receipts', JSON.stringify(backup.receipts));
+    if (backup.activeYear) {
+      const yearId = backup.activeYear;
+      
+      if (backup.purchases) localStorage.setItem(`purchases_${yearId}`, JSON.stringify(backup.purchases));
+      if (backup.sales) localStorage.setItem(`sales_${yearId}`, JSON.stringify(backup.sales));
+      if (backup.inventory) localStorage.setItem(`inventory_${yearId}`, JSON.stringify(backup.inventory));
+      if (backup.payments) localStorage.setItem(`payments_${yearId}`, JSON.stringify(backup.payments));
+      if (backup.receipts) localStorage.setItem(`receipts_${yearId}`, JSON.stringify(backup.receipts));
+    }
+    
+    if (backup.financialYears) localStorage.setItem('financialYears', JSON.stringify(backup.financialYears));
     
     if (backup.agents) localStorage.setItem('agents', JSON.stringify(backup.agents));
     if (backup.suppliers) localStorage.setItem('suppliers', JSON.stringify(backup.suppliers));
@@ -552,6 +601,13 @@ export const importDataBackup = (backupData: string): boolean => {
     if (backup.brokers) localStorage.setItem('brokers', JSON.stringify(backup.brokers));
     if (backup.transporters) localStorage.setItem('transporters', JSON.stringify(backup.transporters));
     if (backup.locations) localStorage.setItem('locations', JSON.stringify(backup.locations));
+    
+    if (backup.openingBalances) {
+      Object.entries(backup.openingBalances).forEach(([yearId, balances]) => {
+        const key = `openingBalances_${yearId}`;
+        localStorage.setItem(key, JSON.stringify(balances));
+      });
+    }
     
     return true;
   } catch (error) {
@@ -561,5 +617,6 @@ export const importDataBackup = (backupData: string): boolean => {
 };
 
 export const savePurchases = (purchases: Purchase[]): void => {
-  localStorage.setItem('purchases', JSON.stringify(purchases));
+  const key = getYearSpecificKey('purchases');
+  localStorage.setItem(key, JSON.stringify(purchases));
 };

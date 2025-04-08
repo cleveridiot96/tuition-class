@@ -83,7 +83,7 @@ const DashboardMenu = () => {
     {
       title: "Calculator",
       icon: <Calculator className="w-6 h-6 mb-2 text-gray-600" />,
-      link: "/stock", // Changed from /calculator to /stock since the calculator is now in the Stock page
+      link: "/calculator", // Changed from /stock to /calculator
       description: "Business calculations",
     },
     {

@@ -18,6 +18,11 @@ import BackupRestoreControls from "@/components/BackupRestoreControls";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
 import DashboardSummary from "@/components/DashboardSummary";
 import { formatDate } from "@/utils/helpers";
+import YearSelector from "@/components/YearSelector";
+import { Button } from "@/components/ui/button";
+import { Settings } from "lucide-react";
+import { initializeFinancialYears } from "@/services/financialYearService";
+import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
 
 interface ProfitData {
   purchase: number;
@@ -51,6 +56,7 @@ const Index = () => {
   const [totalProfit, setTotalProfit] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [dataVersion, setDataVersion] = useState(0);
+  const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   
   const loadDashboardData = useCallback(() => {
     setIsRefreshing(true);
@@ -157,6 +163,7 @@ const Index = () => {
   
   useEffect(() => {
     try {
+      initializeFinancialYears();
       seedInitialData();
       loadDashboardData();
     } catch (error) {
@@ -248,6 +255,10 @@ const Index = () => {
     }
   };
 
+  const handleOpeningBalances = () => {
+    setShowOpeningBalanceSetup(true);
+  };
+
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation 
@@ -256,19 +267,30 @@ const Index = () => {
         onFormatClick={handleFormatClick}
       />
       <div className="container mx-auto px-4 py-6">
-        <div className="text-center mb-8">
+        <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-ag-brown-dark">
             Business Management Software
           </h2>
-          <p className="text-lg text-ag-brown mt-2">
-            Agricultural Business Management System
-          </p>
-          
-          <BackupRestoreControls 
-            onRefresh={loadDashboardData} 
-            isRefreshing={isRefreshing} 
-          />
+          <div className="flex items-center space-x-4">
+            <YearSelector />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleOpeningBalances}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Opening Balances
+            </Button>
+          </div>
         </div>
+        <p className="text-lg text-ag-brown mt-2 mb-4 text-center">
+          Agricultural Business Management System
+        </p>
+        
+        <BackupRestoreControls 
+          onRefresh={loadDashboardData} 
+          isRefreshing={isRefreshing} 
+        />
         
         <DashboardMenu />
         
@@ -285,6 +307,11 @@ const Index = () => {
         isOpen={isFormatDialogOpen}
         onClose={() => setIsFormatDialogOpen(false)}
         onConfirm={handleFormatConfirm}
+      />
+      
+      <OpeningBalanceSetup 
+        isOpen={showOpeningBalanceSetup}
+        onClose={() => setShowOpeningBalanceSetup(false)}
       />
     </div>
   );
