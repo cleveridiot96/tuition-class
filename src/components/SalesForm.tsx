@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -94,12 +93,10 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     }
   });
 
-  // Reset the form change flag when the form is reset or initialized
   useEffect(() => {
     setFormChanged(false);
   }, [initialData]);
 
-  // Track form changes
   useEffect(() => {
     const subscription = form.watch(() => {
       setFormChanged(true);
@@ -107,12 +104,9 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     return () => subscription.unsubscribe();
   }, [form]);
 
-  // Load data
   useEffect(() => {
-    // Immediately update inventory when the component loads
     refreshData();
     
-    // Set up auto-refresh every 60 seconds
     const intervalId = setInterval(() => {
       refreshData();
     }, 60000);
@@ -131,7 +125,6 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     setIsRefreshing(false);
   };
 
-  // Auto-populate fields when lot number changes
   const handleLotChange = (lotNumber: string) => {
     const selectedLot = inventory.find(item => item.lotNumber === lotNumber);
     if (selectedLot) {
@@ -142,18 +135,15 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     }
   };
 
-  // Handle calculation when values change
   useEffect(() => {
     const values = form.getValues();
     const netWeight = values.netWeight || 0;
     const rate = values.rate || 0;
     const transportRate = values.transportRate || 0;
     
-    // Calculate transport cost based on weight and rate
     const calculatedTransportCost = netWeight * transportRate;
     setTransportCost(calculatedTransportCost);
     
-    // Calculate total and net amount
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
@@ -161,7 +151,6 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
   }, [form.watch()]);
 
   const handleFormSubmit = (data: FormData) => {
-    // Format data for submission
     const submitData = {
       ...data,
       customer: customers.find(c => c.id === data.customerId)?.name || data.customerId,
@@ -171,14 +160,12 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
       transportCost,
       netAmount,
       billAmount: data.billAmount || 0,
-      // Ensure amount field is set - this is crucial for the dashboard summary
       amount: totalAmount,
       id: initialData?.id || Date.now().toString()
     };
     
     console.log("Submitting sale data:", submitData);
     
-    // Submit the data
     onSubmit(submitData);
     setFormChanged(false);
   };
@@ -253,7 +240,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                     </FormControl>
                     <SelectContent searchable>
                       {inventory.length === 0 ? (
-                        <SelectItem value="no-lots">No lots available</SelectItem>
+                        <SelectItem value="no-lots-available">No lots available</SelectItem>
                       ) : (
                         inventory.map((item) => (
                           <SelectItem key={item.id} value={item.lotNumber}>
@@ -376,7 +363,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Broker (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <Select onValueChange={field.onChange} value={field.value || "none"}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select broker (optional)" />

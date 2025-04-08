@@ -48,7 +48,6 @@ import {
   getBrokers
 } from "@/services/storageService";
 
-// Storage keys
 const SALES_STORAGE_KEY = "app_sales_data";
 const DELETED_SALES_STORAGE_KEY = "app_deleted_sales";
 const INVENTORY_STORAGE_KEY = "app_inventory_data";
@@ -131,7 +130,6 @@ const Sales = () => {
     cashAmount: 0
   });
   
-  // Load data from local storage
   useEffect(() => {
     const loadSalesData = () => {
       const savedSales = localStorage.getItem(SALES_STORAGE_KEY);
@@ -169,7 +167,6 @@ const Sales = () => {
     loadBrokersData();
   }, []);
 
-  // Save data to local storage when it changes
   useEffect(() => {
     localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(sales));
   }, [sales]);
@@ -194,7 +191,6 @@ const Sales = () => {
       [name]: numFields.includes(name) ? Number(value) : value
     }));
     
-    // Auto-update paymentReceived when amount changes and paymentType is "full" or "cash"
     if (name === "amount" && (formData.paymentType === "full" || formData.paymentType === "cash")) {
       setFormData((prev) => ({
         ...prev,
@@ -203,7 +199,6 @@ const Sales = () => {
       }));
     }
     
-    // Auto-update cashAmount and billAmount based on paymentReceived
     if (name === "paymentReceived") {
       const paymentReceived = Number(value);
       if (formData.paymentType === "partial") {
@@ -218,17 +213,15 @@ const Sales = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     if (name === "lotNumber") {
-      // Find inventory item with this lot number
       const selectedItem = inventory.find(item => item.lotNumber === value);
       if (selectedItem) {
         setFormData((prev) => ({
           ...prev,
           lotNumber: value,
-          quantity: 0 // Reset quantity when lot changes
+          quantity: 0
         }));
       }
     } else if (name === "customer") {
-      // Find customer details when customer is selected
       const selectedCustomer = customers.find(customer => customer.name === value);
       setFormData((prev) => ({
         ...prev,
@@ -246,7 +239,6 @@ const Sales = () => {
     setFormData((prev) => {
       const newState = { ...prev, paymentType: value };
       
-      // Adjust payment received and bill/cash amounts based on payment type
       if (value === "full") {
         newState.paymentReceived = newState.amount;
         newState.billAmount = newState.amount;
@@ -256,7 +248,6 @@ const Sales = () => {
         newState.billAmount = 0;
         newState.cashAmount = newState.amount;
       } else if (value === "partial") {
-        // For partial, leave paymentReceived as is
         newState.billAmount = Math.max(0, newState.amount - newState.paymentReceived);
         newState.cashAmount = newState.paymentReceived;
       }
@@ -266,7 +257,6 @@ const Sales = () => {
   };
 
   const updateInventoryQuantity = (lotNumber: string, quantitySold: number, isAdding = false) => {
-    // Update inventory quantity when a sale is made or updated
     setInventory(prev => 
       prev.map(item => {
         if (item.lotNumber === lotNumber) {
@@ -287,7 +277,6 @@ const Sales = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if the selected lot exists and has sufficient quantity
     const selectedLot = inventory.find(item => item.lotNumber === formData.lotNumber);
     
     if (!selectedLot) {
@@ -300,15 +289,12 @@ const Sales = () => {
     }
     
     if (editingId) {
-      // If editing, first restore the original quantity to inventory
       const originalSale = sales.find(sale => sale.id === editingId);
       if (originalSale) {
-        // Add back the original quantity
         updateInventoryQuantity(originalSale.lotNumber, originalSale.quantity, true);
       }
     }
     
-    // Now check if we have enough inventory for the new quantity
     const availableAfterUpdate = selectedLot.availableQuantity - formData.quantity;
     
     if (availableAfterUpdate < 0) {
@@ -320,11 +306,9 @@ const Sales = () => {
       return;
     }
     
-    // Update inventory quantity
     updateInventoryQuantity(formData.lotNumber, formData.quantity);
     
     if (editingId) {
-      // Update existing sale
       setSales(prev => 
         prev.map(sale => 
           sale.id === editingId 
@@ -340,7 +324,6 @@ const Sales = () => {
       
       setEditingId(null);
     } else {
-      // Add new sale
       const newSale: SaleEntry = {
         id: Date.now().toString(),
         ...formData
@@ -354,7 +337,6 @@ const Sales = () => {
       });
     }
     
-    // Reset form
     setFormData({
       date: new Date().toISOString().split('T')[0],
       lotNumber: "",
@@ -396,13 +378,8 @@ const Sales = () => {
   const handleDelete = (id: string) => {
     const saleToDelete = sales.find(sale => sale.id === id);
     if (saleToDelete) {
-      // Add to deleted sales
       setDeletedSales(prev => [saleToDelete, ...prev]);
-      
-      // Remove from sales
       setSales(prev => prev.filter(sale => sale.id !== id));
-      
-      // Add the quantity back to inventory
       updateInventoryQuantity(saleToDelete.lotNumber, saleToDelete.quantity, true);
       
       toast({
@@ -415,7 +392,6 @@ const Sales = () => {
   const handleRestore = (id: string) => {
     const saleToRestore = deletedSales.find(sale => sale.id === id);
     if (saleToRestore) {
-      // Check if we have enough inventory for restoring
       const selectedLot = inventory.find(item => item.lotNumber === saleToRestore.lotNumber);
       
       if (!selectedLot) {
@@ -438,13 +414,9 @@ const Sales = () => {
         return;
       }
       
-      // Update inventory quantity
       updateInventoryQuantity(saleToRestore.lotNumber, saleToRestore.quantity);
       
-      // Add back to sales
       setSales(prev => [saleToRestore, ...prev]);
-      
-      // Remove from deleted sales
       setDeletedSales(prev => prev.filter(sale => sale.id !== id));
       
       toast({
@@ -455,13 +427,11 @@ const Sales = () => {
   };
   
   const handleAddNewCustomer = () => {
-    // Check for similar names to prevent duplicates
     const similarCustomers = customers.filter(c => 
       isSimilarName(c.name, newCustomer.name)
     );
     
     if (similarCustomers.length > 0) {
-      // Show alert about similar names
       if (window.confirm(`Similar customer "${similarCustomers[0].name}" already exists. Are you sure you want to add "${newCustomer.name}"?`)) {
         addCustomer();
       }
@@ -483,13 +453,11 @@ const Sales = () => {
       description: `Customer ${newCustomer.name} has been added.`
     });
     
-    // Set the new customer as selected
     setFormData(prev => ({
       ...prev,
       customer: newCustomer.name
     }));
     
-    // Reset and close dialog
     setNewCustomer({
       name: "",
       phone: "",
@@ -500,18 +468,14 @@ const Sales = () => {
     setShowNewCustomerDialog(false);
   };
   
-  // Helper function to check for similar names
   const isSimilarName = (name1: string, name2: string): boolean => {
-    // Convert to lowercase and remove spaces
     const clean1 = name1.toLowerCase().replace(/\s+/g, "");
     const clean2 = name2.toLowerCase().replace(/\s+/g, "");
     
-    // If names are short, require more similarity
     if (clean1.length < 5 || clean2.length < 5) {
       return clean1 === clean2;
     }
     
-    // Check for significant overlap
     let matches = 0;
     const minLength = Math.min(clean1.length, clean2.length);
     
@@ -521,23 +485,19 @@ const Sales = () => {
       }
     }
     
-    // If more than 70% characters match, consider them similar
     return matches / minLength > 0.7;
   };
   
-  // Get customer outstanding balance
   const getCustomerOutstandingBalance = (customerName: string): number => {
     const customer = customers.find(c => c.name === customerName);
     return customer?.outstandingBalance || 0;
   };
   
-  // Get available inventory quantity for a lot
   const getAvailableQuantity = (lotNumber: string): number => {
     const item = inventory.find(i => i.lotNumber === lotNumber);
     return item?.availableQuantity || 0;
   };
   
-  // Filter inventory items that have available quantity
   const availableInventory = inventory.filter(item => item.availableQuantity > 0);
 
   return (
@@ -567,145 +527,131 @@ const Sales = () => {
             </div>
 
             {showDeleted ? (
-              // Deleted Sales List - Changed to Table Format
-              deletedSales.length === 0 ? (
-                <Card className="p-6 text-center">
-                  <p className="text-xl text-ag-brown">No deleted sales found.</p>
-                </Card>
-              ) : (
-                <Card className="p-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Lot</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Broker</TableHead>
-                        <TableHead>Bill #</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Received</TableHead>
-                        <TableHead>Balance</TableHead>
-                        <TableHead>Actions</TableHead>
+              <Card className="p-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Lot</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Broker</TableHead>
+                      <TableHead>Bill #</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Received</TableHead>
+                      <TableHead>Balance</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deletedSales.map((sale) => (
+                      <TableRow key={sale.id} className="border-dashed border-red-300">
+                        <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{sale.lotNumber}</TableCell>
+                        <TableCell>{sale.quantity}</TableCell>
+                        <TableCell>{sale.customer}</TableCell>
+                        <TableCell>{sale.broker || "-"}</TableCell>
+                        <TableCell>{sale.billNumber || "-"}</TableCell>
+                        <TableCell>₹{sale.amount}</TableCell>
+                        <TableCell>₹{sale.paymentReceived}</TableCell>
+                        <TableCell className={sale.amount - sale.paymentReceived > 0 ? "text-red-500 font-bold" : ""}>
+                          ₹{sale.amount - sale.paymentReceived}
+                        </TableCell>
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                                <RefreshCcw size={16} />
+                                Restore
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Restore Sale</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to restore this sale? This will update inventory quantities.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleRestore(sale.id)}>
+                                  Restore Sale
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deletedSales.map((sale) => (
-                        <TableRow key={sale.id} className="border-dashed border-red-300">
-                          <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{sale.lotNumber}</TableCell>
-                          <TableCell>{sale.quantity}</TableCell>
-                          <TableCell>{sale.customer}</TableCell>
-                          <TableCell>{sale.broker || "-"}</TableCell>
-                          <TableCell>{sale.billNumber || "-"}</TableCell>
-                          <TableCell>₹{sale.amount}</TableCell>
-                          <TableCell>₹{sale.paymentReceived}</TableCell>
-                          <TableCell className={sale.amount - sale.paymentReceived > 0 ? "text-red-500 font-bold" : ""}>
-                            ₹{sale.amount - sale.paymentReceived}
-                          </TableCell>
-                          <TableCell>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
+            ) : (
+              <Card className="p-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Lot</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Broker</TableHead>
+                      <TableHead>Bill #</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Received</TableHead>
+                      <TableHead>Balance</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sales.map((sale) => (
+                      <TableRow key={sale.id}>
+                        <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{sale.lotNumber}</TableCell>
+                        <TableCell>{sale.quantity}</TableCell>
+                        <TableCell>{sale.customer}</TableCell>
+                        <TableCell>{sale.broker || "-"}</TableCell>
+                        <TableCell>{sale.billNumber || "-"}</TableCell>
+                        <TableCell>₹{sale.amount}</TableCell>
+                        <TableCell>₹{sale.paymentReceived}</TableCell>
+                        <TableCell className={sale.amount - sale.paymentReceived > 0 ? "text-red-500 font-bold" : ""}>
+                          ₹{sale.amount - sale.paymentReceived}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => handleEdit(sale)}>
+                              <Edit size={16} />
+                              Edit
+                            </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="flex items-center gap-1">
-                                  <RefreshCcw size={16} />
-                                  Restore
+                                <Button variant="destructive" size="sm" className="flex items-center gap-1">
+                                  <Trash2 size={16} />
+                                  Delete
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Restore Sale</AlertDialogTitle>
+                                  <AlertDialogTitle>Delete Sale</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Are you sure you want to restore this sale? This will update inventory quantities.
+                                    Are you sure you want to delete this sale? This will update inventory quantities.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleRestore(sale.id)}>
-                                    Restore Sale
+                                  <AlertDialogAction onClick={() => handleDelete(sale.id)}>
+                                    Delete Sale
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Card>
-              )
-            ) : (
-              // Active Sales List - Changed to Table Format
-              sales.length === 0 ? (
-                <Card className="p-6 text-center">
-                  <p className="text-xl text-ag-brown">No sales found. Click the button above to add a new sale.</p>
-                </Card>
-              ) : (
-                <Card className="p-4">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Lot</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Broker</TableHead>
-                        <TableHead>Bill #</TableHead>
-                        <TableHead>Total</TableHead>
-                        <TableHead>Received</TableHead>
-                        <TableHead>Balance</TableHead>
-                        <TableHead>Actions</TableHead>
+                          </div>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sales.map((sale) => (
-                        <TableRow key={sale.id}>
-                          <TableCell>{new Date(sale.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{sale.lotNumber}</TableCell>
-                          <TableCell>{sale.quantity}</TableCell>
-                          <TableCell>{sale.customer}</TableCell>
-                          <TableCell>{sale.broker || "-"}</TableCell>
-                          <TableCell>{sale.billNumber || "-"}</TableCell>
-                          <TableCell>₹{sale.amount}</TableCell>
-                          <TableCell>₹{sale.paymentReceived}</TableCell>
-                          <TableCell className={sale.amount - sale.paymentReceived > 0 ? "text-red-500 font-bold" : ""}>
-                            ₹{sale.amount - sale.paymentReceived}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" className="flex items-center gap-1" onClick={() => handleEdit(sale)}>
-                                <Edit size={16} />
-                                Edit
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="destructive" size="sm" className="flex items-center gap-1">
-                                    <Trash2 size={16} />
-                                    Delete
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Sale</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Are you sure you want to delete this sale? This will update inventory quantities.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(sale.id)}>
-                                      Delete Sale
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Card>
-              )
+                    ))}
+                  </TableBody>
+                </Table>
+              </Card>
             )}
           </>
         ) : (
@@ -806,6 +752,7 @@ const Sales = () => {
                 </div>
                 
                 <div className="form-group">
+                  <Label htmlFor="customer" className="form-label">Customer</Label>
                   <div className="flex justify-between">
                     <Label htmlFor="customer" className="form-label">Customer</Label>
                     <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
@@ -841,7 +788,7 @@ const Sales = () => {
                                 <SelectValue placeholder="Select broker (optional)" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">No Broker</SelectItem>
+                                <SelectItem value="no-broker">No Broker</SelectItem>
                                 {brokers.map((broker) => (
                                   <SelectItem key={broker.id} value={broker.name}>
                                     {broker.name}
@@ -883,7 +830,7 @@ const Sales = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {customers.length === 0 ? (
-                        <SelectItem value="none" disabled>No customers available</SelectItem>
+                        <SelectItem value="no-customers-available" disabled>No customers available</SelectItem>
                       ) : (
                         customers.map((customer) => (
                           <SelectItem key={customer.id} value={customer.name}>
@@ -1019,7 +966,6 @@ const Sales = () => {
           </Card>
         )}
       </div>
-      {/* Add New Customer Dialog - Updated to include broker dropdown */}
       <Dialog open={showNewCustomerDialog} onOpenChange={setShowNewCustomerDialog}>
         <DialogContent>
           <DialogHeader>
@@ -1047,7 +993,7 @@ const Sales = () => {
                   <SelectValue placeholder="Select broker (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No Broker</SelectItem>
+                  <SelectItem value="no-broker">No Broker</SelectItem>
                   {brokers.map((broker) => (
                     <SelectItem key={broker.id} value={broker.name}>
                       {broker.name}
