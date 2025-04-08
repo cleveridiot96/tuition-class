@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getPayments, addPayment, updatePayment } from "@/services/storageService";
+import { getPayments, addPayment, updatePayment, deletePayment } from "@/services/storageService";
 import PaymentForm from "@/components/PaymentForm";
 
 interface PaymentEntry {
@@ -67,6 +67,19 @@ const Payments = () => {
     setShowForm(true);
   };
 
+  // Format payment mode text with proper capitalization
+  const formatPaymentMode = (mode: string | undefined): string => {
+    if (!mode || typeof mode !== 'string') return 'Unknown';
+    return mode.charAt(0).toUpperCase() + mode.slice(1);
+  };
+
+  // Get CSS class for payment mode badge
+  const getPaymentModeClass = (mode: string | undefined): string => {
+    return `px-3 py-1 rounded-full ${
+      mode === "cash" ? "bg-ag-orange text-white" : "bg-ag-green text-white"
+    }`;
+  };
+
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation title="Payments" showBackButton />
@@ -92,7 +105,11 @@ const Payments = () => {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {payments.map((payment) => (
-                  <Card key={payment.id} className="p-4 cursor-pointer hover:shadow-lg transition-shadow" onClick={() => handleEditPayment(payment)}>
+                  <Card 
+                    key={payment.id} 
+                    className="p-4 cursor-pointer hover:shadow-lg transition-shadow" 
+                    onClick={() => handleEditPayment(payment)}
+                  >
                     <div className="flex justify-between items-center border-b pb-2 mb-2">
                       <h3 className="text-xl font-bold">{payment.partyName}</h3>
                       <p className="text-ag-brown">{new Date(payment.date).toLocaleDateString()}</p>
@@ -100,14 +117,8 @@ const Payments = () => {
                     <div className="mt-2">
                       <p className="text-2xl font-bold text-ag-green">₹ {payment.amount}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <span className={`px-3 py-1 rounded-full ${
-                          payment.paymentMode === "cash" 
-                            ? "bg-ag-orange text-white" 
-                            : "bg-ag-green text-white"
-                        }`}>
-                          {payment.paymentMode && typeof payment.paymentMode === 'string' 
-                            ? payment.paymentMode.charAt(0).toUpperCase() + payment.paymentMode.slice(1) 
-                            : 'Unknown'}
+                        <span className={getPaymentModeClass(payment.paymentMode)}>
+                          {formatPaymentMode(payment.paymentMode)}
                         </span>
                         {payment.referenceNumber && (
                           <span className="text-ag-brown">Ref: {payment.referenceNumber}</span>
