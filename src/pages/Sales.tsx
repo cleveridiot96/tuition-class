@@ -1,9 +1,8 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   Dialog, 
   DialogContent, 
@@ -45,6 +44,7 @@ import {
 } from "@/services/storageService";
 import { useReactToPrint } from "react-to-print";
 import SalesReceipt from "@/components/SalesReceipt";
+import { getSaleIdFromUrl } from "@/utils/helpers";
 
 interface Sale {
   id: string;
@@ -59,16 +59,16 @@ interface Sale {
   rate: number;
   broker?: string;
   brokerId?: string;
-  transporter: string;
-  transporterId: string;
-  transportRate: number;
-  location: string;
+  transporter?: string;
+  transporterId?: string;
+  transportRate?: number;
+  location?: string;
   notes?: string;
   totalAmount: number;
   transportCost: number;
   netAmount: number;
   isDeleted?: boolean;
-  brokerage?: number;
+  brokerageAmount?: number;
   amount: number;
 }
 
@@ -98,6 +98,17 @@ const Sales = () => {
 
   useEffect(() => {
     loadData();
+    // Check for URL params
+    const saleId = getSaleIdFromUrl();
+    if (saleId) {
+      const allSales = getSales();
+      const targetSale = allSales.find(s => s.id === saleId && !s.isDeleted);
+      if (targetSale) {
+        handleEdit(targetSale);
+        // Clear URL parameter after handling to avoid reopening on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
   }, []);
 
   const loadData = () => {
@@ -117,8 +128,7 @@ const Sales = () => {
   const handleAdd = (data: Sale) => {
     const saleWithLocation = {
       ...data,
-      location: data.location || "",
-      amount: data.netAmount
+      amount: data.totalAmount
     };
     
     addSale(saleWithLocation);
@@ -141,8 +151,7 @@ const Sales = () => {
     
     const saleWithLocation = {
       ...updatedSale,
-      location: updatedSale.location || "",
-      amount: updatedSale.netAmount
+      amount: updatedSale.totalAmount
     };
     
     // If quantity changed, we need to adjust inventory
@@ -212,8 +221,7 @@ const Sales = () => {
     const updatedSale = { 
       ...saleToRestore, 
       isDeleted: false,
-      location: saleToRestore.location || "",
-      amount: saleToRestore.netAmount
+      amount: saleToRestore.totalAmount 
     };
     updateSale(updatedSale);
     
@@ -410,7 +418,6 @@ const Sales = () => {
                           <TableHead className="sticky top-0 bg-white">Rate</TableHead>
                           <TableHead className="sticky top-0 bg-white">Total</TableHead>
                           <TableHead className="sticky top-0 bg-white">Bill Amt</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Net Amt</TableHead>
                           <TableHead className="sticky top-0 bg-white">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -425,7 +432,6 @@ const Sales = () => {
                             <TableCell>₹{sale.rate}</TableCell>
                             <TableCell>₹{sale.totalAmount.toFixed(2)}</TableCell>
                             <TableCell>₹{sale.billAmount ? sale.billAmount.toFixed(2) : "0.00"}</TableCell>
-                            <TableCell>₹{sale.netAmount.toFixed(2)}</TableCell>
                             <TableCell>
                               <div className="flex gap-2">
                                 <Button 

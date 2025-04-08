@@ -84,3 +84,14 @@ export const numberToWords = (number: number): string => {
     return numString; // Return as is for larger numbers
   }
 };
+
+/**
+ * Extract sale ID from URL search params
+ * @returns Sale ID if present in URL
+ */
+export const getSaleIdFromUrl = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  
+  const searchParams = new URLSearchParams(window.location.search);
+  return searchParams.get('edit');
+};

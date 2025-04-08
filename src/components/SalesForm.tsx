@@ -38,8 +38,8 @@ const formSchema = z.object({
   customerId: z.string().min(1, "Customer is required"),
   netWeight: z.coerce.number().min(1, "Net weight is required"),
   rate: z.coerce.number().min(1, "Rate is required"),
-  transporterId: z.string().min(1, "Transporter is required"),
-  transportRate: z.coerce.number().min(0, "Transport rate must be valid"),
+  transporterId: z.string().optional(),
+  transportRate: z.coerce.number().min(0, "Transport rate must be valid").optional(),
   location: z.string().optional(),
   brokerId: z.string().optional(),
   brokerageType: z.enum(["percentage", "fixed"]).optional(),
@@ -120,7 +120,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   useEffect(() => {
     if (initialData) {
       setTotalAmount(initialData.totalAmount || 0);
-      setNetAmount(initialData.netAmount || 0);
+      setNetAmount(initialData.totalAmount || 0);
       setTransportCost(initialData.transportCost || 0);
       setBrokerageAmount(initialData.brokerageAmount || 0);
       
@@ -152,7 +152,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     const rate = values.rate || 0;
     const transportRate = values.transportRate || 0;
     
-    const calculatedTransportCost = netWeight * transportRate;
+    const calculatedTransportCost = netWeight * (transportRate || 0);
     setTransportCost(calculatedTransportCost);
     
     const calculatedTotalAmount = netWeight * rate;
@@ -169,8 +169,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     }
     setBrokerageAmount(calculatedBrokerageAmount);
     
-    const calculatedNetAmount = calculatedTotalAmount - calculatedBrokerageAmount;
-    setNetAmount(calculatedNetAmount);
+    setNetAmount(calculatedTotalAmount);
   }, [form.watch(), showBrokerage]);
 
   const handleFormSubmit = (data: FormData) => {
@@ -180,16 +179,16 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       ...data,
       customer: customer ? customer.name : data.customerId,
       customerId: data.customerId,
-      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
+      transporter: data.transporterId ? transporters.find(t => t.id === data.transporterId)?.name || "" : "",
       broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
       brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
       brokerageType: data.brokerageType || "percentage",
       totalAmount,
-      netAmount,
+      netAmount: totalAmount,
       transportCost,
       billAmount: data.billNumber ? totalAmount : 0,
       id: initialData?.id || `sale-${Date.now()}`,
-      amount: netAmount,
+      amount: totalAmount,
     };
     
     onSubmit(submitData);
@@ -335,14 +334,15 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="transporterId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Transporter</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Transporter (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select transporter" />
+                        <SelectValue placeholder="Select transporter (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="self">Self</SelectItem>
                       {transporters.map((transporter) => (
                         <SelectItem key={transporter.id} value={transporter.id}>
@@ -368,7 +368,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                       {...field}
                       placeholder="0.00"
                       step="0.01"
-                      disabled={form.watch('transporterId') === 'self'}
+                      disabled={!form.watch('transporterId') || form.watch('transporterId') === 'none' || form.watch('transporterId') === 'self'}
                     />
                   </FormControl>
                   <FormMessage />
@@ -381,7 +381,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>Location (Optional)</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value || ""}>
                     <FormControl>
                       <SelectTrigger>
@@ -522,7 +522,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               </div>
               {showBrokerage && (
                 <div>
-                  <p className="text-sm text-gray-500">Brokerage</p>
+                  <p className="text-sm text-gray-500">Brokerage (Recorded)</p>
                   <p className="font-bold">₹{brokerageAmount.toFixed(2)}</p>
                 </div>
               )}
