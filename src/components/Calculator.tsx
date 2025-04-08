@@ -1,125 +1,96 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-const Calculator = () => {
-  const [displayValue, setDisplayValue] = useState('0');
-  const [firstOperand, setFirstOperand] = useState<number | null>(null);
-  const [operator, setOperator] = useState<string | null>(null);
-  const [waitingForSecondOperand, setWaitingForSecondOperand] = useState(false);
+const Calculator: React.FC = () => {
+  const [num1, setNum1] = useState<number>(0);
+  const [num2, setNum2] = useState<number>(0);
+  const [operation, setOperation] = useState<string>("add");
+  const [result, setResult] = useState<number | string>(0);
 
-  const inputDigit = (digit: string) => {
-    if (waitingForSecondOperand) {
-      setDisplayValue(digit);
-      setWaitingForSecondOperand(false);
-    } else {
-      setDisplayValue(displayValue === '0' ? digit : displayValue + digit);
-    }
-  };
-
-  const inputDecimal = () => {
-    if (waitingForSecondOperand) {
-      setDisplayValue('0.');
-      setWaitingForSecondOperand(false);
-      return;
-    }
-
-    if (!displayValue.includes('.')) {
-      setDisplayValue(displayValue + '.');
-    }
-  };
-
-  const clearDisplay = () => {
-    setDisplayValue('0');
-    setFirstOperand(null);
-    setOperator(null);
-    setWaitingForSecondOperand(false);
-  };
-
-  const handleOperator = (nextOperator: string) => {
-    const inputValue = parseFloat(displayValue || '0');
-
-    if (firstOperand === null && !isNaN(inputValue)) {
-      setFirstOperand(inputValue);
-    } else if (operator) {
-      const result = performCalculation(operator, firstOperand || 0, inputValue);
-      
-      setDisplayValue(String(result));
-      setFirstOperand(result);
-    }
-
-    setWaitingForSecondOperand(true);
-    setOperator(nextOperator);
-  };
-
-  const performCalculation = (op: string, first: number, second: number): number => {
-    switch (op) {
-      case '+':
-        return first + second;
-      case '-':
-        return first - second;
-      case '*':
-        return first * second;
-      case '/':
-        return second !== 0 ? first / second : 0;
+  const calculate = () => {
+    switch (operation) {
+      case "add":
+        setResult(num1 + num2);
+        break;
+      case "subtract":
+        setResult(num1 - num2);
+        break;
+      case "multiply":
+        setResult(num1 * num2);
+        break;
+      case "divide":
+        if (num2 === 0) {
+          setResult("Cannot divide by zero");
+        } else {
+          setResult(num1 / num2);
+        }
+        break;
       default:
-        return second;
+        setResult(0);
     }
-  };
-
-  const handleEquals = () => {
-    if (operator === null) {
-      return;
-    }
-
-    const inputValue = parseFloat(displayValue || '0');
-    const result = performCalculation(operator, firstOperand || 0, inputValue);
-    
-    setDisplayValue(String(result));
-    setFirstOperand(result);
-    setOperator(null);
-    setWaitingForSecondOperand(true);
   };
 
   return (
-    <Card className="shadow-md">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Calculator</CardTitle>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-center">Business Calculator</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="mb-4">
-          <Input 
-            type="text" 
-            value={displayValue} 
-            readOnly 
-            className="text-right text-2xl font-mono"
-          />
-        </div>
-        
-        <div className="grid grid-cols-4 gap-2">
-          <Button variant="outline" onClick={() => inputDigit('7')}>7</Button>
-          <Button variant="outline" onClick={() => inputDigit('8')}>8</Button>
-          <Button variant="outline" onClick={() => inputDigit('9')}>9</Button>
-          <Button variant="secondary" onClick={() => handleOperator('/')}>/</Button>
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="num1">First Number</Label>
+            <Input
+              id="num1"
+              type="number"
+              value={num1}
+              onChange={(e) => setNum1(Number(e.target.value))}
+            />
+          </div>
           
-          <Button variant="outline" onClick={() => inputDigit('4')}>4</Button>
-          <Button variant="outline" onClick={() => inputDigit('5')}>5</Button>
-          <Button variant="outline" onClick={() => inputDigit('6')}>6</Button>
-          <Button variant="secondary" onClick={() => handleOperator('*')}>×</Button>
+          <div className="grid gap-2">
+            <Label htmlFor="operation">Operation</Label>
+            <Select
+              value={operation}
+              onValueChange={(value) => setOperation(value)}
+            >
+              <SelectTrigger id="operation">
+                <SelectValue placeholder="Select operation" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="add">Add (+)</SelectItem>
+                <SelectItem value="subtract">Subtract (-)</SelectItem>
+                <SelectItem value="multiply">Multiply (×)</SelectItem>
+                <SelectItem value="divide">Divide (÷)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Button variant="outline" onClick={() => inputDigit('1')}>1</Button>
-          <Button variant="outline" onClick={() => inputDigit('2')}>2</Button>
-          <Button variant="outline" onClick={() => inputDigit('3')}>3</Button>
-          <Button variant="secondary" onClick={() => handleOperator('-')}>-</Button>
+          <div className="grid gap-2">
+            <Label htmlFor="num2">Second Number</Label>
+            <Input
+              id="num2"
+              type="number"
+              value={num2}
+              onChange={(e) => setNum2(Number(e.target.value))}
+            />
+          </div>
           
-          <Button variant="outline" onClick={() => inputDigit('0')}>0</Button>
-          <Button variant="outline" onClick={inputDecimal}>.</Button>
-          <Button variant="destructive" onClick={clearDisplay}>C</Button>
-          <Button variant="secondary" onClick={() => handleOperator('+')}>+</Button>
+          <Button onClick={calculate} className="w-full">Calculate</Button>
           
-          <Button variant="default" onClick={handleEquals} className="col-span-4 bg-blue-600 hover:bg-blue-700 text-white">=</Button>
+          <div className="grid gap-2 mt-2">
+            <Label htmlFor="result">Result</Label>
+            <Input
+              id="result"
+              value={typeof result === 'number' ? result.toLocaleString() : result}
+              readOnly
+              className="bg-muted font-medium"
+            />
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -21,7 +21,7 @@ import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } 
 
 import '@/App.css';
 
-function App() {
+const App: React.FC = () => {
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
 
   useEffect(() => {
