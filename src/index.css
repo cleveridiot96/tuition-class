@@ -1,7 +1,8 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -9,93 +10,191 @@
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
-
+ 
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-
+ 
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
-
+ 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-
+ 
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
-
+ 
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
-
+ 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-
+ 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom colors */
+    --ag-green: #2E8B57;
+    --ag-beige: #F5F5DC;
+    --ag-beige-light: #F8F8E8;
+    --ag-brown: #8B4513;
   }
-
+ 
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
-
+ 
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
-
+ 
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-
+ 
     --primary: 210 40% 98%;
     --primary-foreground: 222.2 47.4% 11.2%;
-
+ 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
-
+ 
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
-
+ 
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
-
+ 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-
+ 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Add keyframes for custom animations */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+@keyframes shine {
+  from { transform: translateX(-100%) skewX(20deg); }
+  to { transform: translateX(200%) skewX(20deg); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+/* Add the highlight styling for active tabs */
+.bg-F2FCE2,
+[data-state=active] {
+  background-color: #F2FCE2 !important;
+}
+
+/* Table styles for excel-like display */
+table.excel-style {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table.excel-style th,
+table.excel-style td {
+  border: 1px solid #e2e8f0;
+  padding: 8px;
+}
+
+table.excel-style thead th {
+  background-color: #f8fafc;
+  font-weight: 600;
+}
+
+table.excel-style tbody tr:hover {
+  background-color: rgba(242, 252, 226, 0.5);
+}
+
+/* T-format ledger styles */
+.t-account {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.t-account-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background-color: #f8fafc;
+  font-weight: 600;
+}
+
+.t-account-header-cell {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.t-account-header-cell:first-child {
+  border-right: 1px solid #e2e8f0;
+}
+
+.t-account-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.t-account-column {
+  min-height: 100px;
+}
+
+.t-account-column:first-child {
+  border-right: 1px solid #e2e8f0;
+}
+
+.t-account-entry {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 6px;
+}
+
+.t-account-total {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  background-color: #f8fafc;
+  font-weight: 600;
+  padding: 6px;
+}
+
+/* Custom button styles and animations */
+.hover-shadow-glow {
+  box-shadow: 0 0 0 rgba(255, 0, 0, 0);
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.hover-shadow-glow:hover {
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+}
+
+.menu-card {
+  transition: all 0.3s ease;
+}
+
+.menu-card:hover {
+  transform: translateY(-5px);
 }

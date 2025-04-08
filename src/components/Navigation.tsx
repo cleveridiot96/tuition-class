@@ -1,0 +1,114 @@
+
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { Home, ArrowLeft, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+interface NavigationProps {
+  title?: string;
+  showBackButton?: boolean;
+  showHomeButton?: boolean;
+  showFormatButton?: boolean;
+  onFormatClick?: () => void;
+  className?: string;
+}
+
+const Navigation = ({ 
+  title = "Business Management", 
+  showBackButton = false,
+  showHomeButton = true,
+  showFormatButton = false,
+  onFormatClick,
+  className 
+}: NavigationProps) => {
+  const [isFormatPressed, setIsFormatPressed] = useState(false);
+  
+  const handleFormatClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsFormatPressed(true);
+    
+    // Reset the pressed state after animation completes
+    setTimeout(() => setIsFormatPressed(false), 1000);
+    
+    if (onFormatClick) onFormatClick();
+  };
+
+  return (
+    <TooltipProvider>
+      <header className={cn("bg-gradient-to-r from-ag-green to-ag-green-dark text-white p-4 flex items-center justify-between shadow-md", className)}>
+        <div className="flex items-center">
+          {showBackButton && (
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  className="mr-2 text-white hover:bg-white/20 hover:text-white"
+                  onClick={() => window.history.back()}
+                >
+                  <ArrowLeft size={24} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Go back</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          
+          {/* Always show home button unless explicitly disabled */}
+          {showHomeButton && (
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Link to="/">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    className="mr-2 text-white hover:bg-white/20 hover:text-white"
+                  >
+                    <Home size={24} />
+                  </Button>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Return to dashboard</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+          
+          <h1 className="text-2xl font-bold">{title}</h1>
+        </div>
+
+        {showFormatButton && (
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="danger"
+                className={cn(
+                  "border border-red-300/30 flex items-center gap-2 group",
+                  isFormatPressed && "animate-pulse"
+                )}
+                onClick={handleFormatClick}
+              >
+                <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
+                <span className="font-bold">FORMAT</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs text-center">
+              <p className="font-bold text-red-500">USE ONLY UNDER EMERGENCY</p>
+              <p>This action cannot be undone. A backup will be created automatically.</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </header>
+    </TooltipProvider>
+  );
+};
+
+export default Navigation;
