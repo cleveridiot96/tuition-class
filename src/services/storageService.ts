@@ -986,7 +986,7 @@ export const seedInitialData = (force = false) => {
     }
   ];
   
-  const customers = [
+  const seedCustomers = [
     {
       id: '1',
       name: 'Mumbai Traders',
@@ -1025,20 +1025,20 @@ export const seedInitialData = (force = false) => {
   
   localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(agents));
   localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(suppliers));
-  localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
+  localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(seedCustomers));
   localStorage.setItem(BROKERS_STORAGE_KEY, JSON.stringify(brokers));
   localStorage.setItem(TRANSPORTERS_STORAGE_KEY, JSON.stringify(transporters));
   
   // For backward compatibility
   localStorage.setItem('agents', JSON.stringify(agents));
   localStorage.setItem('suppliers', JSON.stringify(suppliers));
-  localStorage.setItem('customers', JSON.stringify(customers));
+  localStorage.setItem('customers', JSON.stringify(seedCustomers));
   localStorage.setItem('brokers', JSON.stringify(brokers));
   localStorage.setItem('transporters', JSON.stringify(transporters));
   
   // Add MST customer if it doesn't exist
-  const customers = getCustomers();
-  if (!customers.some(c => c.name === "MST")) {
+  const currentCustomers = getCustomers();
+  if (!currentCustomers.some(c => c.name === "MST")) {
     addCustomer({
       id: 'customer-mst-001',
       name: 'MST',
