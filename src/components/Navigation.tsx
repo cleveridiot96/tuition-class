@@ -90,8 +90,10 @@ const Navigation = ({
             <TooltipTrigger asChild>
               <Button
                 variant="danger"
-                animation={isFormatPressed ? "pulse" : "none"}
-                className="border border-red-300/30 flex items-center gap-2 group"
+                className={cn(
+                  "border border-red-300/30 flex items-center gap-2 group",
+                  isFormatPressed && "animate-pulse"
+                )}
                 onClick={handleFormatClick}
               >
                 <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
