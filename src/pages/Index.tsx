@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -40,8 +41,6 @@ const Index = () => {
   
   const loadDashboardData = () => {
     setIsRefreshing(true);
-    
-    seedInitialData();
     
     const purchases = getPurchases() || [];
     const sales = getSales() || [];
@@ -130,6 +129,8 @@ const Index = () => {
   };
   
   useEffect(() => {
+    // Initialize data on first load
+    seedInitialData();
     loadDashboardData();
     
     const intervalId = setInterval(() => {
@@ -150,12 +151,20 @@ const Index = () => {
 
   const handleFormatConfirm = () => {
     try {
+      // Create backup first
       const backupData = exportDataBackup(true);
       
       if (backupData) {
+        // Store backup in localStorage
         localStorage.setItem('preFormatBackup', backupData);
+        
+        // Clear everything from storage
         clearAllData();
+        
+        // Reseed with fresh data
         seedInitialData(true);
+        
+        // Force refresh dashboard data
         loadDashboardData();
         
         toast({

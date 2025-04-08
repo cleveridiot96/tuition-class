@@ -45,7 +45,7 @@ const FormatConfirmationDialog = ({
     <AlertDialog open={isOpen} onOpenChange={handleClose}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className={confirmationStage === 2 ? "text-red-600" : ""}>
+          <AlertDialogTitle className={confirmationStage === 2 ? "text-red-600 font-bold" : ""}>
             {confirmationStage === 1 ? "Format Data?" : "EMERGENCY: Are You Absolutely Sure?"}
           </AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
@@ -54,13 +54,16 @@ const FormatConfirmationDialog = ({
             </div>
             {confirmationStage === 1
               ? "This will reset and reformat all your data. This action cannot be undone. A backup will be created automatically in both Excel format and software-readable format."
-              : "Your data will be reformatted and previous settings may be lost. A backup has been created in Excel and software-readable formats for safety."}
+              : "Your data will be completely reformatted and all current information will be replaced with fresh demo data. A backup has been created in Excel and software-readable formats for safety."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel onClick={handleClose}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} className="bg-red-600 hover:bg-red-700">
-            {confirmationStage === 1 ? "Format Data" : "Yes, Format Data"}
+          <AlertDialogAction 
+            onClick={handleConfirm} 
+            className={`bg-red-600 hover:bg-red-700 ${confirmationStage === 2 ? 'animate-pulse' : ''}`}
+          >
+            {confirmationStage === 1 ? "Format Data" : "Yes, Format All Data"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
