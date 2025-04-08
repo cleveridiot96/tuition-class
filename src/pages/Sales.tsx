@@ -125,7 +125,8 @@ const Sales = () => {
   const handleAdd = (data: Sale) => {
     const saleWithLocation = {
       ...data,
-      amount: data.totalAmount
+      amount: data.totalAmount,
+      transportCost: data.transportCost || 0,
     };
     
     addSale(saleWithLocation);
@@ -147,7 +148,8 @@ const Sales = () => {
     
     const saleWithLocation = {
       ...updatedSale,
-      amount: updatedSale.totalAmount
+      amount: updatedSale.totalAmount,
+      transportCost: updatedSale.transportCost || 0,
     };
     
     if (updatedSale.quantity !== editingSale.quantity) {
@@ -206,8 +208,9 @@ const Sales = () => {
     const updatedSale = { 
       ...saleToRestore, 
       isDeleted: false,
-      amount: saleToRestore.totalAmount 
-    } as Sale;
+      amount: saleToRestore.totalAmount,
+      transportCost: saleToRestore.transportCost || 0,
+    };
     
     updateSale(updatedSale);
     

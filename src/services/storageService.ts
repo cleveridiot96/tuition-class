@@ -85,11 +85,11 @@ export interface Sale {
   brokerageRate?: number;
   brokerageAmount?: number;
   brokerageType?: "percentage" | "fixed";
-  transporter: string;
-  transporterId: string;
-  transportRate: number;
+  transporter?: string;
+  transporterId?: string;
+  transportRate?: number;
   transportCost: number;
-  location: string;
+  location?: string;
   notes?: string;
   totalAmount: number;
   netAmount: number;
@@ -990,7 +990,7 @@ export const deletePayment = (id: string): void => {
       new Date().toISOString().split('T')[0],
       `Reversed payment to ${paymentToDelete.party}: ${paymentToDelete.notes}`,
       0, // debit
-      paymentToDelete.amount, // credit (reverse of original debit)
+      paymentToDelete.amount, // credit
       paymentToDelete.id + "-reversal",
       'payment-reversal'
     );
