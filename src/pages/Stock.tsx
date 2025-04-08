@@ -12,11 +12,13 @@ const Stock = () => {
   useEffect(() => {
     // Load inventory and group by location
     const inventory = getInventory() || [];
-    const activeInventory = inventory.filter(item => !item.isDeleted && item.quantity > 0);
+    const activeInventory = (inventory || []).filter(item => !item.isDeleted && item.quantity > 0);
     
     const locationMap: Record<string, {bags: number, weight: number}> = {};
     
     activeInventory.forEach(item => {
+      if (!item) return; // Skip if item is undefined or null
+      
       const location = item.location || 'Unknown';
       if (!locationMap[location]) {
         locationMap[location] = { bags: 0, weight: 0 };

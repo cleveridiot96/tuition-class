@@ -39,12 +39,12 @@ const Calculator = () => {
   };
 
   const handleOperator = (nextOperator: string) => {
-    const inputValue = parseFloat(displayValue);
+    const inputValue = parseFloat(displayValue || '0');
 
     if (firstOperand === null && !isNaN(inputValue)) {
       setFirstOperand(inputValue);
     } else if (operator) {
-      const result = performCalculation(operator, firstOperand!, inputValue);
+      const result = performCalculation(operator, firstOperand || 0, inputValue);
       
       setDisplayValue(String(result));
       setFirstOperand(result);
@@ -63,19 +63,19 @@ const Calculator = () => {
       case '*':
         return first * second;
       case '/':
-        return first / second;
+        return second !== 0 ? first / second : 0;
       default:
         return second;
     }
   };
 
   const handleEquals = () => {
-    if (firstOperand === null || operator === null) {
+    if (operator === null) {
       return;
     }
 
-    const inputValue = parseFloat(displayValue);
-    const result = performCalculation(operator, firstOperand, inputValue);
+    const inputValue = parseFloat(displayValue || '0');
+    const result = performCalculation(operator, firstOperand || 0, inputValue);
     
     setDisplayValue(String(result));
     setFirstOperand(result);

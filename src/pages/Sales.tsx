@@ -100,7 +100,7 @@ const Sales = () => {
     loadData();
     const saleId = getSaleIdFromUrl();
     if (saleId) {
-      const allSales = getSales();
+      const allSales = getSales() || [];
       const targetSale = allSales.find(s => s.id === saleId && !s.isDeleted);
       if (targetSale) {
         handleEdit(targetSale);
@@ -113,8 +113,8 @@ const Sales = () => {
     setIsRefreshing(true);
     
     const allSales = getSales() || [];
-    const activeSales = allSales.filter(s => !s.isDeleted);
-    const deletedSalesData = allSales.filter(s => s.isDeleted);
+    const activeSales = allSales.filter(s => !s.isDeleted) || [];
+    const deletedSalesData = allSales.filter(s => s.isDeleted) || [];
     
     setSales(activeSales);
     setDeletedSales(deletedSalesData);
@@ -193,7 +193,7 @@ const Sales = () => {
     const saleToRestore = deletedSales.find(s => s.id === id);
     if (!saleToRestore) return;
     
-    const inventory = getInventory();
+    const inventory = getInventory() || [];
     const lotItem = inventory.find(item => item.lotNumber === saleToRestore.lotNumber && !item.isDeleted);
     
     if (!lotItem) {
@@ -363,7 +363,7 @@ const Sales = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {deletedSales.map((sale) => (
+                    {(deletedSales || []).map((sale) => (
                       <TableRow key={sale.id} className="bg-red-50">
                         <TableCell>{format(new Date(sale.date), "dd MMM yyyy")}</TableCell>
                         <TableCell>{sale.lotNumber}</TableCell>
@@ -409,7 +409,7 @@ const Sales = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {sales.map((sale) => (
+                        {(sales || []).map((sale) => (
                           <TableRow key={sale.id}>
                             <TableCell>{format(new Date(sale.date), "dd MMM yyyy")}</TableCell>
                             <TableCell>{sale.lotNumber}</TableCell>
