@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { 
   AlertDialog,
@@ -23,7 +23,8 @@ import {
   getCustomers, addCustomer, deleteCustomer, updateCustomer,
   getBrokers, addBroker, deleteBroker, updateBroker,
   getTransporters, addTransporter, deleteTransporter, updateTransporter,
-  getSuppliers, addSupplier, deleteSupplier, updateSupplier 
+  getSuppliers, addSupplier, deleteSupplier, updateSupplier,
+  seedInitialData 
 } from '@/services/storageService';
 import { Edit, Trash2, Plus } from 'lucide-react';
 import {
@@ -49,17 +50,41 @@ const Master = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [entityToEdit, setEntityToEdit] = useState(null);
 
-  useEffect(() => {
-    loadData();
+  const loadData = useCallback(() => {
+    setAgents(getAgents() || []);
+    setSuppliers(getSuppliers() || []);
+    setCustomers(getCustomers() || []);
+    setBrokers(getBrokers() || []);
+    setTransporters(getTransporters() || []);
   }, []);
 
-  const loadData = () => {
-    setAgents(getAgents());
-    setSuppliers(getSuppliers());
-    setCustomers(getCustomers());
-    setBrokers(getBrokers());
-    setTransporters(getTransporters());
-  };
+  useEffect(() => {
+    seedInitialData();
+    loadData();
+    
+    const handleStorageChange = (e) => {
+      if (e.key === null || e.key.includes('agents') ||
+          e.key.includes('customers') ||
+          e.key.includes('suppliers') ||
+          e.key.includes('brokers') ||
+          e.key.includes('transporters')) {
+        loadData();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    const handleFocus = () => {
+      loadData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadData]);
 
   const handleTabChange = (value) => {
     setActiveTab(value);

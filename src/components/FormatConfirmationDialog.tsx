@@ -60,8 +60,8 @@ const FormatConfirmationDialog = ({
               FOR EMERGENCY USE ONLY! THIS ACTION CANNOT BE UNDONE!
             </div>
             {confirmationStage === 1
-              ? "This will reset and reformat all your data. This action cannot be undone. A backup will be created automatically in both Excel format and software-readable format."
-              : "Your data will be completely reformatted and all current information will be replaced with fresh demo data. A backup has been created in Excel and software-readable formats for safety."}
+              ? "This will reset and reformat ALL your data including master data. This action cannot be undone. A backup will be created automatically in both Excel format and software-readable format."
+              : "Your data will be completely reformatted and all current information (including master data) will be replaced with fresh demo data. A backup has been created in Excel and software-readable formats for safety."}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-4">

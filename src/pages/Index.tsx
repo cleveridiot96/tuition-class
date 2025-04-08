@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -153,7 +152,6 @@ const Index = () => {
   }, [toast]);
   
   useEffect(() => {
-    // Initialize data on first load
     try {
       seedInitialData();
       loadDashboardData();
@@ -172,7 +170,6 @@ const Index = () => {
     };
   }, [loadDashboardData]);
 
-  // Add effect to reload data when version changes
   useEffect(() => {
     if (dataVersion > 0) {
       loadDashboardData();
@@ -191,33 +188,23 @@ const Index = () => {
         description: "Creating backup and resetting data...",
       });
       
-      // Create backup first - important to do before clearing
       const backupData = exportDataBackup(true);
       console.log("Backup created:", backupData ? "Success" : "Failed");
       
       if (backupData) {
-        // Store backup in localStorage
         localStorage.setItem('preFormatBackup', backupData);
         
-        // Clear everything from storage - CRITICAL STEP
-        console.log("Clearing all data...");
         clearAllData();
-        
-        // Clear all master data explicitly to ensure it gets formatted
-        console.log("Clearing master data...");
         clearAllMasterData();
         
-        // Small delay to ensure clearing is complete
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Reseed with fresh data - make sure force is true
-        console.log("Reseeding with fresh data...");
         seedInitialData(true);
         
-        // Another small delay to ensure seeding is complete
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        // Increment version to trigger data reload
+        window.dispatchEvent(new Event('storage'));
+        
         setDataVersion(prev => prev + 1);
         
         toast({
