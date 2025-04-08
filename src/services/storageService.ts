@@ -1,3 +1,4 @@
+
 import { useToast } from "@/hooks/use-toast";
 
 // This file re-exports all functionality from individual service files 
@@ -365,7 +366,7 @@ export const checkDuplicateLot = (lotNumber: string, excludeId?: string): Purcha
 };
 
 // Sales-related functions
-const SALES_STORAGE_KEY = "app_sales_data";
+// Removed duplicate SALES_STORAGE_KEY declaration
 
 export interface Sale {
   id: string;

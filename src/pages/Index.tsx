@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -101,7 +100,7 @@ const Index = () => {
         kgs: purchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
       },
       sales: {
-        amount: sales.reduce((sum, s) => sum + (s.amount || 0), 0),
+        amount: sales.reduce((sum, s) => sum + (s.totalAmount || 0), 0),
         bags: sales.reduce((sum, s) => sum + (s.quantity || 0), 0),
         kgs: sales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
       },
