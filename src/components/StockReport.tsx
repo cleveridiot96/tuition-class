@@ -46,6 +46,7 @@ interface EnhancedInventoryItem {
   finalCost: number;
   totalValue: number;
   agentName: string;
+  agentId: string; // Added this missing property
   soldQuantity: number;
   soldWeight: number;
   date: string;
