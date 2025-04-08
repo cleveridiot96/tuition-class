@@ -70,23 +70,23 @@ export interface Sale {
   id: string;
   date: string;
   lotNumber: string;
-  billNumber: string;
-  billAmount: number;
+  billNumber?: string;
+  billAmount?: number;
   customer: string;
   customerId: string;
-  broker: string;
-  brokerId: string;
   quantity: number;
   netWeight: number;
   rate: number;
+  broker?: string;
+  brokerId?: string;
   transporter: string;
   transporterId: string;
   transportRate: number;
-  transportCost: number;
-  totalAmount: number;
-  netAmount: number;
   location: string;
-  notes: string;
+  notes?: string;
+  totalAmount: number;
+  transportCost: number;
+  netAmount: number;
   isDeleted?: boolean;
 }
 
@@ -364,42 +364,81 @@ export const checkDuplicateLot = (lotNumber: string, excludeId?: string): Purcha
   return purchases.find(p => p.lotNumber === lotNumber && (excludeId ? p.id !== excludeId : true)) || null;
 };
 
-// Sales functions
-export const getSales = () => {
-  const sales = localStorage.getItem('sales');
-  return sales ? JSON.parse(sales) : [];
-};
+// Sales-related functions
+const SALES_STORAGE_KEY = "app_sales_data";
 
-export const saveSales = (sales: any[]) => {
-  localStorage.setItem('sales', JSON.stringify(sales));
-};
+export interface Sale {
+  id: string;
+  date: string;
+  lotNumber: string;
+  billNumber?: string;
+  billAmount?: number;
+  customer: string;
+  customerId: string;
+  quantity: number;
+  netWeight: number;
+  rate: number;
+  broker?: string;
+  brokerId?: string;
+  transporter: string;
+  transporterId: string;
+  transportRate: number;
+  location: string;
+  notes?: string;
+  totalAmount: number;
+  transportCost: number;
+  netAmount: number;
+  isDeleted?: boolean;
+}
 
-export const addSale = (sale: Sale): void => {
+export function getSales(): Sale[] {
+  const savedSales = localStorage.getItem(SALES_STORAGE_KEY);
+  if (savedSales) {
+    return JSON.parse(savedSales);
+  }
+  return [];
+}
+
+export function addSale(sale: Sale): void {
   const sales = getSales();
   sales.push(sale);
-  localStorage.setItem('sales', JSON.stringify(sales));
-  
-  // Update inventory - reduce quantity after sale
-  updateInventoryAfterSale(sale);
-};
+  localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(sales));
+}
 
-export const updateInventoryAfterSale = (sale: Sale): void => {
+export function updateSale(updatedSale: Sale): void {
+  const sales = getSales();
+  const updatedSales = sales.map(sale => 
+    sale.id === updatedSale.id ? updatedSale : sale
+  );
+  localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(updatedSales));
+}
+
+export function deleteSale(id: string): void {
+  const sales = getSales();
+  const updatedSales = sales.map(sale => 
+    sale.id === id ? { ...sale, isDeleted: true } : sale
+  );
+  localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(updatedSales));
+}
+
+export function updateInventoryAfterSale(lotNumber: string, quantity: number): void {
   const inventory = getInventory();
-  const itemIndex = inventory.findIndex(item => item.lotNumber === sale.lotNumber && !item.isDeleted);
-  
-  if (itemIndex !== -1) {
-    // Update inventory quantity
-    inventory[itemIndex].quantity -= sale.quantity;
-    inventory[itemIndex].netWeight -= sale.netWeight;
-    
-    // If sold out, mark as deleted
-    if (inventory[itemIndex].quantity <= 0) {
-      inventory[itemIndex].isDeleted = true;
+  const updatedInventory = inventory.map(item => {
+    if (item.lotNumber === lotNumber && !item.isDeleted) {
+      // We subtract the quantity when making a sale (positive quantity)
+      // Or add it back when restoring a sale (negative quantity)
+      const newQuantity = item.quantity - quantity;
+      
+      return {
+        ...item,
+        quantity: newQuantity
+      };
     }
-    
-    saveInventory(inventory);
-  }
-};
+    return item;
+  });
+  
+  localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(updatedInventory));
+}
 
 // Payment functions
 export const getPayments = () => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -66,31 +67,40 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [formChanged, setFormChanged] = useState(false);
   
+  // Set default values based on initialData
+  const defaultValues = initialData ? {
+    date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
+    lotNumber: initialData.lotNumber || "",
+    billNumber: initialData.billNumber || "",
+    billAmount: initialData.billAmount || 0,
+    customerId: initialData.customerId || "",
+    quantity: initialData.quantity || 0,
+    netWeight: initialData.netWeight || 0,
+    rate: initialData.rate || 0,
+    brokerId: initialData.brokerId || "",
+    transporterId: initialData.transporterId || "",
+    transportRate: initialData.transportRate || 0,
+    location: initialData.location || "",
+    notes: initialData.notes || "",
+  } : {
+    date: format(new Date(), 'yyyy-MM-dd'),
+    lotNumber: "",
+    billNumber: "",
+    billAmount: undefined,
+    customerId: "",
+    quantity: 0,
+    netWeight: 0,
+    rate: 0,
+    brokerId: "",
+    transporterId: "",
+    transportRate: 0,
+    location: "",
+    notes: "",
+  };
+  
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-      ...initialData,
-      customerId: initialData.customer?.id || initialData.customerId || "",
-      brokerId: initialData.broker?.id || initialData.brokerId || "",
-      transporterId: initialData.transporter?.id || initialData.transporterId || "",
-      transportRate: initialData.transportRate || 0,
-      billAmount: initialData.billAmount || 0,
-      date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
-    } : {
-      date: format(new Date(), 'yyyy-MM-dd'),
-      lotNumber: "",
-      billNumber: "",
-      billAmount: undefined,
-      customerId: "",
-      quantity: 0,
-      netWeight: 0,
-      rate: 0,
-      brokerId: "",
-      transporterId: "",
-      transportRate: 0,
-      location: "",
-      notes: "",
-    }
+    defaultValues: defaultValues
   });
 
   useEffect(() => {
@@ -116,21 +126,37 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
 
   const refreshData = () => {
     setIsRefreshing(true);
-    const currentInventory = getInventory().filter(item => item.quantity > 0);
+    const currentInventory = getInventory().filter(item => !item.isDeleted && item.quantity > 0);
     console.log("Available inventory:", currentInventory);
     setInventory(currentInventory);
-    setCustomers(getCustomers());
-    setBrokers(getBrokers());
-    setTransporters(getTransporters());
+    
+    const allCustomers = getCustomers();
+    console.log("Available customers:", allCustomers);
+    setCustomers(allCustomers);
+    
+    const allBrokers = getBrokers();
+    console.log("Available brokers:", allBrokers);
+    setBrokers(allBrokers);
+    
+    const allTransporters = getTransporters();
+    console.log("Available transporters:", allTransporters);
+    setTransporters(allTransporters);
+    
     setIsRefreshing(false);
   };
 
   const handleLotChange = (lotNumber: string) => {
     const selectedLot = inventory.find(item => item.lotNumber === lotNumber);
     if (selectedLot) {
-      form.setValue("location", selectedLot.location);
+      form.setValue("location", selectedLot.location || "");
       form.setValue("quantity", selectedLot.quantity);
-      form.setValue("netWeight", selectedLot.netWeight);
+      form.setValue("netWeight", selectedLot.netWeight || 0);
+      
+      // If rate is in the inventory item, use it as default
+      if (selectedLot.rate) {
+        form.setValue("rate", selectedLot.rate);
+      }
+      
       setFormChanged(true);
     }
   };
@@ -150,12 +176,21 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
     setNetAmount(calculatedTotalAmount - calculatedTransportCost);
   }, [form.watch()]);
 
+  // Set initial calculation values if we have initialData
+  useEffect(() => {
+    if (initialData) {
+      setTotalAmount(initialData.totalAmount || 0);
+      setTransportCost(initialData.transportCost || 0);
+      setNetAmount(initialData.netAmount || 0);
+    }
+  }, [initialData]);
+
   const handleFormSubmit = (data: FormData) => {
     const submitData = {
       ...data,
       customer: customers.find(c => c.id === data.customerId)?.name || data.customerId,
-      broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || data.brokerId : "",
-      transporter: transporters.find(t => t.id === data.transporterId)?.name || data.transporterId,
+      broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
+      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
       totalAmount,
       transportCost,
       netAmount,
@@ -240,11 +275,11 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                     </FormControl>
                     <SelectContent searchable>
                       {inventory.length === 0 ? (
-                        <SelectItem value="no-lots-available">No lots available</SelectItem>
+                        <SelectItem value="no-lots-available" disabled>No lots available</SelectItem>
                       ) : (
                         inventory.map((item) => (
                           <SelectItem key={item.id} value={item.lotNumber}>
-                            {item.lotNumber} - {item.quantity} bags
+                            {item.lotNumber} - {item.quantity} bags ({item.location})
                           </SelectItem>
                         ))
                       )}
@@ -303,11 +338,15 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent searchable>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
-                        </SelectItem>
-                      ))}
+                      {customers.length === 0 ? (
+                        <SelectItem value="no-customers" disabled>No customers available</SelectItem>
+                      ) : (
+                        customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -336,7 +375,7 @@ const SalesForm = ({ onSubmit, initialData }: SalesFormProps) => {
                 <FormItem>
                   <FormLabel><span className="text-red-500">*</span> Net Weight (kg)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} placeholder="0.00" />
+                    <Input type="number" {...field} placeholder="0.00" step="0.01" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
