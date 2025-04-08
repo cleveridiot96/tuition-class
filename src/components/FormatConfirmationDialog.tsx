@@ -43,13 +43,13 @@ const FormatConfirmationDialog = ({
 
   return (
     <AlertDialog open={isOpen} onOpenChange={handleClose}>
-      <AlertDialogContent>
+      <AlertDialogContent className="border-2 border-red-200">
         <AlertDialogHeader>
-          <AlertDialogTitle className={confirmationStage === 2 ? "text-red-600 font-bold" : ""}>
+          <AlertDialogTitle className={confirmationStage === 2 ? "text-red-600 font-bold text-2xl animate-pulse" : ""}>
             {confirmationStage === 1 ? "Format Data?" : "EMERGENCY: Are You Absolutely Sure?"}
           </AlertDialogTitle>
           <AlertDialogDescription className="space-y-2">
-            <div className="font-medium text-red-500">
+            <div className="font-medium text-red-500 p-2 bg-red-50 border border-red-200 rounded">
               FOR EMERGENCY USE ONLY! THIS ACTION CANNOT BE UNDONE!
             </div>
             {confirmationStage === 1
@@ -57,11 +57,11 @@ const FormatConfirmationDialog = ({
               : "Your data will be completely reformatted and all current information will be replaced with fresh demo data. A backup has been created in Excel and software-readable formats for safety."}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleClose}>Cancel</AlertDialogCancel>
+        <AlertDialogFooter className="gap-4">
+          <AlertDialogCancel className="bg-white border-2 border-gray-300 hover:bg-gray-100 transition-all shadow-sm hover:shadow">Cancel</AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleConfirm} 
-            className={`bg-red-600 hover:bg-red-700 ${confirmationStage === 2 ? 'animate-pulse' : ''}`}
+            className={`bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold shadow-md hover:shadow-lg transform transition-all hover:-translate-y-0.5 ${confirmationStage === 2 ? 'animate-pulse ring-2 ring-red-300 ring-offset-2' : ''}`}
           >
             {confirmationStage === 1 ? "Format Data" : "Yes, Format All Data"}
           </AlertDialogAction>

@@ -162,3 +162,33 @@ table.excel-style tbody tr:hover {
   font-weight: 600;
   padding: 6px;
 }
+
+/* Custom button styles and animations */
+.hover-shadow-glow {
+  box-shadow: 0 0 0 rgba(255, 0, 0, 0);
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.hover-shadow-glow:hover {
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.menu-card {
+  transition: all 0.3s ease;
+}
+
+.menu-card:hover {
+  transform: translateY(-5px);
+}

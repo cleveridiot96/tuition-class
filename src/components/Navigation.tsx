@@ -30,7 +30,7 @@ const Navigation = ({
 }: NavigationProps) => {
   return (
     <TooltipProvider>
-      <header className={cn("bg-ag-green text-white p-4 flex items-center justify-between shadow-md", className)}>
+      <header className={cn("bg-gradient-to-r from-ag-green to-ag-green-dark text-white p-4 flex items-center justify-between shadow-md", className)}>
         <div className="flex items-center">
           {showBackButton && (
             <Tooltip delayDuration={300}>
@@ -38,7 +38,7 @@ const Navigation = ({
                 <Button 
                   variant="ghost" 
                   size="icon"
-                  className="mr-2 text-white hover:bg-ag-green-dark"
+                  className="mr-2 text-white hover:bg-white/20 hover:text-white"
                   onClick={() => window.history.back()}
                 >
                   <ArrowLeft size={24} />
@@ -58,7 +58,7 @@ const Navigation = ({
                   <Button 
                     variant="ghost" 
                     size="icon"
-                    className="mr-2 text-white hover:bg-ag-green-dark"
+                    className="mr-2 text-white hover:bg-white/20 hover:text-white"
                   >
                     <Home size={24} />
                   </Button>
@@ -78,10 +78,10 @@ const Navigation = ({
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex items-center gap-2 text-white hover:bg-ag-green-dark"
+                className="bg-red-600/20 hover:bg-red-700/30 text-white border border-red-300/30 flex items-center gap-2 font-bold group px-4 py-2 rounded-md transition-all hover:shadow-glow"
                 onClick={onFormatClick}
               >
-                <RefreshCw size={24} />
+                <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
                 <span className="font-bold">FORMAT</span>
               </Button>
             </TooltipTrigger>
