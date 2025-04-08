@@ -19,6 +19,26 @@ import BackupRestoreControls from "@/components/BackupRestoreControls";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
 import DashboardSummary from "@/components/DashboardSummary";
 
+// Define interfaces for type safety
+interface ProfitData {
+  purchase: number;
+  sale: number;
+  profit: number;
+  date: string;
+  quantity: number;
+  netWeight: number;
+  id?: string;
+}
+
+interface MonthlyProfit {
+  profit: number;
+  display: string;
+}
+
+interface MonthlyProfits {
+  [key: string]: MonthlyProfit;
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [summaryData, setSummaryData] = useState({
@@ -74,7 +94,7 @@ const Index = () => {
         };
       });
       
-      const profitsByMonth = {};
+      const profitsByMonth: MonthlyProfits = {};
       transactionProfits.forEach(transaction => {
         if (!transaction.date) return;
         

@@ -46,6 +46,7 @@ import { useReactToPrint } from "react-to-print";
 import SalesReceipt from "@/components/SalesReceipt";
 import { getSaleIdFromUrl } from "@/utils/helpers";
 
+// Update the Sale interface to make transporter optional
 interface Sale {
   id: string;
   date: string;
@@ -59,7 +60,7 @@ interface Sale {
   rate: number;
   broker?: string;
   brokerId?: string;
-  transporter?: string;
+  transporter?: string; // Make optional 
   transporterId?: string;
   transportRate?: number;
   location?: string;

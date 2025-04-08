@@ -179,7 +179,9 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       ...data,
       customer: customer ? customer.name : data.customerId,
       customerId: data.customerId,
-      transporter: data.transporterId ? transporters.find(t => t.id === data.transporterId)?.name || "" : "",
+      transporter: data.transporterId && data.transporterId !== "none" ? 
+        transporters.find(t => t.id === data.transporterId)?.name || "" : 
+        "",
       broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
       brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
       brokerageType: data.brokerageType || "percentage",
