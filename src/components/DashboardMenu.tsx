@@ -83,7 +83,7 @@ const DashboardMenu = () => {
     {
       title: "Calculator",
       icon: <Calculator className="w-6 h-6 mb-2 text-gray-600" />,
-      link: "/calculator",
+      link: "/stock", // Changed from /calculator to /stock since the calculator is now in the Stock page
       description: "Business calculations",
     },
     {
@@ -101,7 +101,7 @@ const DashboardMenu = () => {
     <div className="mb-8">
       <h2 className="text-2xl font-bold mb-4 text-ag-brown-dark">Quick Access</h2>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-        {menuItems.map((item) => (
+        {menuItems && menuItems.map((item) => (
           <Card 
             key={item.title}
             className="hover:border-primary hover:shadow-md transition-all duration-200"

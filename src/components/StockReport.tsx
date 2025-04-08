@@ -68,13 +68,14 @@ const StockReport = () => {
   // Load inventory data
   useEffect(() => {
     try {
-      const rawInventory = getInventory().filter(item => !item.isDeleted && item.remainingQuantity > 0);
-      const agentsData = getAgents();
-      const locationsData = getLocations();
+      const rawInventory = getInventory() || [];
+      const inventoryItems = rawInventory.filter(item => item && !item.isDeleted && item.remainingQuantity > 0);
+      const agentsData = getAgents() || [];
+      const locationsData = getLocations() || [];
       
       // Enhance inventory with calculated fields
-      const enhancedInventory = rawInventory.map(item => {
-        const agent = agentsData.find(a => a.id === item.agentId);
+      const enhancedInventory = inventoryItems.map(item => {
+        const agent = agentsData.find(a => a && a.id === item.agentId);
         
         // Calculate values
         const soldQuantity = item.quantity - item.remainingQuantity;
@@ -114,6 +115,12 @@ const StockReport = () => {
 
   // Filter inventory when search term or filters change
   useEffect(() => {
+    if (!inventory || inventory.length === 0) {
+      setFilteredInventory([]);
+      setFilteredStockValue(0);
+      return;
+    }
+    
     let filtered = [...inventory];
     
     // Filter by search term
@@ -155,6 +162,16 @@ const StockReport = () => {
   // Handle export to Excel
   const handleExportToExcel = () => {
     try {
+      // Check if there is data to export
+      if (!filteredInventory || filteredInventory.length === 0) {
+        toast({
+          title: "Export failed",
+          description: "No data available to export",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Prepare data for Excel export
       const excelData = filteredInventory.map(item => ({
         'Lot Number': item.lotNumber,
@@ -240,7 +257,7 @@ const StockReport = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Locations</SelectItem>
-                  {locations.map((location) => (
+                  {(locations || []).map((location) => (
                     <SelectItem key={location} value={location}>
                       {location}
                     </SelectItem>
@@ -255,7 +272,7 @@ const StockReport = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">All Agents</SelectItem>
-                  {agents.map((agent) => (
+                  {(agents || []).map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name}
                     </SelectItem>
@@ -276,7 +293,7 @@ const StockReport = () => {
                 <div className="text-sm font-medium text-muted-foreground">Total Stock Value</div>
                 <div className="text-2xl font-bold text-blue-600">{formatCurrency(filteredStockValue)}</div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {filteredInventory.length} lot{filteredInventory.length !== 1 ? 's' : ''} in stock
+                  {(filteredInventory || []).length} lot{(filteredInventory || []).length !== 1 ? 's' : ''} in stock
                 </div>
               </CardContent>
             </Card>
@@ -284,7 +301,7 @@ const StockReport = () => {
               <CardContent className="p-4">
                 <div className="text-sm font-medium text-muted-foreground">Total Remaining Quantity</div>
                 <div className="text-2xl font-bold text-green-600">
-                  {filteredInventory.reduce((sum, item) => sum + item.remainingQuantity, 0)} bags
+                  {(filteredInventory || []).reduce((sum, item) => sum + item.remainingQuantity, 0)} bags
                 </div>
               </CardContent>
             </Card>
@@ -292,7 +309,7 @@ const StockReport = () => {
               <CardContent className="p-4">
                 <div className="text-sm font-medium text-muted-foreground">Total Remaining Weight</div>
                 <div className="text-2xl font-bold text-amber-600">
-                  {filteredInventory.reduce((sum, item) => sum + item.remainingWeight, 0).toFixed(2)} kg
+                  {(filteredInventory || []).reduce((sum, item) => sum + item.remainingWeight, 0).toFixed(2)} kg
                 </div>
               </CardContent>
             </Card>
@@ -321,14 +338,14 @@ const StockReport = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredInventory.length === 0 ? (
+                  {(!filteredInventory || filteredInventory.length === 0) ? (
                     <TableRow>
                       <TableCell colSpan={8} className="h-24 text-center">
                         No stock found matching the criteria.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredInventory.map((item) => (
+                    (filteredInventory || []).map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.lotNumber}</TableCell>
                         <TableCell>{item.location}</TableCell>

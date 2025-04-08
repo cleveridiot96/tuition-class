@@ -35,6 +35,7 @@ function App() {
           <Route path="/cashbook" element={<CashBook />} />
           <Route path="/stock" element={<Stock />} />
           <Route path="/ledger" element={<Ledger />} />
+          <Route path="/calculator" element={<Stock />} /> {/* Adding this to redirect calculator to the Stock page that has the calculator */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
