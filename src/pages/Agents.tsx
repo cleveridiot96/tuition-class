@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { PlusCircle, Save, ArrowLeft, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Agent, getAgents, addAgent } from "@/services/storageService";
+import NewEntityForm from "@/components/NewEntityForm";
 
 const Agents = () => {
   const { toast } = useToast();
