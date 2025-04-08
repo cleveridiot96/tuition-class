@@ -104,7 +104,16 @@ const Purchases = () => {
   };
 
   const handleEdit = (purchase: Purchase) => {
-    setEditingPurchase(purchase);
+    // Create a copy of the purchase with properly mapped fields
+    const purchaseToEdit = {
+      ...purchase,
+      // If using PurchaseForm expects agentId instead of agent name
+      agentId: purchase.agent !== "None" ? 
+        getAgents().find(a => a.name === purchase.agent)?.id || "" : "",
+      transporterId: getAgents().find(t => t.name === purchase.transporter)?.id || ""
+    };
+    
+    setEditingPurchase(purchaseToEdit);
     setIsEditDialogOpen(true);
   };
 

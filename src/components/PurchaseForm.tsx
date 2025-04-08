@@ -62,28 +62,38 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
   const [ratePerKgAfterExpenses, setRatePerKgAfterExpenses] = useState<number>(0);
   const [transportCost, setTransportCost] = useState<number>(0);
   
+  // Set default values based on initialData
+  const defaultValues = initialData ? {
+    date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
+    lotNumber: initialData.lotNumber || "",
+    quantity: initialData.quantity || 0,
+    agentId: initialData.agentId || "",
+    party: initialData.party || "",
+    location: initialData.location || "",
+    netWeight: initialData.netWeight || 0,
+    rate: initialData.rate || 0,
+    transporterId: initialData.transporterId || "",
+    transportRate: initialData.transportRate || 0,
+    expenses: initialData.expenses || 0,
+    notes: initialData.notes || "",
+  } : {
+    date: format(new Date(), 'yyyy-MM-dd'),
+    lotNumber: "",
+    quantity: 0,
+    agentId: "",
+    party: "",
+    location: "",
+    netWeight: 0,
+    rate: 0,
+    transporterId: "",
+    transportRate: 0,
+    expenses: 0,
+    notes: "",
+  };
+  
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-      ...initialData,
-      agentId: initialData.agent?.id || initialData.agentId || "",
-      transporterId: initialData.transporter?.id || initialData.transporterId || "",
-      transportRate: initialData.transportRate || 0,
-      date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
-    } : {
-      date: format(new Date(), 'yyyy-MM-dd'),
-      lotNumber: "",
-      quantity: 0,
-      agentId: "",
-      party: "",
-      location: "",
-      netWeight: 0,
-      rate: 0,
-      transporterId: "",
-      transportRate: 0,
-      expenses: 0,
-      notes: "",
-    }
+    defaultValues: defaultValues
   });
 
   // Load data
@@ -92,6 +102,16 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     setSuppliers(getSuppliers());
     setTransporters(getTransporters());
   }, []);
+
+  // Set initial calculation values
+  useEffect(() => {
+    if (initialData) {
+      setTotalAmount(initialData.totalAmount || 0);
+      setTotalAfterExpenses(initialData.totalAfterExpenses || 0);
+      setRatePerKgAfterExpenses(initialData.ratePerKgAfterExpenses || 0);
+      setTransportCost(initialData.transportCost || 0);
+    }
+  }, [initialData]);
 
   // Handle calculation when values change
   useEffect(() => {
@@ -136,8 +156,8 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     // Format data for submission
     const submitData = {
       ...data,
-      agent: data.agentId ? agents.find(a => a.id === data.agentId)?.name || data.agentId : "None",
-      transporter: transporters.find(t => t.id === data.transporterId)?.name || data.transporterId,
+      agent: data.agentId ? agents.find(a => a.id === data.agentId)?.name || "None" : "None",
+      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
       totalAmount,
       transportCost,
       expenses: data.expenses,
