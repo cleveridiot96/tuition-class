@@ -245,19 +245,20 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
 
   const handleAddCustomer = (customerData: any) => {
     try {
-      const newCustomer = addCustomer(customerData);
+      addCustomer(customerData);
       
-      if (newCustomer && typeof newCustomer === 'object') {
-        const customerEntity = newCustomer as Entity;
-        
+      const updatedCustomers = getCustomers();
+      const newCustomer = updatedCustomers.find(c => c.name === customerData.name);
+      
+      if (newCustomer) {
         toast({
           title: "Success",
-          description: `Customer ${customerEntity.name} added successfully`,
+          description: `Customer ${newCustomer.name} added successfully`,
         });
         refreshData();
         setIsAddCustomerOpen(false);
         
-        form.setValue("customerId", customerEntity.id);
+        form.setValue("customerId", newCustomer.id);
         setFormChanged(true);
       } else {
         toast({
@@ -277,19 +278,20 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   
   const handleAddBroker = (brokerData: any) => {
     try {
-      const newBroker = addBroker(brokerData);
+      addBroker(brokerData);
       
-      if (newBroker && typeof newBroker === 'object') {
-        const brokerEntity = newBroker as Entity;
-        
+      const updatedBrokers = getBrokers();
+      const newBroker = updatedBrokers.find(b => b.name === brokerData.name);
+      
+      if (newBroker) {
         toast({
           title: "Success",
-          description: `Broker ${brokerEntity.name} added successfully`,
+          description: `Broker ${newBroker.name} added successfully`,
         });
         refreshData();
         setIsAddBrokerOpen(false);
         
-        form.setValue("brokerId", brokerEntity.id);
+        form.setValue("brokerId", newBroker.id);
         setFormChanged(true);
       } else {
         toast({
