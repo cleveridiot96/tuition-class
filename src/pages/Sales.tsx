@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -46,7 +45,6 @@ import { useReactToPrint } from "react-to-print";
 import SalesReceipt from "@/components/SalesReceipt";
 import { getSaleIdFromUrl } from "@/utils/helpers";
 
-// Update the Sale interface to make transporter optional
 interface Sale {
   id: string;
   date: string;
@@ -60,7 +58,7 @@ interface Sale {
   rate: number;
   broker?: string;
   brokerId?: string;
-  transporter?: string; // Make optional 
+  transporter?: string;
   transporterId?: string;
   transportRate?: number;
   location?: string;
@@ -99,14 +97,12 @@ const Sales = () => {
 
   useEffect(() => {
     loadData();
-    // Check for URL params
     const saleId = getSaleIdFromUrl();
     if (saleId) {
       const allSales = getSales();
       const targetSale = allSales.find(s => s.id === saleId && !s.isDeleted);
       if (targetSale) {
         handleEdit(targetSale);
-        // Clear URL parameter after handling to avoid reopening on refresh
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
@@ -134,7 +130,6 @@ const Sales = () => {
     
     addSale(saleWithLocation);
     
-    // Update inventory
     updateInventoryAfterSale(data.lotNumber, data.quantity);
     
     loadData();
@@ -155,19 +150,13 @@ const Sales = () => {
       amount: updatedSale.totalAmount
     };
     
-    // If quantity changed, we need to adjust inventory
     if (updatedSale.quantity !== editingSale.quantity) {
-      // First restore original quantity
       updateInventoryAfterSale(editingSale.lotNumber, -editingSale.quantity);
-      
-      // Then remove new quantity
       updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
     }
     
-    // Update sale in storage
     updateSale(saleWithLocation);
     
-    // Refresh data
     loadData();
     
     toast.success("Sale updated successfully");
@@ -185,10 +174,7 @@ const Sales = () => {
     
     const saleToRemove = sales.find(s => s.id === saleToDelete);
     if (saleToRemove) {
-      // Restore inventory quantity
       updateInventoryAfterSale(saleToRemove.lotNumber, -saleToRemove.quantity);
-      
-      // Mark sale as deleted
       deleteSale(saleToDelete);
       
       loadData();
@@ -204,7 +190,6 @@ const Sales = () => {
     const saleToRestore = deletedSales.find(s => s.id === id);
     if (!saleToRestore) return;
     
-    // Check if we have enough inventory
     const inventory = getInventory();
     const lotItem = inventory.find(item => item.lotNumber === saleToRestore.lotNumber && !item.isDeleted);
     
@@ -218,28 +203,25 @@ const Sales = () => {
       return;
     }
     
-    // Restore the sale by removing isDeleted flag
     const updatedSale = { 
       ...saleToRestore, 
       isDeleted: false,
       amount: saleToRestore.totalAmount 
-    };
+    } as Sale;
+    
     updateSale(updatedSale);
     
-    // Update inventory
     updateInventoryAfterSale(saleToRestore.lotNumber, saleToRestore.quantity);
     
-    // Refresh data
     loadData();
     
     toast.success("Sale restored successfully");
   };
-  
+
   const handlePrintSale = (sale: Sale) => {
     setSaleToPrint(sale);
     setIsPrintDialogOpen(true);
     
-    // Allow a little time for the dialog to show before printing
     setTimeout(() => {
       if (printRef.current) {
         handlePrint();

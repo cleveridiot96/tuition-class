@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -175,13 +176,16 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const handleFormSubmit = (data: FormData) => {
     const customer = customers.find(c => c.id === data.customerId);
     
+    let transporterName = "";
+    if (data.transporterId && data.transporterId !== "none" && data.transporterId !== "self") {
+      transporterName = transporters.find(t => t.id === data.transporterId)?.name || "";
+    }
+    
     const submitData = {
       ...data,
       customer: customer ? customer.name : data.customerId,
       customerId: data.customerId,
-      transporter: data.transporterId && data.transporterId !== "none" ? 
-        transporters.find(t => t.id === data.transporterId)?.name || "" : 
-        "",
+      transporter: transporterName,
       broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
       brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
       brokerageType: data.brokerageType || "percentage",
