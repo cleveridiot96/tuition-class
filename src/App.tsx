@@ -23,7 +23,26 @@ import '@/App.css';
 
 const App = () => {
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
 
+  // Check online/offline status
+  useEffect(() => {
+    const handleOnlineStatus = () => setIsOnline(navigator.onLine);
+    
+    // Set initial state
+    setIsOnline(navigator.onLine);
+    
+    // Listen for online/offline events
+    window.addEventListener('online', handleOnlineStatus);
+    window.addEventListener('offline', handleOnlineStatus);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('online', handleOnlineStatus);
+      window.removeEventListener('offline', handleOnlineStatus);
+    };
+  }, []);
+  
   useEffect(() => {
     // Initialize financial years
     initializeFinancialYears();

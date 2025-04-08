@@ -1,9 +1,16 @@
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, RefreshCw } from "lucide-react";
+import { Download, Upload, RefreshCw, TabletSmartphone, HardDrive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportDataBackup, importDataBackup } from "@/services/storageService";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface BackupRestoreControlsProps {
   onRefresh: () => void;
@@ -13,6 +20,7 @@ interface BackupRestoreControlsProps {
 const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControlsProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showPortabilityDialog, setShowPortabilityDialog] = useState(false);
 
   const handleImportClick = () => {
     if (fileInputRef.current) {
@@ -53,6 +61,17 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
   const handleExportBackup = () => {
     const jsonData = exportDataBackup();
     if (jsonData) {
+      // Create a blob and download it
+      const blob = new Blob([jsonData], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kisan-khata-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       toast({
         title: "Backup Created",
         description: "Data backup successfully downloaded",
@@ -67,39 +86,98 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
   };
 
   return (
-    <div className="mt-6 flex justify-center gap-4">
-      <Button
-        onClick={handleExportBackup}
-        variant="outline"
-        className="flex items-center gap-2"
-      >
-        <Download size={20} />
-        Backup
-      </Button>
-      <Button
-        onClick={handleImportClick}
-        variant="outline" 
-        className="flex items-center gap-2"
-      >
-        <Upload size={20} />
-        Restore
-      </Button>
-      <Button
-        onClick={onRefresh}
-        variant="outline"
-        className="flex items-center gap-2"
-      >
-        <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
-        Refresh
-      </Button>
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileSelect}
-        accept=".json"
-        className="hidden"
-      />
-    </div>
+    <>
+      <div className="mt-6 flex justify-center gap-4">
+        <Button
+          onClick={handleExportBackup}
+          variant="outline" 
+          className="flex items-center gap-2"
+        >
+          <Download size={20} />
+          Backup
+        </Button>
+        <Button
+          onClick={handleImportClick}
+          variant="outline" 
+          className="flex items-center gap-2"
+        >
+          <Upload size={20} />
+          Restore
+        </Button>
+        <Button
+          onClick={onRefresh}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
+          Refresh
+        </Button>
+        <Button
+          onClick={() => setShowPortabilityDialog(true)}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <TabletSmartphone size={20} />
+          Portable Usage
+        </Button>
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          accept=".json"
+          className="hidden"
+        />
+      </div>
+
+      <Dialog open={showPortabilityDialog} onOpenChange={setShowPortabilityDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Portable Usage Instructions</DialogTitle>
+            <DialogDescription>
+              Follow these steps to use this app on any device
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4 text-sm">
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 1: Export Your Data</h3>
+              <p>Click the "Backup" button to download your data as a JSON file.</p>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 2: Get the Portable App</h3>
+              <p>Download the full app by clicking the button below. This creates a portable version you can copy to any storage device.</p>
+              <Button 
+                onClick={() => {
+                  toast({
+                    title: "Instructions",
+                    description: "Use the build command: 'npm run build' then copy the generated 'dist' folder to your portable storage device"
+                  });
+                }}
+                className="flex items-center gap-2 w-full"
+              >
+                <HardDrive size={16} />
+                Prepare Portable Version
+              </Button>
+            </div>
+            
+            <div className="space-y-2">
+              <h3 className="font-medium">Step 3: Use on Any Device</h3>
+              <p>Copy the downloaded app to your pen drive. On any device, open the "launch.html" file in a web browser to start using the app.</p>
+            </div>
+            
+            <div className="space-y-2 pt-2">
+              <h3 className="font-medium">Device Compatibility:</h3>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Windows PC: Use any modern browser</li>
+                <li>Android: Use Chrome browser</li>
+                <li>iOS/iPad: Use Safari browser</li>
+              </ul>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

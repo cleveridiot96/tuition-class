@@ -34,7 +34,6 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('cash');
   const [cash, setCash] = useState(0);
-  const [bank, setBank] = useState(0);
   const [stockItems, setStockItems] = useState<StockOpeningBalance[]>([]);
   const [partyBalances, setPartyBalances] = useState<PartyOpeningBalance[]>([]);
   const [newLot, setNewLot] = useState({
@@ -54,13 +53,11 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
         
         if (openingBalances) {
           setCash(openingBalances.cash || 0);
-          setBank(openingBalances.bank || 0);
           setStockItems(openingBalances.stock || []);
           setPartyBalances(openingBalances.parties || []);
         } else {
           // Initialize with default values
           setCash(0);
-          setBank(0);
           setStockItems([]);
           initializePartyBalances();
         }
@@ -126,7 +123,6 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
     const openingBalances: OpeningBalance = {
       yearId: activeYear.id,
       cash,
-      bank,
       stock: stockItems,
       parties: partyBalances
     };
@@ -199,7 +195,7 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
         
         <Tabs defaultValue="cash" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid grid-cols-3">
-            <TabsTrigger value="cash">Cash & Bank</TabsTrigger>
+            <TabsTrigger value="cash">Cash</TabsTrigger>
             <TabsTrigger value="stock">Stock</TabsTrigger>
             <TabsTrigger value="parties">Party Balances</TabsTrigger>
           </TabsList>
@@ -207,7 +203,7 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
           <TabsContent value="cash">
             <Card>
               <CardHeader>
-                <CardTitle>Cash & Bank Opening Balance</CardTitle>
+                <CardTitle>Cash Opening Balance</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4">
@@ -220,19 +216,6 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
                       type="number"
                       value={cash}
                       onChange={(e) => setCash(Number(e.target.value))}
-                      className="col-span-3"
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="bank-balance" className="text-right">
-                      Bank Balance
-                    </Label>
-                    <Input
-                      id="bank-balance"
-                      type="number"
-                      value={bank}
-                      onChange={(e) => setBank(Number(e.target.value))}
                       className="col-span-3"
                     />
                   </div>
