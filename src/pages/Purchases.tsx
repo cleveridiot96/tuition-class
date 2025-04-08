@@ -90,9 +90,12 @@ const Purchases = () => {
     });
     
     // Update agent balance if applicable
-    const agentId = data.agentId;
-    if (agentId && agentId !== "None") {
-      updateAgentBalance(agentId, -data.totalAfterExpenses);
+    if (data.agent && data.agent !== "None") {
+      const agents = getAgents();
+      const agent = agents.find(a => a.name === data.agent);
+      if (agent) {
+        updateAgentBalance(agent.id, -data.totalAfterExpenses);
+      }
     }
     
     loadData();
@@ -131,9 +134,12 @@ const Purchases = () => {
     if (purchaseToRemove) {
       deletePurchase(purchaseToDelete);
       
-      const agentId = purchaseToRemove.agentId;
-      if (agentId && agentId !== "None") {
-        updateAgentBalance(agentId, purchaseToRemove.totalAfterExpenses);
+      if (purchaseToRemove.agent && purchaseToRemove.agent !== "None") {
+        const agents = getAgents();
+        const agent = agents.find(a => a.name === purchaseToRemove.agent);
+        if (agent) {
+          updateAgentBalance(agent.id, purchaseToRemove.totalAfterExpenses);
+        }
       }
       
       loadData();
