@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,21 +32,43 @@ import {
   clearAllData
 } from "@/services/storageService";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 30000
+    }
+  }
+});
 
 const App = () => {
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    initializeDemoData();
-    setIsLoading(false);
+    try {
+      initializeDemoData();
+    } catch (error) {
+      console.error("Error during initialization:", error);
+      // If initialization fails, try to clear and reinitialize
+      try {
+        clearAllData();
+        initializeDemoData();
+      } catch (secondError) {
+        console.error("Failed to recover from initialization error:", secondError);
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const initializeDemoData = () => {
+    // Only initialize if purchases and sales are empty
     const purchases = getPurchases();
     const existingSales = getSales();
     if (purchases.length > 0 && existingSales.length > 0) return;
 
+    // Start fresh with clean data
     clearAllData();
 
     const arAgentId = "agent-001";
@@ -143,16 +166,28 @@ const App = () => {
     
     addPurchase(purchase);
     
+    // Generate unique inventoryId with timestamp to avoid conflicts
     const inventoryId = `inv-${new Date().getTime()}`;
     
-    addInventoryItem({
-      id: inventoryId,
-      lotNumber: lotNumber,
-      quantity: bagsQuantity,
-      location: "Mumbai",
-      dateAdded: purchaseDate,
-      netWeight: totalWeight
-    });
+    // The inventory item will now be added properly through the addPurchase function
+    // Let's make sure we don't try to add it again directly to avoid duplication
+    // Instead, verify if it was added correctly
+    const inventoryAfterPurchase = getInventory();
+    const inventoryItemAdded = inventoryAfterPurchase.some(
+      item => item.lotNumber === lotNumber && !item.isDeleted
+    );
+    
+    // Only add inventory item if it wasn't already added by the purchase operation
+    if (!inventoryItemAdded) {
+      addInventoryItem({
+        id: inventoryId,
+        lotNumber: lotNumber,
+        quantity: bagsQuantity,
+        location: "Mumbai",
+        dateAdded: purchaseDate,
+        netWeight: totalWeight
+      });
+    }
 
     const saleDate = purchaseDate;
     const saleId1 = "sale-001";

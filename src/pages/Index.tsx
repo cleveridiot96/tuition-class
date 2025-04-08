@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
@@ -38,118 +38,137 @@ const Index = () => {
   const [profitByMonth, setProfitByMonth] = useState<MonthlyProfitData[]>([]);
   const [totalProfit, setTotalProfit] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dataVersion, setDataVersion] = useState(0); // Add version tracking
+  const [dataVersion, setDataVersion] = useState(0);
   
-  const loadDashboardData = () => {
+  const loadDashboardData = useCallback(() => {
     setIsRefreshing(true);
     
-    const purchases = getPurchases() || [];
-    const sales = getSales() || [];
-    
-    const inventory = getInventory() || [];
-    const activeInventory = inventory.filter(item => !item.isDeleted);
-    const mumbaiStock = activeInventory.filter(item => item.location === "Mumbai");
-    const chiplunStock = activeInventory.filter(item => item.location === "Chiplun");
-    const sawantwadiStock = activeInventory.filter(item => item.location === "Sawantwadi");
-    
-    console.log("Purchases data loaded:", purchases);
-    console.log("Sales data loaded:", sales);
-    console.log("Active inventory:", activeInventory);
-    
-    const transactionProfits: ProfitData[] = sales.map(sale => {
-      const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber && !p.isDeleted);
-      const purchaseCost = relatedPurchase ? relatedPurchase.totalAfterExpenses : 0;
-      const purchaseCostPerKg = relatedPurchase ? purchaseCost / relatedPurchase.netWeight : 0;
+    try {
+      const purchases = getPurchases() || [];
+      const sales = getSales() || [];
       
-      const effectivePurchaseCost = purchaseCostPerKg * sale.netWeight;
+      const inventory = getInventory() || [];
+      const activeInventory = inventory.filter(item => !item.isDeleted);
+      const mumbaiStock = activeInventory.filter(item => item.location === "Mumbai");
+      const chiplunStock = activeInventory.filter(item => item.location === "Chiplun");
+      const sawantwadiStock = activeInventory.filter(item => item.location === "Sawantwadi");
       
-      const saleRevenue = sale.totalAmount || 0;
-      const brokerage = sale.broker ? saleRevenue * 0.01 : 0;
-      const netSaleRevenue = saleRevenue - brokerage;
+      console.log("Purchases data loaded:", purchases.length);
+      console.log("Sales data loaded:", sales.length);
+      console.log("Active inventory:", activeInventory.length);
       
-      const profit = Math.round(netSaleRevenue - effectivePurchaseCost);
-      
-      return {
-        purchase: effectivePurchaseCost,
-        sale: netSaleRevenue,
-        profit: profit,
-        date: sale.date,
-        quantity: sale.quantity,
-        netWeight: sale.netWeight
-      };
-    });
-    
-    const profitsByMonth: Record<string, { profit: number; display: string }> = {};
-    transactionProfits.forEach(transaction => {
-      if (!transaction.date) return;
-      
-      const date = parseISO(transaction.date);
-      const monthKey = format(date, 'yyyy-MM');
-      const monthDisplay = format(date, 'MMM yyyy');
-      
-      if (!profitsByMonth[monthKey]) {
-        profitsByMonth[monthKey] = {
-          profit: 0,
-          display: monthDisplay
+      const transactionProfits: ProfitData[] = sales.filter(sale => !sale.isDeleted).map(sale => {
+        const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber && !p.isDeleted);
+        const purchaseCost = relatedPurchase ? relatedPurchase.totalAfterExpenses : 0;
+        const purchaseCostPerKg = relatedPurchase ? purchaseCost / relatedPurchase.netWeight : 0;
+        
+        const effectivePurchaseCost = purchaseCostPerKg * sale.netWeight;
+        
+        const saleRevenue = sale.totalAmount || 0;
+        const brokerage = sale.broker ? saleRevenue * 0.01 : 0;
+        const netSaleRevenue = saleRevenue - brokerage;
+        
+        const profit = Math.round(netSaleRevenue - effectivePurchaseCost);
+        
+        return {
+          purchase: effectivePurchaseCost,
+          sale: netSaleRevenue,
+          profit: profit,
+          date: sale.date,
+          quantity: sale.quantity,
+          netWeight: sale.netWeight
         };
-      }
+      });
       
-      profitsByMonth[monthKey].profit += transaction.profit;
-    });
-    
-    const monthlyProfits: MonthlyProfitData[] = Object.entries(profitsByMonth).map(([key, data]) => ({
-      month: data.display,
-      profit: data.profit
-    })).sort((a, b) => a.month.localeCompare(b.month));
-    
-    setProfitByTransaction(transactionProfits);
-    setProfitByMonth(monthlyProfits);
-    setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
-    
-    const activePurchases = purchases.filter(p => !p.isDeleted);
-    
-    setSummaryData({
-      purchases: {
-        amount: activePurchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
-        bags: activePurchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
-        kgs: activePurchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
-      },
-      sales: {
-        amount: sales.reduce((sum, s) => sum + (s.totalAmount || 0), 0),
-        bags: sales.reduce((sum, s) => sum + (s.quantity || 0), 0),
-        kgs: sales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
-      },
-      stock: {
-        mumbai: mumbaiStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
-        chiplun: chiplunStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
-        sawantwadi: sawantwadiStock.reduce((sum, item) => sum + (item.quantity || 0), 0)
-      }
-    });
-    
-    setIsRefreshing(false);
-  };
+      const profitsByMonth: Record<string, { profit: number; display: string }> = {};
+      transactionProfits.forEach(transaction => {
+        if (!transaction.date) return;
+        
+        try {
+          const date = parseISO(transaction.date);
+          const monthKey = format(date, 'yyyy-MM');
+          const monthDisplay = format(date, 'MMM yyyy');
+          
+          if (!profitsByMonth[monthKey]) {
+            profitsByMonth[monthKey] = {
+              profit: 0,
+              display: monthDisplay
+            };
+          }
+          
+          profitsByMonth[monthKey].profit += transaction.profit;
+        } catch (error) {
+          console.error("Error processing date:", transaction.date, error);
+        }
+      });
+      
+      const monthlyProfits: MonthlyProfitData[] = Object.entries(profitsByMonth).map(([key, data]) => ({
+        month: data.display,
+        profit: data.profit
+      })).sort((a, b) => a.month.localeCompare(b.month));
+      
+      setProfitByTransaction(transactionProfits);
+      setProfitByMonth(monthlyProfits);
+      setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
+      
+      const activePurchases = purchases.filter(p => !p.isDeleted);
+      const activeSales = sales.filter(s => !s.isDeleted);
+      
+      setSummaryData({
+        purchases: {
+          amount: activePurchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
+          bags: activePurchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
+          kgs: activePurchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
+        },
+        sales: {
+          amount: activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0),
+          bags: activeSales.reduce((sum, s) => sum + (s.quantity || 0), 0),
+          kgs: activeSales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
+        },
+        stock: {
+          mumbai: mumbaiStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
+          chiplun: chiplunStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
+          sawantwadi: sawantwadiStock.reduce((sum, item) => sum + (item.quantity || 0), 0)
+        }
+      });
+    } catch (error) {
+      console.error("Error loading dashboard data:", error);
+      toast({
+        title: "Error Loading Data",
+        description: "There was a problem loading the dashboard data. Try refreshing.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [toast]);
   
   useEffect(() => {
     // Initialize data on first load
-    seedInitialData();
-    loadDashboardData();
+    try {
+      seedInitialData();
+      loadDashboardData();
+    } catch (error) {
+      console.error("Error during initialization:", error);
+    }
     
-    // Remove the interval that might be causing issues
-    // and just rely on window focus events and manual refresh
+    const handleFocus = () => {
+      loadDashboardData();
+    };
     
-    window.addEventListener('focus', loadDashboardData);
+    window.addEventListener('focus', handleFocus);
     
     return () => {
-      window.removeEventListener('focus', loadDashboardData);
+      window.removeEventListener('focus', handleFocus);
     };
-  }, []);
+  }, [loadDashboardData]);
 
   // Add effect to reload data when version changes
   useEffect(() => {
     if (dataVersion > 0) {
       loadDashboardData();
     }
-  }, [dataVersion]);
+  }, [dataVersion, loadDashboardData]);
 
   const handleFormatClick = () => {
     setIsFormatDialogOpen(true);
@@ -175,37 +194,18 @@ const Index = () => {
         console.log("Clearing all data...");
         clearAllData();
         
-        // Force clear all known storage items individually to be absolutely certain
-        const storageKeys = [
-          "purchases", "sales", "inventory", "payments", "receipts", 
-          "agents", "brokers", "customers", "transporters"
-        ];
-        
-        storageKeys.forEach(key => {
-          console.log(`Removing ${key} from localStorage`);
-          localStorage.removeItem(key);
-        });
-        
         // Small delay to ensure clearing is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Explicitly check if data is cleared
-        const checkPurchases = getPurchases();
-        console.log("Purchases after clear:", checkPurchases);
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Reseed with fresh data - make sure force is true
         console.log("Reseeding with fresh data...");
         seedInitialData(true);
         
         // Another small delay to ensure seeding is complete
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 300));
         
         // Increment version to trigger data reload
         setDataVersion(prev => prev + 1);
-        
-        // Force refresh dashboard data immediately
-        console.log("Reloading dashboard data...");
-        loadDashboardData();
         
         toast({
           title: "Data Formatted Successfully",

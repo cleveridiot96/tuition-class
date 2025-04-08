@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,13 @@ const FormatConfirmationDialog = ({
 }: FormatConfirmationDialogProps) => {
   const [confirmationStage, setConfirmationStage] = useState<1 | 2>(1);
 
+  // Reset stage when dialog opens or closes
+  useEffect(() => {
+    if (isOpen === false) {
+      setConfirmationStage(1);
+    }
+  }, [isOpen]);
+
   const handleConfirm = () => {
     if (confirmationStage === 1) {
       // First confirmation, move to second stage
@@ -31,7 +38,7 @@ const FormatConfirmationDialog = ({
     } else {
       // Second confirmation, proceed with format
       onConfirm();
-      handleClose();
+      // No need to call handleClose here as onConfirm will handle it
     }
   };
 
@@ -60,7 +67,10 @@ const FormatConfirmationDialog = ({
         <AlertDialogFooter className="gap-4">
           <AlertDialogCancel className="bg-white border-2 border-gray-300 hover:bg-gray-100 transition-all shadow-sm hover:shadow">Cancel</AlertDialogCancel>
           <AlertDialogAction 
-            onClick={handleConfirm} 
+            onClick={(e) => {
+              e.preventDefault(); // Prevent form submission
+              handleConfirm();
+            }} 
             className={`bg-gradient-to-r from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold shadow-md hover:shadow-lg transform transition-all hover:-translate-y-0.5 ${confirmationStage === 2 ? 'animate-pulse ring-2 ring-red-300 ring-offset-2' : ''}`}
           >
             {confirmationStage === 1 ? "Format Data" : "Yes, Format All Data"}

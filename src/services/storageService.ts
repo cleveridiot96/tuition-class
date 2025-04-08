@@ -303,14 +303,15 @@ export const deleteTransporter = (id: string): void => {
 
 // Purchase functions
 export const getPurchases = () => {
-  const purchases = localStorage.getItem('purchases');
+  const purchases = localStorage.getItem(PURCHASES_STORAGE_KEY) || localStorage.getItem('purchases');
   return purchases ? JSON.parse(purchases) : [];
 };
 
 export const addPurchase = (purchase: Purchase): void => {
   const purchases = getPurchases();
   purchases.push(purchase);
-  localStorage.setItem('purchases', JSON.stringify(purchases));
+  localStorage.setItem(PURCHASES_STORAGE_KEY, JSON.stringify(purchases));
+  localStorage.setItem('purchases', JSON.stringify(purchases)); // For backward compatibility
   
   // Update inventory
   updateInventoryAfterPurchase(purchase);
@@ -326,7 +327,8 @@ export const updatePurchase = (updatedPurchase: Purchase): void => {
     
     // Update purchase
     purchases[index] = updatedPurchase;
-    localStorage.setItem('purchases', JSON.stringify(purchases));
+    localStorage.setItem(PURCHASES_STORAGE_KEY, JSON.stringify(purchases));
+    localStorage.setItem('purchases', JSON.stringify(purchases)); // For backward compatibility
     
     // Update inventory based on changes
     updateInventoryAfterPurchaseEdit(oldPurchase, updatedPurchase);
@@ -340,7 +342,8 @@ export const deletePurchase = (id: string): void => {
   if (purchaseToDelete) {
     // Mark as deleted instead of removing
     const updatedPurchases = purchases.map(p => p.id === id ? { ...p, isDeleted: true } : p);
-    localStorage.setItem('purchases', JSON.stringify(updatedPurchases));
+    localStorage.setItem(PURCHASES_STORAGE_KEY, JSON.stringify(updatedPurchases));
+    localStorage.setItem('purchases', JSON.stringify(updatedPurchases)); // For backward compatibility
     
     // Update inventory - mark related inventory item as deleted
     const inventory = getInventory();
@@ -356,7 +359,8 @@ export const deletePurchase = (id: string): void => {
 };
 
 export const savePurchases = (purchases: any[]) => {
-  localStorage.setItem('purchases', JSON.stringify(purchases));
+  localStorage.setItem(PURCHASES_STORAGE_KEY, JSON.stringify(purchases));
+  localStorage.setItem('purchases', JSON.stringify(purchases)); // For backward compatibility
 };
 
 export const checkDuplicateLot = (lotNumber: string, excludeId?: string): Purchase | null => {
@@ -365,8 +369,6 @@ export const checkDuplicateLot = (lotNumber: string, excludeId?: string): Purcha
 };
 
 // Sales-related functions
-// Removed duplicate SALES_STORAGE_KEY declaration
-
 export function getSales(): Sale[] {
   const savedSales = localStorage.getItem(SALES_STORAGE_KEY);
   if (savedSales) {
@@ -399,8 +401,11 @@ export function deleteSale(id: string): void {
 
 export function updateInventoryAfterSale(lotNumber: string, quantity: number): void {
   const inventory = getInventory();
+  let foundValidItem = false;
+  
   const updatedInventory = inventory.map(item => {
     if (item.lotNumber === lotNumber && !item.isDeleted) {
+      foundValidItem = true;
       // We subtract the quantity when making a sale (positive quantity)
       // Or add it back when restoring a sale (negative quantity)
       const newQuantity = item.quantity - quantity;
@@ -413,19 +418,24 @@ export function updateInventoryAfterSale(lotNumber: string, quantity: number): v
     return item;
   });
   
+  if (!foundValidItem) {
+    console.error(`No valid inventory item found for lot ${lotNumber}`);
+  }
+  
   localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(updatedInventory));
 }
 
 // Payment functions
 export const getPayments = () => {
-  const payments = localStorage.getItem('payments');
+  const payments = localStorage.getItem(PAYMENTS_STORAGE_KEY) || localStorage.getItem('payments');
   return payments ? JSON.parse(payments) : [];
 };
 
 export const addPayment = (payment: Payment): void => {
   const payments = getPayments();
   payments.push(payment);
-  localStorage.setItem('payments', JSON.stringify(payments));
+  localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(payments));
+  localStorage.setItem('payments', JSON.stringify(payments)); // For backward compatibility
   
   // Create a cashbook entry for this payment
   addCashbookEntry(
@@ -455,14 +465,15 @@ export const deletePayment = (id: string): void => {
 
 // Receipt functions
 export const getReceipts = () => {
-  const receipts = localStorage.getItem('receipts');
+  const receipts = localStorage.getItem(RECEIPTS_STORAGE_KEY) || localStorage.getItem('receipts');
   return receipts ? JSON.parse(receipts) : [];
 };
 
 export const addReceipt = (receipt: Receipt): void => {
   const receipts = getReceipts();
   receipts.push(receipt);
-  localStorage.setItem('receipts', JSON.stringify(receipts));
+  localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify(receipts));
+  localStorage.setItem('receipts', JSON.stringify(receipts)); // For backward compatibility
   
   // Create a cashbook entry for this receipt
   addCashbookEntry(
@@ -491,18 +502,34 @@ export const deleteReceipt = (id: string): void => {
 
 // Inventory functions
 export const getInventory = () => {
-  const inventory = localStorage.getItem('inventory');
+  const inventory = localStorage.getItem(INVENTORY_STORAGE_KEY) || localStorage.getItem('inventory');
   return inventory ? JSON.parse(inventory) : [];
 };
 
 export const saveInventory = (inventory: any[]) => {
-  localStorage.setItem('inventory', JSON.stringify(inventory));
+  localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventory));
+  localStorage.setItem('inventory', JSON.stringify(inventory)); // For backward compatibility
 };
 
 export const addInventoryItem = (item: InventoryItem): void => {
   const inventory = getInventory();
-  inventory.push(item);
-  localStorage.setItem('inventory', JSON.stringify(inventory));
+  
+  // Check for existing item with same lot number to prevent duplicates
+  const existingIndex = inventory.findIndex(i => 
+    i.lotNumber === item.lotNumber && !i.isDeleted
+  );
+  
+  if (existingIndex >= 0) {
+    // Update existing item instead of adding duplicate
+    inventory[existingIndex].quantity += item.quantity;
+    inventory[existingIndex].netWeight += item.netWeight;
+  } else {
+    // Add as new item
+    inventory.push(item);
+  }
+  
+  localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(inventory));
+  localStorage.setItem('inventory', JSON.stringify(inventory)); // For backward compatibility
 };
 
 export const getInventoryItem = (lotNumber: string): InventoryItem | undefined => {
@@ -866,19 +893,37 @@ export const importDataBackup = (jsonData: string) => {
 // Seed initial data function
 export const seedInitialData = (force = false) => {
   // Check if data already exists
-  const purchases = localStorage.getItem('purchases');
-  const inventory = localStorage.getItem('inventory');
+  const purchases = getPurchases();
+  const inventory = getInventory();
   
   // If data exists and force is false, do nothing
-  if (!force && purchases && inventory) {
+  if (!force && purchases.length > 0 && inventory.length > 0) {
     return;
   }
   
+  // Completely clear all data first if force is true
+  if (force) {
+    clearAllData();
+  }
+  
   // Initialize empty arrays for all data types
+  localStorage.setItem(PURCHASES_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem('ledger', JSON.stringify([]));
+  localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem(RECEIPTS_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem(BROKERS_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify([]));
+  localStorage.setItem(TRANSPORTERS_STORAGE_KEY, JSON.stringify([]));
+  
+  // For backward compatibility
   localStorage.setItem('purchases', JSON.stringify([]));
   localStorage.setItem('sales', JSON.stringify([]));
   localStorage.setItem('inventory', JSON.stringify([]));
-  localStorage.setItem('ledger', JSON.stringify([]));
+  localStorage.setItem('payments', JSON.stringify([]));
+  localStorage.setItem('receipts', JSON.stringify([]));
   
   // Seed some basic agents, suppliers, etc. for testing
   const agents = [
@@ -952,6 +997,13 @@ export const seedInitialData = (force = false) => {
     }
   ];
   
+  localStorage.setItem(AGENTS_STORAGE_KEY, JSON.stringify(agents));
+  localStorage.setItem(SUPPLIERS_STORAGE_KEY, JSON.stringify(suppliers));
+  localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
+  localStorage.setItem(BROKERS_STORAGE_KEY, JSON.stringify(brokers));
+  localStorage.setItem(TRANSPORTERS_STORAGE_KEY, JSON.stringify(transporters));
+  
+  // For backward compatibility
   localStorage.setItem('agents', JSON.stringify(agents));
   localStorage.setItem('suppliers', JSON.stringify(suppliers));
   localStorage.setItem('customers', JSON.stringify(customers));
@@ -959,8 +1011,9 @@ export const seedInitialData = (force = false) => {
   localStorage.setItem('transporters', JSON.stringify(transporters));
 };
 
-// This function needs to be added if it doesn't exist yet
+// This function completely clears all data
 export const clearAllData = () => {
+  // Clear both old and new storage keys
   localStorage.removeItem('app_purchases_data');
   localStorage.removeItem('app_sales_data');
   localStorage.removeItem('app_inventory_data');
@@ -971,6 +1024,21 @@ export const clearAllData = () => {
   localStorage.removeItem('app_customers_data');
   localStorage.removeItem('app_transporters_data');
   localStorage.removeItem('app_cashbook_data');
+  localStorage.removeItem('app_suppliers_data');
+  
+  // Also clear old keys for backward compatibility
+  localStorage.removeItem('purchases');
+  localStorage.removeItem('sales');
+  localStorage.removeItem('inventory');
+  localStorage.removeItem('payments');
+  localStorage.removeItem('receipts');
+  localStorage.removeItem('agents');
+  localStorage.removeItem('suppliers');
+  localStorage.removeItem('customers');
+  localStorage.removeItem('brokers');
+  localStorage.removeItem('transporters');
+  localStorage.removeItem('cashbook');
+  localStorage.removeItem('ledger');
   localStorage.removeItem('app_deleted_purchases');
   localStorage.removeItem('app_deleted_sales');
 };
