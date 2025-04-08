@@ -174,6 +174,7 @@ const SelectItem = React.forwardRef<
       className
     )}
     {...props}
+    value={props.value || "placeholder-value"} // Ensure value is never empty string
   >
     <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
       <SelectPrimitive.ItemIndicator>

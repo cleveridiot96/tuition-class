@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -370,7 +371,7 @@ const Sales = () => {
                         <TableCell>{sale.quantity}</TableCell>
                         <TableCell>{sale.netWeight}</TableCell>
                         <TableCell>₹{sale.rate}</TableCell>
-                        <TableCell>₹{sale.totalAmount.toFixed(2)}</TableCell>
+                        <TableCell>₹{sale.totalAmount?.toFixed(2) || "0.00"}</TableCell>
                         <TableCell>
                           <Button 
                             variant="outline" 
@@ -416,8 +417,8 @@ const Sales = () => {
                             <TableCell>{sale.quantity}</TableCell>
                             <TableCell>{sale.netWeight}</TableCell>
                             <TableCell>₹{sale.rate}</TableCell>
-                            <TableCell>₹{sale.totalAmount.toFixed(2)}</TableCell>
-                            <TableCell>₹{sale.billAmount ? sale.billAmount.toFixed(2) : "0.00"}</TableCell>
+                            <TableCell>₹{sale.totalAmount?.toFixed(2) || "0.00"}</TableCell>
+                            <TableCell>₹{sale.billAmount?.toFixed(2) || "0.00"}</TableCell>
                             <TableCell>
                               <div className="flex gap-2">
                                 <Button 
