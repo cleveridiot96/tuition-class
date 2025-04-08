@@ -105,7 +105,9 @@ const Payments = () => {
                             ? "bg-ag-orange text-white" 
                             : "bg-ag-green text-white"
                         }`}>
-                          {payment.paymentMode.charAt(0).toUpperCase() + payment.paymentMode.slice(1)}
+                          {payment.paymentMode && typeof payment.paymentMode === 'string' 
+                            ? payment.paymentMode.charAt(0).toUpperCase() + payment.paymentMode.slice(1) 
+                            : 'Unknown'}
                         </span>
                         {payment.referenceNumber && (
                           <span className="text-ag-brown">Ref: {payment.referenceNumber}</span>
