@@ -1,15 +1,16 @@
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, RefreshCw, ChevronRight } from "lucide-react";
-import { exportDataBackup, importDataBackup, seedInitialData, getPurchases, getInventory, getSales, clearAllData } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { seedInitialData, getPurchases, getInventory, getSales, clearAllData } from "@/services/storageService";
 import { format, parseISO } from "date-fns";
+import BackupRestoreControls from "@/components/BackupRestoreControls";
+import ProfitLossStatement from "@/components/ProfitLossStatement";
+import DashboardSummary from "@/components/DashboardSummary";
 
 interface ProfitData {
   purchase: number;
@@ -27,7 +28,6 @@ interface MonthlyProfitData {
 
 const Index = () => {
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [summaryData, setSummaryData] = useState({
     purchases: { amount: 0, bags: 0, kgs: 0 },
     sales: { amount: 0, bags: 0, kgs: 0 },
@@ -38,7 +38,6 @@ const Index = () => {
   const [profitByMonth, setProfitByMonth] = useState<MonthlyProfitData[]>([]);
   const [totalProfit, setTotalProfit] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [expandedProfitSection, setExpandedProfitSection] = useState(true);
   
   const loadDashboardData = () => {
     setIsRefreshing(true);
@@ -148,58 +147,6 @@ const Index = () => {
       window.removeEventListener('focus', loadDashboardData);
     };
   }, []);
-  
-  const handleImportClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-  
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      const success = importDataBackup(content);
-      
-      if (success) {
-        toast({
-          title: "Data Import Successful",
-          description: "All data successfully imported",
-        });
-        loadDashboardData();
-      } else {
-        toast({
-          title: "Import Failed",
-          description: "There was a problem importing data",
-          variant: "destructive",
-        });
-      }
-    };
-    reader.readAsText(file);
-    
-    if (event.target) {
-      event.target.value = '';
-    }
-  };
-
-  const handleExportBackup = () => {
-    const jsonData = exportDataBackup();
-    if (jsonData) {
-      toast({
-        title: "Backup Created",
-        description: "Data backup successfully downloaded",
-      });
-    } else {
-      toast({
-        title: "Backup Failed",
-        description: "There was a problem creating the backup",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleFormatClick = () => {
     setIsFormatDialogOpen(true);
@@ -231,44 +178,6 @@ const Index = () => {
     setIsFormatDialogOpen(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
-
-  const SummaryCard = ({ 
-    title, 
-    to, 
-    children, 
-    className 
-  }: { 
-    title: string; 
-    to: string; 
-    children: React.ReactNode; 
-    className?: string 
-  }) => (
-    <Link to={to} className="block hover:opacity-90 transition-opacity">
-      <Card className={`p-4 shadow-md hover:shadow-lg transition-shadow ${className || ''}`}>
-        <h3 className="text-lg font-semibold mb-2 border-b pb-1">{title}</h3>
-        {children}
-      </Card>
-    </Link>
-  );
-
-  const SummaryItem = ({ label, value }: { label: string; value: string | number }) => (
-    <div className="text-center">
-      <p className="text-sm text-ag-brown">{label}</p>
-      <p className="text-xl font-bold">{value}</p>
-    </div>
-  );
-
-  const toggleProfitSection = () => {
-    setExpandedProfitSection(!expandedProfitSection);
-  };
-
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation 
@@ -284,149 +193,22 @@ const Index = () => {
           <p className="text-lg text-ag-brown mt-2">
             Agricultural Business Management System
           </p>
-          <div className="mt-6 flex justify-center gap-4">
-            <Button
-              onClick={handleExportBackup}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Download size={20} />
-              Backup
-            </Button>
-            <Button
-              onClick={handleImportClick}
-              variant="outline" 
-              className="flex items-center gap-2"
-            >
-              <Upload size={20} />
-              Restore
-            </Button>
-            <Button
-              onClick={loadDashboardData}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw size={20} className={isRefreshing ? "animate-spin" : ""} />
-              Refresh
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              accept=".json"
-              className="hidden"
-            />
-          </div>
+          
+          <BackupRestoreControls 
+            onRefresh={loadDashboardData} 
+            isRefreshing={isRefreshing} 
+          />
         </div>
+        
         <DashboardMenu />
         
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <SummaryCard title="Purchase Summary" to="/purchases">
-            <div className="grid grid-cols-3 gap-2">
-              <SummaryItem label="Amount" value={formatCurrency(summaryData.purchases.amount)} />
-              <SummaryItem label="Bags" value={summaryData.purchases.bags} />
-              <SummaryItem label="Kgs" value={summaryData.purchases.kgs} />
-            </div>
-          </SummaryCard>
-          
-          <SummaryCard title="Sales Summary" to="/sales">
-            <div className="grid grid-cols-3 gap-2">
-              <SummaryItem label="Amount" value={formatCurrency(summaryData.sales.amount)} />
-              <SummaryItem label="Bags" value={summaryData.sales.bags} />
-              <SummaryItem label="Kgs" value={summaryData.sales.kgs} />
-            </div>
-          </SummaryCard>
-        </div>
+        <DashboardSummary summaryData={summaryData} />
         
-        <SummaryCard title="Stock Summary" to="/inventory" className="mt-6">
-          <div className="grid grid-cols-3 gap-4">
-            <SummaryItem label="Mumbai" value={`${summaryData.stock.mumbai} bags`} />
-            <SummaryItem label="Chiplun" value={`${summaryData.stock.chiplun} bags`} />
-            <SummaryItem label="Sawantwadi" value={`${summaryData.stock.sawantwadi} bags`} />
-          </div>
-        </SummaryCard>
-        
-        {/* Profit and Loss Section */}
-        <Card className="mt-6 p-4 shadow-md">
-          <div 
-            className="flex justify-between items-center mb-4 border-b pb-1 cursor-pointer" 
-            onClick={toggleProfitSection}
-          >
-            <h3 className="text-lg font-semibold">Profit & Loss Statement</h3>
-            <ChevronRight 
-              size={20} 
-              className={`transition-transform ${expandedProfitSection ? 'rotate-90' : ''}`} 
-            />
-          </div>
-          
-          {expandedProfitSection && (
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Transaction-wise profit */}
-              <div>
-                <h4 className="font-medium text-ag-brown mb-2">Transaction-wise</h4>
-                <div className="border rounded-md overflow-hidden">
-                  <div className="bg-gray-50 grid grid-cols-5 font-medium">
-                    <div className="p-2">Date</div>
-                    <div className="p-2">Purchase</div>
-                    <div className="p-2">Sale</div>
-                    <div className="p-2">Qty (kg)</div>
-                    <div className="p-2">Profit</div>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {profitByTransaction.length === 0 ? (
-                      <div className="p-2 text-center text-gray-500">No transaction data available</div>
-                    ) : (
-                      profitByTransaction.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-5 border-t">
-                          <div className="p-2">{format(parseISO(item.date), 'dd/MM/yy')}</div>
-                          <div className="p-2">{formatCurrency(item.purchase)}</div>
-                          <div className="p-2">{formatCurrency(item.sale)}</div>
-                          <div className="p-2">{item.netWeight}</div>
-                          <div className={`p-2 ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(item.profit)}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Monthly profit */}
-              <div>
-                <h4 className="font-medium text-ag-brown mb-2">Month-wise</h4>
-                <div className="border rounded-md overflow-hidden">
-                  <div className="bg-gray-50 grid grid-cols-2 font-medium">
-                    <div className="p-2">Month</div>
-                    <div className="p-2">Profit</div>
-                  </div>
-                  <div className="max-h-40 overflow-y-auto">
-                    {profitByMonth.length === 0 ? (
-                      <div className="p-2 text-center text-gray-500">No monthly data available</div>
-                    ) : (
-                      profitByMonth.map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-2 border-t">
-                          <div className="p-2">{item.month}</div>
-                          <div className={`p-2 ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCurrency(item.profit)}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {/* Total profit */}
-          <div className="mt-4 bg-gray-50 p-3 rounded-md flex justify-between items-center">
-            <span className="font-medium">Total Profit/Loss:</span>
-            <span className={`font-bold text-xl ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(totalProfit)}
-            </span>
-          </div>
-        </Card>
+        <ProfitLossStatement 
+          profitByTransaction={profitByTransaction}
+          profitByMonth={profitByMonth}
+          totalProfit={totalProfit}
+        />
         
         <div className="mt-8 p-4 bg-white rounded-lg shadow text-center">
           <h3 className="text-lg font-semibold text-ag-brown-dark mb-2">Offline Mode</h3>
