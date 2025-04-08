@@ -44,11 +44,17 @@ if (process.env.NODE_ENV === 'production') {
   // Override fetch to prevent any external requests in production
   const originalFetch = window.fetch;
   window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
-    const url = typeof input === 'string' ? input : input.url;
+    const urlString = typeof input === 'string' 
+      ? input 
+      : input instanceof Request 
+        ? input.url 
+        : input instanceof URL 
+          ? input.toString() 
+          : "";
     
     // Only allow requests to own origin
-    if (!url.startsWith('/') && !url.startsWith(window.location.origin)) {
-      console.warn('Blocked external request to:', url);
+    if (!urlString.startsWith('/') && !urlString.startsWith(window.location.origin)) {
+      console.warn('Blocked external request to:', urlString);
       return Promise.reject(new Error('External connections are disabled for privacy'));
     }
     

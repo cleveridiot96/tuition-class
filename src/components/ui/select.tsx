@@ -82,26 +82,33 @@ const SelectContent = React.forwardRef<
   const filteredChildren = React.useMemo(() => {
     if (!searchable || !searchQuery) return children;
     
-    return React.Children.map(children, (child) => {
+    const childrenArray = React.Children.toArray(children);
+    if (!childrenArray || childrenArray.length === 0) return children;
+    
+    return React.Children.map(childrenArray, (child) => {
       if (!React.isValidElement(child)) return null;
       
       // For direct SelectItem children
       if (child.type === SelectItem) {
-        const childText = String(child.props.children).toLowerCase();
+        const childText = String(child.props.children || '').toLowerCase();
         return childText.includes(searchQuery.toLowerCase()) ? child : null;
       }
       
       // For SelectGroup or other container elements
-      if (child.props.children) {
-        const filteredGroupChildren = React.Children.toArray(child.props.children).filter((groupChild) => {
+      if (child.props && child.props.children) {
+        const groupChildren = React.Children.toArray(child.props.children);
+        
+        if (!groupChildren || groupChildren.length === 0) return child;
+        
+        const filteredGroupChildren = groupChildren.filter((groupChild) => {
           if (!React.isValidElement(groupChild)) return false;
-          const groupChildText = String(groupChild.props.children).toLowerCase();
+          const groupChildText = String(groupChild.props?.children || '').toLowerCase();
           return groupChildText.includes(searchQuery.toLowerCase());
         });
         
-        return filteredGroupChildren.length > 0
-          ? React.cloneElement(child, {}, filteredGroupChildren)
-          : null;
+        if (filteredGroupChildren.length === 0) return null;
+        
+        return React.cloneElement(child, {}, filteredGroupChildren);
       }
       
       return child;

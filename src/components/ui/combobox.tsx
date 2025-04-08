@@ -24,6 +24,7 @@ interface ComboboxProps {
   onInputChange?: (value: string) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
 export function Combobox({
@@ -34,13 +35,16 @@ export function Combobox({
   onInputChange,
   placeholder = "Select an option",
   className,
+  disabled = false
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
 
   React.useEffect(() => {
-    setSelectedValue(value || "");
+    if (value !== undefined) {
+      setSelectedValue(value);
+    }
   }, [value]);
 
   const handleSelect = (currentValue: string) => {
@@ -50,17 +54,26 @@ export function Combobox({
     onChange?.(currentValue);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    onInputChange?.(newValue);
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    onInputChange?.(value);
     
     // If the input is cleared, also clear the selected value
-    if (!newValue) {
+    if (!value) {
       setSelectedValue("");
       onChange?.("");
     }
   };
+
+  // Filter options based on input value
+  const filteredOptions = React.useMemo(() => {
+    if (!inputValue) return options;
+    
+    return options.filter(option => 
+      option.label.toLowerCase().includes(inputValue.toLowerCase()) ||
+      option.value.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  }, [options, inputValue]);
 
   // Find the display text
   const displayText = selectedValue
@@ -68,32 +81,35 @@ export function Combobox({
     : "";
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
+          disabled={disabled}
         >
           {selectedValue ? displayText : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-        <Command>
+      <PopoverContent 
+        className="w-[--radix-popover-trigger-width] p-0" 
+        align="start"
+        side="bottom"
+        avoidCollisions
+      >
+        <Command shouldFilter={false}>
           <CommandInput 
             placeholder={`Search ${placeholder.toLowerCase()}...`} 
             value={inputValue}
-            onValueChange={(value) => {
-              setInputValue(value);
-              onInputChange?.(value);
-            }}
+            onValueChange={handleInputChange}
             className="h-9"
           />
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
-            {options.map((option) => (
+            {filteredOptions.map((option) => (
               <CommandItem
                 key={option.value}
                 value={option.value}

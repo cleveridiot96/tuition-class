@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -10,6 +9,7 @@ import {
   DialogTitle, 
   DialogTrigger,
   DialogFooter,
+  DialogDescription
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -112,31 +112,42 @@ const Sales = () => {
   const loadData = () => {
     setIsRefreshing(true);
     
-    const allSales = getSales() || [];
-    const activeSales = allSales.filter(s => !s.isDeleted) || [];
-    const deletedSalesData = allSales.filter(s => s.isDeleted) || [];
-    
-    setSales(activeSales);
-    setDeletedSales(deletedSalesData);
-    
-    setIsRefreshing(false);
-    console.log("Sales data refreshed:", activeSales);
+    try {
+      const allSales = getSales() || [];
+      const activeSales = allSales.filter(s => !s.isDeleted) || [];
+      const deletedSalesData = allSales.filter(s => s.isDeleted) || [];
+      
+      setSales(activeSales);
+      setDeletedSales(deletedSalesData);
+      
+      console.log("Sales data refreshed:", activeSales);
+    } catch (err) {
+      console.error("Error loading sales data:", err);
+      toast.error("Failed to load sales data");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleAdd = (data: Sale) => {
-    const saleWithLocation = {
-      ...data,
-      amount: data.totalAmount,
-      transportCost: data.transportCost || 0,
-    };
-    
-    addSale(saleWithLocation);
-    
-    updateInventoryAfterSale(data.lotNumber, data.quantity);
-    
-    loadData();
-    toast.success("Sale added successfully");
-    setIsAddDialogOpen(false);
+    try {
+      const saleWithLocation = {
+        ...data,
+        amount: data.totalAmount,
+        transportCost: data.transportCost || 0,
+      };
+      
+      addSale(saleWithLocation);
+      
+      updateInventoryAfterSale(data.lotNumber, data.quantity);
+      
+      loadData();
+      toast.success("Sale added successfully");
+      setIsAddDialogOpen(false);
+    } catch (err) {
+      console.error("Error adding sale:", err);
+      toast.error("Failed to add sale");
+    }
   };
 
   const handleEdit = (sale: Sale) => {
@@ -147,24 +158,30 @@ const Sales = () => {
   const handleUpdate = (updatedSale: Sale) => {
     if (!editingSale) return;
     
-    const saleWithLocation = {
-      ...updatedSale,
-      amount: updatedSale.totalAmount,
-      transportCost: updatedSale.transportCost || 0,
-    };
-    
-    if (updatedSale.quantity !== editingSale.quantity) {
-      updateInventoryAfterSale(editingSale.lotNumber, -editingSale.quantity);
-      updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
+    try {
+      const saleWithLocation = {
+        ...updatedSale,
+        amount: updatedSale.totalAmount,
+        transportCost: updatedSale.transportCost || 0,
+      };
+      
+      if (updatedSale.quantity !== editingSale.quantity || updatedSale.lotNumber !== editingSale.lotNumber) {
+        // Update inventory for both the old and new quantities if they changed
+        updateInventoryAfterSale(editingSale.lotNumber, -editingSale.quantity);
+        updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
+      }
+      
+      updateSale(saleWithLocation);
+      
+      loadData();
+      
+      toast.success("Sale updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingSale(null);
+    } catch (err) {
+      console.error("Error updating sale:", err);
+      toast.error("Failed to update sale");
     }
-    
-    updateSale(saleWithLocation);
-    
-    loadData();
-    
-    toast.success("Sale updated successfully");
-    setIsEditDialogOpen(false);
-    setEditingSale(null);
   };
 
   const confirmDeleteSale = (id: string) => {
@@ -175,51 +192,61 @@ const Sales = () => {
   const handleDelete = () => {
     if (!saleToDelete) return;
     
-    const saleToRemove = sales.find(s => s.id === saleToDelete);
-    if (saleToRemove) {
-      updateInventoryAfterSale(saleToRemove.lotNumber, -saleToRemove.quantity);
-      deleteSale(saleToDelete);
-      
-      loadData();
-      
-      toast.success("Sale deleted successfully");
+    try {
+      const saleToRemove = sales.find(s => s.id === saleToDelete);
+      if (saleToRemove) {
+        updateInventoryAfterSale(saleToRemove.lotNumber, -saleToRemove.quantity);
+        deleteSale(saleToDelete);
+        
+        loadData();
+        
+        toast.success("Sale deleted successfully");
+      }
+    } catch (err) {
+      console.error("Error deleting sale:", err);
+      toast.error("Failed to delete sale");
+    } finally {
+      setShowDeleteConfirm(false);
+      setSaleToDelete(null);
     }
-    
-    setShowDeleteConfirm(false);
-    setSaleToDelete(null);
   };
 
   const handleRestoreSale = (id: string) => {
-    const saleToRestore = deletedSales.find(s => s.id === id);
-    if (!saleToRestore) return;
-    
-    const inventory = getInventory() || [];
-    const lotItem = inventory.find(item => item.lotNumber === saleToRestore.lotNumber && !item.isDeleted);
-    
-    if (!lotItem) {
-      toast.error(`Cannot restore sale: Lot ${saleToRestore.lotNumber} no longer exists in inventory.`);
-      return;
+    try {
+      const saleToRestore = deletedSales.find(s => s.id === id);
+      if (!saleToRestore) return;
+      
+      const inventory = getInventory() || [];
+      const lotItem = inventory.find(item => item.lotNumber === saleToRestore.lotNumber && !item.isDeleted);
+      
+      if (!lotItem) {
+        toast.error(`Cannot restore sale: Lot ${saleToRestore.lotNumber} no longer exists in inventory.`);
+        return;
+      }
+      
+      if (lotItem.quantity < saleToRestore.quantity) {
+        toast.error(`Cannot restore sale: Only ${lotItem.quantity} bags available in lot ${saleToRestore.lotNumber}.`);
+        return;
+      }
+      
+      const updatedSale = { 
+        ...saleToRestore, 
+        isDeleted: false,
+        amount: saleToRestore.totalAmount,
+        transportCost: saleToRestore.transportCost || 0,
+      };
+      
+      updateSale(updatedSale);
+      
+      updateInventoryAfterSale(saleToRestore.lotNumber, saleToRestore.quantity);
+      
+      loadData();
+      
+      toast.success("Sale restored successfully");
+    } catch (err) {
+      console.error("Error restoring sale:", err);
+      toast.error("Failed to restore sale");
     }
-    
-    if (lotItem.quantity < saleToRestore.quantity) {
-      toast.error(`Cannot restore sale: Only ${lotItem.quantity} bags available in lot ${saleToRestore.lotNumber}.`);
-      return;
-    }
-    
-    const updatedSale = { 
-      ...saleToRestore, 
-      isDeleted: false,
-      amount: saleToRestore.totalAmount,
-      transportCost: saleToRestore.transportCost || 0,
-    };
-    
-    updateSale(updatedSale);
-    
-    updateInventoryAfterSale(saleToRestore.lotNumber, saleToRestore.quantity);
-    
-    loadData();
-    
-    toast.success("Sale restored successfully");
   };
 
   const handlePrintSale = (sale: Sale) => {
@@ -271,6 +298,7 @@ const Sales = () => {
               <DialogContent className="w-[90vw] max-w-[900px] max-h-[90vh] overflow-hidden p-0">
                 <DialogHeader className="px-6 pt-6">
                   <DialogTitle>Add New Sale</DialogTitle>
+                  <DialogDescription>Fill in the details to record a new sale</DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
                   <SalesForm onSubmit={handleAdd} />
@@ -287,6 +315,7 @@ const Sales = () => {
           <DialogContent className="w-[90vw] max-w-[900px] max-h-[90vh] overflow-hidden p-0">
             <DialogHeader className="px-6 pt-6">
               <DialogTitle>Edit Sale</DialogTitle>
+              <DialogDescription>Modify the sale details</DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
               {editingSale && (
@@ -332,8 +361,9 @@ const Sales = () => {
           <DialogContent className="w-[90vw] max-w-[800px] max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>Print Sale Receipt</DialogTitle>
+              <DialogDescription>Preview the sales receipt before printing</DialogDescription>
             </DialogHeader>
-            <div ref={printRef} className="p-4">
+            <div ref={printRef} className="p-4 bg-white">
               {saleToPrint && <SalesReceipt sale={saleToPrint} />}
             </div>
             <DialogFooter>
@@ -344,68 +374,70 @@ const Sales = () => {
 
         <div className="space-y-4">
           {showDeleted ? (
-            <Card className="p-4">
+            <div className="border rounded-md p-4 bg-white">
               <h2 className="text-lg font-semibold mb-4">Deleted Sales</h2>
               {deletedSales.length === 0 ? (
                 <p className="text-center py-8 text-gray-500">No deleted sales found.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Lot Number</TableHead>
-                      <TableHead>Customer</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Net Weight</TableHead>
-                      <TableHead>Rate</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {(deletedSales || []).map((sale) => (
-                      <TableRow key={sale.id} className="bg-red-50">
-                        <TableCell>{format(new Date(sale.date), "dd MMM yyyy")}</TableCell>
-                        <TableCell>{sale.lotNumber}</TableCell>
-                        <TableCell>{sale.customer}</TableCell>
-                        <TableCell>{sale.quantity}</TableCell>
-                        <TableCell>{sale.netWeight}</TableCell>
-                        <TableCell>₹{sale.rate}</TableCell>
-                        <TableCell>₹{sale.totalAmount?.toFixed(2) || "0.00"}</TableCell>
-                        <TableCell>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleRestoreSale(sale.id)}
-                          >
-                            Restore
-                          </Button>
-                        </TableCell>
+                <ScrollArea className="h-[calc(100vh-300px)]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="sticky top-0 bg-white">Date</TableHead>
+                        <TableHead className="sticky top-0 bg-white">Lot Number</TableHead>
+                        <TableHead className="sticky top-0 bg-white">Customer</TableHead>
+                        <TableHead className="sticky top-0 bg-white">Quantity</TableHead>
+                        <TableHead className="sticky top-0 bg-white">Net Weight</TableHead>
+                        <TableHead className="sticky top-0 bg-white">Rate</TableHead>
+                        <TableHead className="sticky top-0 bg-white">Amount</TableHead>
+                        <TableHead className="sticky top-0 bg-white">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {(deletedSales || []).map((sale) => (
+                        <TableRow key={sale.id} className="bg-red-50">
+                          <TableCell>{format(new Date(sale.date), "dd MMM yyyy")}</TableCell>
+                          <TableCell>{sale.lotNumber}</TableCell>
+                          <TableCell>{sale.customer}</TableCell>
+                          <TableCell>{sale.quantity}</TableCell>
+                          <TableCell>{sale.netWeight}</TableCell>
+                          <TableCell>₹{sale.rate}</TableCell>
+                          <TableCell>₹{sale.totalAmount?.toFixed(2) || "0.00"}</TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleRestoreSale(sale.id)}
+                            >
+                              Restore
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               )}
-            </Card>
+            </div>
           ) : (
             <>
               {sales.length === 0 ? (
                 <p className="text-center py-8 text-gray-500">No sales recorded yet. Add your first sale.</p>
               ) : (
-                <div className="border rounded-md overflow-hidden">
+                <div className="border rounded-md overflow-hidden bg-white">
                   <ScrollArea className="h-[calc(100vh-220px)]">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="sticky top-0 bg-white">Date</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Lot Number</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Customer</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Quantity</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Net Weight</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Rate</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Total</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Bill Amt</TableHead>
-                          <TableHead className="sticky top-0 bg-white">Actions</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Date</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Lot Number</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Customer</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Quantity</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Net Weight</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Rate</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Total</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Bill Amt</TableHead>
+                          <TableHead className="sticky top-0 bg-white z-10">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>

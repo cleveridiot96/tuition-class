@@ -124,7 +124,9 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
       yearId: activeYear.id,
       cash,
       stock: stockItems,
-      parties: partyBalances
+      parties: partyBalances,
+      // Add an empty bank field to satisfy the type requirement
+      bank: 0
     };
     
     if (saveOpeningBalances(openingBalances)) {
@@ -194,10 +196,9 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
         </DialogHeader>
         
         <Tabs defaultValue="cash" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-3">
+          <TabsList className="grid grid-cols-2">
             <TabsTrigger value="cash">Cash</TabsTrigger>
             <TabsTrigger value="stock">Stock</TabsTrigger>
-            <TabsTrigger value="parties">Party Balances</TabsTrigger>
           </TabsList>
           
           <TabsContent value="cash">
@@ -220,6 +221,76 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
                     />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Party Balances</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="customers">
+                  <TabsList className="grid grid-cols-5">
+                    <TabsTrigger value="customers">Customers</TabsTrigger>
+                    <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
+                    <TabsTrigger value="agents">Agents</TabsTrigger>
+                    <TabsTrigger value="brokers">Brokers</TabsTrigger>
+                    <TabsTrigger value="transporters">Transporters</TabsTrigger>
+                  </TabsList>
+                  
+                  {['customers', 'suppliers', 'agents', 'brokers', 'transporters'].map((partyType) => (
+                    <TabsContent key={partyType} value={partyType}>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Balance Type</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {partyBalances
+                            .filter(party => party.partyType === partyType.slice(0, -1)) // Remove 's' from plural
+                            .map((party, index) => {
+                              const originalIndex = partyBalances.findIndex(p => 
+                                p.partyId === party.partyId && p.partyType === party.partyType
+                              );
+                              
+                              return (
+                                <TableRow key={party.partyId}>
+                                  <TableCell>{party.partyName}</TableCell>
+                                  <TableCell>
+                                    <Input
+                                      type="number"
+                                      value={party.amount || ''}
+                                      onChange={(e) => updatePartyBalance(
+                                        originalIndex, 
+                                        Number(e.target.value)
+                                      )}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <select
+                                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      value={party.balanceType}
+                                      onChange={(e) => updatePartyBalance(
+                                        originalIndex, 
+                                        party.amount, 
+                                        e.target.value as 'debit' | 'credit'
+                                      )}
+                                    >
+                                      <option value="debit">Debit (DR)</option>
+                                      <option value="credit">Credit (CR)</option>
+                                    </select>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                        </TableBody>
+                      </Table>
+                    </TabsContent>
+                  ))}
+                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>
@@ -302,78 +373,6 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
                     <Button onClick={addStockItem}>Add</Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="parties">
-            <Card>
-              <CardHeader>
-                <CardTitle>Party Balances</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="customers">
-                  <TabsList className="grid grid-cols-5">
-                    <TabsTrigger value="customers">Customers</TabsTrigger>
-                    <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-                    <TabsTrigger value="agents">Agents</TabsTrigger>
-                    <TabsTrigger value="brokers">Brokers</TabsTrigger>
-                    <TabsTrigger value="transporters">Transporters</TabsTrigger>
-                  </TabsList>
-                  
-                  {['customers', 'suppliers', 'agents', 'brokers', 'transporters'].map((partyType) => (
-                    <TabsContent key={partyType} value={partyType}>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Amount</TableHead>
-                            <TableHead>Balance Type</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {partyBalances
-                            .filter(party => party.partyType === partyType.slice(0, -1)) // Remove 's' from plural
-                            .map((party, index) => {
-                              const originalIndex = partyBalances.findIndex(p => 
-                                p.partyId === party.partyId && p.partyType === party.partyType
-                              );
-                              
-                              return (
-                                <TableRow key={party.partyId}>
-                                  <TableCell>{party.partyName}</TableCell>
-                                  <TableCell>
-                                    <Input
-                                      type="number"
-                                      value={party.amount || ''}
-                                      onChange={(e) => updatePartyBalance(
-                                        originalIndex, 
-                                        Number(e.target.value)
-                                      )}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <select
-                                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                                      value={party.balanceType}
-                                      onChange={(e) => updatePartyBalance(
-                                        originalIndex, 
-                                        party.amount, 
-                                        e.target.value as 'debit' | 'credit'
-                                      )}
-                                    >
-                                      <option value="debit">Debit (DR)</option>
-                                      <option value="credit">Credit (CR)</option>
-                                    </select>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                        </TableBody>
-                      </Table>
-                    </TabsContent>
-                  ))}
-                </Tabs>
               </CardContent>
             </Card>
           </TabsContent>

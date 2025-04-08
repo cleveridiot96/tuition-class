@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -15,7 +16,8 @@ import {
   DialogHeader, 
   DialogTitle,
   DialogFooter,
-  DialogTrigger 
+  DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -71,66 +73,87 @@ const Purchases = () => {
   const loadData = () => {
     setIsRefreshing(true);
     
-    const freshPurchases = getPurchases().filter(p => !p.isDeleted);
-    setPurchases(freshPurchases);
-    
-    setIsRefreshing(false);
-    console.log("Purchases data refreshed:", freshPurchases);
+    try {
+      const freshPurchases = getPurchases().filter(p => !p.isDeleted);
+      setPurchases(freshPurchases);
+      console.log("Purchases data refreshed:", freshPurchases);
+    } catch (err) {
+      console.error("Error loading purchases data:", err);
+      toast.error("Failed to load purchases data");
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const handleAdd = (data: Purchase) => {
-    addPurchase(data);
-    
-    // Add to inventory
-    addInventoryItem({
-      id: Date.now().toString() + '-inv',
-      lotNumber: data.lotNumber,
-      quantity: data.quantity,
-      location: data.location,
-      dateAdded: data.date,
-      netWeight: data.netWeight
-    });
-    
-    // Update agent balance if applicable
-    if (data.agent && data.agent !== "None") {
-      const agents = getAgents();
-      const agent = agents.find(a => a.name === data.agent);
-      if (agent) {
-        updateAgentBalance(agent.id, -data.totalAfterExpenses);
+    try {
+      addPurchase(data);
+      
+      // Add to inventory
+      addInventoryItem({
+        id: Date.now().toString() + '-inv',
+        lotNumber: data.lotNumber,
+        quantity: data.quantity,
+        location: data.location,
+        dateAdded: data.date,
+        netWeight: data.netWeight
+      });
+      
+      // Update agent balance if applicable
+      if (data.agent && data.agent !== "None") {
+        const agents = getAgents();
+        const agent = agents.find(a => a.name === data.agent);
+        if (agent) {
+          updateAgentBalance(agent.id, -data.totalAfterExpenses);
+        }
       }
+      
+      loadData();
+      toast.success("Purchase added successfully");
+      setIsAddDialogOpen(false);
+    } catch (err) {
+      console.error("Error adding purchase:", err);
+      toast.error("Failed to add purchase");
     }
-    
-    loadData();
-    toast.success("Purchase added successfully");
-    setIsAddDialogOpen(false);
   };
 
   const handleEdit = (purchase: Purchase) => {
-    // Create a copy of the purchase with properly mapped fields
-    const purchaseToEdit = {
-      ...purchase,
-      // If using PurchaseForm expects agentId instead of agent name
-      agentId: purchase.agent !== "None" ? 
-        getAgents().find(a => a.name === purchase.agent)?.id || "" : "",
-      transporterId: getAgents().find(t => t.name === purchase.transporter)?.id || ""
-    };
-    
-    setEditingPurchase(purchaseToEdit);
-    setIsEditDialogOpen(true);
+    try {
+      // Create a copy of the purchase with properly mapped fields
+      const purchaseToEdit = {
+        ...purchase,
+        // If using PurchaseForm expects agentId instead of agent name
+        agentId: purchase.agent !== "None" ? 
+          getAgents().find(a => a.name === purchase.agent)?.id || "" : "",
+        transporterId: purchase.transporter ?
+          getAgents().find(t => t.name === purchase.transporter)?.id || "" : ""
+      };
+      
+      setEditingPurchase(purchaseToEdit);
+      setIsEditDialogOpen(true);
+    } catch (err) {
+      console.error("Error preparing purchase for edit:", err);
+      toast.error("Failed to prepare purchase for editing");
+    }
   };
 
   const handleUpdate = (updatedPurchase: Purchase) => {
     if (!editingPurchase) return;
     
-    // Update purchase in storage
-    updatePurchase(updatedPurchase);
-    
-    // Refresh data
-    loadData();
-    
-    toast.success("Purchase updated successfully");
-    setIsEditDialogOpen(false);
-    setEditingPurchase(null);
+    try {
+      // Update purchase in storage
+      updatePurchase(updatedPurchase);
+      
+      // Refresh data
+      loadData();
+      
+      toast.success("Purchase updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingPurchase(null);
+    } catch (err) {
+      console.error("Error updating purchase:", err);
+      toast.error("Failed to update purchase");
+    }
   };
 
   const confirmDeletePurchase = (id: string) => {
@@ -141,113 +164,123 @@ const Purchases = () => {
   const handleDelete = () => {
     if (!purchaseToDelete) return;
     
-    const purchaseToRemove = purchases.find(p => p.id === purchaseToDelete);
-    if (purchaseToRemove) {
-      deletePurchase(purchaseToDelete);
-      
-      if (purchaseToRemove.agent && purchaseToRemove.agent !== "None") {
-        const agents = getAgents();
-        const agent = agents.find(a => a.name === purchaseToRemove.agent);
-        if (agent) {
-          updateAgentBalance(agent.id, purchaseToRemove.totalAfterExpenses);
+    try {
+      const purchaseToRemove = purchases.find(p => p.id === purchaseToDelete);
+      if (purchaseToRemove) {
+        deletePurchase(purchaseToDelete);
+        
+        if (purchaseToRemove.agent && purchaseToRemove.agent !== "None") {
+          const agents = getAgents();
+          const agent = agents.find(a => a.name === purchaseToRemove.agent);
+          if (agent) {
+            updateAgentBalance(agent.id, purchaseToRemove.totalAfterExpenses);
+          }
         }
+        
+        loadData();
+        
+        toast.success("Purchase deleted successfully");
       }
-      
-      loadData();
-      
-      toast.success("Purchase deleted successfully");
+    } catch (err) {
+      console.error("Error deleting purchase:", err);
+      toast.error("Failed to delete purchase");
+    } finally {
+      setShowDeleteConfirm(false);
+      setPurchaseToDelete(null);
     }
-    
-    setShowDeleteConfirm(false);
-    setPurchaseToDelete(null);
   };
 
   const addDemoTransaction = () => {
-    const purchaseDate = new Date().toISOString().split('T')[0];
-    const purchaseId = "purchase-ab6-" + Date.now().toString();
-    const lotNumber = "AB/6";
-    
-    const arAgentId = "agent-001"; // Assuming this is the ID of AR Agent
-    const sudhaTransporterId = "transporter-001"; // Assuming this is the ID of SUDHA transporter
-    
-    const bagsQuantity = 6;
-    const weightPerBag = 50;
-    const totalWeight = 300; // 300 KGS as specified
-    const ratePerKg = 320; // Example rate, can be adjusted
-    const transportRatePerKg = 17;
-    const transportCost = totalWeight * transportRatePerKg;
-    const totalAmountBeforeTransport = totalWeight * ratePerKg;
-    const totalPurchaseAmount = totalAmountBeforeTransport + transportCost;
-    
-    // Create purchase
-    const purchase = {
-      id: purchaseId,
-      date: purchaseDate,
-      lotNumber: lotNumber,
-      quantity: bagsQuantity,
-      agent: "AR Agent",
-      agentId: arAgentId,
-      party: "AR Agent",
-      partyId: arAgentId,
-      location: "Mumbai",
-      netWeight: totalWeight,
-      rate: ratePerKg,
-      transporter: "SUDHA",
-      transporterId: sudhaTransporterId,
-      transportRate: transportRatePerKg,
-      transportCost: transportCost,
-      totalAmount: totalAmountBeforeTransport,
-      expenses: 0,
-      totalAfterExpenses: totalPurchaseAmount,
-      ratePerKgAfterExpenses: totalPurchaseAmount / totalWeight,
-      notes: "Purchase of lot AB/6, 300 KGS from AR Agent via SUDHA transporter"
-    };
-    
-    // Add the purchase
-    addPurchase(purchase);
-    
-    // Generate unique sale ID
-    const saleId = "sale-ab6-" + Date.now().toString();
-    const saleDate = purchaseDate;
-    const saleRatePerKg = 430;
-    const saleTotalAmount = totalWeight * saleRatePerKg;
-    
-    // Create sale to MST (directly, no broker)
-    const sale = {
-      id: saleId,
-      date: saleDate,
-      lotNumber: lotNumber,
-      billNumber: "",
-      billAmount: saleTotalAmount,
-      customer: "MST",
-      customerId: "customer-mst-" + Date.now().toString(), // Creating a new customer if needed
-      broker: "",
-      brokerId: "",
-      quantity: bagsQuantity,
-      netWeight: totalWeight,
-      rate: saleRatePerKg,
-      transporter: "Self",
-      transporterId: "",
-      transportRate: 0,
-      transportCost: 0,
-      totalAmount: saleTotalAmount,
-      netAmount: saleTotalAmount,
-      amount: saleTotalAmount,
-      location: "Mumbai",
-      notes: "Sale of AB/6, 300 KGS to MST directly @430 per kg, no bill"
-    };
-    
-    // Add the sale
-    addSale(sale);
-    
-    // Refresh data and show success message
-    loadData();
-    setShowDemoSuccess(true);
-    
-    // Hide success message after 3 seconds
-    setTimeout(() => setShowDemoSuccess(false), 3000);
-    
-    toast.success("Demo transaction added successfully!");
+    try {
+      const purchaseDate = new Date().toISOString().split('T')[0];
+      const purchaseId = "purchase-ab6-" + Date.now().toString();
+      const lotNumber = "AB/6";
+      
+      const arAgentId = "agent-001"; // Assuming this is the ID of AR Agent
+      const sudhaTransporterId = "transporter-001"; // Assuming this is the ID of SUDHA transporter
+      
+      const bagsQuantity = 6;
+      const weightPerBag = 50;
+      const totalWeight = 300; // 300 KGS as specified
+      const ratePerKg = 320; // Example rate, can be adjusted
+      const transportRatePerKg = 17;
+      const transportCost = totalWeight * transportRatePerKg;
+      const totalAmountBeforeTransport = totalWeight * ratePerKg;
+      const totalPurchaseAmount = totalAmountBeforeTransport + transportCost;
+      
+      // Create purchase
+      const purchase = {
+        id: purchaseId,
+        date: purchaseDate,
+        lotNumber: lotNumber,
+        quantity: bagsQuantity,
+        agent: "AR Agent",
+        agentId: arAgentId,
+        party: "AR Agent",
+        partyId: arAgentId,
+        location: "Mumbai",
+        netWeight: totalWeight,
+        rate: ratePerKg,
+        transporter: "SUDHA",
+        transporterId: sudhaTransporterId,
+        transportRate: transportRatePerKg,
+        transportCost: transportCost,
+        totalAmount: totalAmountBeforeTransport,
+        expenses: 0,
+        totalAfterExpenses: totalPurchaseAmount,
+        ratePerKgAfterExpenses: totalPurchaseAmount / totalWeight,
+        notes: "Purchase of lot AB/6, 300 KGS from AR Agent via SUDHA transporter"
+      };
+      
+      // Add the purchase
+      addPurchase(purchase);
+      
+      // Generate unique sale ID
+      const saleId = "sale-ab6-" + Date.now().toString();
+      const saleDate = purchaseDate;
+      const saleRatePerKg = 430;
+      const saleTotalAmount = totalWeight * saleRatePerKg;
+      
+      // Create sale to MST (directly, no broker)
+      const sale = {
+        id: saleId,
+        date: saleDate,
+        lotNumber: lotNumber,
+        billNumber: "",
+        billAmount: saleTotalAmount,
+        customer: "MST",
+        customerId: "customer-mst-" + Date.now().toString(), // Creating a new customer if needed
+        broker: "",
+        brokerId: "",
+        quantity: bagsQuantity,
+        netWeight: totalWeight,
+        rate: saleRatePerKg,
+        transporter: "Self",
+        transporterId: "",
+        transportRate: 0,
+        transportCost: 0,
+        totalAmount: saleTotalAmount,
+        netAmount: saleTotalAmount,
+        amount: saleTotalAmount,
+        location: "Mumbai",
+        notes: "Sale of AB/6, 300 KGS to MST directly @430 per kg, no bill"
+      };
+      
+      // Add the sale
+      addSale(sale);
+      
+      // Refresh data and show success message
+      loadData();
+      setShowDemoSuccess(true);
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => setShowDemoSuccess(false), 3000);
+      
+      toast.success("Demo transaction added successfully!");
+    } catch (err) {
+      console.error("Error adding demo transaction:", err);
+      toast.error("Failed to add demo transaction");
+    }
   };
 
   return (
@@ -290,6 +323,9 @@ const Purchases = () => {
               <DialogContent className="w-[90vw] max-w-[900px] max-h-[90vh] overflow-hidden p-0">
                 <DialogHeader className="px-6 pt-6">
                   <DialogTitle>Add New Purchase</DialogTitle>
+                  <DialogDescription>
+                    Fill in the details to record a new purchase
+                  </DialogDescription>
                 </DialogHeader>
                 <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
                   <PurchaseForm onSubmit={handleAdd} />
@@ -306,6 +342,9 @@ const Purchases = () => {
           <DialogContent className="w-[90vw] max-w-[900px] max-h-[90vh] overflow-hidden p-0">
             <DialogHeader className="px-6 pt-6">
               <DialogTitle>Edit Purchase</DialogTitle>
+              <DialogDescription>
+                Modify the purchase details
+              </DialogDescription>
             </DialogHeader>
             <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
               {editingPurchase && <PurchaseForm onSubmit={handleUpdate} initialData={editingPurchase} />}
@@ -369,14 +408,15 @@ const Purchases = () => {
                         <TableCell>{purchase.quantity}</TableCell>
                         <TableCell>{purchase.netWeight}</TableCell>
                         <TableCell>{purchase.rate}</TableCell>
-                        <TableCell>{purchase.totalAmount.toFixed(2)}</TableCell>
-                        <TableCell>{purchase.totalAfterExpenses.toFixed(2)}</TableCell>
+                        <TableCell>{purchase.totalAmount ? purchase.totalAmount.toFixed(2) : "0.00"}</TableCell>
+                        <TableCell>{purchase.totalAfterExpenses ? purchase.totalAfterExpenses.toFixed(2) : "0.00"}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button 
                               variant="ghost" 
                               size="icon"
                               onClick={() => handleEdit(purchase)}
+                              title="Edit purchase"
                             >
                               <Edit size={16} />
                             </Button>
@@ -385,6 +425,7 @@ const Purchases = () => {
                               size="icon"
                               onClick={() => confirmDeletePurchase(purchase.id)}
                               className="text-red-500 hover:text-red-700"
+                              title="Delete purchase"
                             >
                               <Trash2 size={16} />
                             </Button>

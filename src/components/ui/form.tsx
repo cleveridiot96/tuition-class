@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
@@ -44,11 +45,11 @@ const useFormField = () => {
   const itemContext = React.useContext(FormItemContext)
   const { getFieldState, formState } = useFormContext()
 
-  const fieldState = getFieldState(fieldContext.name, formState)
-
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
   }
+
+  const fieldState = getFieldState(fieldContext.name, formState)
 
   const { id } = itemContext
 
@@ -86,8 +87,10 @@ FormItem.displayName = "FormItem"
 
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
+    optional?: boolean;
+  }
+>(({ className, children, optional, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
   return (
@@ -96,7 +99,10 @@ const FormLabel = React.forwardRef<
       className={cn(error && "text-destructive", className)}
       htmlFor={formItemId}
       {...props}
-    />
+    >
+      {children}
+      {optional && <span className="ml-1 text-muted-foreground text-xs">(Optional)</span>}
+    </Label>
   )
 })
 FormLabel.displayName = "FormLabel"
@@ -164,6 +170,32 @@ const FormMessage = React.forwardRef<
 })
 FormMessage.displayName = "FormMessage"
 
+// Extra form helper components
+const FormRow = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    columns?: number;
+  }
+>(({ className, columns = 2, children, ...props }, ref) => {
+  const columnClasses = {
+    1: "grid-cols-1",
+    2: "grid-cols-1 md:grid-cols-2",
+    3: "grid-cols-1 md:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 md:grid-cols-4",
+  }[columns as 1 | 2 | 3 | 4] || "grid-cols-1 md:grid-cols-2";
+
+  return (
+    <div 
+      ref={ref}
+      className={cn(`grid ${columnClasses} gap-4`, className)} 
+      {...props}
+    >
+      {children}
+    </div>
+  );
+});
+FormRow.displayName = "FormRow";
+
 export {
   useFormField,
   Form,
@@ -173,4 +205,5 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+  FormRow,
 }
