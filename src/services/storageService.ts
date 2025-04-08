@@ -100,10 +100,16 @@ export interface Payment {
   date: string;
   party: string;
   partyId: string;
+  partyName?: string;  // Added to match PaymentEntry
+  partyType?: string;  // Added to match PaymentEntry
   amount: number;
   paymentMethod: string;
+  paymentMode?: string; // Added to match usage in accountingService
   reference: string;
   notes: string;
+  billNumber?: string;
+  billAmount?: number;
+  referenceNumber?: string;
   isDeleted?: boolean;
 }
 
@@ -112,8 +118,10 @@ export interface Receipt {
   date: string;
   customer: string;
   customerId: string;
+  customerName?: string; // Added to match usage in accountingService
   amount: number;
   paymentMethod: string;
+  paymentMode?: string; // Added to match usage in accountingService
   reference: string;
   notes: string;
   isDeleted?: boolean;

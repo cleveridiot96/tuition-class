@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { debounce, throttle } from '@/lib/utils';
 import { 
@@ -739,10 +738,10 @@ export const refreshAccountingData = throttle((): void => {
       createDoubleEntry(
         payment.date,
         partyAccountId, // Debit Party Account
-        payment.paymentMode === 'cash' ? 'acc-cash' : 'acc-bank', // Credit Cash or Bank Account
+        payment.paymentMethod === 'cash' ? 'acc-cash' : 'acc-bank', // Credit Cash or Bank Account
         payment.amount,
         payment.reference || '',
-        `Payment to ${payment.partyName || 'party'}`,
+        `Payment to ${payment.party || 'party'}`,
         'payment',
         payment.id
       );
@@ -762,11 +761,11 @@ export const refreshAccountingData = throttle((): void => {
     if (customerAccountId && getAccountById(customerAccountId)) {
       createDoubleEntry(
         receipt.date,
-        receipt.paymentMode === 'cash' ? 'acc-cash' : 'acc-bank', // Debit Cash or Bank Account
+        receipt.paymentMethod === 'cash' ? 'acc-cash' : 'acc-bank', // Debit Cash or Bank Account
         customerAccountId, // Credit Customer Account
         receipt.amount,
         receipt.reference || '',
-        `Receipt from ${receipt.customerName || 'customer'}`,
+        `Receipt from ${receipt.customer || 'customer'}`,
         'receipt',
         receipt.id
       );
@@ -1031,4 +1030,3 @@ export const initializeAccounting = debounce((): void => {
   initializeSystemAccounts();
   refreshAccountingData();
 }, 300);
-

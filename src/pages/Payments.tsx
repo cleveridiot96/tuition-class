@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -73,31 +72,39 @@ const Payments = () => {
   const [viewMode, setViewMode] = useState<"cards" | "table">("table");
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Load payments from storage service
   useEffect(() => {
     loadPayments();
     loadAllParties();
   }, []);
 
-  // Filter payments when search term or selected party changes
   useEffect(() => {
     filterPayments();
   }, [searchTerm, selectedPartyId, payments]);
 
   const loadPayments = () => {
     const storedPayments = getPayments() || [];
-    setPayments(storedPayments);
+    const convertedPayments = storedPayments.map(payment => ({
+      id: payment.id,
+      date: payment.date,
+      partyName: payment.party,
+      partyType: payment.partyType || "supplier",
+      amount: payment.amount,
+      paymentMode: payment.paymentMethod,
+      billNumber: payment.billNumber,
+      billAmount: payment.billAmount,
+      referenceNumber: payment.reference,
+      notes: payment.notes
+    }));
+    setPayments(convertedPayments);
   };
 
   const loadAllParties = () => {
-    // Get all parties from different categories
     const agents = getAgents().map(a => ({ id: a.id, name: a.name, type: "agent" }));
     const suppliers = getSuppliers().map(s => ({ id: s.id, name: s.name, type: "supplier" }));
     const customers = getCustomers().map(c => ({ id: c.id, name: c.name, type: "customer" }));
     const brokers = getBrokers().map(b => ({ id: b.id, name: b.name, type: "broker" }));
     const transporters = getTransporters().map(t => ({ id: t.id, name: t.name, type: "transporter" }));
     
-    // Combine all parties
     const allParties = [...agents, ...suppliers, ...customers, ...brokers, ...transporters];
     setParties(allParties);
   };
@@ -105,7 +112,6 @@ const Payments = () => {
   const filterPayments = () => {
     let filtered = [...payments];
     
-    // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(payment => 
@@ -116,7 +122,6 @@ const Payments = () => {
       );
     }
     
-    // Filter by selected party
     if (selectedPartyId) {
       const selectedParty = parties.find(p => p.id === selectedPartyId);
       if (selectedParty) {
@@ -169,20 +174,17 @@ const Payments = () => {
     loadPayments();
   };
 
-  // Format payment mode text with proper capitalization
   const formatPaymentMode = (mode: string | undefined): string => {
     if (!mode || typeof mode !== 'string') return 'Unknown';
     return mode.charAt(0).toUpperCase() + mode.slice(1);
   };
 
-  // Get CSS class for payment mode badge
   const getPaymentModeClass = (mode: string | undefined): string => {
     return `px-3 py-1 rounded-full ${
       mode === "cash" ? "bg-ag-orange text-white" : "bg-ag-green text-white"
     }`;
   };
 
-  // Handle printing
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: "Payments_Report",
@@ -194,16 +196,13 @@ const Payments = () => {
     },
   });
 
-  // Handle exporting to Excel
   const handleExportExcel = () => {
-    // Create CSV content
     let csvContent = "ID,Date,Party Name,Party Type,Amount,Payment Mode,Bill Number,Bill Amount,Reference,Notes\n";
     
     filteredPayments.forEach(payment => {
       csvContent += `${payment.id},${payment.date},${payment.partyName},${payment.partyType},${payment.amount},${payment.paymentMode},"${payment.billNumber || ''}",${payment.billAmount || 0},"${payment.referenceNumber || ''}","${payment.notes || ''}"\n`;
     });
     
-    // Create download link
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -219,7 +218,6 @@ const Payments = () => {
     });
   };
 
-  // Calculate totals for summary
   const calculateTotals = () => {
     const total = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
     return {

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -70,7 +69,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
   const [brokerageAmount, setBrokerageAmount] = useState<number>(0);
   const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
   
-  // Set default values based on initialData
   const defaultValues = initialData ? {
     date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
     lotNumber: initialData.lotNumber || "",
@@ -112,7 +110,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     defaultValues: defaultValues
   });
 
-  // Load data
   useEffect(() => {
     setAgents(getAgents());
     setSuppliers(getSuppliers());
@@ -124,7 +121,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     }
   }, [initialData]);
 
-  // Set initial calculation values
   useEffect(() => {
     if (initialData) {
       setTotalAmount(initialData.totalAmount || 0);
@@ -135,7 +131,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     }
   }, [initialData]);
 
-  // Handle calculation when values change
   useEffect(() => {
     const values = form.getValues();
     const netWeight = values.netWeight || 0;
@@ -143,15 +138,12 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     const expenses = values.expenses || 0;
     const transportRate = values.transportRate || 0;
     
-    // Calculate transport cost based on weight and rate
     const calculatedTransportCost = netWeight * transportRate;
     setTransportCost(calculatedTransportCost);
     
-    // Calculate total
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
-    // Calculate brokerage
     let calculatedBrokerageAmount = 0;
     if (showBrokerage && values.brokerId) {
       const brokerageValue = values.brokerageValue || 0;
@@ -163,23 +155,17 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     }
     setBrokerageAmount(calculatedBrokerageAmount);
     
-    // Calculate total after expenses including transport cost and brokerage
     const calculatedTotalAfterExpenses = calculatedTotalAmount + expenses + calculatedTransportCost + calculatedBrokerageAmount;
     setTotalAfterExpenses(calculatedTotalAfterExpenses);
     
-    // Calculate rate per kg after expenses
     const calculatedRatePerKg = netWeight > 0 ? calculatedTotalAfterExpenses / netWeight : 0;
     setRatePerKgAfterExpenses(calculatedRatePerKg);
   }, [form.watch(), showBrokerage]);
 
   const handleFormSubmit = (data: FormData) => {
-    // Check for duplicate lot number
-    const duplicateLot = checkDuplicateLot(
-      data.lotNumber,
-      initialData ? initialData.id : undefined
-    );
+    const isDuplicateLot = checkDuplicateLot(data.lotNumber);
 
-    if (duplicateLot && !initialData) {
+    if (isDuplicateLot && !initialData) {
       form.setError("lotNumber", {
         type: "manual",
         message: "This lot number already exists"
@@ -187,7 +173,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       return;
     }
     
-    // Format data for submission
     const submitData = {
       ...data,
       agent: data.agentId ? agents.find(a => a.id === data.agentId)?.name || "None" : "None",
@@ -203,7 +188,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       id: initialData?.id || Date.now().toString()
     };
     
-    // Add supplier as customer if they don't exist yet
     if (data.party && !suppliers.some(s => s.name === data.party)) {
       const newCustomer = {
         id: Date.now().toString(),
@@ -214,7 +198,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       addCustomer(newCustomer);
     }
     
-    // Submit the data
     onSubmit(submitData);
   };
 
