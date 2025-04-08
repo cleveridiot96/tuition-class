@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -937,7 +936,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
             <DialogTitle>Similar Customer Name Found</DialogTitle>
             <DialogDescription>
               <span className="block mt-2">क्या आप "{similarCustomer?.name}" दर्ज करना चाहते हैं?</span>
-              <span className="block mt-1">آپ نے اسی طرح کا نام درج کیا ہے: "{enteredCustomerName}"</span>
+              <span className="block mt-1">आप نے اسی طرح کا نام درج کیا ہے: "{enteredCustomerName}"</span>
               <span className="block mt-2">Did you mean "{similarCustomer?.name}"?</span>
               <span className="block mt-1">You've entered a similar name: "{enteredCustomerName}"</span>
             </DialogDescription>

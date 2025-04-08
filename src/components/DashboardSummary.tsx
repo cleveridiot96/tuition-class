@@ -17,6 +17,11 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
   const [todayCash, setTodayCash] = useState({ cashIn: 0, cashOut: 0 });
   const [stockValue, setStockValue] = useState(0);
   const [cashBalance, setCashBalance] = useState(0);
+  const [stockWeights, setStockWeights] = useState({
+    mumbai: 0,
+    chiplun: 0,
+    sawantwadi: 0
+  });
 
   useEffect(() => {
     try {
@@ -39,10 +44,18 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
       // Get total stock value
       const totalStockValue = getTotalStockValue();
       setStockValue(totalStockValue);
+      
+      // Estimate weights based on stock quantities
+      // Assuming average bag weight of 50 kg
+      setStockWeights({
+        mumbai: summaryData.stock.mumbai * 50,
+        chiplun: summaryData.stock.chiplun * 50,
+        sawantwadi: summaryData.stock.sawantwadi * 50
+      });
     } catch (error) {
       console.error("Error loading dashboard summary data:", error);
     }
-  }, []);
+  }, [summaryData.stock]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -142,7 +155,7 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
         </CardContent>
       </Card>
       
-      {/* Second row with receivables and payables */}
+      {/* First row with receivables and payables */}
       <Card className="bg-white md:col-span-2">
         <CardContent className="p-4 relative">
           <h3 className="text-lg font-medium">Receivables & Payables</h3>
@@ -166,29 +179,38 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
       
       <Card className="bg-white md:col-span-2">
         <CardContent className="p-4 relative">
-          <h3 className="text-lg font-medium">Business Statistics</h3>
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <h3 className="text-lg font-medium">Stock Summary</h3>
+          <div className="grid grid-cols-3 gap-4 mt-4">
             <div>
-              <div className="text-sm text-gray-500">Profit Margin</div>
-              <div className="text-2xl font-bold text-green-600">
-                {summaryData.purchases.amount > 0 
-                  ? `${(((summaryData.sales.amount - summaryData.purchases.amount) / summaryData.purchases.amount) * 100).toFixed(1)}%`
-                  : '0%'
-                }
+              <div className="text-sm text-gray-500">Mumbai</div>
+              <div className="text-xl font-bold text-amber-600">
+                {summaryData.stock.mumbai} bags
+              </div>
+              <div className="text-sm font-semibold mt-1">
+                ~{stockWeights.mumbai.toLocaleString()} kg
               </div>
             </div>
             <div>
-              <div className="text-sm text-gray-500">Avg. Purchase Rate</div>
-              <div className="text-2xl font-bold">
-                {summaryData.purchases.kgs > 0 
-                  ? `₹${(summaryData.purchases.amount / summaryData.purchases.kgs).toFixed(2)}/kg`
-                  : '₹0/kg'
-                }
+              <div className="text-sm text-gray-500">Chiplun</div>
+              <div className="text-xl font-bold text-amber-600">
+                {summaryData.stock.chiplun} bags
+              </div>
+              <div className="text-sm font-semibold mt-1">
+                ~{stockWeights.chiplun.toLocaleString()} kg
+              </div>
+            </div>
+            <div>
+              <div className="text-sm text-gray-500">Sawantwadi</div>
+              <div className="text-xl font-bold text-amber-600">
+                {summaryData.stock.sawantwadi} bags
+              </div>
+              <div className="text-sm font-semibold mt-1">
+                ~{stockWeights.sawantwadi.toLocaleString()} kg
               </div>
             </div>
           </div>
           <div className="absolute top-4 right-4">
-            <svg className="w-8 h-8 text-green-400 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+            <svg className="w-8 h-8 text-amber-400 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
           </div>
         </CardContent>
       </Card>
