@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,7 +79,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const [isAddBrokerOpen, setIsAddBrokerOpen] = useState(false);
   const [selectedLotStock, setSelectedLotStock] = useState<number>(0);
   
-  // Set default values based on initialData
   const defaultValues = initialData ? {
     date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
     lotNumber: initialData.lotNumber || "",
@@ -108,7 +106,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     transportRate: 0,
     notes: "",
   };
-  
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultValues
@@ -138,12 +136,10 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const refreshData = () => {
     setIsRefreshing(true);
     
-    // Get all inventory with quantity > 0
     const currentInventory = getInventory().filter(item => !item.isDeleted && item.quantity > 0);
     console.log("Available inventory:", currentInventory);
     setInventory(currentInventory);
     
-    // Get both customers and brokers for the customer dropdown
     const allCustomers = getCustomers();
     console.log("Available customers:", allCustomers);
     setCustomers(allCustomers);
@@ -156,7 +152,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     console.log("Available transporters:", allTransporters);
     setTransporters(allTransporters);
     
-    // Check if there's a selected lot and update its stock display
     const lotNumber = form.getValues("lotNumber");
     if (lotNumber) {
       const selectedLot = currentInventory.find(item => item.lotNumber === lotNumber);
@@ -174,7 +169,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       form.setValue("quantity", selectedLot.quantity);
       form.setValue("netWeight", selectedLot.netWeight || 0);
       
-      // If rate is in the inventory item, use it as default
       if (selectedLot.rate) {
         form.setValue("rate", selectedLot.rate);
       }
@@ -196,13 +190,11 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
-    // Calculate net amount
     const brokerId = values.brokerId;
-    const brokerage = brokerId ? calculatedTotalAmount * 0.01 : 0; // 1% brokerage if broker is selected
+    const brokerage = brokerId ? calculatedTotalAmount * 0.01 : 0;
     setNetAmount(calculatedTotalAmount - calculatedTransportCost - brokerage);
   }, [form.watch()]);
 
-  // Set initial calculation values if we have initialData
   useEffect(() => {
     if (initialData) {
       setTotalAmount(initialData.totalAmount || 0);
@@ -223,9 +215,8 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       customerName = brokers.find(b => b.id === customerId)?.name || "";
     }
     
-    // Calculate brokerage if a broker is selected
     const brokerName = data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "";
-    const brokerage = data.brokerId ? totalAmount * 0.01 : 0; // 1% brokerage
+    const brokerage = data.brokerId ? totalAmount * 0.01 : 0;
     
     const submitData = {
       ...data,
@@ -256,7 +247,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       refreshData();
       setIsAddCustomerOpen(false);
       
-      // Set the newly added customer as selected
       form.setValue("customerId", newCustomer.id);
       setFormChanged(true);
     } else {
@@ -278,7 +268,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       refreshData();
       setIsAddBrokerOpen(false);
       
-      // Set the newly added broker as selected
       form.setValue("brokerId", newBroker.id);
       setFormChanged(true);
     } else {
@@ -296,7 +285,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   
   const handlePrint = () => {
     if (onPrint && formChanged) {
-      // Save first
       handleSave();
     } else if (onPrint) {
       const data = {
@@ -310,7 +298,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     }
   };
 
-  // Combine customers and brokers for the customer dropdown
   const combinedCustomers = [
     ...customers.map(c => ({
       id: c.id,
