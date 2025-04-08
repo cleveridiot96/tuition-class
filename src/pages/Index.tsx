@@ -3,10 +3,10 @@ import React, { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
-import { Button } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { seedInitialData, getPurchases, getInventory, getSales, clearAllData, exportDataBackup } from "@/services/storageService";
+import { seedInitialData, getPurchases, getInventory, getSales, clearAllData, exportDataBackup, getPayments } from "@/services/storageService";
 import { format, parseISO } from "date-fns";
 import BackupRestoreControls from "@/components/BackupRestoreControls";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
@@ -49,12 +49,15 @@ const Index = () => {
     const sales = getSales() || [];
     
     const inventory = getInventory() || [];
-    const mumbaiStock = inventory.filter(item => item.location === "Mumbai");
-    const chiplunStock = inventory.filter(item => item.location === "Chiplun");
-    const sawantwadiStock = inventory.filter(item => item.location === "Sawantwadi");
+    // Filter active inventory items (not deleted)
+    const activeInventory = inventory.filter(item => !item.isDeleted);
+    const mumbaiStock = activeInventory.filter(item => item.location === "Mumbai");
+    const chiplunStock = activeInventory.filter(item => item.location === "Chiplun");
+    const sawantwadiStock = activeInventory.filter(item => item.location === "Sawantwadi");
     
     console.log("Purchases data loaded:", purchases);
     console.log("Sales data loaded:", sales);
+    console.log("Active inventory:", activeInventory);
     
     // Calculate profits by transaction
     const transactionProfits: ProfitData[] = sales.map(sale => {
@@ -111,11 +114,14 @@ const Index = () => {
     setProfitByMonth(monthlyProfits);
     setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
     
+    // Only consider active purchases (not deleted)
+    const activePurchases = purchases.filter(p => !p.isDeleted);
+    
     setSummaryData({
       purchases: {
-        amount: purchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
-        bags: purchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
-        kgs: purchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
+        amount: activePurchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
+        bags: activePurchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
+        kgs: activePurchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
       },
       sales: {
         amount: sales.reduce((sum, s) => sum + (s.totalAmount || 0), 0),
