@@ -23,6 +23,13 @@ const SelectTrigger = React.forwardRef<
       className
     )}
     {...props}
+    onClick={(e) => {
+      // Prevent bubbling
+      e.stopPropagation();
+      if (props.onClick) {
+        props.onClick(e);
+      }
+    }}
   >
     {children}
     <SelectPrimitive.Icon asChild>
@@ -82,7 +89,8 @@ const SelectContent = React.forwardRef<
   const safeChildren = React.useMemo(() => {
     try {
       // Only proceed with filtering if we have valid children
-      return React.Children.toArray(children).filter(child => !!child);
+      const childArray = React.Children.toArray(children);
+      return childArray && childArray.length > 0 ? childArray : [];
     } catch (error) {
       console.error("Error processing select children:", error);
       return [];
@@ -152,10 +160,16 @@ const SelectContent = React.forwardRef<
         onCloseAutoFocus={(e) => {
           // Prevent focus issues that might cause re-renders
           e.preventDefault();
+          if (props.onCloseAutoFocus) {
+            props.onCloseAutoFocus(e);
+          }
         }}
         onEscapeKeyDown={(e) => {
           // Prevent issues with escape key
           e.stopPropagation();
+          if (props.onEscapeKeyDown) {
+            props.onEscapeKeyDown(e);
+          }
         }}
         {...props}
       >
@@ -190,7 +204,7 @@ const SelectContent = React.forwardRef<
               "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
           )}
         >
-          {filteredChildren && filteredChildren.length > 0 ? filteredChildren : (
+          {Array.isArray(filteredChildren) && filteredChildren.length > 0 ? filteredChildren : (
             <div className="text-center py-2 text-sm text-muted-foreground">
               {searchable && searchQuery ? "No results found" : "No options available"}
             </div>

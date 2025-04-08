@@ -176,7 +176,9 @@ export function Combobox({
             className={cn("w-full justify-between", className)}
             disabled={disabled}
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation(); // Prevent event bubbling
+              if (!disabled) setOpen(!open);
             }}
           >
             {selectedValue ? displayText : placeholder}

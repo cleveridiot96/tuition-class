@@ -93,8 +93,17 @@ const CommandGroup = React.forwardRef<
   // Safety check for children to prevent "undefined is not iterable" errors
   const safeChildren = React.useMemo(() => {
     try {
-      // Return children if it's valid, otherwise return null
-      return children !== undefined && children !== null ? children : null;
+      // Ensure children is an array or null
+      if (children === undefined || children === null) {
+        return null;
+      }
+      
+      // If it's already an array-like object, make sure it's properly handled
+      if (Array.isArray(children) || React.Children.count(children) > 0) {
+        return children;
+      }
+      
+      return null;
     } catch (error) {
       console.error("Error in CommandGroup with children:", error);
       return null;
