@@ -15,7 +15,6 @@ const Agents = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Omit<Agent, "id" | "balance">>({
     name: "",
-    contactNumber: "",
     address: ""
   });
 
@@ -54,7 +53,6 @@ const Agents = () => {
     
     setFormData({
       name: "",
-      contactNumber: "",
       address: ""
     });
     
@@ -87,10 +85,6 @@ const Agents = () => {
                     <h3 className="text-2xl font-bold">{agent.name}</h3>
                   </div>
                   <div className="grid grid-cols-1 gap-2">
-                    <div>
-                      <p className="font-semibold">फोन नंबर (Phone):</p>
-                      <p>{agent.contactNumber}</p>
-                    </div>
                     <div>
                       <p className="font-semibold">पता (Address):</p>
                       <p>{agent.address}</p>
@@ -141,19 +135,6 @@ const Agents = () => {
                     name="name"
                     placeholder="Agent name"
                     value={formData.name}
-                    onChange={handleChange}
-                    className="text-lg p-6"
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <Label htmlFor="contactNumber" className="form-label">फोन नंबर (Contact Number)</Label>
-                  <Input
-                    id="contactNumber"
-                    name="contactNumber"
-                    placeholder="Phone number"
-                    value={formData.contactNumber}
                     onChange={handleChange}
                     className="text-lg p-6"
                     required

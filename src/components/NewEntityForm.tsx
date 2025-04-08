@@ -47,7 +47,7 @@ const NewEntityForm = ({ onSubmit, fields, initialData }: NewEntityFormProps) =>
       }
       
       return { ...acc, [field.name]: validator };
-    }, {})
+    }, {} as Record<string, any>)
   );
 
   // Get default values from initialData or empty values
@@ -61,7 +61,7 @@ const NewEntityForm = ({ onSubmit, fields, initialData }: NewEntityFormProps) =>
     }
     
     return { ...acc, [field.name]: defaultValue };
-  }, {});
+  }, {} as Record<string, any>);
 
   const form = useForm({
     resolver: zodResolver(formSchema),

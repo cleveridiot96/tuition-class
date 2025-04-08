@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -81,7 +80,6 @@ const App = () => {
     addAgent({
       id: arAgentId,
       name: "AR Agent",
-      contactNumber: "9876543210",
       address: "Mumbai",
       balance: 0
     });
@@ -89,7 +87,6 @@ const App = () => {
     addTransporter({
       id: sudhaTransporterId,
       name: "SUDHA",
-      contactNumber: "8765432109",
       address: "Mumbai",
       balance: 0
     });
@@ -97,7 +94,6 @@ const App = () => {
     addCustomer({
       id: kanayaCustomerId,
       name: "Kanaiya",
-      contactNumber: "7654321098",
       address: "Mumbai",
       balance: 0
     });
@@ -105,7 +101,6 @@ const App = () => {
     addBroker({
       id: anilBrokerId,
       name: "Anil",
-      contactNumber: "6543210987",
       address: "Mumbai",
       commissionRate: 1,
       balance: 0
@@ -114,7 +109,6 @@ const App = () => {
     addCustomer({
       id: rbSonsCustomerId,
       name: "RB Sons",
-      contactNumber: "5432109876",
       address: "Mumbai",
       balance: 0
     });
@@ -122,7 +116,6 @@ const App = () => {
     addBroker({
       id: lbBrokerId,
       name: "LB",
-      contactNumber: "4321098765",
       address: "Mumbai",
       commissionRate: 1,
       balance: 0

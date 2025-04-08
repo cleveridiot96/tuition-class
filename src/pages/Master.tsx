@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
@@ -169,7 +168,6 @@ const Master = () => {
       address: data.address,
     };
 
-    // Add special fields for brokers
     if (currentEntityType === 'broker' && data.commissionRate !== undefined) {
       updatedEntity.commissionRate = data.commissionRate;
     }
