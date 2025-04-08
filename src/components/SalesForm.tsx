@@ -389,7 +389,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="none">None</SelectItem>
                       <SelectItem value="Mumbai">Mumbai</SelectItem>
                       <SelectItem value="Chiplun">Chiplun</SelectItem>
                       <SelectItem value="Sawantwadi">Sawantwadi</SelectItem>
