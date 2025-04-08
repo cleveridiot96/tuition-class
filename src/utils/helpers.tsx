@@ -110,3 +110,50 @@ export const getSaleIdFromUrl = (): string | null => {
   const searchParams = new URLSearchParams(window.location.search);
   return searchParams.get('edit');
 };
+
+/**
+ * Format a number with indian thousands separator
+ * @param num Number to format
+ * @returns Formatted string with thousands separators
+ */
+export const formatNumber = (num: number): string => {
+  return num.toLocaleString('en-IN');
+};
+
+/**
+ * Format a date for database consistency (YYYY-MM-DD)
+ * @param date Date object or string to format
+ * @returns Formatted date string
+ */
+export const formatDateForDB = (date: Date | string): string => {
+  if (typeof date === 'string') {
+    try {
+      date = parseISO(date);
+    } catch (e) {
+      console.error("Error parsing date string:", e);
+      return '';
+    }
+  }
+  return format(date, 'yyyy-MM-dd');
+};
+
+/**
+ * Helper to determine balance type display
+ * @param balance Balance amount
+ * @param balanceType Balance type (DR/CR)
+ * @returns Formatted balance string
+ */
+export const formatBalance = (balance: number, balanceType: 'DR' | 'CR'): string => {
+  return `${formatCurrency(balance)} ${balanceType}`;
+};
+
+/**
+ * Helper to determine if value is positive
+ * @param value Number to check
+ * @returns CSS class for text color
+ */
+export const getValueColor = (value: number): string => {
+  if (value > 0) return 'text-green-600';
+  if (value < 0) return 'text-red-600';
+  return '';
+};
