@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,21 +23,37 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
 import {
   getAgents,
   getSuppliers,
   getTransporters,
   getBrokers,
   addCustomer,
-  checkDuplicateLot
+  checkDuplicateLot,
+  getPurchases,
+  getLocations,
+  addBroker,
+  addTransporter
 } from "@/services/storageService";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Combobox } from "@/components/ui/combobox";
+import { toast } from "sonner";
+import stringSimilarity from "string-similarity";
+import { Plus } from "lucide-react";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   lotNumber: z.string().min(1, "Lot number is required"),
   quantity: z.coerce.number().min(1, "Quantity is required"),
-  agentId: z.string().optional(),
+  brokerId: z.string().optional(),
   party: z.string().min(1, "Party is required"),
   location: z.string().min(1, "Location is required"),
   netWeight: z.coerce.number().min(1, "Net weight is required"),
@@ -44,7 +61,6 @@ const formSchema = z.object({
   transporterId: z.string().min(1, "Transporter is required"),
   transportRate: z.coerce.number().min(0, "Transport rate must be valid"),
   expenses: z.coerce.number().min(0, "Expenses must be valid"),
-  brokerId: z.string().optional(),
   brokerageType: z.enum(["percentage", "fixed"]).optional(),
   brokerageValue: z.coerce.number().min(0, "Brokerage value must be valid").optional(),
   notes: z.string().optional(),
@@ -62,18 +78,34 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
   const [brokers, setBrokers] = useState<any[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [totalAfterExpenses, setTotalAfterExpenses] = useState<number>(0);
   const [ratePerKgAfterExpenses, setRatePerKgAfterExpenses] = useState<number>(0);
   const [transportCost, setTransportCost] = useState<number>(0);
   const [brokerageAmount, setBrokerageAmount] = useState<number>(0);
   const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
+  const [showAddPartyDialog, setShowAddPartyDialog] = useState<boolean>(false);
+  const [showAddBrokerDialog, setShowAddBrokerDialog] = useState<boolean>(false);
+  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState<boolean>(false);
+  const [newPartyName, setNewPartyName] = useState<string>("");
+  const [newPartyAddress, setNewPartyAddress] = useState<string>("");
+  const [newBrokerName, setNewBrokerName] = useState<string>("");
+  const [newBrokerAddress, setNewBrokerAddress] = useState<string>("");
+  const [newBrokerRate, setNewBrokerRate] = useState<number>(1);
+  const [newTransporterName, setNewTransporterName] = useState<string>("");
+  const [newTransporterAddress, setNewTransporterAddress] = useState<string>("");
+  const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
+  const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
+  const [showSimilarPartyDialog, setShowSimilarPartyDialog] = useState<boolean>(false);
+  const [similarParty, setSimilarParty] = useState<any>(null);
+  const [enteredPartyName, setEnteredPartyName] = useState<string>("");
   
   const defaultValues = initialData ? {
     date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
     lotNumber: initialData.lotNumber || "",
     quantity: initialData.quantity || 0,
-    agentId: initialData.agentId || "",
+    brokerId: initialData.brokerId || "",
     party: initialData.party || "",
     location: initialData.location || "",
     netWeight: initialData.netWeight || 0,
@@ -81,7 +113,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     transporterId: initialData.transporterId || "",
     transportRate: initialData.transportRate || 0,
     expenses: initialData.expenses || 0,
-    brokerId: initialData.brokerId || "",
     brokerageType: initialData.brokerageType || "percentage",
     brokerageValue: initialData.brokerageType === "percentage" ? 
       (initialData.brokerageAmount ? (initialData.brokerageAmount / initialData.totalAmount * 100) : 1) : 
@@ -91,7 +122,7 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     date: format(new Date(), 'yyyy-MM-dd'),
     lotNumber: "",
     quantity: 0,
-    agentId: "",
+    brokerId: "",
     party: "",
     location: "",
     netWeight: 0,
@@ -99,7 +130,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     transporterId: "",
     transportRate: 0,
     expenses: 0,
-    brokerId: "",
     brokerageType: "percentage",
     brokerageValue: 1,
     notes: "",
@@ -111,15 +141,20 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
   });
 
   useEffect(() => {
-    setAgents(getAgents());
-    setSuppliers(getSuppliers());
-    setTransporters(getTransporters());
-    setBrokers(getBrokers());
+    loadData();
     
     if (initialData?.brokerId) {
       setShowBrokerage(true);
     }
   }, [initialData]);
+
+  const loadData = () => {
+    setAgents(getAgents());
+    setSuppliers(getSuppliers());
+    setTransporters(getTransporters());
+    setBrokers(getBrokers());
+    setLocations(getLocations());
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -162,32 +197,42 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     setRatePerKgAfterExpenses(calculatedRatePerKg);
   }, [form.watch(), showBrokerage]);
 
+  const checkSimilarPartyNames = (name: string) => {
+    if (!name || name.trim().length < 2) return false;
+
+    const normalizedName = name.toLowerCase().trim();
+    const allParties = [...suppliers, ...agents];
+    
+    for (const party of allParties) {
+      const partyName = party.name.toLowerCase();
+      const similarity = stringSimilarity.compareTwoStrings(normalizedName, partyName);
+      
+      // Check for high similarity but not exact match
+      if (similarity > 0.7 && similarity < 1) {
+        setSimilarParty(party);
+        setEnteredPartyName(name);
+        setShowSimilarPartyDialog(true);
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
   const handleFormSubmit = (data: FormData) => {
+    // Check for duplicate lot number
     const isDuplicateLot = checkDuplicateLot(data.lotNumber);
 
     if (isDuplicateLot && !initialData) {
-      form.setError("lotNumber", {
-        type: "manual",
-        message: "This lot number already exists"
-      });
-      return;
+      const existingPurchase = getPurchases().find(p => p.lotNumber === data.lotNumber && !p.isDeleted);
+      if (existingPurchase) {
+        setDuplicateLotInfo(existingPurchase);
+        setShowDuplicateLotDialog(true);
+        return;
+      }
     }
     
-    const submitData = {
-      ...data,
-      agent: data.agentId ? agents.find(a => a.id === data.agentId)?.name || "None" : "None",
-      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
-      totalAmount,
-      transportCost,
-      expenses: data.expenses,
-      broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
-      brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
-      brokerageType: data.brokerageType || "percentage",
-      totalAfterExpenses,
-      ratePerKgAfterExpenses,
-      id: initialData?.id || Date.now().toString()
-    };
-    
+    // If we're adding a new party
     if (data.party && !suppliers.some(s => s.name === data.party)) {
       const newCustomer = {
         id: Date.now().toString(),
@@ -198,8 +243,129 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       addCustomer(newCustomer);
     }
     
+    submitFormData(data);
+  };
+
+  const submitFormData = (data: FormData) => {
+    const submitData = {
+      ...data,
+      broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
+      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
+      totalAmount,
+      transportCost,
+      expenses: data.expenses,
+      brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
+      brokerageType: data.brokerageType || "percentage",
+      totalAfterExpenses,
+      ratePerKgAfterExpenses,
+      id: initialData?.id || Date.now().toString()
+    };
+    
     onSubmit(submitData);
   };
+
+  const continueDespiteDuplicate = () => {
+    setShowDuplicateLotDialog(false);
+    const data = form.getValues();
+    submitFormData(data);
+  };
+
+  const handleAddNewParty = () => {
+    if (!newPartyName.trim()) {
+      toast.error("Party name is required");
+      return;
+    }
+    
+    const newParty = {
+      id: `party-${Date.now()}`,
+      name: newPartyName.trim(),
+      address: newPartyAddress.trim(),
+      balance: 0
+    };
+    
+    addCustomer(newParty);
+    loadData();
+    form.setValue("party", newPartyName.trim());
+    setShowAddPartyDialog(false);
+    setNewPartyName("");
+    setNewPartyAddress("");
+    toast.success("New party added successfully");
+  };
+
+  const handleAddNewBroker = () => {
+    if (!newBrokerName.trim()) {
+      toast.error("Broker name is required");
+      return;
+    }
+    
+    const newBroker = {
+      id: `broker-${Date.now()}`,
+      name: newBrokerName.trim(),
+      address: newBrokerAddress.trim(),
+      commissionRate: newBrokerRate,
+      balance: 0
+    };
+    
+    addBroker(newBroker);
+    loadData();
+    form.setValue("brokerId", newBroker.id);
+    setShowBrokerage(true);
+    setShowAddBrokerDialog(false);
+    setNewBrokerName("");
+    setNewBrokerAddress("");
+    setNewBrokerRate(1);
+    toast.success("New broker added successfully");
+  };
+
+  const handleAddNewTransporter = () => {
+    if (!newTransporterName.trim()) {
+      toast.error("Transporter name is required");
+      return;
+    }
+    
+    const newTransporter = {
+      id: `transporter-${Date.now()}`,
+      name: newTransporterName.trim(),
+      address: newTransporterAddress.trim(),
+      balance: 0
+    };
+    
+    addTransporter(newTransporter);
+    loadData();
+    form.setValue("transporterId", newTransporter.id);
+    setShowAddTransporterDialog(false);
+    setNewTransporterName("");
+    setNewTransporterAddress("");
+    toast.success("New transporter added successfully");
+  };
+
+  const useSuggestedParty = () => {
+    if (similarParty) {
+      form.setValue("party", similarParty.name);
+    }
+    setShowSimilarPartyDialog(false);
+  };
+
+  // Transform data for combobox
+  const supplierOptions = suppliers.map(supplier => ({
+    value: supplier.name,
+    label: supplier.name
+  }));
+
+  const brokerOptions = brokers.map(broker => ({
+    value: broker.id,
+    label: broker.name
+  }));
+
+  const transporterOptions = transporters.map(transporter => ({
+    value: transporter.id,
+    label: transporter.name
+  }));
+
+  const locationOptions = locations.map(location => ({
+    value: location,
+    label: location
+  }));
 
   return (
     <Card className="p-6">
@@ -222,10 +388,78 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
             
             <FormField
               control={form.control}
+              name="party"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Party</FormLabel>
+                  <div className="flex gap-2 items-center">
+                    <FormControl className="flex-1">
+                      <Combobox 
+                        options={supplierOptions}
+                        {...field}
+                        onInputChange={(value) => {
+                          field.onChange(value);
+                          checkSimilarPartyNames(value);
+                        }}
+                        placeholder="Select or type party name"
+                        className="flex-1"
+                      />
+                    </FormControl>
+                    <Button 
+                      type="button" 
+                      size="icon" 
+                      variant="outline"
+                      onClick={() => setShowAddPartyDialog(true)}
+                      title="Add new party"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="brokerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Broker (Optional)</FormLabel>
+                  <div className="flex gap-2 items-center">
+                    <FormControl className="flex-1">
+                      <Combobox 
+                        options={brokerOptions}
+                        {...field}
+                        onSelect={(value) => {
+                          field.onChange(value);
+                          setShowBrokerage(!!value);
+                        }}
+                        placeholder="Select broker (optional)"
+                        className="flex-1"
+                      />
+                    </FormControl>
+                    <Button 
+                      type="button" 
+                      size="icon" 
+                      variant="outline"
+                      onClick={() => setShowAddBrokerDialog(true)}
+                      title="Add new broker"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="lotNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Lot Number</FormLabel>
+                  <FormLabel>Lot Number (Vakkal)</FormLabel>
                   <FormControl>
                     <Input {...field} placeholder="Enter lot number" />
                   </FormControl>
@@ -243,69 +477,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
                   <FormControl>
                     <Input type="number" {...field} placeholder="0" />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="agentId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Agent (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || "no-agent"}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select agent (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="no-agent">No Agent</SelectItem>
-                      {agents.map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="party"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Party</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter party name" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Location</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select location" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="Mumbai">Mumbai</SelectItem>
-                      <SelectItem value="Chiplun">Chiplun</SelectItem>
-                      <SelectItem value="Sawantwadi">Sawantwadi</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -341,24 +512,47 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
             
             <FormField
               control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <FormControl>
+                    <Combobox 
+                      options={locationOptions}
+                      {...field}
+                      placeholder="Select location"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="transporterId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Transporter</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select transporter" />
-                      </SelectTrigger>
+                  <div className="flex gap-2 items-center">
+                    <FormControl className="flex-1">
+                      <Combobox 
+                        options={transporterOptions}
+                        {...field}
+                        placeholder="Select transporter"
+                        className="flex-1"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {transporters.map((transporter) => (
-                        <SelectItem key={transporter.id} value={transporter.id}>
-                          {transporter.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Button 
+                      type="button" 
+                      size="icon" 
+                      variant="outline"
+                      onClick={() => setShowAddTransporterDialog(true)}
+                      title="Add new transporter"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -404,46 +598,8 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
             />
             
             <div className="md:col-span-2">
-              <div className="flex items-center mb-4">
-                <input
-                  id="showBrokerage"
-                  type="checkbox"
-                  checked={showBrokerage}
-                  onChange={(e) => setShowBrokerage(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                />
-                <label htmlFor="showBrokerage" className="ml-2 text-sm font-medium text-gray-900">
-                  Add Brokerage
-                </label>
-              </div>
-              
               {showBrokerage && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-gray-50 mb-4">
-                  <FormField
-                    control={form.control}
-                    name="brokerId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Broker</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select broker" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {brokers.map((broker) => (
-                              <SelectItem key={broker.id} value={broker.id}>
-                                {broker.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
                   <FormField
                     control={form.control}
                     name="brokerageType"
@@ -494,7 +650,7 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
                     )}
                   />
                   
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-1">
                     <label className="text-sm font-medium">Calculated Brokerage (₹)</label>
                     <Input 
                       type="number" 
@@ -565,6 +721,163 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
           </div>
         </form>
       </Form>
+
+      {/* Add New Party Dialog */}
+      <Dialog open={showAddPartyDialog} onOpenChange={setShowAddPartyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Party</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <FormLabel>Party Name</FormLabel>
+              <Input 
+                placeholder="Enter party name" 
+                value={newPartyName}
+                onChange={(e) => setNewPartyName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Address (Optional)</FormLabel>
+              <Textarea 
+                placeholder="Enter address (optional)" 
+                value={newPartyAddress}
+                onChange={(e) => setNewPartyAddress(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddPartyDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNewParty}>Add Party</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Broker Dialog */}
+      <Dialog open={showAddBrokerDialog} onOpenChange={setShowAddBrokerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Broker</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <FormLabel>Broker Name</FormLabel>
+              <Input 
+                placeholder="Enter broker name" 
+                value={newBrokerName}
+                onChange={(e) => setNewBrokerName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Address (Optional)</FormLabel>
+              <Textarea 
+                placeholder="Enter address (optional)" 
+                value={newBrokerAddress}
+                onChange={(e) => setNewBrokerAddress(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Default Commission Rate (%)</FormLabel>
+              <Input 
+                type="number"
+                placeholder="Enter default commission rate" 
+                value={newBrokerRate}
+                onChange={(e) => setNewBrokerRate(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddBrokerDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNewBroker}>Add Broker</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Transporter Dialog */}
+      <Dialog open={showAddTransporterDialog} onOpenChange={setShowAddTransporterDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Transporter</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <FormLabel>Transporter Name</FormLabel>
+              <Input 
+                placeholder="Enter transporter name" 
+                value={newTransporterName}
+                onChange={(e) => setNewTransporterName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Address (Optional)</FormLabel>
+              <Textarea 
+                placeholder="Enter address (optional)" 
+                value={newTransporterAddress}
+                onChange={(e) => setNewTransporterAddress(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddTransporterDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNewTransporter}>Add Transporter</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Lot Dialog */}
+      <Dialog open={showDuplicateLotDialog} onOpenChange={setShowDuplicateLotDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Duplicate Lot Number</DialogTitle>
+            <DialogDescription>
+              You've already added this lot number on {duplicateLotInfo && format(new Date(duplicateLotInfo.date), "dd MMM yyyy")}. 
+              Is this the same lot or a different one?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              <p>Previous lot details:</p>
+              {duplicateLotInfo && (
+                <ul className="list-disc pl-5 space-y-1 text-sm">
+                  <li>Party: {duplicateLotInfo.party}</li>
+                  <li>Quantity: {duplicateLotInfo.quantity} bags</li>
+                  <li>Net Weight: {duplicateLotInfo.netWeight} kg</li>
+                  <li>Rate: ₹{duplicateLotInfo.rate} per kg</li>
+                </ul>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDuplicateLotDialog(false)}>
+              Change Lot Number
+            </Button>
+            <Button onClick={continueDespiteDuplicate}>
+              Continue Anyway
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Similar Party Dialog */}
+      <Dialog open={showSimilarPartyDialog} onOpenChange={setShowSimilarPartyDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Similar Party Name Found</DialogTitle>
+            <DialogDescription>
+              <span className="block mt-2">Did you mean "{similarParty?.name}"?</span>
+              <span className="block mt-1">You've entered a similar name: "{enteredPartyName}"</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSimilarPartyDialog(false)}>
+              Use My Entry
+            </Button>
+            <Button onClick={useSuggestedParty}>
+              Use "{similarParty?.name}"
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

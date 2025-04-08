@@ -16,19 +16,28 @@ import {
   FormMessage 
 } from "@/components/ui/form";
 import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue,
-} from "@/components/ui/select";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription
+} from "@/components/ui/dialog";
 import { Card } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Combobox } from "@/components/ui/combobox";
+import { toast } from "sonner";
+import { Plus, Printer, Save, Edit2 } from "lucide-react";
+import stringSimilarity from "string-similarity";
 import {
   getCustomers,
   getBrokers,
   getTransporters,
   getInventory,
+  addCustomer,
+  addBroker,
+  addTransporter,
+  getLocations
 } from "@/services/storageService";
 
 const formSchema = z.object({
@@ -61,12 +70,31 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const [brokers, setBrokers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [netAmount, setNetAmount] = useState<number>(0);
   const [transportCost, setTransportCost] = useState<number>(0);
   const [availableQuantity, setAvailableQuantity] = useState<number>(0);
   const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
   const [brokerageAmount, setBrokerageAmount] = useState<number>(0);
+  const [showAddCustomerDialog, setShowAddCustomerDialog] = useState<boolean>(false);
+  const [showAddBrokerDialog, setShowAddBrokerDialog] = useState<boolean>(false);
+  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState<boolean>(false);
+  const [newCustomerName, setNewCustomerName] = useState<string>("");
+  const [newCustomerAddress, setNewCustomerAddress] = useState<string>("");
+  const [newBrokerName, setNewBrokerName] = useState<string>("");
+  const [newBrokerAddress, setNewBrokerAddress] = useState<string>("");
+  const [newBrokerRate, setNewBrokerRate] = useState<number>(1);
+  const [newTransporterName, setNewTransporterName] = useState<string>("");
+  const [newTransporterAddress, setNewTransporterAddress] = useState<string>("");
+  const [customerOutstandingBalance, setCustomerOutstandingBalance] = useState<number>(0);
+  const [brokerOutstandingBalance, setBrokerOutstandingBalance] = useState<number>(0);
+  const [showOutOfStockDialog, setShowOutOfStockDialog] = useState<boolean>(false);
+  const [showSaveOptionsDialog, setShowSaveOptionsDialog] = useState<boolean>(false);
+  const [showSimilarCustomerDialog, setShowSimilarCustomerDialog] = useState<boolean>(false);
+  const [similarCustomer, setSimilarCustomer] = useState<any>(null);
+  const [enteredCustomerName, setEnteredCustomerName] = useState<string>("");
+  const [formData, setFormData] = useState<any>(null);
   
   const defaultValues = initialData ? {
     date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
@@ -108,15 +136,20 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   });
 
   useEffect(() => {
-    setCustomers(getCustomers());
-    setBrokers(getBrokers());
-    setTransporters(getTransporters());
-    setInventory(getInventory().filter(item => !item.isDeleted && item.quantity > 0));
+    loadData();
     
     if (initialData?.brokerId) {
       setShowBrokerage(true);
     }
   }, []);
+
+  const loadData = () => {
+    setCustomers(getCustomers());
+    setBrokers(getBrokers());
+    setTransporters(getTransporters());
+    setInventory(getInventory().filter(item => !item.isDeleted && item.quantity > 0));
+    setLocations(getLocations());
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -148,6 +181,34 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   }, [form.watch("lotNumber"), inventory, initialData]);
 
   useEffect(() => {
+    const customerId = form.watch("customerId");
+    if (customerId) {
+      const customer = customers.find(c => c.id === customerId);
+      if (customer) {
+        setCustomerOutstandingBalance(customer.balance);
+      } else {
+        setCustomerOutstandingBalance(0);
+      }
+    } else {
+      setCustomerOutstandingBalance(0);
+    }
+  }, [form.watch("customerId"), customers]);
+
+  useEffect(() => {
+    const brokerId = form.watch("brokerId");
+    if (brokerId) {
+      const broker = brokers.find(b => b.id === brokerId);
+      if (broker) {
+        setBrokerOutstandingBalance(broker.balance);
+      } else {
+        setBrokerOutstandingBalance(0);
+      }
+    } else {
+      setBrokerOutstandingBalance(0);
+    }
+  }, [form.watch("brokerId"), brokers]);
+
+  useEffect(() => {
     const values = form.getValues();
     const netWeight = values.netWeight || 0;
     const rate = values.rate || 0;
@@ -173,7 +234,53 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     setNetAmount(calculatedTotalAmount);
   }, [form.watch(), showBrokerage]);
 
+  const checkSimilarCustomerNames = (name: string) => {
+    if (!name || name.trim().length < 2) return false;
+
+    const normalizedName = name.toLowerCase().trim();
+    
+    for (const customer of customers) {
+      const customerName = customer.name.toLowerCase();
+      const similarity = stringSimilarity.compareTwoStrings(normalizedName, customerName);
+      
+      // Check for high similarity but not exact match
+      if (similarity > 0.7 && similarity < 1) {
+        setSimilarCustomer(customer);
+        setEnteredCustomerName(name);
+        setShowSimilarCustomerDialog(true);
+        return true;
+      }
+    }
+    
+    return false;
+  };
+
   const handleFormSubmit = (data: FormData) => {
+    // Check if the lot is out of stock
+    const selectedLot = inventory.find(item => item.lotNumber === data.lotNumber);
+    
+    if (selectedLot) {
+      const availableQty = initialData && initialData.lotNumber === data.lotNumber 
+        ? selectedLot.quantity + initialData.quantity 
+        : selectedLot.quantity;
+        
+      if (data.quantity > availableQty) {
+        setShowOutOfStockDialog(true);
+        return;
+      }
+    } else {
+      toast.error(`Lot ${data.lotNumber} is not available in inventory`);
+      return;
+    }
+    
+    // Store form data for later submission
+    setFormData(data);
+    
+    // Show save options dialog
+    setShowSaveOptionsDialog(true);
+  };
+
+  const processSale = (data: FormData, action: 'print' | 'save' | 'edit_later') => {
     const customer = customers.find(c => c.id === data.customerId);
     
     let transporterName = "";
@@ -197,8 +304,123 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       amount: totalAmount,
     };
     
+    // Close the dialog
+    setShowSaveOptionsDialog(false);
+    
+    // Submit the data
     onSubmit(submitData);
+    
+    // Handle specific actions
+    if (action === 'print' && onPrint) {
+      setTimeout(() => {
+        onPrint();
+      }, 500);
+    } else if (action === 'edit_later') {
+      toast.success("Sale saved as draft. You can edit it later.");
+    }
   };
+
+  const handleAddNewCustomer = () => {
+    if (!newCustomerName.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+    
+    const newCustomer = {
+      id: `customer-${Date.now()}`,
+      name: newCustomerName.trim(),
+      address: newCustomerAddress.trim(),
+      balance: 0
+    };
+    
+    addCustomer(newCustomer);
+    loadData();
+    form.setValue("customerId", newCustomer.id);
+    setShowAddCustomerDialog(false);
+    setNewCustomerName("");
+    setNewCustomerAddress("");
+    toast.success("New customer added successfully");
+  };
+
+  const handleAddNewBroker = () => {
+    if (!newBrokerName.trim()) {
+      toast.error("Broker name is required");
+      return;
+    }
+    
+    const newBroker = {
+      id: `broker-${Date.now()}`,
+      name: newBrokerName.trim(),
+      address: newBrokerAddress.trim(),
+      commissionRate: newBrokerRate,
+      balance: 0
+    };
+    
+    addBroker(newBroker);
+    loadData();
+    form.setValue("brokerId", newBroker.id);
+    setShowBrokerage(true);
+    setShowAddBrokerDialog(false);
+    setNewBrokerName("");
+    setNewBrokerAddress("");
+    setNewBrokerRate(1);
+    toast.success("New broker added successfully");
+  };
+
+  const handleAddNewTransporter = () => {
+    if (!newTransporterName.trim()) {
+      toast.error("Transporter name is required");
+      return;
+    }
+    
+    const newTransporter = {
+      id: `transporter-${Date.now()}`,
+      name: newTransporterName.trim(),
+      address: newTransporterAddress.trim(),
+      balance: 0
+    };
+    
+    addTransporter(newTransporter);
+    loadData();
+    form.setValue("transporterId", newTransporter.id);
+    setShowAddTransporterDialog(false);
+    setNewTransporterName("");
+    setNewTransporterAddress("");
+    toast.success("New transporter added successfully");
+  };
+
+  const useSuggestedCustomer = () => {
+    if (similarCustomer) {
+      form.setValue("customerId", similarCustomer.id);
+    }
+    setShowSimilarCustomerDialog(false);
+  };
+
+  // Transform data for combobox
+  const customerOptions = customers.map(customer => ({
+    value: customer.id,
+    label: customer.name
+  }));
+
+  const brokerOptions = brokers.map(broker => ({
+    value: broker.id,
+    label: broker.name
+  }));
+
+  const transporterOptions = transporters.map(transporter => ({
+    value: transporter.id,
+    label: transporter.name
+  }));
+
+  const inventoryOptions = inventory.map(item => ({
+    value: item.lotNumber,
+    label: `${item.lotNumber} (${item.quantity} bags available) - ${item.location}`
+  }));
+
+  const locationOptions = locations.map(location => ({
+    value: location,
+    label: location
+  }));
 
   return (
     <Card className="p-6">
@@ -221,6 +443,95 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
             
             <FormField
               control={form.control}
+              name="customerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Customer (Party)</FormLabel>
+                  <div className="flex gap-2 items-center">
+                    <FormControl className="flex-1">
+                      <Combobox 
+                        options={customerOptions}
+                        {...field}
+                        onSelect={(value) => {
+                          field.onChange(value);
+                          const customer = customers.find(c => c.id === value);
+                          if (customer) {
+                            setCustomerOutstandingBalance(customer.balance);
+                          }
+                        }}
+                        placeholder="Select customer"
+                        className="flex-1"
+                      />
+                    </FormControl>
+                    <Button 
+                      type="button" 
+                      size="icon" 
+                      variant="outline"
+                      onClick={() => setShowAddCustomerDialog(true)}
+                      title="Add new customer"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                  <FormMessage />
+                  {customerOutstandingBalance !== 0 && (
+                    <p className={`text-xs mt-1 ${customerOutstandingBalance > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      Outstanding Balance: 
+                      <span className="font-semibold"> ₹{Math.abs(customerOutstandingBalance).toFixed(2)}</span> 
+                      {customerOutstandingBalance > 0 ? ' (Credit)' : ' (Debit)'}
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="brokerId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Broker (Dalal) (Optional)</FormLabel>
+                  <div className="flex gap-2 items-center">
+                    <FormControl className="flex-1">
+                      <Combobox 
+                        options={brokerOptions}
+                        {...field}
+                        onSelect={(value) => {
+                          field.onChange(value);
+                          setShowBrokerage(!!value);
+                          const broker = brokers.find(b => b.id === value);
+                          if (broker) {
+                            setBrokerOutstandingBalance(broker.balance);
+                          }
+                        }}
+                        placeholder="Select broker (optional)"
+                        className="flex-1"
+                      />
+                    </FormControl>
+                    <Button 
+                      type="button" 
+                      size="icon" 
+                      variant="outline"
+                      onClick={() => setShowAddBrokerDialog(true)}
+                      title="Add new broker"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
+                  <FormMessage />
+                  {brokerOutstandingBalance !== 0 && (
+                    <p className={`text-xs mt-1 ${brokerOutstandingBalance > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      Broker Balance: 
+                      <span className="font-semibold"> ₹{Math.abs(brokerOutstandingBalance).toFixed(2)}</span> 
+                      {brokerOutstandingBalance > 0 ? ' (Credit)' : ' (Debit)'}
+                    </p>
+                  )}
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
               name="billNumber"
               render={({ field }) => (
                 <FormItem>
@@ -235,49 +546,17 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
             
             <FormField
               control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
               name="lotNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Lot Number</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select lot number" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {inventory.map((item) => (
-                        <SelectItem key={item.id} value={item.lotNumber}>
-                          {item.lotNumber} ({item.quantity} bags available) - {item.location}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Lot Number (Vakkal)</FormLabel>
+                  <FormControl>
+                    <Combobox 
+                      options={inventoryOptions}
+                      {...field}
+                      placeholder="Select lot number"
+                    />
+                  </FormControl>
                   <FormMessage />
                   {availableQuantity > 0 && (
                     <p className="text-xs text-green-600 mt-1">
@@ -341,22 +620,29 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Transporter (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select transporter (optional)" />
-                      </SelectTrigger>
+                  <div className="flex gap-2 items-center">
+                    <FormControl className="flex-1">
+                      <Combobox 
+                        options={[
+                          { value: "none", label: "None" },
+                          { value: "self", label: "Self" },
+                          ...transporterOptions
+                        ]}
+                        {...field}
+                        placeholder="Select transporter (optional)"
+                        className="flex-1"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="self">Self</SelectItem>
-                      {transporters.map((transporter) => (
-                        <SelectItem key={transporter.id} value={transporter.id}>
-                          {transporter.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Button 
+                      type="button" 
+                      size="icon" 
+                      variant="outline"
+                      onClick={() => setShowAddTransporterDialog(true)}
+                      title="Add new transporter"
+                    >
+                      <Plus size={16} />
+                    </Button>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -388,65 +674,24 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Location (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select location (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">None</SelectItem>
-                      <SelectItem value="Mumbai">Mumbai</SelectItem>
-                      <SelectItem value="Chiplun">Chiplun</SelectItem>
-                      <SelectItem value="Sawantwadi">Sawantwadi</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Combobox 
+                      options={[
+                        { value: "none", label: "None" },
+                        ...locationOptions
+                      ]}
+                      {...field}
+                      placeholder="Select location (optional)"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
             
             <div className="col-span-full">
-              <div className="flex items-center mb-4">
-                <input
-                  id="showBrokerage"
-                  type="checkbox"
-                  checked={showBrokerage}
-                  onChange={(e) => setShowBrokerage(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                />
-                <label htmlFor="showBrokerage" className="ml-2 text-sm font-medium text-gray-900">
-                  Add Brokerage
-                </label>
-              </div>
-              
               {showBrokerage && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-gray-50 mb-4">
-                  <FormField
-                    control={form.control}
-                    name="brokerId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Broker</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ""}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select broker" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {brokers.map((broker) => (
-                              <SelectItem key={broker.id} value={broker.id}>
-                                {broker.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
                   <FormField
                     control={form.control}
                     name="brokerageType"
@@ -497,7 +742,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                     )}
                   />
                   
-                  <div className="md:col-span-3">
+                  <div className="md:col-span-1">
                     <label className="text-sm font-medium">Calculated Brokerage (₹)</label>
                     <Input 
                       type="number" 
@@ -565,6 +810,170 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
           </div>
         </form>
       </Form>
+
+      {/* Add New Customer Dialog */}
+      <Dialog open={showAddCustomerDialog} onOpenChange={setShowAddCustomerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <FormLabel>Customer Name</FormLabel>
+              <Input 
+                placeholder="Enter customer name" 
+                value={newCustomerName}
+                onChange={(e) => setNewCustomerName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Address (Optional)</FormLabel>
+              <Textarea 
+                placeholder="Enter address (optional)" 
+                value={newCustomerAddress}
+                onChange={(e) => setNewCustomerAddress(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddCustomerDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNewCustomer}>Add Customer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Broker Dialog */}
+      <Dialog open={showAddBrokerDialog} onOpenChange={setShowAddBrokerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Broker</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <FormLabel>Broker Name</FormLabel>
+              <Input 
+                placeholder="Enter broker name" 
+                value={newBrokerName}
+                onChange={(e) => setNewBrokerName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Address (Optional)</FormLabel>
+              <Textarea 
+                placeholder="Enter address (optional)" 
+                value={newBrokerAddress}
+                onChange={(e) => setNewBrokerAddress(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Default Commission Rate (%)</FormLabel>
+              <Input 
+                type="number"
+                placeholder="Enter default commission rate" 
+                value={newBrokerRate}
+                onChange={(e) => setNewBrokerRate(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddBrokerDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNewBroker}>Add Broker</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add New Transporter Dialog */}
+      <Dialog open={showAddTransporterDialog} onOpenChange={setShowAddTransporterDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Transporter</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <FormLabel>Transporter Name</FormLabel>
+              <Input 
+                placeholder="Enter transporter name" 
+                value={newTransporterName}
+                onChange={(e) => setNewTransporterName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <FormLabel>Address (Optional)</FormLabel>
+              <Textarea 
+                placeholder="Enter address (optional)" 
+                value={newTransporterAddress}
+                onChange={(e) => setNewTransporterAddress(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddTransporterDialog(false)}>Cancel</Button>
+            <Button onClick={handleAddNewTransporter}>Add Transporter</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Out of Stock Dialog */}
+      <Dialog open={showOutOfStockDialog} onOpenChange={setShowOutOfStockDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Out of Stock</DialogTitle>
+            <DialogDescription>
+              Lot {form.watch('lotNumber')} does not have enough quantity. Available: {availableQuantity} bags, Requested: {form.watch('quantity')} bags.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowOutOfStockDialog(false)}>
+              Change Quantity
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Similar Customer Dialog */}
+      <Dialog open={showSimilarCustomerDialog} onOpenChange={setShowSimilarCustomerDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Similar Customer Name Found</DialogTitle>
+            <DialogDescription>
+              <span className="block mt-2">क्या आप "{similarCustomer?.name}" दर्ज करना चाहते हैं?</span>
+              <span className="block mt-1">آپ نے اسی طرح کا نام درج کیا ہے: "{enteredCustomerName}"</span>
+              <span className="block mt-2">Did you mean "{similarCustomer?.name}"?</span>
+              <span className="block mt-1">You've entered a similar name: "{enteredCustomerName}"</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowSimilarCustomerDialog(false)}>
+              Use My Entry
+            </Button>
+            <Button onClick={useSuggestedCustomer}>
+              Use "{similarCustomer?.name}"
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Options Dialog */}
+      <Dialog open={showSaveOptionsDialog} onOpenChange={setShowSaveOptionsDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Options</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-4">
+              <Button onClick={() => processSale(formData, 'print')} className="w-full flex items-center justify-center gap-2">
+                <Printer size={16} /> Print Chitthi
+              </Button>
+              <Button onClick={() => processSale(formData, 'save')} variant="secondary" className="w-full flex items-center justify-center gap-2">
+                <Save size={16} /> Save Only
+              </Button>
+              <Button onClick={() => processSale(formData, 'edit_later')} variant="outline" className="w-full flex items-center justify-center gap-2">
+                <Edit2 size={16} /> Edit & Save Later
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
