@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 
 // This file re-exports all functionality from individual service files 
@@ -1698,6 +1697,24 @@ export const clearAllData = () => {
     return true;
   } catch (error) {
     console.error('Error clearing data:', error);
+    return false;
+  }
+};
+
+// Function to clear all master data 
+export const clearAllMasterData = () => {
+  try {
+    // Clear all master data entities
+    localStorage.removeItem('agents');
+    localStorage.removeItem('suppliers');
+    localStorage.removeItem('customers');
+    localStorage.removeItem('brokers');
+    localStorage.removeItem('transporters');
+    
+    console.log("All master data cleared successfully");
+    return true;
+  } catch (error) {
+    console.error("Error clearing master data:", error);
     return false;
   }
 };

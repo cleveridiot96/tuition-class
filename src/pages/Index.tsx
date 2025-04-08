@@ -6,7 +6,16 @@ import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Card } from "@/components/ui/card";
-import { seedInitialData, getPurchases, getInventory, getSales, clearAllData, exportDataBackup, getPayments } from "@/services/storageService";
+import { 
+  seedInitialData, 
+  getPurchases, 
+  getInventory, 
+  getSales, 
+  clearAllData, 
+  exportDataBackup, 
+  getPayments,
+  clearAllMasterData 
+} from "@/services/storageService";
 import { format, parseISO } from "date-fns";
 import BackupRestoreControls from "@/components/BackupRestoreControls";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
@@ -194,6 +203,10 @@ const Index = () => {
         console.log("Clearing all data...");
         clearAllData();
         
+        // Clear all master data explicitly to ensure it gets formatted
+        console.log("Clearing master data...");
+        clearAllMasterData();
+        
         // Small delay to ensure clearing is complete
         await new Promise(resolve => setTimeout(resolve, 300));
         
@@ -257,14 +270,6 @@ const Index = () => {
           profitByMonth={profitByMonth}
           totalProfit={totalProfit}
         />
-        
-        <div className="mt-8 p-4 bg-white rounded-lg shadow text-center">
-          <h3 className="text-lg font-semibold text-ag-brown-dark mb-2">Offline Mode</h3>
-          <p className="text-ag-brown">
-            This app works completely offline. All your data is securely stored on your computer.
-            Remember to take regular backups.
-          </p>
-        </div>
       </div>
 
       <FormatConfirmationDialog
