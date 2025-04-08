@@ -22,24 +22,31 @@ const PopoverContent = React.forwardRef<
         className
       )}
       onOpenAutoFocus={(event) => {
-        // Prevent focus issues
+        // Always prevent default focus behavior to avoid issues
         event.preventDefault();
         if (props.onOpenAutoFocus) {
           props.onOpenAutoFocus(event);
         }
       }}
       onCloseAutoFocus={(event) => {
-        // Prevent focus issues when closing
+        // Always prevent default focus behavior to avoid issues
         event.preventDefault();
         if (props.onCloseAutoFocus) {
           props.onCloseAutoFocus(event);
         }
       }}
       onEscapeKeyDown={(event) => {
-        // Handle escape key presses
+        // Stop propagation to prevent other handlers from interfering
         event.stopPropagation();
         if (props.onEscapeKeyDown) {
           props.onEscapeKeyDown(event);
+        }
+      }}
+      onInteractOutside={(event) => {
+        // Handle outside clicks more reliably
+        event.preventDefault(); 
+        if (props.onInteractOutside) {
+          props.onInteractOutside(event);
         }
       }}
       {...props}
