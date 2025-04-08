@@ -28,8 +28,18 @@ export function DatePicker({
   className,
   id
 }: DatePickerProps) {
-  const selectedDate = date || selected;
-  const handleDateChange = setDate || onSelect;
+  // Memoize the selected date to prevent unnecessary re-renders
+  const selectedDate = React.useMemo(() => date || selected, [date, selected]);
+  const handleDateChange = React.useCallback(
+    (newDate: Date | null) => {
+      if (setDate) {
+        setDate(newDate || undefined);
+      } else if (onSelect) {
+        onSelect(newDate);
+      }
+    }, 
+    [setDate, onSelect]
+  );
 
   return (
     <Popover>
@@ -42,6 +52,7 @@ export function DatePicker({
             !selectedDate && "text-muted-foreground",
             className
           )}
+          type="button"
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
@@ -51,7 +62,7 @@ export function DatePicker({
         <Calendar
           mode="single"
           selected={selectedDate || undefined}
-          onSelect={handleDateChange as any}
+          onSelect={handleDateChange}
           initialFocus
         />
       </PopoverContent>

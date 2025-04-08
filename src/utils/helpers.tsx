@@ -3,18 +3,44 @@ import React from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 
+// Create a date formatter with memoization
+const createMemoizedDateFormatter = () => {
+  const cache = new Map();
+  
+  return (dateString: string, formatStr: string = 'dd/MM/yy'): string => {
+    const cacheKey = `${dateString}_${formatStr}`;
+    
+    if (cache.has(cacheKey)) {
+      return cache.get(cacheKey);
+    }
+    
+    try {
+      const result = format(parseISO(dateString), formatStr);
+      // Limit cache size to prevent memory leaks
+      if (cache.size > 1000) {
+        // Clear the oldest entries when cache gets too large
+        const keysToDelete = Array.from(cache.keys()).slice(0, 100);
+        keysToDelete.forEach(key => cache.delete(key));
+      }
+      cache.set(cacheKey, result);
+      return result;
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return dateString;
+    }
+  };
+};
+
+// Create the memoized formatter
+const memoizedDateFormatter = createMemoizedDateFormatter();
+
 /**
- * Format date consistently across the application
+ * Format date consistently across the application with memoization
  * @param dateString The date string to format
  * @returns Formatted date string in DD/MM/YY format
  */
 export const formatDate = (dateString: string): string => {
-  try {
-    return format(parseISO(dateString), 'dd/MM/yy');
-  } catch (e) {
-    console.error("Error formatting date:", e);
-    return dateString;
-  }
+  return memoizedDateFormatter(dateString);
 };
 
 /**
@@ -23,19 +49,27 @@ export const formatDate = (dateString: string): string => {
  * @returns "bag" or "box" string
  */
 export const detectPackageType = (quantity: number): "bag" | "box" => {
-  // If quantity is divisible by 50 with no remainder, it's likely bags (50kg standard)
   if (quantity % 50 === 0) {
     return "bag";
-  }
-  // If quantity is divisible by 25 but not by 50, it's likely boxes (25kg standard)
-  else if (quantity % 25 === 0) {
+  } else if (quantity % 25 === 0) {
     return "box";
-  }
-  // Default to bag if we can't determine
-  else {
+  } else {
     return "bag";
   }
 };
+
+// Memoize currency formatter to avoid recreating for each call
+const currencyFormatter = new Intl.NumberFormat("en-IN", {
+  style: "currency",
+  currency: "INR",
+  maximumFractionDigits: 2,
+});
+
+const currencyFormatterNoDecimal = new Intl.NumberFormat("en-IN", {
+  style: "currency", 
+  currency: "INR",
+  maximumFractionDigits: 0,
+});
 
 /**
  * Format currency in Indian Rupee format
@@ -44,11 +78,10 @@ export const detectPackageType = (quantity: number): "bag" | "box" => {
  * @returns Formatted currency string
  */
 export const formatCurrency = (amount: number, decimals: number = 2): string => {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: decimals,
-  }).format(amount);
+  if (decimals === 0) {
+    return currencyFormatterNoDecimal.format(amount);
+  }
+  return currencyFormatter.format(amount);
 };
 
 /**
@@ -58,7 +91,7 @@ export const formatCurrency = (amount: number, decimals: number = 2): string => 
 export const useConfirmDelete = () => {
   const { toast } = useToast();
 
-  const confirm = (itemName: string, onConfirm: () => void) => {
+  const confirm = React.useCallback((itemName: string, onConfirm: () => void) => {
     if (window.confirm(`Are you sure you want to delete "${itemName}"?`)) {
       onConfirm();
     } else {
@@ -67,10 +100,13 @@ export const useConfirmDelete = () => {
         description: `"${itemName}" was not deleted.`,
       });
     }
-  };
+  }, [toast]);
 
   return { confirm };
 };
+
+// Create a memoized version of numberToWords with a cache
+const wordCache = new Map<number, string>();
 
 /**
  * Convert a number to words in Hindi/English
@@ -78,6 +114,10 @@ export const useConfirmDelete = () => {
  * @returns String representation in words
  */
 export const numberToWords = (number: number): string => {
+  if (wordCache.has(number)) {
+    return wordCache.get(number)!;
+  }
+  
   const ones = [
     "", "एक", "दो", "तीन", "चार", "पांच", "छह", "सात", "आठ", "नौ",
     "दस", "ग्यारह", "बारह", "तेरह", "चौदह", "पंद्रह", "सोलह", "सत्रह", "अट्ठारह", "उन्नीस"
@@ -87,17 +127,26 @@ export const numberToWords = (number: number): string => {
     "", "", "बीस", "तीस", "चालीस", "पचास", "साठ", "सत्तर", "अस्सी", "नब्बे"
   ];
   
-  const numString = number.toString();
+  let result: string;
   
   if (number < 20) {
-    return ones[number];
+    result = ones[number];
   } else if (number < 100) {
     const ten = Math.floor(number / 10);
     const one = number % 10;
-    return one ? `${tens[ten]}-${ones[one]}` : tens[ten];
+    result = one ? `${tens[ten]}-${ones[one]}` : tens[ten];
   } else {
-    return numString; // Return as is for larger numbers
+    result = number.toString();
   }
+  
+  // Limit cache size
+  if (wordCache.size > 200) {
+    const keysToDelete = Array.from(wordCache.keys()).slice(0, 50);
+    keysToDelete.forEach(key => wordCache.delete(key));
+  }
+  
+  wordCache.set(number, result);
+  return result;
 };
 
 /**
@@ -111,13 +160,16 @@ export const getSaleIdFromUrl = (): string | null => {
   return searchParams.get('edit');
 };
 
+// Memoized number formatter
+const numberFormatter = new Intl.NumberFormat('en-IN');
+
 /**
  * Format a number with indian thousands separator
  * @param num Number to format
  * @returns Formatted string with thousands separators
  */
 export const formatNumber = (num: number): string => {
-  return num.toLocaleString('en-IN');
+  return numberFormatter.format(num);
 };
 
 /**
