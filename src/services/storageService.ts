@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 
 // This file re-exports all functionality from individual service files 
@@ -367,30 +366,6 @@ export const checkDuplicateLot = (lotNumber: string, excludeId?: string): Purcha
 
 // Sales-related functions
 // Removed duplicate SALES_STORAGE_KEY declaration
-
-export interface Sale {
-  id: string;
-  date: string;
-  lotNumber: string;
-  billNumber?: string;
-  billAmount?: number;
-  customer: string;
-  customerId: string;
-  quantity: number;
-  netWeight: number;
-  rate: number;
-  broker?: string;
-  brokerId?: string;
-  transporter: string;
-  transporterId: string;
-  transportRate: number;
-  location: string;
-  notes?: string;
-  totalAmount: number;
-  transportCost: number;
-  netAmount: number;
-  isDeleted?: boolean;
-}
 
 export function getSales(): Sale[] {
   const savedSales = localStorage.getItem(SALES_STORAGE_KEY);

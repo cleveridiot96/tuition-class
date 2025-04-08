@@ -237,7 +237,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       netAmount,
       billAmount: data.billAmount || 0,
       brokerage,
-      location: "", // We're removing the location field as requested
+      location: "", // Empty location field since it's no longer needed
       id: initialData?.id || Date.now().toString()
     };
     
@@ -250,7 +250,10 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const handleAddCustomer = (customerData: any) => {
     const newCustomer = addCustomer(customerData);
     if (newCustomer) {
-      toast.success(`Customer ${newCustomer.name} added successfully`);
+      toast({
+        title: "Success",
+        description: `Customer ${newCustomer.name} added successfully`,
+      });
       refreshData();
       setIsAddCustomerOpen(false);
       
@@ -258,14 +261,21 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       form.setValue("customerId", newCustomer.id);
       setFormChanged(true);
     } else {
-      toast.error("Failed to add customer");
+      toast({
+        title: "Error",
+        description: "Failed to add customer",
+        variant: "destructive",
+      });
     }
   };
   
   const handleAddBroker = (brokerData: any) => {
     const newBroker = addBroker(brokerData);
     if (newBroker) {
-      toast.success(`Broker ${newBroker.name} added successfully`);
+      toast({
+        title: "Success",
+        description: `Broker ${newBroker.name} added successfully`,
+      });
       refreshData();
       setIsAddBrokerOpen(false);
       
@@ -273,7 +283,11 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       form.setValue("brokerId", newBroker.id);
       setFormChanged(true);
     } else {
-      toast.error("Failed to add broker");
+      toast({
+        title: "Error",
+        description: "Failed to add broker",
+        variant: "destructive",
+      });
     }
   };
 
@@ -453,24 +467,26 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                 <FormItem>
                   <FormLabel><span className="text-red-500">*</span> Customer</FormLabel>
                   <div className="flex gap-2 items-center">
-                    <Select onValueChange={field.onChange} value={field.value} className="flex-grow">
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select customer" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent searchable>
-                        {combinedCustomers.length === 0 ? (
-                          <SelectItem value="no-customers" disabled>No customers available</SelectItem>
-                        ) : (
-                          combinedCustomers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.name} {customer.type === "broker" ? "(Broker)" : ""}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex-grow">
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select customer" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent searchable>
+                          {combinedCustomers.length === 0 ? (
+                            <SelectItem value="no-customers">No customers available</SelectItem>
+                          ) : (
+                            combinedCustomers.map((customer) => (
+                              <SelectItem key={customer.id} value={customer.id}>
+                                {customer.name} {customer.type === "broker" ? "(Broker)" : ""}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm" type="button">
@@ -543,21 +559,23 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                 <FormItem>
                   <FormLabel>Broker (Optional)</FormLabel>
                   <div className="flex gap-2 items-center">
-                    <Select onValueChange={field.onChange} value={field.value || "none"} className="flex-grow">
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select broker (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent searchable>
-                        <SelectItem value="none">No Broker</SelectItem>
-                        {brokers.map((broker) => (
-                          <SelectItem key={broker.id} value={broker.id}>
-                            {broker.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex-grow">
+                      <Select onValueChange={field.onChange} value={field.value || "none"}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select broker (optional)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent searchable>
+                          <SelectItem value="none">No Broker</SelectItem>
+                          {brokers.map((broker) => (
+                            <SelectItem key={broker.id} value={broker.id}>
+                              {broker.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <Dialog open={isAddBrokerOpen} onOpenChange={setIsAddBrokerOpen}>
                       <DialogTrigger asChild>
                         <Button variant="outline" size="sm" type="button">

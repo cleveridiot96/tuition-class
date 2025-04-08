@@ -67,14 +67,21 @@ const NewEntityForm = ({ onSubmit, entityType, existingNames }: NewEntityFormPro
     );
     
     if (exactDuplicate) {
-      toast.error(`A ${entityType} with this exact name already exists`);
+      toast({
+        title: "Error",
+        description: `A ${entityType} with this exact name already exists`,
+        variant: "destructive",
+      });
       return;
     }
     
     const similarityWarning = checkForSimilarNames(data.name);
     if (similarityWarning) {
       // Just warn the user but allow submission
-      toast.warning(`Name is ${similarityWarning}. Proceeding anyway.`);
+      toast({
+        title: "Warning",
+        description: `Name is ${similarityWarning}. Proceeding anyway.`,
+      });
     }
     
     onSubmit({

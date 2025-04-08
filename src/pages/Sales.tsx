@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -63,6 +62,7 @@ interface Sale {
   transporter: string;
   transporterId: string;
   transportRate: number;
+  location: string;
   notes?: string;
   totalAmount: number;
   transportCost: number;
@@ -114,7 +114,12 @@ const Sales = () => {
   };
 
   const handleAdd = (data: Sale) => {
-    addSale(data);
+    const saleWithLocation = {
+      ...data,
+      location: data.location || ""
+    };
+    
+    addSale(saleWithLocation);
     
     // Update inventory
     updateInventoryAfterSale(data.lotNumber, data.quantity);
@@ -132,6 +137,11 @@ const Sales = () => {
   const handleUpdate = (updatedSale: Sale) => {
     if (!editingSale) return;
     
+    const saleWithLocation = {
+      ...updatedSale,
+      location: updatedSale.location || ""
+    };
+    
     // If quantity changed, we need to adjust inventory
     if (updatedSale.quantity !== editingSale.quantity) {
       // First restore original quantity
@@ -142,7 +152,7 @@ const Sales = () => {
     }
     
     // Update sale in storage
-    updateSale(updatedSale);
+    updateSale(saleWithLocation);
     
     // Refresh data
     loadData();
@@ -196,7 +206,11 @@ const Sales = () => {
     }
     
     // Restore the sale by removing isDeleted flag
-    const updatedSale = { ...saleToRestore, isDeleted: false };
+    const updatedSale = { 
+      ...saleToRestore, 
+      isDeleted: false,
+      location: saleToRestore.location || ""
+    };
     updateSale(updatedSale);
     
     // Update inventory
