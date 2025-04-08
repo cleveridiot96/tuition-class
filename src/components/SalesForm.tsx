@@ -239,7 +239,8 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
 
   const handleAddCustomer = (customerData: any) => {
     const newCustomer = addCustomer(customerData);
-    if (newCustomer) {
+    
+    if (newCustomer && typeof newCustomer === 'object' && 'id' in newCustomer && 'name' in newCustomer) {
       toast({
         title: "Success",
         description: `Customer ${newCustomer.name} added successfully`,
@@ -260,7 +261,8 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   
   const handleAddBroker = (brokerData: any) => {
     const newBroker = addBroker(brokerData);
-    if (newBroker) {
+    
+    if (newBroker && typeof newBroker === 'object' && 'id' in newBroker && 'name' in newBroker) {
       toast({
         title: "Success",
         description: `Broker ${newBroker.name} added successfully`,
