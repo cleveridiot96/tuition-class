@@ -64,6 +64,12 @@ interface SalesFormProps {
   onPrint?: (data: any) => void;
 }
 
+interface Entity {
+  id: string;
+  name: string;
+  [key: string]: any;
+}
+
 const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const { toast } = useToast();
   const [inventory, setInventory] = useState<any[]>([]);
@@ -238,19 +244,29 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   };
 
   const handleAddCustomer = (customerData: any) => {
-    const newCustomer = addCustomer(customerData);
-    
-    if (newCustomer && typeof newCustomer === 'object' && 'id' in newCustomer && 'name' in newCustomer) {
-      toast({
-        title: "Success",
-        description: `Customer ${newCustomer.name} added successfully`,
-      });
-      refreshData();
-      setIsAddCustomerOpen(false);
+    try {
+      const newCustomer = addCustomer(customerData);
       
-      form.setValue("customerId", newCustomer.id);
-      setFormChanged(true);
-    } else {
+      if (newCustomer && typeof newCustomer === 'object') {
+        const customerEntity = newCustomer as Entity;
+        
+        toast({
+          title: "Success",
+          description: `Customer ${customerEntity.name} added successfully`,
+        });
+        refreshData();
+        setIsAddCustomerOpen(false);
+        
+        form.setValue("customerId", customerEntity.id);
+        setFormChanged(true);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add customer",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to add customer",
@@ -260,19 +276,29 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   };
   
   const handleAddBroker = (brokerData: any) => {
-    const newBroker = addBroker(brokerData);
-    
-    if (newBroker && typeof newBroker === 'object' && 'id' in newBroker && 'name' in newBroker) {
-      toast({
-        title: "Success",
-        description: `Broker ${newBroker.name} added successfully`,
-      });
-      refreshData();
-      setIsAddBrokerOpen(false);
+    try {
+      const newBroker = addBroker(brokerData);
       
-      form.setValue("brokerId", newBroker.id);
-      setFormChanged(true);
-    } else {
+      if (newBroker && typeof newBroker === 'object') {
+        const brokerEntity = newBroker as Entity;
+        
+        toast({
+          title: "Success",
+          description: `Broker ${brokerEntity.name} added successfully`,
+        });
+        refreshData();
+        setIsAddBrokerOpen(false);
+        
+        form.setValue("brokerId", brokerEntity.id);
+        setFormChanged(true);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to add broker",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to add broker",
