@@ -1,13 +1,12 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RefreshCw, Save, Plus, PrinterIcon } from "lucide-react";
 import { 
   Form, 
   FormControl, 
@@ -21,38 +20,31 @@ import {
   SelectContent, 
   SelectItem, 
   SelectTrigger, 
-  SelectValue 
+  SelectValue,
 } from "@/components/ui/select";
+import { Card } from "@/components/ui/card";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useToast } from "@/hooks/use-toast";
-import {
-  getInventory,
   getCustomers,
   getBrokers,
   getTransporters,
-  addCustomer,
-  addBroker
+  getInventory,
 } from "@/services/storageService";
-import NewEntityForm from "./NewEntityForm";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   lotNumber: z.string().min(1, "Lot number is required"),
-  billNumber: z.string().optional(),
-  billAmount: z.coerce.number().optional(),
-  customerId: z.string().min(1, "Customer is required"),
   quantity: z.coerce.number().min(1, "Quantity is required"),
+  billNumber: z.string().optional(),
+  customerId: z.string().min(1, "Customer is required"),
   netWeight: z.coerce.number().min(1, "Net weight is required"),
   rate: z.coerce.number().min(1, "Rate is required"),
+  transporterId: z.string().min(1, "Transporter is required"),
+  transportRate: z.coerce.number().min(0, "Transport rate must be valid"),
+  location: z.string().optional(),
   brokerId: z.string().optional(),
-  transporterId: z.string().optional(),
-  transportRate: z.coerce.number().min(0, "Transport rate is required"),
+  brokerageType: z.enum(["percentage", "fixed"]).optional(),
+  brokerageValue: z.coerce.number().min(0, "Brokerage value must be valid").optional(),
   notes: z.string().optional(),
 });
 
@@ -61,327 +53,163 @@ type FormData = z.infer<typeof formSchema>;
 interface SalesFormProps {
   onSubmit: (data: any) => void;
   initialData?: any;
-  onPrint?: (data: any) => void;
-}
-
-interface Entity {
-  id: string;
-  name: string;
-  [key: string]: any;
+  onPrint?: () => void;
 }
 
 const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
-  const { toast } = useToast();
-  const [inventory, setInventory] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [brokers, setBrokers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
+  const [inventory, setInventory] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
-  const [transportCost, setTransportCost] = useState<number>(0);
   const [netAmount, setNetAmount] = useState<number>(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [formChanged, setFormChanged] = useState(false);
-  const [isAddCustomerOpen, setIsAddCustomerOpen] = useState(false);
-  const [isAddBrokerOpen, setIsAddBrokerOpen] = useState(false);
-  const [selectedLotStock, setSelectedLotStock] = useState<number>(0);
+  const [transportCost, setTransportCost] = useState<number>(0);
+  const [availableQuantity, setAvailableQuantity] = useState<number>(0);
+  const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
+  const [brokerageAmount, setBrokerageAmount] = useState<number>(0);
   
   const defaultValues = initialData ? {
     date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
     lotNumber: initialData.lotNumber || "",
-    billNumber: initialData.billNumber || "",
-    billAmount: initialData.billAmount || 0,
-    customerId: initialData.customerId || "",
     quantity: initialData.quantity || 0,
+    billNumber: initialData.billNumber || "",
+    customerId: initialData.customerId || "",
     netWeight: initialData.netWeight || 0,
     rate: initialData.rate || 0,
-    brokerId: initialData.brokerId || "",
     transporterId: initialData.transporterId || "",
     transportRate: initialData.transportRate || 0,
+    location: initialData.location || "",
+    brokerId: initialData.brokerId || "",
+    brokerageType: initialData.brokerageType || "percentage",
+    brokerageValue: initialData.brokerageType === "percentage" ? 
+      (initialData.brokerageAmount ? (initialData.brokerageAmount / initialData.totalAmount * 100) : 1) : 
+      initialData.brokerageAmount || 0,
     notes: initialData.notes || "",
   } : {
     date: format(new Date(), 'yyyy-MM-dd'),
     lotNumber: "",
-    billNumber: "",
-    billAmount: undefined,
-    customerId: "",
     quantity: 0,
+    billNumber: "",
+    customerId: "",
     netWeight: 0,
     rate: 0,
-    brokerId: "",
     transporterId: "",
     transportRate: 0,
+    location: "",
+    brokerId: "",
+    brokerageType: "percentage",
+    brokerageValue: 1,
     notes: "",
   };
-
+  
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: defaultValues
+    defaultValues,
   });
 
+  // Load data
   useEffect(() => {
-    setFormChanged(false);
-  }, [initialData]);
-
-  useEffect(() => {
-    const subscription = form.watch(() => {
-      setFormChanged(true);
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  useEffect(() => {
-    refreshData();
+    setCustomers(getCustomers());
+    setBrokers(getBrokers());
+    setTransporters(getTransporters());
+    setInventory(getInventory().filter(item => !item.isDeleted && item.quantity > 0));
     
-    const intervalId = setInterval(() => {
-      refreshData();
-    }, 60000);
-    
-    return () => clearInterval(intervalId);
+    if (initialData?.brokerId) {
+      setShowBrokerage(true);
+    }
   }, []);
 
-  const refreshData = () => {
-    setIsRefreshing(true);
-    
-    const currentInventory = getInventory().filter(item => !item.isDeleted && item.quantity > 0);
-    console.log("Available inventory:", currentInventory);
-    setInventory(currentInventory);
-    
-    const allCustomers = getCustomers();
-    console.log("Available customers:", allCustomers);
-    setCustomers(allCustomers);
-    
-    const allBrokers = getBrokers();
-    console.log("Available brokers:", allBrokers);
-    setBrokers(allBrokers);
-    
-    const allTransporters = getTransporters();
-    console.log("Available transporters:", allTransporters);
-    setTransporters(allTransporters);
-    
-    const lotNumber = form.getValues("lotNumber");
+  // Set initial calculation values
+  useEffect(() => {
+    if (initialData) {
+      setTotalAmount(initialData.totalAmount || 0);
+      setNetAmount(initialData.netAmount || 0);
+      setTransportCost(initialData.transportCost || 0);
+      setBrokerageAmount(initialData.brokerageAmount || 0);
+      
+      // Check available quantity for this lot
+      if (initialData.lotNumber) {
+        const invItem = inventory.find(item => item.lotNumber === initialData.lotNumber);
+        if (invItem) {
+          // Add back the current sale quantity to the available quantity
+          setAvailableQuantity(invItem.quantity + initialData.quantity);
+        }
+      }
+    }
+  }, [initialData, inventory]);
+
+  // Handle lot number change to update available quantity
+  useEffect(() => {
+    const lotNumber = form.watch("lotNumber");
     if (lotNumber) {
-      const selectedLot = currentInventory.find(item => item.lotNumber === lotNumber);
-      if (selectedLot) {
-        setSelectedLotStock(selectedLot.quantity || 0);
+      const invItem = inventory.find(item => item.lotNumber === lotNumber);
+      if (invItem) {
+        // If editing, add back the current quantity
+        const additionalQty = initialData && initialData.lotNumber === lotNumber ? initialData.quantity : 0;
+        setAvailableQuantity(invItem.quantity + additionalQty);
+      } else {
+        setAvailableQuantity(0);
       }
     }
-    
-    setIsRefreshing(false);
-  };
+  }, [form.watch("lotNumber"), inventory, initialData]);
 
-  const handleLotChange = (lotNumber: string) => {
-    const selectedLot = inventory.find(item => item.lotNumber === lotNumber);
-    if (selectedLot) {
-      form.setValue("quantity", selectedLot.quantity);
-      form.setValue("netWeight", selectedLot.netWeight || 0);
-      
-      if (selectedLot.rate) {
-        form.setValue("rate", selectedLot.rate);
-      }
-      
-      setSelectedLotStock(selectedLot.quantity || 0);
-      setFormChanged(true);
-    }
-  };
-
+  // Handle calculation when values change
   useEffect(() => {
     const values = form.getValues();
     const netWeight = values.netWeight || 0;
     const rate = values.rate || 0;
     const transportRate = values.transportRate || 0;
     
+    // Calculate transport cost
     const calculatedTransportCost = netWeight * transportRate;
     setTransportCost(calculatedTransportCost);
     
+    // Calculate total
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
-    const brokerId = values.brokerId;
-    const brokerage = brokerId ? calculatedTotalAmount * 0.01 : 0;
-    setNetAmount(calculatedTotalAmount - calculatedTransportCost - brokerage);
-  }, [form.watch()]);
-
-  useEffect(() => {
-    if (initialData) {
-      setTotalAmount(initialData.totalAmount || 0);
-      setTransportCost(initialData.transportCost || 0);
-      setNetAmount(initialData.netAmount || 0);
+    // Calculate brokerage
+    let calculatedBrokerageAmount = 0;
+    if (showBrokerage && values.brokerId) {
+      const brokerageValue = values.brokerageValue || 0;
+      if (values.brokerageType === "percentage") {
+        calculatedBrokerageAmount = (calculatedTotalAmount * brokerageValue) / 100;
+      } else {
+        calculatedBrokerageAmount = brokerageValue;
+      }
     }
-  }, [initialData]);
+    setBrokerageAmount(calculatedBrokerageAmount);
+    
+    // Calculate net amount (total - brokerage)
+    const calculatedNetAmount = calculatedTotalAmount - calculatedBrokerageAmount;
+    setNetAmount(calculatedNetAmount);
+  }, [form.watch(), showBrokerage]);
 
   const handleFormSubmit = (data: FormData) => {
-    const customerId = data.customerId;
-    const isCustomer = customerId.startsWith('customer_');
-    const isBroker = customerId.startsWith('broker_');
+    const customer = customers.find(c => c.id === data.customerId);
     
-    let customerName = "";
-    if (isCustomer) {
-      customerName = customers.find(c => c.id === customerId)?.name || "";
-    } else if (isBroker) {
-      customerName = brokers.find(b => b.id === customerId)?.name || "";
-    }
-    
-    const brokerName = data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "";
-    const brokerage = data.brokerId ? totalAmount * 0.01 : 0;
-    
+    // Format data for submission
     const submitData = {
       ...data,
-      customer: customerName,
-      broker: brokerName,
-      transporter: data.transporterId ? transporters.find(t => t.id === data.transporterId)?.name || "" : "",
+      customer: customer ? customer.name : data.customerId,
+      customerId: data.customerId,
+      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
+      broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
+      brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
+      brokerageType: data.brokerageType || "percentage",
       totalAmount,
-      transportCost,
       netAmount,
-      billAmount: data.billAmount || 0,
-      brokerage,
-      id: initialData?.id || Date.now().toString()
+      transportCost,
+      billAmount: data.billNumber ? totalAmount : 0,
+      id: initialData?.id || `sale-${Date.now()}`,
     };
     
-    console.log("Submitting sale data:", submitData);
-    
+    // Submit the data
     onSubmit(submitData);
-    setFormChanged(false);
   };
-
-  const handleAddCustomer = (customerData: any) => {
-    try {
-      addCustomer(customerData);
-      
-      const updatedCustomers = getCustomers();
-      const newCustomer = updatedCustomers.find(c => c.name === customerData.name);
-      
-      if (newCustomer) {
-        toast({
-          title: "Success",
-          description: `Customer ${newCustomer.name} added successfully`,
-        });
-        refreshData();
-        setIsAddCustomerOpen(false);
-        
-        form.setValue("customerId", newCustomer.id);
-        setFormChanged(true);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add customer",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add customer",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleAddBroker = (brokerData: any) => {
-    try {
-      addBroker(brokerData);
-      
-      const updatedBrokers = getBrokers();
-      const newBroker = updatedBrokers.find(b => b.name === brokerData.name);
-      
-      if (newBroker) {
-        toast({
-          title: "Success",
-          description: `Broker ${newBroker.name} added successfully`,
-        });
-        refreshData();
-        setIsAddBrokerOpen(false);
-        
-        form.setValue("brokerId", newBroker.id);
-        setFormChanged(true);
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to add broker",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add broker",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSave = () => {
-    form.handleSubmit(handleFormSubmit)();
-  };
-  
-  const handlePrint = () => {
-    if (onPrint && formChanged) {
-      handleSave();
-    } else if (onPrint) {
-      const data = {
-        ...form.getValues(),
-        totalAmount,
-        transportCost,
-        netAmount,
-        id: initialData?.id || Date.now().toString()
-      };
-      onPrint(data);
-    }
-  };
-
-  const combinedCustomers = [
-    ...customers.map(c => ({
-      id: c.id,
-      name: c.name,
-      type: "customer"
-    })),
-    ...brokers.map(b => ({
-      id: b.id,
-      name: b.name,
-      type: "broker"
-    }))
-  ];
 
   return (
     <Card className="p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">Sale Details</h2>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={refreshData}
-            disabled={isRefreshing}
-          >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Refresh Data
-          </Button>
-          
-          {formChanged && (
-            <Button 
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={handleSave}
-            >
-              <Save size={16} />
-              Save Changes
-            </Button>
-          )}
-          
-          {onPrint && (
-            <Button 
-              variant="outline"
-              size="sm" 
-              className="flex items-center gap-1"
-              onClick={handlePrint}
-            >
-              <PrinterIcon size={16} />
-              Print
-            </Button>
-          )}
-        </div>
-      </div>
-      
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -390,52 +218,10 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="date"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Date</FormLabel>
+                  <FormLabel>Date</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="lotNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>
-                    <span className="text-red-500">*</span> Lot Number 
-                    {selectedLotStock > 0 && (
-                      <span className="ml-2 text-sm text-green-600">
-                        (Available: {selectedLotStock} bags)
-                      </span>
-                    )}
-                  </FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      handleLotChange(value);
-                    }} 
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select lot" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent searchable>
-                      {inventory.length === 0 ? (
-                        <SelectItem value="no-lots-available" disabled>No lots available</SelectItem>
-                      ) : (
-                        inventory.map((item) => (
-                          <SelectItem key={item.id} value={item.lotNumber}>
-                            {item.lotNumber} - {item.quantity} bags
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -448,28 +234,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                 <FormItem>
                   <FormLabel>Bill Number (Optional)</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter bill number" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="billAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bill Amount (₹) (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      {...field} 
-                      value={field.value === undefined ? '' : field.value}
-                      onChange={(e) => field.onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
-                      placeholder="0.00" 
-                      step="0.01" 
-                    />
+                    <Input {...field} placeholder="Enter bill number if applicable" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -481,47 +246,52 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="customerId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Customer</FormLabel>
-                  <div className="flex gap-2 items-center">
-                    <div className="flex-grow">
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select customer" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent searchable>
-                          {combinedCustomers.length === 0 ? (
-                            <SelectItem value="no-customers-available" disabled>No customers available</SelectItem>
-                          ) : (
-                            combinedCustomers.map((customer) => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                {customer.name} {customer.type === "broker" ? "(Broker)" : ""}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Dialog open={isAddCustomerOpen} onOpenChange={setIsAddCustomerOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" type="button">
-                          <Plus size={16} />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add New Customer</DialogTitle>
-                        </DialogHeader>
-                        <NewEntityForm 
-                          onSubmit={handleAddCustomer} 
-                          entityType="customer"
-                          existingNames={customers.map(c => c.name)}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                  <FormLabel>Customer</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select customer" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer.id} value={customer.id}>
+                          {customer.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="lotNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lot Number</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select lot number" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {inventory.map((item) => (
+                        <SelectItem key={item.id} value={item.lotNumber}>
+                          {item.lotNumber} ({item.quantity} bags available) - {item.location}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                  {availableQuantity > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      Available: {availableQuantity} bags
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
@@ -531,11 +301,16 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="quantity"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Quantity (Bags)</FormLabel>
+                  <FormLabel>Quantity (Bags)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} placeholder="0" />
+                    <Input type="number" {...field} placeholder="0" max={availableQuantity} />
                   </FormControl>
                   <FormMessage />
+                  {form.watch('quantity') > availableQuantity && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Exceeds available quantity
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
@@ -545,9 +320,9 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="netWeight"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Net Weight (kg)</FormLabel>
+                  <FormLabel>Net Weight (kg)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} placeholder="0.00" step="0.01" />
+                    <Input type="number" {...field} placeholder="0.00" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -559,7 +334,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
               name="rate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel><span className="text-red-500">*</span> Rate per kg (₹)</FormLabel>
+                  <FormLabel>Rate per kg (₹)</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} placeholder="0.00" step="0.01" />
                   </FormControl>
@@ -570,65 +345,18 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
             
             <FormField
               control={form.control}
-              name="brokerId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Broker (Optional)</FormLabel>
-                  <div className="flex gap-2 items-center">
-                    <div className="flex-grow">
-                      <Select onValueChange={field.onChange} value={field.value || "none"}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select broker (optional)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent searchable>
-                          <SelectItem value="none">No Broker</SelectItem>
-                          {brokers.map((broker) => (
-                            <SelectItem key={broker.id} value={broker.id}>
-                              {broker.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Dialog open={isAddBrokerOpen} onOpenChange={setIsAddBrokerOpen}>
-                      <DialogTrigger asChild>
-                        <Button variant="outline" size="sm" type="button">
-                          <Plus size={16} />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Add New Broker</DialogTitle>
-                        </DialogHeader>
-                        <NewEntityForm 
-                          onSubmit={handleAddBroker} 
-                          entityType="broker"
-                          existingNames={brokers.map(b => b.name)}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
               name="transporterId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Transporter (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || "none"}>
+                  <FormLabel>Transporter</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select transporter (optional)" />
+                        <SelectValue placeholder="Select transporter" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent searchable>
-                      <SelectItem value="none">No Transporter</SelectItem>
+                    <SelectContent>
+                      <SelectItem value="self">Self</SelectItem>
                       {transporters.map((transporter) => (
                         <SelectItem key={transporter.id} value={transporter.id}>
                           {transporter.name}
@@ -648,16 +376,155 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                 <FormItem>
                   <FormLabel>Transport Rate per kg (₹)</FormLabel>
                   <FormControl>
-                    <Input type="number" {...field} placeholder="0.00" step="0.01" />
+                    <Input 
+                      type="number" 
+                      {...field}
+                      placeholder="0.00"
+                      step="0.01"
+                      disabled={form.watch('transporterId') === 'self'}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+            
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Location</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select location (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      <SelectItem value="Mumbai">Mumbai</SelectItem>
+                      <SelectItem value="Chiplun">Chiplun</SelectItem>
+                      <SelectItem value="Sawantwadi">Sawantwadi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="col-span-full">
+              <div className="flex items-center mb-4">
+                <input
+                  id="showBrokerage"
+                  type="checkbox"
+                  checked={showBrokerage}
+                  onChange={(e) => setShowBrokerage(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                />
+                <label htmlFor="showBrokerage" className="ml-2 text-sm font-medium text-gray-900">
+                  Add Brokerage
+                </label>
+              </div>
+              
+              {showBrokerage && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-gray-50 mb-4">
+                  <FormField
+                    control={form.control}
+                    name="brokerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Broker</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select broker" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {brokers.map((broker) => (
+                              <SelectItem key={broker.id} value={broker.id}>
+                                {broker.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="brokerageType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Brokerage Type</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex space-x-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="percentage" id="percentage" />
+                              <label htmlFor="percentage">Percentage (%)</label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="fixed" id="fixed" />
+                              <label htmlFor="fixed">Fixed Amount (₹)</label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="brokerageValue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {form.watch("brokerageType") === "percentage" 
+                            ? "Brokerage Percentage (%)" 
+                            : "Fixed Amount (₹)"}
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            step="0.01"
+                            placeholder={form.watch("brokerageType") === "percentage" ? "1.00" : "0.00"}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="md:col-span-3">
+                    <label className="text-sm font-medium">Calculated Brokerage (₹)</label>
+                    <Input 
+                      type="number" 
+                      value={brokerageAmount.toFixed(2)} 
+                      readOnly
+                      className="bg-gray-100"
+                    />
+                    {form.watch("brokerageType") === "percentage" && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {form.watch("brokerageValue") || 0}% of ₹{totalAmount.toFixed(2)} = ₹{brokerageAmount.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="bg-gray-50 p-4 rounded-md">
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-500">Total Amount</p>
                 <p className="font-bold">₹{totalAmount.toFixed(2)}</p>
@@ -666,10 +533,12 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                 <p className="text-sm text-gray-500">Transport Cost</p>
                 <p className="font-bold">₹{transportCost.toFixed(2)}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-500">Brokerage (1%)</p>
-                <p className="font-bold">₹{(form.getValues("brokerId") ? totalAmount * 0.01 : 0).toFixed(2)}</p>
-              </div>
+              {showBrokerage && (
+                <div>
+                  <p className="text-sm text-gray-500">Brokerage</p>
+                  <p className="font-bold">₹{brokerageAmount.toFixed(2)}</p>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-gray-500">Net Amount</p>
                 <p className="font-bold">₹{netAmount.toFixed(2)}</p>
@@ -691,28 +560,10 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
             )}
           />
           
-          <div className="flex justify-end gap-2">
-            {onPrint && (
-              <Button 
-                type="button" 
-                onClick={handlePrint}
-                variant="outline"
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                <PrinterIcon size={20} />
-                Print
-              </Button>
-            )}
-            {formChanged && (
-              <Button 
-                type="button" 
-                onClick={handleSave} 
-                size="lg"
-                className="flex items-center gap-2"
-              >
-                <Save size={20} />
-                Save Changes
+          <div className="flex justify-end space-x-2">
+            {initialData && onPrint && (
+              <Button type="button" variant="outline" onClick={onPrint}>
+                Print Receipt
               </Button>
             )}
             <Button type="submit" size="lg">

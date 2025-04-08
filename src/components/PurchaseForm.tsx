@@ -27,9 +27,11 @@ import {
   getAgents,
   getSuppliers,
   getTransporters,
+  getBrokers,
   addCustomer,
   checkDuplicateLot
 } from "@/services/storageService";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -43,6 +45,9 @@ const formSchema = z.object({
   transporterId: z.string().min(1, "Transporter is required"),
   transportRate: z.coerce.number().min(0, "Transport rate must be valid"),
   expenses: z.coerce.number().min(0, "Expenses must be valid"),
+  brokerId: z.string().optional(),
+  brokerageType: z.enum(["percentage", "fixed"]).optional(),
+  brokerageValue: z.coerce.number().min(0, "Brokerage value must be valid").optional(),
   notes: z.string().optional(),
 });
 
@@ -57,10 +62,13 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
   const [agents, setAgents] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
+  const [brokers, setBrokers] = useState<any[]>([]);
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [totalAfterExpenses, setTotalAfterExpenses] = useState<number>(0);
   const [ratePerKgAfterExpenses, setRatePerKgAfterExpenses] = useState<number>(0);
   const [transportCost, setTransportCost] = useState<number>(0);
+  const [brokerageAmount, setBrokerageAmount] = useState<number>(0);
+  const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
   
   // Set default values based on initialData
   const defaultValues = initialData ? {
@@ -75,6 +83,11 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     transporterId: initialData.transporterId || "",
     transportRate: initialData.transportRate || 0,
     expenses: initialData.expenses || 0,
+    brokerId: initialData.brokerId || "",
+    brokerageType: initialData.brokerageType || "percentage",
+    brokerageValue: initialData.brokerageType === "percentage" ? 
+      (initialData.brokerageAmount ? (initialData.brokerageAmount / initialData.totalAmount * 100) : 1) : 
+      initialData.brokerageAmount || 0,
     notes: initialData.notes || "",
   } : {
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -88,6 +101,9 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     transporterId: "",
     transportRate: 0,
     expenses: 0,
+    brokerId: "",
+    brokerageType: "percentage",
+    brokerageValue: 1,
     notes: "",
   };
   
@@ -101,7 +117,12 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     setAgents(getAgents());
     setSuppliers(getSuppliers());
     setTransporters(getTransporters());
-  }, []);
+    setBrokers(getBrokers());
+    
+    if (initialData?.brokerId) {
+      setShowBrokerage(true);
+    }
+  }, [initialData]);
 
   // Set initial calculation values
   useEffect(() => {
@@ -110,6 +131,7 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       setTotalAfterExpenses(initialData.totalAfterExpenses || 0);
       setRatePerKgAfterExpenses(initialData.ratePerKgAfterExpenses || 0);
       setTransportCost(initialData.transportCost || 0);
+      setBrokerageAmount(initialData.brokerageAmount || 0);
     }
   }, [initialData]);
 
@@ -129,14 +151,26 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
-    // Calculate total after expenses including transport cost
-    const calculatedTotalAfterExpenses = calculatedTotalAmount + expenses + calculatedTransportCost;
+    // Calculate brokerage
+    let calculatedBrokerageAmount = 0;
+    if (showBrokerage && values.brokerId) {
+      const brokerageValue = values.brokerageValue || 0;
+      if (values.brokerageType === "percentage") {
+        calculatedBrokerageAmount = (calculatedTotalAmount * brokerageValue) / 100;
+      } else {
+        calculatedBrokerageAmount = brokerageValue;
+      }
+    }
+    setBrokerageAmount(calculatedBrokerageAmount);
+    
+    // Calculate total after expenses including transport cost and brokerage
+    const calculatedTotalAfterExpenses = calculatedTotalAmount + expenses + calculatedTransportCost + calculatedBrokerageAmount;
     setTotalAfterExpenses(calculatedTotalAfterExpenses);
     
     // Calculate rate per kg after expenses
     const calculatedRatePerKg = netWeight > 0 ? calculatedTotalAfterExpenses / netWeight : 0;
     setRatePerKgAfterExpenses(calculatedRatePerKg);
-  }, [form.watch()]);
+  }, [form.watch(), showBrokerage]);
 
   const handleFormSubmit = (data: FormData) => {
     // Check for duplicate lot number
@@ -161,6 +195,9 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       totalAmount,
       transportCost,
       expenses: data.expenses,
+      broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
+      brokerageAmount: showBrokerage && data.brokerId ? brokerageAmount : 0,
+      brokerageType: data.brokerageType || "percentage",
       totalAfterExpenses,
       ratePerKgAfterExpenses,
       id: initialData?.id || Date.now().toString()
@@ -171,7 +208,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       const newCustomer = {
         id: Date.now().toString(),
         name: data.party,
-        contactNumber: "",
         address: "",
         balance: 0
       };
@@ -383,6 +419,115 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
                 </FormItem>
               )}
             />
+            
+            <div className="md:col-span-2">
+              <div className="flex items-center mb-4">
+                <input
+                  id="showBrokerage"
+                  type="checkbox"
+                  checked={showBrokerage}
+                  onChange={(e) => setShowBrokerage(e.target.checked)}
+                  className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                />
+                <label htmlFor="showBrokerage" className="ml-2 text-sm font-medium text-gray-900">
+                  Add Brokerage
+                </label>
+              </div>
+              
+              {showBrokerage && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-gray-50 mb-4">
+                  <FormField
+                    control={form.control}
+                    name="brokerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Broker</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value || ""}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select broker" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {brokers.map((broker) => (
+                              <SelectItem key={broker.id} value={broker.id}>
+                                {broker.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="brokerageType"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel>Brokerage Type</FormLabel>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex space-x-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="percentage" id="percentage" />
+                              <label htmlFor="percentage">Percentage (%)</label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="fixed" id="fixed" />
+                              <label htmlFor="fixed">Fixed Amount (₹)</label>
+                            </div>
+                          </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="brokerageValue"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {form.watch("brokerageType") === "percentage" 
+                            ? "Brokerage Percentage (%)" 
+                            : "Fixed Amount (₹)"}
+                        </FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            {...field} 
+                            step="0.01"
+                            placeholder={form.watch("brokerageType") === "percentage" ? "1.00" : "0.00"}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <div className="md:col-span-3">
+                    <label className="text-sm font-medium">Calculated Brokerage (₹)</label>
+                    <Input 
+                      type="number" 
+                      value={brokerageAmount.toFixed(2)} 
+                      readOnly
+                      className="bg-gray-100"
+                    />
+                    {form.watch("brokerageType") === "percentage" && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        {form.watch("brokerageValue") || 0}% of ₹{totalAmount.toFixed(2)} = ₹{brokerageAmount.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="bg-gray-50 p-4 rounded-md">
@@ -394,6 +539,16 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
               <div>
                 <p className="text-sm text-gray-500">Transport Cost</p>
                 <p className="font-bold">₹{transportCost.toFixed(2)}</p>
+              </div>
+              {showBrokerage && (
+                <div>
+                  <p className="text-sm text-gray-500">Brokerage</p>
+                  <p className="font-bold">₹{brokerageAmount.toFixed(2)}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-gray-500">Additional Expenses</p>
+                <p className="font-bold">₹{form.watch("expenses") || 0}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Total After Expenses</p>

@@ -7,7 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 export interface Agent {
   id: string;
   name: string;
-  contactNumber: string;
   address: string;
   balance: number;
 }
@@ -15,7 +14,6 @@ export interface Agent {
 export interface Supplier {
   id: string;
   name: string;
-  contactNumber: string;
   address: string;
   balance: number;
 }
@@ -23,7 +21,6 @@ export interface Supplier {
 export interface Customer {
   id: string;
   name: string;
-  contactNumber: string;
   address: string;
   balance: number;
 }
@@ -31,7 +28,6 @@ export interface Customer {
 export interface Broker {
   id: string;
   name: string;
-  contactNumber: string;
   address: string;
   commissionRate: number;
   balance: number;
@@ -40,7 +36,6 @@ export interface Broker {
 export interface Transporter {
   id: string;
   name: string;
-  contactNumber: string;
   address: string;
   balance: number;
 }
@@ -56,10 +51,16 @@ export interface Purchase {
   netWeight: number;
   rate: number;
   transporter: string;
+  transporterId?: string;
   transportRate?: number;
   transportCost: number;
   totalAmount: number;
   expenses: number;
+  broker?: string;
+  brokerId?: string;
+  brokerageRate?: number;
+  brokerageAmount?: number;
+  brokerageType?: "percentage" | "fixed";
   totalAfterExpenses: number;
   ratePerKgAfterExpenses: number;
   notes: string;
@@ -79,13 +80,16 @@ export interface Sale {
   rate: number;
   broker?: string;
   brokerId?: string;
+  brokerageRate?: number;
+  brokerageAmount?: number;
+  brokerageType?: "percentage" | "fixed";
   transporter: string;
   transporterId: string;
   transportRate: number;
+  transportCost: number;
   location: string;
   notes?: string;
   totalAmount: number;
-  transportCost: number;
   netAmount: number;
   isDeleted?: boolean;
 }
@@ -156,7 +160,7 @@ export const BROKERS_STORAGE_KEY = "app_brokers_data";
 export const CUSTOMERS_STORAGE_KEY = "app_customers_data";
 export const TRANSPORTERS_STORAGE_KEY = "app_transporters_data";
 export const CASHBOOK_STORAGE_KEY = "app_cashbook_data";
-export const SUPPLIERS_STORAGE_KEY = "app_suppliers_data"; // Added missing key
+export const SUPPLIERS_STORAGE_KEY = "app_suppliers_data";
 
 // Agent functions
 export const getAgents = (): Agent[] => {
@@ -309,6 +313,30 @@ export const deleteTransporter = (id: string): void => {
   localStorage.setItem('transporters', JSON.stringify(updatedTransporters));
 };
 
+// Update transporter balance and ledger entry
+export const updateTransporterBalance = (id: string, amount: number, description: string, date: string, referenceId: string): void => {
+  const transporters = getTransporters();
+  const transporter = transporters.find(t => t.id === id);
+  if (transporter) {
+    transporter.balance += amount;
+    localStorage.setItem('transporters', JSON.stringify(transporters));
+    
+    // Add ledger entry
+    addLedgerEntry({
+      id: Date.now().toString(),
+      date,
+      partyName: transporter.name,
+      partyType: "transporter",
+      description,
+      debit: amount > 0 ? amount : 0,
+      credit: amount < 0 ? Math.abs(amount) : 0,
+      balance: transporter.balance,
+      referenceId,
+      referenceType: "transport"
+    });
+  }
+};
+
 // Purchase functions
 export const getPurchases = () => {
   const purchases = localStorage.getItem(PURCHASES_STORAGE_KEY) || localStorage.getItem('purchases');
@@ -323,6 +351,29 @@ export const addPurchase = (purchase: Purchase): void => {
   
   // Update inventory
   updateInventoryAfterPurchase(purchase);
+  
+  // Update transporter ledger if applicable
+  if (purchase.transporterId && purchase.transportCost > 0) {
+    updateTransporterBalance(
+      purchase.transporterId,
+      purchase.transportCost,
+      `Transport for purchase lot ${purchase.lotNumber}`,
+      purchase.date,
+      purchase.id
+    );
+  }
+  
+  // Handle broker if present
+  if (purchase.brokerId && purchase.brokerageAmount && purchase.brokerageAmount > 0) {
+    // Add broker ledger entry
+    addBrokerageEntry(
+      purchase.brokerId,
+      purchase.brokerageAmount,
+      `Brokerage for purchase lot ${purchase.lotNumber}`,
+      purchase.date,
+      purchase.id
+    );
+  }
 };
 
 export const updatePurchase = (updatedPurchase: Purchase): void => {
@@ -340,6 +391,38 @@ export const updatePurchase = (updatedPurchase: Purchase): void => {
     
     // Update inventory based on changes
     updateInventoryAfterPurchaseEdit(oldPurchase, updatedPurchase);
+    
+    // Handle transporter changes if applicable
+    if (updatedPurchase.transporterId && oldPurchase.transportCost !== updatedPurchase.transportCost) {
+      // Remove old transporter ledger entry and add new one
+      // In a real app, you would find and update the existing entry
+      // For simplicity here, we're just adding a new adjustment entry
+      if (updatedPurchase.transportCost > oldPurchase.transportCost) {
+        updateTransporterBalance(
+          updatedPurchase.transporterId,
+          updatedPurchase.transportCost - oldPurchase.transportCost,
+          `Updated transport for purchase lot ${updatedPurchase.lotNumber}`,
+          updatedPurchase.date,
+          updatedPurchase.id
+        );
+      }
+    }
+    
+    // Handle broker changes
+    if (updatedPurchase.brokerId && 
+        (!oldPurchase.brokerageAmount || oldPurchase.brokerageAmount !== updatedPurchase.brokerageAmount)) {
+      // If brokerage changed, add adjustment
+      const difference = (updatedPurchase.brokerageAmount || 0) - (oldPurchase.brokerageAmount || 0);
+      if (difference !== 0) {
+        addBrokerageEntry(
+          updatedPurchase.brokerId,
+          difference,
+          `Updated brokerage for purchase lot ${updatedPurchase.lotNumber}`,
+          updatedPurchase.date,
+          updatedPurchase.id
+        );
+      }
+    }
   }
 };
 
@@ -363,6 +446,27 @@ export const deletePurchase = (id: string): void => {
     });
     
     saveInventory(updatedInventory);
+    
+    // Add reversal entries for transporter and broker if applicable
+    if (purchaseToDelete.transporterId && purchaseToDelete.transportCost > 0) {
+      updateTransporterBalance(
+        purchaseToDelete.transporterId,
+        -purchaseToDelete.transportCost,
+        `Reversed transport for deleted purchase lot ${purchaseToDelete.lotNumber}`,
+        new Date().toISOString().split('T')[0],
+        purchaseToDelete.id + "-reversal"
+      );
+    }
+    
+    if (purchaseToDelete.brokerId && purchaseToDelete.brokerageAmount && purchaseToDelete.brokerageAmount > 0) {
+      addBrokerageEntry(
+        purchaseToDelete.brokerId,
+        -purchaseToDelete.brokerageAmount,
+        `Reversed brokerage for deleted purchase lot ${purchaseToDelete.lotNumber}`,
+        new Date().toISOString().split('T')[0],
+        purchaseToDelete.id + "-reversal"
+      );
+    }
   }
 };
 
@@ -392,7 +496,6 @@ export function addSale(sale: Sale): void {
     const newCustomer = {
       id: customerId,
       name: sale.customer,
-      contactNumber: "",
       address: "",
       balance: 0
     };
@@ -407,22 +510,116 @@ export function addSale(sale: Sale): void {
   
   // Update inventory after sale
   updateInventoryAfterSale(sale.lotNumber, sale.quantity);
+  
+  // Handle transporter ledger if applicable
+  if (sale.transporterId && sale.transportCost > 0) {
+    updateTransporterBalance(
+      sale.transporterId,
+      sale.transportCost,
+      `Transport for sale lot ${sale.lotNumber} to ${sale.customer}`,
+      sale.date,
+      sale.id
+    );
+  }
+  
+  // Handle broker if present
+  if (sale.brokerId && sale.brokerageAmount && sale.brokerageAmount > 0) {
+    addBrokerageEntry(
+      sale.brokerId,
+      sale.brokerageAmount,
+      `Brokerage for sale lot ${sale.lotNumber} to ${sale.customer}`,
+      sale.date,
+      sale.id
+    );
+  }
 }
 
 export function updateSale(updatedSale: Sale): void {
   const sales = getSales();
-  const updatedSales = sales.map(sale => 
-    sale.id === updatedSale.id ? updatedSale : sale
-  );
-  localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(updatedSales));
+  const index = sales.findIndex(sale => sale.id === updatedSale.id);
+  
+  if (index !== -1) {
+    const oldSale = sales[index];
+    
+    // Update sale
+    sales[index] = updatedSale;
+    localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(sales));
+    
+    // Handle inventory adjustments if quantity changed
+    if (oldSale.quantity !== updatedSale.quantity) {
+      // Restore old quantity to inventory
+      updateInventoryAfterSale(oldSale.lotNumber, -oldSale.quantity);
+      
+      // Remove new quantity from inventory
+      updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
+    }
+    
+    // Handle transporter changes
+    if (updatedSale.transporterId && oldSale.transportCost !== updatedSale.transportCost) {
+      if (updatedSale.transportCost > oldSale.transportCost) {
+        updateTransporterBalance(
+          updatedSale.transporterId,
+          updatedSale.transportCost - oldSale.transportCost,
+          `Updated transport for sale lot ${updatedSale.lotNumber}`,
+          updatedSale.date,
+          updatedSale.id
+        );
+      }
+    }
+    
+    // Handle broker changes
+    if (updatedSale.brokerId && 
+        (!oldSale.brokerageAmount || oldSale.brokerageAmount !== updatedSale.brokerageAmount)) {
+      const difference = (updatedSale.brokerageAmount || 0) - (oldSale.brokerageAmount || 0);
+      if (difference !== 0) {
+        addBrokerageEntry(
+          updatedSale.brokerId,
+          difference,
+          `Updated brokerage for sale lot ${updatedSale.lotNumber}`,
+          updatedSale.date,
+          updatedSale.id
+        );
+      }
+    }
+  }
 }
 
 export function deleteSale(id: string): void {
   const sales = getSales();
-  const updatedSales = sales.map(sale => 
-    sale.id === id ? { ...sale, isDeleted: true } : sale
-  );
-  localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(updatedSales));
+  const saleToDelete = sales.find(sale => sale.id === id);
+  
+  if (saleToDelete) {
+    // Mark as deleted
+    const updatedSales = sales.map(sale => 
+      sale.id === id ? { ...sale, isDeleted: true } : sale
+    );
+    localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(updatedSales));
+    
+    // Restore inventory quantity
+    updateInventoryAfterSale(saleToDelete.lotNumber, -saleToDelete.quantity);
+    
+    // Reverse transporter ledger if applicable
+    if (saleToDelete.transporterId && saleToDelete.transportCost > 0) {
+      updateTransporterBalance(
+        saleToDelete.transporterId,
+        -saleToDelete.transportCost,
+        `Reversed transport for deleted sale lot ${saleToDelete.lotNumber}`,
+        new Date().toISOString().split('T')[0],
+        saleToDelete.id + "-reversal"
+      );
+    }
+    
+    // Reverse brokerage if applicable
+    if (saleToDelete.brokerId && saleToDelete.brokerageAmount && saleToDelete.brokerageAmount > 0) {
+      addBrokerageEntry(
+        saleToDelete.brokerId,
+        -saleToDelete.brokerageAmount,
+        `Reversed brokerage for deleted sale lot ${saleToDelete.lotNumber}`,
+        new Date().toISOString().split('T')[0],
+        saleToDelete.id + "-reversal"
+      );
+    }
+  }
 }
 
 export function updateInventoryAfterSale(lotNumber: string, quantity: number): void {
@@ -450,6 +647,37 @@ export function updateInventoryAfterSale(lotNumber: string, quantity: number): v
   
   localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(updatedInventory));
 }
+
+// Add a helper function for broker ledger entries
+export const addBrokerageEntry = (
+  brokerId: string, 
+  amount: number, 
+  description: string, 
+  date: string, 
+  referenceId: string
+): void => {
+  const brokers = getBrokers();
+  const broker = brokers.find(b => b.id === brokerId);
+  
+  if (broker) {
+    broker.balance += amount;
+    localStorage.setItem('brokers', JSON.stringify(brokers));
+    
+    // Add broker ledger entry
+    addLedgerEntry({
+      id: Date.now().toString(),
+      date,
+      partyName: broker.name,
+      partyType: "broker",
+      description,
+      debit: amount > 0 ? amount : 0,
+      credit: amount < 0 ? Math.abs(amount) : 0,
+      balance: broker.balance,
+      referenceId,
+      referenceType: "brokerage"
+    });
+  }
+};
 
 // Payment functions
 export const getPayments = () => {
@@ -956,14 +1184,12 @@ export const seedInitialData = (force = false) => {
     {
       id: '1',
       name: 'Rajesh Kumar',
-      contactNumber: '9876543210',
       address: 'Mumbai',
       balance: 0
     },
     {
       id: '2',
       name: 'Sunil Patel',
-      contactNumber: '9876543211',
       address: 'Ahmedabad',
       balance: 0
     }
@@ -973,14 +1199,12 @@ export const seedInitialData = (force = false) => {
     {
       id: '1',
       name: 'Krishna Suppliers',
-      contactNumber: '9876543212',
       address: 'Rajkot',
       balance: 0
     },
     {
       id: '2',
       name: 'Agro Farms',
-      contactNumber: '9876543213',
       address: 'Surat',
       balance: 0
     }
@@ -990,14 +1214,12 @@ export const seedInitialData = (force = false) => {
     {
       id: '1',
       name: 'Mumbai Traders',
-      contactNumber: '9876543214',
       address: 'Mumbai',
       balance: 0
     },
     {
       id: '2',
       name: 'Super Market Chain',
-      contactNumber: '9876543215',
       address: 'Pune',
       balance: 0
     }
@@ -1007,8 +1229,8 @@ export const seedInitialData = (force = false) => {
     {
       id: '1',
       name: 'Mohan Broker',
-      contactNumber: '9876543216',
       address: 'Mumbai',
+      commissionRate: 1, // Default 1%
       balance: 0
     }
   ];
@@ -1017,7 +1239,6 @@ export const seedInitialData = (force = false) => {
     {
       id: '1',
       name: 'Fast Logistics',
-      contactNumber: '9876543217',
       address: 'Ahmedabad',
       balance: 0
     }
@@ -1042,7 +1263,6 @@ export const seedInitialData = (force = false) => {
     addCustomer({
       id: 'customer-mst-001',
       name: 'MST',
-      contactNumber: '',
       address: 'Mumbai',
       balance: 0
     });
