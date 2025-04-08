@@ -80,7 +80,10 @@ const Navigation = ({
                 variant="danger"
                 animation="pulse"
                 className="border border-red-300/30 flex items-center gap-2 group"
-                onClick={onFormatClick}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (onFormatClick) onFormatClick();
+                }}
               >
                 <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
                 <span className="font-bold">FORMAT</span>

@@ -155,9 +155,13 @@ const Index = () => {
     setIsFormatDialogOpen(true);
   };
 
-  const handleFormatConfirm = () => {
+  const handleFormatConfirm = async () => {
     try {
       console.log("Format operation starting...");
+      toast({
+        title: "Format in progress",
+        description: "Creating backup and resetting data...",
+      });
       
       // Create backup first - important to do before clearing
       const backupData = exportDataBackup(true);
@@ -170,15 +174,20 @@ const Index = () => {
         // Clear everything from storage - CRITICAL STEP
         console.log("Clearing all data...");
         clearAllData();
-        localStorage.removeItem("purchases");
-        localStorage.removeItem("sales");
-        localStorage.removeItem("inventory");
-        localStorage.removeItem("payments");
-        localStorage.removeItem("receipts");
-        localStorage.removeItem("agents");
-        localStorage.removeItem("brokers");
-        localStorage.removeItem("customers");
-        localStorage.removeItem("transporters");
+        
+        // Force clear all known storage items individually to be absolutely certain
+        const storageKeys = [
+          "purchases", "sales", "inventory", "payments", "receipts", 
+          "agents", "brokers", "customers", "transporters"
+        ];
+        
+        storageKeys.forEach(key => {
+          console.log(`Removing ${key} from localStorage`);
+          localStorage.removeItem(key);
+        });
+        
+        // Small delay to ensure clearing is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Explicitly check if data is cleared
         const checkPurchases = getPurchases();
@@ -187,6 +196,9 @@ const Index = () => {
         // Reseed with fresh data - make sure force is true
         console.log("Reseeding with fresh data...");
         seedInitialData(true);
+        
+        // Another small delay to ensure seeding is complete
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         // Increment version to trigger data reload
         setDataVersion(prev => prev + 1);
