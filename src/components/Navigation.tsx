@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Home, ArrowLeft, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,18 @@ const Navigation = ({
   onFormatClick,
   className 
 }: NavigationProps) => {
+  const [isFormatPressed, setIsFormatPressed] = useState(false);
+  
+  const handleFormatClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsFormatPressed(true);
+    
+    // Reset the pressed state after animation completes
+    setTimeout(() => setIsFormatPressed(false), 1000);
+    
+    if (onFormatClick) onFormatClick();
+  };
+
   return (
     <TooltipProvider>
       <header className={cn("bg-gradient-to-r from-ag-green to-ag-green-dark text-white p-4 flex items-center justify-between shadow-md", className)}>
@@ -78,12 +90,9 @@ const Navigation = ({
             <TooltipTrigger asChild>
               <Button
                 variant="danger"
-                animation="pulse"
+                animation={isFormatPressed ? "pulse" : "none"}
                 className="border border-red-300/30 flex items-center gap-2 group"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (onFormatClick) onFormatClick();
-                }}
+                onClick={handleFormatClick}
               >
                 <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
                 <span className="font-bold">FORMAT</span>
