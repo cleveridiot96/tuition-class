@@ -78,44 +78,69 @@ const SelectContent = React.forwardRef<
 >(({ className, children, position = "popper", searchable = false, ...props }, ref) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   
-  // Make sure children is always valid before we try to iterate over it
-  const childrenArray = React.Children.toArray(children);
+  // Additional safety check for children
+  const safeChildren = React.useMemo(() => {
+    try {
+      // Only proceed with filtering if we have valid children
+      return React.Children.toArray(children).filter(child => !!child);
+    } catch (error) {
+      console.error("Error processing select children:", error);
+      return [];
+    }
+  }, [children]);
   
-  // Filter children based on search query
+  // Filter children based on search query with error handling
   const filteredChildren = React.useMemo(() => {
-    if (!searchable || !searchQuery || !childrenArray || childrenArray.length === 0) {
-      return children;
+    if (!searchable || !searchQuery || !safeChildren || safeChildren.length === 0) {
+      return safeChildren;
     }
     
-    return React.Children.map(childrenArray, (child) => {
-      if (!React.isValidElement(child)) return null;
-      
-      // For direct SelectItem children
-      if (child.type === SelectItem) {
-        const childText = String(child.props.children || '').toLowerCase();
-        return childText.includes(searchQuery.toLowerCase()) ? child : null;
-      }
-      
-      // For SelectGroup or other container elements
-      if (child.props && child.props.children) {
-        const groupChildren = React.Children.toArray(child.props.children);
+    try {
+      return React.Children.map(safeChildren, (child) => {
+        if (!React.isValidElement(child)) return null;
         
-        if (!groupChildren || groupChildren.length === 0) return child;
+        // For direct SelectItem children
+        if (child.type === SelectItem) {
+          const childText = String(child.props.children || '').toLowerCase();
+          return childText.includes(searchQuery.toLowerCase()) ? child : null;
+        }
         
-        const filteredGroupChildren = React.Children.toArray(groupChildren).filter((groupChild) => {
-          if (!React.isValidElement(groupChild)) return false;
-          const groupChildText = String(groupChild.props?.children || '').toLowerCase();
-          return groupChildText.includes(searchQuery.toLowerCase());
-        });
+        // For SelectGroup or other container elements
+        if (child.props && child.props.children) {
+          const groupChildren = React.Children.toArray(child.props.children);
+          
+          if (!groupChildren || groupChildren.length === 0) return child;
+          
+          try {
+            const filteredGroupChildren = React.Children.toArray(groupChildren)
+              .filter(groupChild => {
+                if (!React.isValidElement(groupChild)) return false;
+                
+                try {
+                  const groupChildText = String(groupChild.props?.children || '').toLowerCase();
+                  return groupChildText.includes(searchQuery.toLowerCase());
+                } catch (e) {
+                  console.error("Error filtering group child:", e);
+                  return false;
+                }
+              });
+            
+            if (filteredGroupChildren.length === 0) return null;
+            
+            return React.cloneElement(child, {}, filteredGroupChildren);
+          } catch (groupError) {
+            console.error("Error filtering group children:", groupError);
+            return child; // Return original child if filtering fails
+          }
+        }
         
-        if (filteredGroupChildren.length === 0) return null;
-        
-        return React.cloneElement(child, {}, filteredGroupChildren);
-      }
-      
-      return child;
-    });
-  }, [children, searchQuery, searchable, childrenArray]);
+        return child;
+      });
+    } catch (error) {
+      console.error("Error filtering select options:", error);
+      return safeChildren; // Return all children if filtering fails
+    }
+  }, [safeChildren, searchQuery, searchable]);
   
   return (
     <SelectPrimitive.Portal>
@@ -151,7 +176,11 @@ const SelectContent = React.forwardRef<
               "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
           )}
         >
-          {filteredChildren}
+          {filteredChildren && filteredChildren.length > 0 ? filteredChildren : (
+            <div className="text-center py-2 text-sm text-muted-foreground">
+              {searchable && searchQuery ? "No results found" : "No options available"}
+            </div>
+          )}
         </SelectPrimitive.Viewport>
         <SelectScrollDownButton />
       </SelectPrimitive.Content>

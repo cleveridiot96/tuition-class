@@ -69,29 +69,58 @@ export function Combobox({
     }
   };
 
-  // Filter options based on input value
+  // Filter options based on input value - with additional safety checks
   const filteredOptions = React.useMemo(() => {
-    // Ensure options is always an array
+    // Ensure options is always a valid array
     const safeOptions = Array.isArray(options) ? options : [];
     
-    if (!inputValue) return safeOptions;
+    // Early return if no input or empty options
+    if (!inputValue || safeOptions.length === 0) return safeOptions;
     
-    return safeOptions.filter(option => 
-      option.label.toLowerCase().includes(inputValue.toLowerCase()) ||
-      option.value.toLowerCase().includes(inputValue.toLowerCase())
-    );
+    try {
+      return safeOptions.filter(option => 
+        option && 
+        option.label && 
+        option.value && 
+        (option.label.toLowerCase().includes(inputValue.toLowerCase()) ||
+        option.value.toLowerCase().includes(inputValue.toLowerCase()))
+      );
+    } catch (error) {
+      console.error("Error filtering options:", error);
+      return safeOptions; // Return all options if filtering fails
+    }
   }, [options, inputValue]);
 
-  // Find the display text
+  // Find the display text with additional safety
   const displayText = React.useMemo(() => {
     if (!selectedValue) return "";
     
-    // Ensure options is always an array
+    // Ensure options is always a valid array
     const safeOptions = Array.isArray(options) ? options : [];
-    const foundOption = safeOptions.find((option) => option.value === selectedValue);
     
-    return foundOption ? foundOption.label : selectedValue;
+    try {
+      const foundOption = safeOptions.find(option => option && option.value === selectedValue);
+      return foundOption ? foundOption.label : selectedValue;
+    } catch (error) {
+      console.error("Error finding display text:", error);
+      return selectedValue; // Fallback to selected value if lookup fails
+    }
   }, [selectedValue, options]);
+
+  // Safety check for if options is not iterable at all
+  if (options === undefined || options === null) {
+    return (
+      <Button
+        variant="outline"
+        role="combobox"
+        className={cn("w-full justify-between", className)}
+        disabled={true}
+      >
+        No options available
+        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    );
+  }
 
   return (
     <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
@@ -108,7 +137,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0" 
+        className="w-[--radix-popover-trigger-width] p-0 z-50 shadow-lg" 
         align="start"
         side="bottom"
         avoidCollisions
@@ -122,22 +151,24 @@ export function Combobox({
           />
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
-            {Array.isArray(filteredOptions) && filteredOptions.map((option) => (
-              <CommandItem
-                key={option.value}
-                value={option.value}
-                onSelect={() => handleSelect(option.value)}
-                className="cursor-pointer"
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    selectedValue === option.value ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {option.label}
-              </CommandItem>
-            ))}
+            {(filteredOptions || []).map((option) => 
+              option && option.value ? (
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={() => handleSelect(option.value)}
+                  className="cursor-pointer"
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedValue === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label || option.value}
+                </CommandItem>
+              ) : null
+            )}
           </CommandGroup>
         </Command>
       </PopoverContent>
