@@ -201,23 +201,29 @@ export function Combobox({
             />
             <CommandEmpty>No results found.</CommandEmpty>
             <CommandGroup className="max-h-60 overflow-y-auto">
-              {(Array.isArray(filteredOptions) ? filteredOptions : []).map((option) => 
-                option && option.value ? (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={() => handleSelect(option.value)}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedValue === option.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.label || option.value}
-                  </CommandItem>
-                ) : null
+              {Array.isArray(filteredOptions) && filteredOptions.length > 0 ? (
+                filteredOptions.map((option) => 
+                  option && option.value ? (
+                    <CommandItem
+                      key={option.value}
+                      value={option.value}
+                      onSelect={() => handleSelect(option.value)}
+                      className="cursor-pointer"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          selectedValue === option.value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.label || option.value}
+                    </CommandItem>
+                  ) : null
+                )
+              ) : (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No options available
+                </div>
               )}
             </CommandGroup>
           </Command>

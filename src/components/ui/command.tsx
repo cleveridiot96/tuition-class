@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { type DialogProps } from "@radix-ui/react-dialog"
 import { Command as CommandPrimitive } from "cmdk"
@@ -47,6 +48,11 @@ const CommandInput = React.forwardRef<
         "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
+      onClick={(e) => {
+        // Prevent event bubbling
+        e.stopPropagation();
+        if (props.onClick) props.onClick(e);
+      }}
       {...props}
     />
   </div>
@@ -83,16 +89,31 @@ CommandEmpty.displayName = CommandPrimitive.Empty.displayName
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Group
-    ref={ref}
-    className={cn(
-      "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, children, ...props }, ref) => {
+  // Safety check for children to prevent "undefined is not iterable" errors
+  const safeChildren = React.useMemo(() => {
+    try {
+      // Return children if it's valid, otherwise return null
+      return children !== undefined && children !== null ? children : null;
+    } catch (error) {
+      console.error("Error in CommandGroup with children:", error);
+      return null;
+    }
+  }, [children]);
+
+  return (
+    <CommandPrimitive.Group
+      ref={ref}
+      className={cn(
+        "overflow-hidden p-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground",
+        className
+      )}
+      {...props}
+    >
+      {safeChildren}
+    </CommandPrimitive.Group>
+  );
+})
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
@@ -118,6 +139,21 @@ const CommandItem = React.forwardRef<
       "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
       className
     )}
+    onSelect={(value) => {
+      // Prevent event bubbling issues
+      try {
+        if (props.onSelect) {
+          props.onSelect(value);
+        }
+      } catch (error) {
+        console.error("Error in CommandItem onSelect:", error);
+      }
+    }}
+    onClick={(e) => {
+      // Prevent event bubbling
+      e.stopPropagation();
+      if (props.onClick) props.onClick(e);
+    }}
     {...props}
   />
 ))
