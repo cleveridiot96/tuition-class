@@ -235,14 +235,14 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Agent (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ""}>
+                  <Select onValueChange={field.onChange} value={field.value || "no-agent"}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select agent (optional)" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No Agent</SelectItem>
+                      <SelectItem value="no-agent">No Agent</SelectItem>
                       {agents.map((agent) => (
                         <SelectItem key={agent.id} value={agent.id}>
                           {agent.name}

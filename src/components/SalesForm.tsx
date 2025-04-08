@@ -237,7 +237,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       netAmount,
       billAmount: data.billAmount || 0,
       brokerage,
-      location: "", // Empty location field since it's no longer needed
       id: initialData?.id || Date.now().toString()
     };
     
@@ -476,7 +475,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
                         </FormControl>
                         <SelectContent searchable>
                           {combinedCustomers.length === 0 ? (
-                            <SelectItem value="no-customers">No customers available</SelectItem>
+                            <SelectItem value="no-customers-available" disabled>No customers available</SelectItem>
                           ) : (
                             combinedCustomers.map((customer) => (
                               <SelectItem key={customer.id} value={customer.id}>
