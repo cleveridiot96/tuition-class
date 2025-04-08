@@ -1,5 +1,6 @@
 
 import { v4 as uuidv4 } from 'uuid';
+import { debounce, throttle } from '@/lib/utils';
 import { 
   getPurchases, 
   getSales, 
@@ -9,6 +10,8 @@ import {
   getBrokers,
   getCustomers,
   getTransporters,
+  getSuppliers,
+  getInventory,
 } from './storageService';
 
 export interface AccountEntry {
@@ -23,7 +26,7 @@ export interface AccountEntry {
   reference: string;
   narration: string;
   transactionId: string;
-  transactionType: 'purchase' | 'sale' | 'payment' | 'receipt' | 'commission' | 'opening' | 'other';
+  transactionType: 'purchase' | 'sale' | 'payment' | 'receipt' | 'commission' | 'opening' | 'expense' | 'other';
   isDeleted?: boolean;
 }
 
@@ -33,6 +36,7 @@ export interface AccountBalance {
   debit: number;
   credit: number;
   balance: number;
+  balanceType: 'DR' | 'CR';
   transactionCount: number;
 }
 
@@ -64,8 +68,39 @@ export type AccountType =
 // Storage keys
 const ACCOUNT_ENTRIES_KEY = 'accountEntries';
 const ACCOUNTS_KEY = 'accounts';
+const MANUAL_EXPENSES_KEY = 'manualExpenses';
 
-// Get all account entries
+// Manual expense entry
+export interface ManualExpense {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+  paymentMode: 'cash' | 'bank';
+  category: string;
+  reference?: string;
+  partyId?: string;
+  partyName?: string;
+  isDeleted?: boolean;
+}
+
+// Cache for ledger data to improve performance
+const ledgerCache = new Map<string, LedgerEntry[]>();
+const accountBalanceCache = new Map<string, AccountBalance>();
+const MAX_CACHE_SIZE = 50;
+
+// Helper for cache management
+const clearCacheForAccount = (accountId: string) => {
+  ledgerCache.delete(accountId);
+  accountBalanceCache.delete(accountId);
+};
+
+const clearAllCaches = () => {
+  ledgerCache.clear();
+  accountBalanceCache.clear();
+};
+
+// Get all account entries with memoization
 export const getAccountEntries = (): AccountEntry[] => {
   try {
     const entries = localStorage.getItem(ACCOUNT_ENTRIES_KEY);
@@ -80,6 +115,8 @@ export const getAccountEntries = (): AccountEntry[] => {
 export const saveAccountEntries = (entries: AccountEntry[]): void => {
   try {
     localStorage.setItem(ACCOUNT_ENTRIES_KEY, JSON.stringify(entries));
+    // Clear caches as data has changed
+    clearAllCaches();
   } catch (error) {
     console.error('Error saving account entries:', error);
   }
@@ -100,9 +137,56 @@ export const getAccounts = (): Account[] => {
 export const saveAccounts = (accounts: Account[]): void => {
   try {
     localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+    // Clear caches as account data has changed
+    clearAllCaches();
   } catch (error) {
     console.error('Error saving accounts:', error);
   }
+};
+
+// Get all manual expenses
+export const getManualExpenses = (): ManualExpense[] => {
+  try {
+    const expenses = localStorage.getItem(MANUAL_EXPENSES_KEY);
+    return expenses ? JSON.parse(expenses) : [];
+  } catch (error) {
+    console.error('Error getting manual expenses:', error);
+    return [];
+  }
+};
+
+// Save manual expenses
+export const saveManualExpenses = (expenses: ManualExpense[]): void => {
+  try {
+    localStorage.setItem(MANUAL_EXPENSES_KEY, JSON.stringify(expenses));
+  } catch (error) {
+    console.error('Error saving manual expenses:', error);
+  }
+};
+
+// Add a manual expense
+export const addManualExpense = (expense: ManualExpense): ManualExpense => {
+  const expenses = getManualExpenses();
+  const newExpense = {
+    ...expense,
+    id: expense.id || uuidv4()
+  };
+  expenses.push(newExpense);
+  saveManualExpenses(expenses);
+  
+  // Create double entry for the expense
+  createDoubleEntry(
+    expense.date,
+    'acc-expenses', // Debit Expenses Account
+    expense.paymentMode === 'cash' ? 'acc-cash' : 'acc-bank', // Credit Cash/Bank Account
+    expense.amount,
+    expense.reference || '',
+    expense.description,
+    'expense',
+    newExpense.id
+  );
+  
+  return newExpense;
 };
 
 // Add an account entry
@@ -113,6 +197,10 @@ export const addAccountEntry = (entry: AccountEntry): void => {
     id: entry.id || uuidv4()
   });
   saveAccountEntries(entries);
+  
+  // Clear cache for affected accounts
+  clearCacheForAccount(entry.accountId);
+  clearCacheForAccount(entry.oppositeAccountId);
 };
 
 // Add an account
@@ -124,7 +212,103 @@ export const addAccount = (account: Account): Account => {
   };
   accounts.push(newAccount);
   saveAccounts(accounts);
+  
+  // If account has opening balance, create opening balance entry
+  if (newAccount.openingBalance && newAccount.openingBalance > 0) {
+    const oppositeAccountId = newAccount.openingBalanceType === 'debit' 
+      ? 'acc-opening-balance-equity' 
+      : 'acc-opening-balance-equity';
+    
+    const oppositeAccount = getAccountById(oppositeAccountId) || 
+      addAccount({
+        id: 'acc-opening-balance-equity',
+        name: 'Opening Balance Equity',
+        type: 'equity',
+        isSystemAccount: true
+      });
+    
+    // Create opening balance entry
+    const entry: AccountEntry = {
+      id: uuidv4(),
+      date: new Date().toISOString().split('T')[0],
+      accountId: newAccount.id,
+      accountName: newAccount.name,
+      oppositeAccountId: oppositeAccount.id,
+      oppositeAccountName: oppositeAccount.name,
+      amount: newAccount.openingBalance,
+      type: newAccount.openingBalanceType || 'debit',
+      reference: 'Opening Balance',
+      narration: `Opening Balance for ${newAccount.name}`,
+      transactionId: uuidv4(),
+      transactionType: 'opening'
+    };
+    
+    addAccountEntry(entry);
+  }
+  
   return newAccount;
+};
+
+// Update account
+export const updateAccount = (account: Account): Account => {
+  const accounts = getAccounts();
+  const index = accounts.findIndex(a => a.id === account.id);
+  
+  if (index !== -1) {
+    const oldAccount = accounts[index];
+    accounts[index] = account;
+    saveAccounts(accounts);
+    
+    // Handle opening balance changes
+    const oldOpening = oldAccount.openingBalance || 0;
+    const newOpening = account.openingBalance || 0;
+    
+    if (oldOpening !== newOpening || oldAccount.openingBalanceType !== account.openingBalanceType) {
+      // Remove existing opening balance entries
+      const entries = getAccountEntries();
+      const filtered = entries.filter(entry => 
+        !(entry.accountId === account.id && entry.transactionType === 'opening')
+      );
+      saveAccountEntries(filtered);
+      
+      // Add new opening balance if needed
+      if (newOpening > 0) {
+        const oppositeAccountId = 'acc-opening-balance-equity';
+        
+        const oppositeAccount = getAccountById(oppositeAccountId) || 
+          addAccount({
+            id: 'acc-opening-balance-equity',
+            name: 'Opening Balance Equity',
+            type: 'equity',
+            isSystemAccount: true
+          });
+        
+        // Create opening balance entry
+        const entry: AccountEntry = {
+          id: uuidv4(),
+          date: new Date().toISOString().split('T')[0],
+          accountId: account.id,
+          accountName: account.name,
+          oppositeAccountId: oppositeAccount.id,
+          oppositeAccountName: oppositeAccount.name,
+          amount: newOpening,
+          type: account.openingBalanceType || 'debit',
+          reference: 'Opening Balance',
+          narration: `Opening Balance for ${account.name}`,
+          transactionId: uuidv4(),
+          transactionType: 'opening'
+        };
+        
+        addAccountEntry(entry);
+      }
+    }
+    
+    // Clear cache for this account
+    clearCacheForAccount(account.id);
+    return account;
+  }
+  
+  return account;
 };
 
 // Get account by ID
@@ -150,6 +334,11 @@ export const getEntriesForAccount = (accountId: string): AccountEntry[] => {
 
 // Calculate account balance
 export const calculateAccountBalance = (accountId: string): AccountBalance => {
+  // Check cache first
+  if (accountBalanceCache.has(accountId)) {
+    return accountBalanceCache.get(accountId)!;
+  }
+  
   const account = getAccountById(accountId);
   if (!account) {
     return {
@@ -158,6 +347,7 @@ export const calculateAccountBalance = (accountId: string): AccountBalance => {
       debit: 0,
       credit: 0,
       balance: 0,
+      balanceType: 'DR',
       transactionCount: 0
     };
   }
@@ -196,17 +386,33 @@ export const calculateAccountBalance = (accountId: string): AccountBalance => {
     transactionCount++;
   });
   
-  // Calculate balance based on account type
+  // Determine balance and balance type based on account type
   let balance = debit - credit;
+  let balanceType: 'DR' | 'CR' = balance >= 0 ? 'DR' : 'CR';
   
-  return {
+  if (balance < 0) {
+    balance = Math.abs(balance);
+  }
+  
+  const result = {
     accountId,
     accountName: account.name,
     debit,
     credit,
     balance,
+    balanceType,
     transactionCount
   };
+  
+  // Cache the result
+  if (accountBalanceCache.size >= MAX_CACHE_SIZE) {
+    // Remove oldest entry if cache is full
+    const firstKey = accountBalanceCache.keys().next().value;
+    accountBalanceCache.delete(firstKey);
+  }
+  accountBalanceCache.set(accountId, result);
+  
+  return result;
 };
 
 // Create double entry
@@ -263,6 +469,10 @@ export const createDoubleEntry = (
   // Add both entries
   addAccountEntry(debitEntry);
   addAccountEntry(creditEntry);
+  
+  // Clear cache for affected accounts
+  clearCacheForAccount(debitAccountId);
+  clearCacheForAccount(creditAccountId);
 };
 
 // Initialize system accounts
@@ -278,7 +488,10 @@ export const initializeSystemAccounts = (): void => {
     { id: 'acc-sales', name: 'Sales', type: 'income', isSystemAccount: true },
     { id: 'acc-commission', name: 'Commission', type: 'expense', isSystemAccount: true },
     { id: 'acc-transport', name: 'Transport', type: 'expense', isSystemAccount: true },
-    { id: 'acc-expenses', name: 'Expenses', type: 'expense', isSystemAccount: true }
+    { id: 'acc-expenses', name: 'Expenses', type: 'expense', isSystemAccount: true },
+    { id: 'acc-office-expenses', name: 'Office Expenses', type: 'expense', isSystemAccount: true },
+    { id: 'acc-salary', name: 'Salary', type: 'expense', isSystemAccount: true },
+    { id: 'acc-opening-balance-equity', name: 'Opening Balance Equity', type: 'equity', isSystemAccount: true }
   ];
   
   systemAccounts.forEach(account => addAccount(account));
@@ -293,6 +506,7 @@ export const createContactAccounts = (): void => {
   const brokers = getBrokers();
   const customers = getCustomers();
   const transporters = getTransporters();
+  const suppliers = getSuppliers();
   
   agents.forEach(agent => {
     if (!getAccountByName(agent.name)) {
@@ -345,10 +559,23 @@ export const createContactAccounts = (): void => {
       });
     }
   });
+  
+  suppliers.forEach(supplier => {
+    if (!getAccountByName(supplier.name)) {
+      addAccount({
+        id: `acc-supplier-${supplier.id}`,
+        name: supplier.name,
+        type: 'supplier',
+        isSystemAccount: false,
+        openingBalance: 0,
+        openingBalanceType: 'credit'
+      });
+    }
+  });
 };
 
 // Refresh accounting data from transactions
-export const refreshAccountingData = (): void => {
+export const refreshAccountingData = throttle((): void => {
   // Clear existing entries
   saveAccountEntries([]);
   
@@ -497,7 +724,11 @@ export const refreshAccountingData = (): void => {
           // Check in transporters
           partyAccountId = `acc-transporter-${payment.partyId}`;
           if (!getAccountById(partyAccountId)) {
-            partyAccountId = '';
+            // Check in suppliers
+            partyAccountId = `acc-supplier-${payment.partyId}`;
+            if (!getAccountById(partyAccountId)) {
+              partyAccountId = '';
+            }
           }
         }
       }
@@ -541,7 +772,26 @@ export const refreshAccountingData = (): void => {
       );
     }
   });
-};
+  
+  // Process manual expenses
+  const manualExpenses = getManualExpenses().filter(e => !e.isDeleted);
+  manualExpenses.forEach(expense => {
+    // Handle general expenses
+    createDoubleEntry(
+      expense.date,
+      'acc-expenses', // Debit appropriate expense account based on category
+      expense.paymentMode === 'cash' ? 'acc-cash' : 'acc-bank', // Credit Cash/Bank
+      expense.amount,
+      expense.reference || '',
+      expense.description,
+      'expense',
+      expense.id
+    );
+  });
+  
+  // Clear all caches after refreshing
+  clearAllCaches();
+}, 500);
 
 // Get formatted ledger for account
 export interface LedgerEntry {
@@ -557,6 +807,11 @@ export interface LedgerEntry {
 }
 
 export const getAccountLedger = (accountId: string): LedgerEntry[] => {
+  // Check cache first
+  if (ledgerCache.has(accountId)) {
+    return ledgerCache.get(accountId)!;
+  }
+  
   const account = getAccountById(accountId);
   if (!account) return [];
   
@@ -656,6 +911,14 @@ export const getAccountLedger = (accountId: string): LedgerEntry[] => {
     });
   });
   
+  // Cache the result
+  if (ledgerCache.size >= MAX_CACHE_SIZE) {
+    // Remove oldest entry if cache is full
+    const firstKey = ledgerCache.keys().next().value;
+    ledgerCache.delete(firstKey);
+  }
+  ledgerCache.set(accountId, ledger);
+  
   return ledger;
 };
 
@@ -669,6 +932,7 @@ export const getCashBookEntries = (startDate?: string, endDate?: string): Ledger
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
+      end.setHours(23, 59, 59); // Include the full end day
       return entryDate >= start && entryDate <= end;
     }
     
@@ -679,6 +943,7 @@ export const getCashBookEntries = (startDate?: string, endDate?: string): Ledger
     
     if (endDate) {
       const end = new Date(endDate);
+      end.setHours(23, 59, 59); // Include the full end day
       return entryDate <= end;
     }
     
@@ -686,8 +951,84 @@ export const getCashBookEntries = (startDate?: string, endDate?: string): Ledger
   });
 };
 
+// Get all accounts with balances for dashboard summary
+export const getAllAccountBalances = (): Record<string, AccountBalance> => {
+  const accounts = getAccounts().filter(a => !a.isDeleted);
+  const balances: Record<string, AccountBalance> = {};
+  
+  accounts.forEach(account => {
+    balances[account.id] = calculateAccountBalance(account.id);
+  });
+  
+  return balances;
+};
+
+// Get total receivables (customers)
+export const getTotalReceivables = (): { total: number, accounts: AccountBalance[] } => {
+  const accounts = getAccounts().filter(a => a.type === 'customer' && !a.isDeleted);
+  let total = 0;
+  const accountBalances: AccountBalance[] = [];
+  
+  accounts.forEach(account => {
+    const balance = calculateAccountBalance(account.id);
+    if (balance.balanceType === 'DR') {
+      total += balance.balance;
+      accountBalances.push(balance);
+    }
+  });
+  
+  return { total, accounts: accountBalances };
+};
+
+// Get total payables (suppliers, agents, transporters, brokers)
+export const getTotalPayables = (): { total: number, accounts: AccountBalance[] } => {
+  const accounts = getAccounts().filter(a => 
+    (a.type === 'supplier' || a.type === 'agent' || 
+     a.type === 'transporter' || a.type === 'broker') && 
+    !a.isDeleted
+  );
+  
+  let total = 0;
+  const accountBalances: AccountBalance[] = [];
+  
+  accounts.forEach(account => {
+    const balance = calculateAccountBalance(account.id);
+    if (balance.balanceType === 'CR') {
+      total += balance.balance;
+      accountBalances.push(balance);
+    }
+  });
+  
+  return { total, accounts: accountBalances };
+};
+
+// Get today's cash transactions
+export const getTodayCashTransactions = (): { cashIn: number, cashOut: number } => {
+  const today = new Date().toISOString().split('T')[0];
+  const entries = getCashBookEntries(today, today);
+  
+  let cashIn = 0;
+  let cashOut = 0;
+  
+  entries.forEach(entry => {
+    if (entry.debit > 0) cashIn += entry.debit;
+    if (entry.credit > 0) cashOut += entry.credit;
+  });
+  
+  return { cashIn, cashOut };
+};
+
+// Get total stock value
+export const getTotalStockValue = (): number => {
+  const inventory = getInventory().filter(item => !item.isDeleted);
+  return inventory.reduce((total, item) => {
+    return total + (item.finalCost * item.remainingQuantity);
+  }, 0);
+};
+
 // Initialize accounting data
-export const initializeAccounting = (): void => {
+export const initializeAccounting = debounce((): void => {
   initializeSystemAccounts();
   refreshAccountingData();
-};
+}, 300);
+

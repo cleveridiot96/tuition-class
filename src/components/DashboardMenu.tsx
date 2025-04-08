@@ -1,121 +1,133 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { 
-  ShoppingBag,
-  ShoppingCart, 
-  PackageOpen, 
-  Wallet,
-  Receipt,
-  BookOpen,
-  Users,
-  Settings,
-  CreditCard
+  BarChart3, 
+  BookText, 
+  Briefcase, 
+  Calculator, 
+  CircleDollarSign, 
+  ClipboardList, 
+  FileSpreadsheet, 
+  Package,
+  ReceiptText, 
+  ShoppingBag, 
+  Truck, 
+  Users2, 
+  Warehouse
 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
-interface MenuItemProps {
-  icon: React.ReactNode;
-  title: string;
-  to: string;
-  description: string;
-  color: string;
-}
-
-const MenuItem = ({ icon, title, to, description, color }: MenuItemProps) => {
-  return (
-    <Tooltip delayDuration={300}>
-      <TooltipTrigger asChild>
-        <Link to={to} className="flex-1 min-w-[150px] group">
-          <div className={`menu-card transition-all duration-300 bg-white hover:bg-${color}/10 border border-gray-200 hover:border-${color} rounded-lg p-4 shadow-sm hover:shadow-lg flex flex-col items-center gap-3 h-full`}>
-            <div className={`menu-card-icon text-${color} transition-transform group-hover:scale-110 group-hover:-translate-y-1`}>
-              {icon}
-            </div>
-            <span className={`menu-card-text font-medium text-lg text-gray-800 group-hover:text-${color}`}>{title}</span>
-          </div>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>{description}</p>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
 
 const DashboardMenu = () => {
+  const menuItems = [
+    {
+      title: "Purchases",
+      icon: <ShoppingBag className="w-6 h-6 mb-2 text-blue-600" />,
+      link: "/purchases",
+      description: "Record and manage purchases",
+    },
+    {
+      title: "Sales",
+      icon: <BarChart3 className="w-6 h-6 mb-2 text-green-600" />,
+      link: "/sales",
+      description: "Create and manage sales",
+    },
+    {
+      title: "Inventory",
+      icon: <Warehouse className="w-6 h-6 mb-2 text-amber-600" />,
+      link: "/inventory",
+      description: "View and manage stock",
+    },
+    {
+      title: "Stock Report",
+      icon: <Package className="w-6 h-6 mb-2 text-orange-600" />,
+      link: "/stock",
+      description: "Real-time stock analysis",
+    },
+    {
+      title: "Payments",
+      icon: <CircleDollarSign className="w-6 h-6 mb-2 text-red-600" />,
+      link: "/payments",
+      description: "Record outgoing payments",
+    },
+    {
+      title: "Receipts",
+      icon: <ReceiptText className="w-6 h-6 mb-2 text-green-600" />,
+      link: "/receipts",
+      description: "Manage incoming payments",
+    },
+    {
+      title: "Transport",
+      icon: <Truck className="w-6 h-6 mb-2 text-blue-600" />,
+      link: "/transport",
+      description: "Manage transporters & routes",
+    },
+    {
+      title: "Contacts",
+      icon: <Users2 className="w-6 h-6 mb-2 text-indigo-600" />,
+      link: "/master",
+      description: "Manage people & companies",
+    },
+    {
+      title: "Cash Book",
+      icon: <BookText className="w-6 h-6 mb-2 text-purple-600" />,
+      link: "/cashbook",
+      description: "Track cash transactions",
+    },
+    {
+      title: "Ledger",
+      icon: <ClipboardList className="w-6 h-6 mb-2 text-gray-600" />,
+      link: "/ledger",
+      description: "View party balances",
+    },
+    {
+      title: "Calculator",
+      icon: <Calculator className="w-6 h-6 mb-2 text-gray-600" />,
+      link: "/calculator",
+      description: "Business calculations",
+    },
+    {
+      title: "Backup",
+      icon: <FileSpreadsheet className="w-6 h-6 mb-2 text-cyan-600" />,
+      link: "#",
+      description: "Backup or export data",
+      onClick: () => {
+        // Placeholder for future functionality
+      },
+    },
+  ];
+
   return (
-    <TooltipProvider>
-      <div className="container mx-auto px-4 mt-6">
-        {/* First row - 4 buttons */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <MenuItem 
-            icon={<ShoppingCart size={56} />} 
-            title="Sales" 
-            to="/sales" 
-            description="Manage your sales transactions"
-            color="ag-orange"
-          />
-          <MenuItem 
-            icon={<ShoppingBag size={56} />} 
-            title="Purchase" 
-            to="/purchases" 
-            description="Record and track your purchases"
-            color="ag-green"
-          />
-          <MenuItem 
-            icon={<PackageOpen size={56} />} 
-            title="Stock" 
-            to="/inventory" 
-            description="View and manage your inventory"
-            color="ag-brown"
-          />
-          <MenuItem 
-            icon={<Receipt size={56} />} 
-            title="Receipts" 
-            to="/receipts" 
-            description="Manage payment receipts"
-            color="ag-orange-dark"
-          />
-        </div>
-        
-        {/* Second row - 4 buttons */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MenuItem 
-            icon={<Wallet size={56} />} 
-            title="Payments" 
-            to="/payments" 
-            description="Manage outgoing payments"
-            color="ag-green-dark"
-          />
-          <MenuItem 
-            icon={<BookOpen size={56} />} 
-            title="Ledger" 
-            to="/ledger" 
-            description="View account records and balances"
-            color="ag-brown-dark"
-          />
-          <MenuItem 
-            icon={<CreditCard size={56} />} 
-            title="Cash Book" 
-            to="/cashbook" 
-            description="Manage cash transactions"
-            color="ag-green-light"
-          />
-          <MenuItem 
-            icon={<Settings size={56} />} 
-            title="Master" 
-            to="/master" 
-            description="Configure business settings"
-            color="ag-brown-light"
-          />
-        </div>
+    <div className="mb-8">
+      <h2 className="text-2xl font-bold mb-4 text-ag-brown-dark">Quick Access</h2>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+        {menuItems.map((item) => (
+          <Card 
+            key={item.title}
+            className="hover:border-primary hover:shadow-md transition-all duration-200"
+          >
+            {item.onClick ? (
+              <CardContent 
+                className="p-4 flex flex-col items-center text-center cursor-pointer" 
+                onClick={item.onClick}
+              >
+                {item.icon}
+                <h3 className="font-bold">{item.title}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+              </CardContent>
+            ) : (
+              <Link to={item.link}>
+                <CardContent className="p-4 flex flex-col items-center text-center">
+                  {item.icon}
+                  <h3 className="font-bold">{item.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                </CardContent>
+              </Link>
+            )}
+          </Card>
+        ))}
       </div>
-    </TooltipProvider>
+    </div>
   );
 };
 
