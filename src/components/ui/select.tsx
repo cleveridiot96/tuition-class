@@ -78,12 +78,14 @@ const SelectContent = React.forwardRef<
 >(({ className, children, position = "popper", searchable = false, ...props }, ref) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   
+  // Make sure children is always valid before we try to iterate over it
+  const childrenArray = React.Children.toArray(children);
+  
   // Filter children based on search query
   const filteredChildren = React.useMemo(() => {
-    if (!searchable || !searchQuery) return children;
-    
-    const childrenArray = React.Children.toArray(children);
-    if (!childrenArray || childrenArray.length === 0) return children;
+    if (!searchable || !searchQuery || !childrenArray || childrenArray.length === 0) {
+      return children;
+    }
     
     return React.Children.map(childrenArray, (child) => {
       if (!React.isValidElement(child)) return null;
@@ -100,7 +102,7 @@ const SelectContent = React.forwardRef<
         
         if (!groupChildren || groupChildren.length === 0) return child;
         
-        const filteredGroupChildren = groupChildren.filter((groupChild) => {
+        const filteredGroupChildren = React.Children.toArray(groupChildren).filter((groupChild) => {
           if (!React.isValidElement(groupChild)) return false;
           const groupChildText = String(groupChild.props?.children || '').toLowerCase();
           return groupChildText.includes(searchQuery.toLowerCase());
@@ -113,7 +115,7 @@ const SelectContent = React.forwardRef<
       
       return child;
     });
-  }, [children, searchQuery, searchable]);
+  }, [children, searchQuery, searchable, childrenArray]);
   
   return (
     <SelectPrimitive.Portal>

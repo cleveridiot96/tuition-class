@@ -28,8 +28,8 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options,
-  value,
+  options = [], // Ensure options has a default empty array
+  value = "",
   onSelect,
   onChange,
   onInputChange,
@@ -42,43 +42,56 @@ export function Combobox({
   const [selectedValue, setSelectedValue] = React.useState(value || "");
 
   React.useEffect(() => {
-    if (value !== undefined) {
+    if (value !== undefined && value !== null) {
       setSelectedValue(value);
+    } else {
+      setSelectedValue("");
     }
   }, [value]);
 
   const handleSelect = (currentValue: string) => {
-    setSelectedValue(currentValue);
-    setOpen(false);
-    onSelect?.(currentValue);
-    onChange?.(currentValue);
+    if (currentValue) {
+      setSelectedValue(currentValue);
+      setOpen(false);
+      if (onSelect) onSelect(currentValue);
+      if (onChange) onChange(currentValue);
+    }
   };
 
-  const handleInputChange = (value: string) => {
-    setInputValue(value);
-    onInputChange?.(value);
+  const handleInputChange = (newValue: string) => {
+    setInputValue(newValue);
+    if (onInputChange) onInputChange(newValue);
     
     // If the input is cleared, also clear the selected value
-    if (!value) {
+    if (!newValue) {
       setSelectedValue("");
-      onChange?.("");
+      if (onChange) onChange("");
     }
   };
 
   // Filter options based on input value
   const filteredOptions = React.useMemo(() => {
-    if (!inputValue) return options;
+    // Ensure options is always an array
+    const safeOptions = Array.isArray(options) ? options : [];
     
-    return options.filter(option => 
+    if (!inputValue) return safeOptions;
+    
+    return safeOptions.filter(option => 
       option.label.toLowerCase().includes(inputValue.toLowerCase()) ||
       option.value.toLowerCase().includes(inputValue.toLowerCase())
     );
   }, [options, inputValue]);
 
   // Find the display text
-  const displayText = selectedValue
-    ? options.find((option) => option.value === selectedValue)?.label || selectedValue
-    : "";
+  const displayText = React.useMemo(() => {
+    if (!selectedValue) return "";
+    
+    // Ensure options is always an array
+    const safeOptions = Array.isArray(options) ? options : [];
+    const foundOption = safeOptions.find((option) => option.value === selectedValue);
+    
+    return foundOption ? foundOption.label : selectedValue;
+  }, [selectedValue, options]);
 
   return (
     <Popover open={disabled ? false : open} onOpenChange={disabled ? undefined : setOpen}>
@@ -109,7 +122,7 @@ export function Combobox({
           />
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup className="max-h-60 overflow-y-auto">
-            {filteredOptions.map((option) => (
+            {Array.isArray(filteredOptions) && filteredOptions.map((option) => (
               <CommandItem
                 key={option.value}
                 value={option.value}
