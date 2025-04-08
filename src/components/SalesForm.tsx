@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -395,7 +395,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     setShowSimilarCustomerDialog(false);
   };
 
-  // Transform data for combobox - ensure we never pass undefined to map functions
   const customerOptions = (customers || []).map(customer => ({
     value: customer.id,
     label: customer.name
@@ -413,7 +412,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
 
   const inventoryOptions = (inventory || []).map(item => ({
     value: item.lotNumber,
-    label: `${item.lotNumber} (${item.quantity} bags available) - ${item.location}`
+    label: `${item.lotNumber} (${item.quantity} bags available) - ${item.location || 'No location'}`
   }));
 
   const locationOptions = (locations || []).map(location => ({
@@ -936,7 +935,7 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
             <DialogTitle>Similar Customer Name Found</DialogTitle>
             <DialogDescription>
               <span className="block mt-2">क्या आप "{similarCustomer?.name}" दर्ज करना चाहते हैं?</span>
-              <span className="block mt-1">आप نے اسی طرح کا نام درج کیا ہے: "{enteredCustomerName}"</span>
+              <span className="block mt-1">आप ने اسی طرح कا नाम दर्ज किया ہے: "{enteredCustomerName}"</span>
               <span className="block mt-2">Did you mean "{similarCustomer?.name}"?</span>
               <span className="block mt-1">You've entered a similar name: "{enteredCustomerName}"</span>
             </DialogDescription>

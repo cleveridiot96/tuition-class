@@ -21,7 +21,7 @@ import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } 
 
 import '@/App.css';
 
-const App: React.FC = () => {
+const App = () => {
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <React.Fragment>
+    <>
       <Router>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -66,7 +66,7 @@ const App: React.FC = () => {
         isOpen={showOpeningBalanceSetup} 
         onClose={() => setShowOpeningBalanceSetup(false)} 
       />
-    </React.Fragment>
+    </>
   );
 }
 

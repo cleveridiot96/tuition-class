@@ -25,10 +25,10 @@ const YearSelector = () => {
 
   const loadYears = () => {
     const allYears = getFinancialYears();
-    setYears(allYears);
+    setYears(allYears || []);
     
     const active = getActiveFinancialYear();
-    setActiveYear(active);
+    setActiveYear(active || null);
   };
 
   const handleYearChange = (yearId: string) => {
@@ -81,7 +81,7 @@ const YearSelector = () => {
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {years.map(year => (
+          {(years || []).map(year => (
             <SelectItem key={year.id} value={year.id}>
               {formatYearLabel(year)}
             </SelectItem>
