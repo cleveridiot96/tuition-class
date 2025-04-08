@@ -1,4 +1,5 @@
 
+import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
@@ -6,7 +7,11 @@ import './index.css'
 // Use faster root creation and avoid strict mode for better performance
 const renderApp = () => {
   const root = document.getElementById("root");
-  if (root) createRoot(root).render(<App />);
+  if (root) createRoot(root).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
 };
 
 // Check if the document is ready or still loading
