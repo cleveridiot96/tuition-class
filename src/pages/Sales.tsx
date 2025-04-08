@@ -69,6 +69,7 @@ interface Sale {
   netAmount: number;
   isDeleted?: boolean;
   brokerage?: number;
+  amount: number;
 }
 
 const Sales = () => {
@@ -116,7 +117,8 @@ const Sales = () => {
   const handleAdd = (data: Sale) => {
     const saleWithLocation = {
       ...data,
-      location: data.location || ""
+      location: data.location || "",
+      amount: data.netAmount
     };
     
     addSale(saleWithLocation);
@@ -139,7 +141,8 @@ const Sales = () => {
     
     const saleWithLocation = {
       ...updatedSale,
-      location: updatedSale.location || ""
+      location: updatedSale.location || "",
+      amount: updatedSale.netAmount
     };
     
     // If quantity changed, we need to adjust inventory
@@ -209,7 +212,8 @@ const Sales = () => {
     const updatedSale = { 
       ...saleToRestore, 
       isDeleted: false,
-      location: saleToRestore.location || ""
+      location: saleToRestore.location || "",
+      amount: saleToRestore.netAmount
     };
     updateSale(updatedSale);
     

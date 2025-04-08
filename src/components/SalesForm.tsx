@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -107,7 +106,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     defaultValues,
   });
 
-  // Load data
   useEffect(() => {
     setCustomers(getCustomers());
     setBrokers(getBrokers());
@@ -119,7 +117,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     }
   }, []);
 
-  // Set initial calculation values
   useEffect(() => {
     if (initialData) {
       setTotalAmount(initialData.totalAmount || 0);
@@ -127,24 +124,20 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       setTransportCost(initialData.transportCost || 0);
       setBrokerageAmount(initialData.brokerageAmount || 0);
       
-      // Check available quantity for this lot
       if (initialData.lotNumber) {
         const invItem = inventory.find(item => item.lotNumber === initialData.lotNumber);
         if (invItem) {
-          // Add back the current sale quantity to the available quantity
           setAvailableQuantity(invItem.quantity + initialData.quantity);
         }
       }
     }
   }, [initialData, inventory]);
 
-  // Handle lot number change to update available quantity
   useEffect(() => {
     const lotNumber = form.watch("lotNumber");
     if (lotNumber) {
       const invItem = inventory.find(item => item.lotNumber === lotNumber);
       if (invItem) {
-        // If editing, add back the current quantity
         const additionalQty = initialData && initialData.lotNumber === lotNumber ? initialData.quantity : 0;
         setAvailableQuantity(invItem.quantity + additionalQty);
       } else {
@@ -153,22 +146,18 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     }
   }, [form.watch("lotNumber"), inventory, initialData]);
 
-  // Handle calculation when values change
   useEffect(() => {
     const values = form.getValues();
     const netWeight = values.netWeight || 0;
     const rate = values.rate || 0;
     const transportRate = values.transportRate || 0;
     
-    // Calculate transport cost
     const calculatedTransportCost = netWeight * transportRate;
     setTransportCost(calculatedTransportCost);
     
-    // Calculate total
     const calculatedTotalAmount = netWeight * rate;
     setTotalAmount(calculatedTotalAmount);
     
-    // Calculate brokerage
     let calculatedBrokerageAmount = 0;
     if (showBrokerage && values.brokerId) {
       const brokerageValue = values.brokerageValue || 0;
@@ -180,7 +169,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
     }
     setBrokerageAmount(calculatedBrokerageAmount);
     
-    // Calculate net amount (total - brokerage)
     const calculatedNetAmount = calculatedTotalAmount - calculatedBrokerageAmount;
     setNetAmount(calculatedNetAmount);
   }, [form.watch(), showBrokerage]);
@@ -188,7 +176,6 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
   const handleFormSubmit = (data: FormData) => {
     const customer = customers.find(c => c.id === data.customerId);
     
-    // Format data for submission
     const submitData = {
       ...data,
       customer: customer ? customer.name : data.customerId,
@@ -202,9 +189,9 @@ const SalesForm = ({ onSubmit, initialData, onPrint }: SalesFormProps) => {
       transportCost,
       billAmount: data.billNumber ? totalAmount : 0,
       id: initialData?.id || `sale-${Date.now()}`,
+      amount: netAmount,
     };
     
-    // Submit the data
     onSubmit(submitData);
   };
 
