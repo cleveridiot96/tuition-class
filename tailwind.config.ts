@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -62,27 +61,6 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				},
-				// Agricultural theme colors
-				"ag-green": {
-					DEFAULT: "#2E7D32",
-					light: "#81C784",
-					dark: "#1B5E20"
-				},
-				"ag-brown": {
-					DEFAULT: "#795548",
-					light: "#A1887F",
-					dark: "#4E342E"
-				},
-				"ag-orange": {
-					DEFAULT: "#FF9800",
-					light: "#FFB74D",
-					dark: "#F57C00"
-				},
-				"ag-beige": {
-					DEFAULT: "#F5F5DC",
-					light: "#FFFFF0",
-					dark: "#E6E6C8"
 				}
 			},
 			borderRadius: {
@@ -111,11 +89,6 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
-			},
-			fontSize: {
-				"2xl": "1.75rem",
-				"3xl": "2rem",
-				"4xl": "2.5rem",
 			}
 		}
 	},
