@@ -2,10 +2,10 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { ChevronRight } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 import { useNavigate } from "react-router-dom";
-import { formatCurrency } from "@/utils/helpers";
+import { formatCurrency, formatDate } from "@/utils/helpers";
 
 interface ProfitData {
   purchase: number;
@@ -83,7 +83,7 @@ const ProfitLossStatement = ({
                           className="grid grid-cols-5 border-t cursor-pointer hover:bg-gray-50"
                           onClick={() => item.id && handleTransactionClick(item.id)}
                         >
-                          <div className="p-2">{format(parseISO(item.date), 'dd/MM/yy')}</div>
+                          <div className="p-2">{formatDate(item.date)}</div>
                           <div className="p-2">{formatCurrency(item.purchase)}</div>
                           <div className="p-2">{formatCurrency(item.sale)}</div>
                           <div className="p-2">{item.netWeight}</div>
@@ -97,7 +97,7 @@ const ProfitLossStatement = ({
                           <h4 className="font-semibold border-b pb-1">Transaction Details</h4>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                             <span className="font-medium">Date:</span>
-                            <span>{format(parseISO(item.date), 'dd MMM yyyy')}</span>
+                            <span>{formatDate(item.date)}</span>
                             
                             <span className="font-medium">Purchase Cost:</span>
                             <span>{formatCurrency(item.purchase)}</span>

@@ -1,6 +1,21 @@
 
 import React from "react";
 import { useToast } from "@/hooks/use-toast";
+import { format, parseISO } from "date-fns";
+
+/**
+ * Format date consistently across the application
+ * @param dateString The date string to format
+ * @returns Formatted date string in DD/MM/YY format
+ */
+export const formatDate = (dateString: string): string => {
+  try {
+    return format(parseISO(dateString), 'dd/MM/yy');
+  } catch (e) {
+    console.error("Error formatting date:", e);
+    return dateString;
+  }
+};
 
 /**
  * Detect if quantity represents bags or boxes based on weight pattern

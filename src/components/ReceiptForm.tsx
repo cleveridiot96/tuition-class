@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +32,7 @@ import {
   getTransporters
 } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/utils/helpers";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -83,7 +83,6 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
     }
   });
 
-  // Load party data when party type changes
   useEffect(() => {
     loadParties(partyType);
   }, [partyType]);
@@ -121,10 +120,8 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
   };
 
   const handleFormSubmit = (data: FormData) => {
-    // Get party name for record
     const selectedParty = parties.find(p => p.id === data.partyId);
     
-    // Format data for submission
     const submitData = {
       ...data,
       partyName: selectedParty?.name || "",
@@ -133,11 +130,9 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
     
     setCurrentReceipt(submitData);
     
-    // Submit the data
     onSubmit(submitData);
     
     if (!initialData) {
-      // Only show receipt dialog for new receipts
       setIsReceiptDialogOpen(true);
       toast({
         title: "Receipt Created",
@@ -147,10 +142,11 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
   };
 
   const handlePrintReceipt = () => {
-    // In a real app, this would connect to actual printing functionality
-    // For now we'll just simulate printing with a window.print() call
     const printWindow = window.open('', '_blank');
     if (printWindow) {
+      const receiptDate = new Date(currentReceipt?.date);
+      const formattedDate = format(receiptDate, 'dd/MM/yy');
+      
       const receiptHtml = `
         <html>
           <head>
@@ -182,7 +178,7 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
               </div>
               <div class="row">
                 <div class="label">Date:</div>
-                <div class="value">${new Date(currentReceipt?.date).toLocaleDateString()}</div>
+                <div class="value">${formattedDate}</div>
               </div>
               <div class="row">
                 <div class="label">Received From:</div>

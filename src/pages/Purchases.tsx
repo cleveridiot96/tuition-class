@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -53,6 +52,7 @@ import {
   TableHead,
   TableCell
 } from "@/components/ui/table";
+import { formatDate } from "@/utils/helpers";
 
 const Purchases = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -362,7 +362,7 @@ const Purchases = () => {
                     {purchases.map((purchase) => (
                       <TableRow key={purchase.id}>
                         <TableCell className="font-medium">{purchase.lotNumber}</TableCell>
-                        <TableCell>{format(new Date(purchase.date), "dd MMM yyyy")}</TableCell>
+                        <TableCell>{formatDate(purchase.date)}</TableCell>
                         <TableCell>{purchase.agent || "None"}</TableCell>
                         <TableCell>{purchase.party || "-"}</TableCell>
                         <TableCell>{purchase.location || "-"}</TableCell>

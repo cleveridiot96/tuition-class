@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -18,8 +17,8 @@ import { format, parseISO } from "date-fns";
 import BackupRestoreControls from "@/components/BackupRestoreControls";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
 import DashboardSummary from "@/components/DashboardSummary";
+import { formatDate } from "@/utils/helpers";
 
-// Define interfaces for type safety
 interface ProfitData {
   purchase: number;
   sale: number;
@@ -57,7 +56,6 @@ const Index = () => {
     setIsRefreshing(true);
     
     try {
-      // Force clear localStorage cache by using a timestamp
       localStorage.setItem('lastDataRefresh', Date.now().toString());
       
       const purchases = getPurchases() || [];
@@ -182,14 +180,11 @@ const Index = () => {
     }
   }, [dataVersion, loadDashboardData]);
 
-  // Add route change detection
   useEffect(() => {
     const handleRouteChange = () => {
-      // Force data refresh when returning to this page
       loadDashboardData();
     };
     
-    // Force refresh when component mounts (returning to this page)
     handleRouteChange();
     
     window.addEventListener('popstate', handleRouteChange);
@@ -217,7 +212,6 @@ const Index = () => {
       if (backupData) {
         localStorage.setItem('preFormatBackup', backupData);
         
-        // Clear all data completely, including master data
         clearAllData();
         clearAllMasterData();
         
@@ -236,7 +230,6 @@ const Index = () => {
           description: "All data has been reset to initial state. A backup was created automatically.",
         });
         
-        // Clear any cached data in the component state
         setTimeout(() => {
           loadDashboardData();
         }, 500);
