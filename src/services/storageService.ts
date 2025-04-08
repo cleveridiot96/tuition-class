@@ -1,4 +1,3 @@
-
 import { useToast } from "@/hooks/use-toast";
 
 // This file re-exports all functionality from individual service files 
@@ -230,6 +229,13 @@ export const getCustomers = (): Customer[] => {
 
 export const addCustomer = (customer: Customer): void => {
   const customers = getCustomers();
+  
+  // Check if customer with same name already exists to prevent duplicates
+  const existingCustomer = customers.find(c => c.name === customer.name);
+  if (existingCustomer) {
+    return; // Don't add duplicate customer
+  }
+  
   customers.push(customer);
   localStorage.setItem('customers', JSON.stringify(customers));
 };
@@ -380,9 +386,27 @@ export function getSales(): Sale[] {
 }
 
 export function addSale(sale: Sale): void {
+  // Create customer if it doesn't exist
+  if (sale.customer && !sale.customerId.startsWith("customer-")) {
+    const customerId = "customer-" + Date.now().toString();
+    const newCustomer = {
+      id: customerId,
+      name: sale.customer,
+      contactNumber: "",
+      address: "",
+      balance: 0
+    };
+    
+    addCustomer(newCustomer);
+    sale.customerId = customerId;
+  }
+
   const sales = getSales();
   sales.push(sale);
   localStorage.setItem(SALES_STORAGE_KEY, JSON.stringify(sales));
+  
+  // Update inventory after sale
+  updateInventoryAfterSale(sale.lotNumber, sale.quantity);
 }
 
 export function updateSale(updatedSale: Sale): void {
@@ -1011,6 +1035,18 @@ export const seedInitialData = (force = false) => {
   localStorage.setItem('customers', JSON.stringify(customers));
   localStorage.setItem('brokers', JSON.stringify(brokers));
   localStorage.setItem('transporters', JSON.stringify(transporters));
+  
+  // Add MST customer if it doesn't exist
+  const customers = getCustomers();
+  if (!customers.some(c => c.name === "MST")) {
+    addCustomer({
+      id: 'customer-mst-001',
+      name: 'MST',
+      contactNumber: '',
+      address: 'Mumbai',
+      balance: 0
+    });
+  }
 };
 
 // This function completely clears all data

@@ -39,9 +39,10 @@ import {
   updateAgentBalance,
   addInventoryItem,
   checkDuplicateLot,
-  Purchase
+  Purchase,
+  addSale
 } from "@/services/storageService";
-import { Edit, Trash2, RefreshCw, Plus } from "lucide-react";
+import { Edit, Trash2, RefreshCw, Plus, CheckCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import PurchaseForm from "@/components/PurchaseForm";
 import { 
@@ -61,6 +62,7 @@ const Purchases = () => {
   const [purchaseToDelete, setPurchaseToDelete] = useState<string | null>(null);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showDemoSuccess, setShowDemoSuccess] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -160,6 +162,94 @@ const Purchases = () => {
     setPurchaseToDelete(null);
   };
 
+  const addDemoTransaction = () => {
+    const purchaseDate = new Date().toISOString().split('T')[0];
+    const purchaseId = "purchase-ab6-" + Date.now().toString();
+    const lotNumber = "AB/6";
+    
+    const arAgentId = "agent-001"; // Assuming this is the ID of AR Agent
+    const sudhaTransporterId = "transporter-001"; // Assuming this is the ID of SUDHA transporter
+    
+    const bagsQuantity = 6;
+    const weightPerBag = 50;
+    const totalWeight = 300; // 300 KGS as specified
+    const ratePerKg = 320; // Example rate, can be adjusted
+    const transportRatePerKg = 17;
+    const transportCost = totalWeight * transportRatePerKg;
+    const totalAmountBeforeTransport = totalWeight * ratePerKg;
+    const totalPurchaseAmount = totalAmountBeforeTransport + transportCost;
+    
+    // Create purchase
+    const purchase = {
+      id: purchaseId,
+      date: purchaseDate,
+      lotNumber: lotNumber,
+      quantity: bagsQuantity,
+      agent: "AR Agent",
+      agentId: arAgentId,
+      party: "AR Agent",
+      partyId: arAgentId,
+      location: "Mumbai",
+      netWeight: totalWeight,
+      rate: ratePerKg,
+      transporter: "SUDHA",
+      transporterId: sudhaTransporterId,
+      transportRate: transportRatePerKg,
+      transportCost: transportCost,
+      totalAmount: totalAmountBeforeTransport,
+      expenses: 0,
+      totalAfterExpenses: totalPurchaseAmount,
+      ratePerKgAfterExpenses: totalPurchaseAmount / totalWeight,
+      notes: "Purchase of lot AB/6, 300 KGS from AR Agent via SUDHA transporter"
+    };
+    
+    // Add the purchase
+    addPurchase(purchase);
+    
+    // Generate unique sale ID
+    const saleId = "sale-ab6-" + Date.now().toString();
+    const saleDate = purchaseDate;
+    const saleRatePerKg = 430;
+    const saleTotalAmount = totalWeight * saleRatePerKg;
+    
+    // Create sale to MST (directly, no broker)
+    const sale = {
+      id: saleId,
+      date: saleDate,
+      lotNumber: lotNumber,
+      billNumber: "",
+      billAmount: saleTotalAmount,
+      customer: "MST",
+      customerId: "customer-mst-" + Date.now().toString(), // Creating a new customer if needed
+      broker: "",
+      brokerId: "",
+      quantity: bagsQuantity,
+      netWeight: totalWeight,
+      rate: saleRatePerKg,
+      transporter: "Self",
+      transporterId: "",
+      transportRate: 0,
+      transportCost: 0,
+      totalAmount: saleTotalAmount,
+      netAmount: saleTotalAmount,
+      amount: saleTotalAmount,
+      location: "Mumbai",
+      notes: "Sale of AB/6, 300 KGS to MST directly @430 per kg, no bill"
+    };
+    
+    // Add the sale
+    addSale(sale);
+    
+    // Refresh data and show success message
+    loadData();
+    setShowDemoSuccess(true);
+    
+    // Hide success message after 3 seconds
+    setTimeout(() => setShowDemoSuccess(false), 3000);
+    
+    toast.success("Demo transaction added successfully!");
+  };
+
   return (
     <div className="min-h-screen">
       <Navigation title="Purchases" showBackButton={true} />
@@ -178,6 +268,19 @@ const Purchases = () => {
             >
               <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
             </Button>
+            <Button
+              variant="outline"
+              onClick={addDemoTransaction}
+              className="mr-2"
+            >
+              Add Demo Transaction
+            </Button>
+            {showDemoSuccess && (
+              <div className="flex items-center text-green-600">
+                <CheckCircle size={18} className="mr-1" />
+                <span>Transaction added!</span>
+              </div>
+            )}
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
