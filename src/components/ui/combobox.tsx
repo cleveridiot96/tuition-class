@@ -40,31 +40,46 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
+  const popoverRef = React.useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Handle clicks outside more safely
   React.useEffect(() => {
-    const handleClickOutside = () => {
-      if (open) {
+    const handleClickOutside = (event: MouseEvent) => {
+      try {
+        if (
+          popoverRef.current && 
+          !popoverRef.current.contains(event.target as Node) && 
+          open
+        ) {
+          // Only close if clicking outside and dropdown is open
+          setOpen(false);
+        }
+      } catch (error) {
+        console.error("Error handling outside click:", error);
+        // Ensure dropdown closes on error
         setOpen(false);
       }
     };
+
+    // Add event listener with a true capture phase to catch all events
+    document.addEventListener('mousedown', handleClickOutside, true);
     
-    // Add a small delay to allow for selection before closing
-    const handleWindowClick = () => {
-      setTimeout(handleClickOutside, 100);
+    // Cleanup listener when component unmounts
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
     };
-    
-    if (open) {
-      window.addEventListener('click', handleWindowClick);
-      return () => window.removeEventListener('click', handleWindowClick);
-    }
   }, [open]);
 
+  // Sync with external value changes
   React.useEffect(() => {
-    if (value !== undefined && value !== null) {
-      setSelectedValue(value);
-    } else {
-      setSelectedValue("");
+    try {
+      if (value !== undefined && value !== null) {
+        setSelectedValue(value);
+      } else {
+        setSelectedValue("");
+      }
+    } catch (error) {
+      console.error("Error syncing with external value:", error);
     }
   }, [value]);
 
@@ -138,71 +153,76 @@ export function Combobox({
 
   // Safely render component with error boundaries
   return (
-    <Popover 
-      open={disabled ? false : open} 
-      onOpenChange={disabled ? undefined : (isOpen) => {
-        try {
-          setOpen(isOpen);
-        } catch (error) {
-          console.error("Error changing popover state:", error);
-          setOpen(false);
-        }
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-full justify-between", className)}
-          disabled={disabled}
-          onClick={(e) => {
-            e.stopPropagation(); // Prevent event bubbling
-          }}
-        >
-          {selectedValue ? displayText : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 z-50 shadow-lg" 
-        align="start"
-        side="bottom"
-        avoidCollisions
+    <div ref={popoverRef}>
+      <Popover 
+        open={disabled ? false : open} 
+        onOpenChange={disabled ? undefined : (isOpen) => {
+          try {
+            // Only handle state change if component is not disabled
+            if (!disabled) {
+              setOpen(isOpen);
+            }
+          } catch (error) {
+            console.error("Error changing popover state:", error);
+            setOpen(false);
+          }
+        }}
       >
-        <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder={`Search ${placeholder.toLowerCase()}...`} 
-            value={inputValue}
-            onValueChange={handleInputChange}
-            className="h-9"
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn("w-full justify-between", className)}
+            disabled={disabled}
             onClick={(e) => {
               e.stopPropagation(); // Prevent event bubbling
             }}
-          />
-          <CommandEmpty>No results found.</CommandEmpty>
-          <CommandGroup className="max-h-60 overflow-y-auto">
-            {(Array.isArray(filteredOptions) ? filteredOptions : []).map((option) => 
-              option && option.value ? (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={() => handleSelect(option.value)}
-                  className="cursor-pointer"
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedValue === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label || option.value}
-                </CommandItem>
-              ) : null
-            )}
-          </CommandGroup>
-        </Command>
-      </PopoverContent>
-    </Popover>
+          >
+            {selectedValue ? displayText : placeholder}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0 z-50 shadow-lg bg-popover" 
+          align="start"
+          side="bottom"
+          avoidCollisions
+        >
+          <Command shouldFilter={false}>
+            <CommandInput 
+              placeholder={`Search ${placeholder.toLowerCase()}...`} 
+              value={inputValue}
+              onValueChange={handleInputChange}
+              className="h-9"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent event bubbling
+              }}
+            />
+            <CommandEmpty>No results found.</CommandEmpty>
+            <CommandGroup className="max-h-60 overflow-y-auto">
+              {(Array.isArray(filteredOptions) ? filteredOptions : []).map((option) => 
+                option && option.value ? (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={() => handleSelect(option.value)}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedValue === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label || option.value}
+                  </CommandItem>
+                ) : null
+              )}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
