@@ -167,7 +167,6 @@ function toast({ ...props }: Toast) {
   };
 }
 
-// Fix: Define as a proper React function component to ensure React context is properly accessed
 export function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 
