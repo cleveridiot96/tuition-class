@@ -25,15 +25,21 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   enteredPartyName,
   useSuggestedParty,
 }) => {
-  // Ensure we only render the dialog when all required props are valid
-  if (!similarParty || !enteredPartyName || !useSuggestedParty || !onOpenChange) {
+  // Extra safety: ensure the dialog only renders with valid props and doesn't attempt to use undefined values
+  if (!similarParty || !enteredPartyName || !useSuggestedParty || typeof onOpenChange !== 'function') {
+    console.log("SimilarPartyDialog missing required props:", { 
+      hasSimilarParty: !!similarParty, 
+      hasEnteredName: !!enteredPartyName, 
+      hasUseFunction: !!useSuggestedParty,
+      hasChangeFunction: typeof onOpenChange === 'function'
+    });
     return null;
   }
   
-  // Safely extract party name with fallback
+  // Always provide a fallback for party name
   const partyName = similarParty?.name || '';
   
-  // Use a safe handler for closing dialog
+  // Safe handler for closing dialog
   const handleClose = () => {
     try {
       onOpenChange(false);
@@ -42,7 +48,7 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
     }
   };
   
-  // Use a safe handler for using suggested party
+  // Safe handler for using the suggested party
   const handleUseSuggested = () => {
     try {
       useSuggestedParty();

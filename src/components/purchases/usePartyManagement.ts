@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
 import stringSimilarity from "string-similarity";
@@ -35,17 +35,37 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
   const [newTransporterName, setNewTransporterName] = useState<string>("");
   const [newTransporterAddress, setNewTransporterAddress] = useState<string>("");
 
-  const checkSimilarPartyNames = (name: string) => {
-    if (!name || name.trim().length < 2) return false;
+  // Reset similar party state when dialog is closed
+  const resetSimilarPartyState = useCallback(() => {
+    setSimilarParty(null);
+    setEnteredPartyName("");
+  }, []);
+
+  // Safely set the similar party dialog state
+  const setSimilarPartyDialogState = useCallback((isOpen: boolean) => {
+    setShowSimilarPartyDialog(isOpen);
+    if (!isOpen) {
+      // Clean up when dialog is closed
+      resetSimilarPartyState();
+    }
+  }, [resetSimilarPartyState]);
+
+  const checkSimilarPartyNames = useCallback((name: string) => {
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return false;
+    }
 
     try {
       const normalizedName = name.toLowerCase().trim();
-      const allParties = [
-        ...(getSuppliers() || []), 
-        ...(getAgents() || [])
-      ].filter(Boolean);
       
-      if (!allParties.length) return false;
+      // Get parties with extra safety checks
+      const suppliers = getSuppliers() || [];
+      const agents = getAgents() || [];
+      const allParties = [...suppliers, ...agents].filter(Boolean);
+      
+      if (!Array.isArray(allParties) || allParties.length === 0) {
+        return false;
+      }
       
       for (const party of allParties) {
         if (!party || !party.name) continue;
@@ -55,6 +75,11 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
         
         // Check for high similarity but not exact match
         if (similarity > 0.7 && similarity < 1) {
+          // First clear any previous similar party to prevent stale data
+          setSimilarParty(null);
+          setEnteredPartyName("");
+          
+          // Then set the new data
           setSimilarParty(party);
           setEnteredPartyName(name);
           setShowSimilarPartyDialog(true);
@@ -66,9 +91,9 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
     }
     
     return false;
-  };
+  }, []);
 
-  const handleAddNewParty = () => {
+  const handleAddNewParty = useCallback(() => {
     try {
       if (!newPartyName.trim()) {
         toast.error("Party name is required");
@@ -93,9 +118,9 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
       console.error("Error adding new party:", error);
       toast.error("Failed to add new party");
     }
-  };
+  }, [newPartyName, newPartyAddress, form, loadData]);
 
-  const handleAddNewBroker = () => {
+  const handleAddNewBroker = useCallback(() => {
     try {
       if (!newBrokerName.trim()) {
         toast.error("Broker name is required");
@@ -122,9 +147,9 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
       console.error("Error adding new broker:", error);
       toast.error("Failed to add new broker");
     }
-  };
+  }, [newBrokerName, newBrokerAddress, newBrokerRate, form, loadData]);
 
-  const handleAddNewTransporter = () => {
+  const handleAddNewTransporter = useCallback(() => {
     try {
       if (!newTransporterName.trim()) {
         toast.error("Transporter name is required");
@@ -149,19 +174,22 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
       console.error("Error adding new transporter:", error);
       toast.error("Failed to add new transporter");
     }
-  };
+  }, [newTransporterName, newTransporterAddress, form, loadData]);
 
-  const useSuggestedParty = () => {
+  const useSuggestedParty = useCallback(() => {
     try {
       if (similarParty && similarParty.name) {
         form.setValue("party", similarParty.name);
       }
       setShowSimilarPartyDialog(false);
+      // Clean up to prevent stale references
+      resetSimilarPartyState();
     } catch (error) {
       console.error("Error using suggested party:", error);
       setShowSimilarPartyDialog(false);
+      resetSimilarPartyState();
     }
-  };
+  }, [similarParty, form, resetSimilarPartyState]);
 
   return {
     showAddPartyDialog,
@@ -171,7 +199,7 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
     showAddTransporterDialog,
     setShowAddTransporterDialog,
     showSimilarPartyDialog,
-    setShowSimilarPartyDialog,
+    setShowSimilarPartyDialog: setSimilarPartyDialogState,
     similarParty,
     enteredPartyName,
     newPartyName,
@@ -192,6 +220,7 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
     handleAddNewParty,
     handleAddNewBroker,
     handleAddNewTransporter,
-    useSuggestedParty
+    useSuggestedParty,
+    resetSimilarPartyState
   };
 };
