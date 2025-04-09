@@ -9,6 +9,8 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  safeChildrenToArray,
+  CommandErrorBoundary
 } from "@/components/ui/command";
 import {
   Popover,
@@ -45,38 +47,6 @@ interface ComboboxProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
-}
-
-// Add a comprehensive error boundary around the component
-class ComboboxErrorBoundary extends React.Component<
-  { children: React.ReactNode; onRetry: () => void },
-  { hasError: boolean; error: string }
-> {
-  constructor(props: { children: React.ReactNode; onRetry: () => void }) {
-    super(props);
-    this.state = { hasError: false, error: "" };
-  }
-
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error: error.message };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("Combobox error:", error, errorInfo.componentStack);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <ComboboxErrorFallback 
-        onRetry={() => {
-          this.setState({ hasError: false });
-          this.props.onRetry();
-        }}
-        message={`Dropdown error: ${this.state.error}`}
-      />;
-    }
-    return this.props.children;
-  }
 }
 
 export function Combobox({
@@ -215,24 +185,17 @@ export function Combobox({
   // Return error UI if we've detected an error
   if (hasError) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded p-2">
-        <p className="text-sm text-red-600">Dropdown error occurred</p>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="mt-2" 
-          onClick={() => setHasError(false)}
-        >
-          Reset
-        </Button>
-      </div>
+      <ComboboxErrorFallback 
+        onRetry={() => setHasError(false)}
+        message="Dropdown error occurred" 
+      />
     );
   }
 
   // Safely render component with error boundaries
   return (
     <div ref={popoverRef}>
-      <ComboboxErrorBoundary onRetry={handleRetry}>
+      <CommandErrorBoundary componentName="Combobox">
         <Popover 
           open={disabled ? false : open} 
           onOpenChange={disabled ? undefined : (isOpen) => {
@@ -269,12 +232,11 @@ export function Combobox({
             </Button>
           </PopoverTrigger>
           <PopoverContent 
-            className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-popover" 
+            className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-background" 
             align="start"
             side="bottom"
             avoidCollisions
           >
-            {/* Safely render the Command component */}
             <Command shouldFilter={false}>
               <CommandInput 
                 placeholder={`Search ${placeholder.toLowerCase()}...`} 
@@ -283,7 +245,6 @@ export function Combobox({
                 className="h-9"
               />
               
-              {/* Safe empty state handling */}
               {filteredOptions.length === 0 ? (
                 <CommandEmpty>No results found.</CommandEmpty>
               ) : (
@@ -311,7 +272,7 @@ export function Combobox({
             </Command>
           </PopoverContent>
         </Popover>
-      </ComboboxErrorBoundary>
+      </CommandErrorBoundary>
     </div>
   );
 }

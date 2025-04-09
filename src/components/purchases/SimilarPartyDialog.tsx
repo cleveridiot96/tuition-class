@@ -18,6 +18,9 @@ interface SimilarPartyDialogProps {
   useSuggestedParty: () => void;
 }
 
+/**
+ * Enhanced SimilarPartyDialog with improved error handling and fallbacks
+ */
 const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   open,
   onOpenChange,
@@ -77,7 +80,7 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
       }}
     >
       <DialogContent 
-        className="sm:max-w-md z-[100] bg-background" 
+        className="sm:max-w-md z-[100] bg-background shadow-md border" 
         onInteractOutside={(e) => {
           e.preventDefault();
         }}

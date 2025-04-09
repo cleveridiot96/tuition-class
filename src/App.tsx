@@ -15,7 +15,6 @@ import NotFound from '@/pages/NotFound';
 import CashBook from '@/pages/CashBook';
 import Stock from '@/pages/Stock';
 import Ledger from '@/pages/Ledger';
-import Calculator from '@/pages/Calculator';
 import OpeningBalanceSetup from '@/components/OpeningBalanceSetup';
 import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } from '@/services/financialYearService';
 
@@ -74,7 +73,6 @@ const App = () => {
           <Route path="/cashbook" element={<CashBook />} />
           <Route path="/stock" element={<Stock />} />
           <Route path="/ledger" element={<Ledger />} />
-          <Route path="/calculator" element={<Calculator />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
@@ -85,8 +83,15 @@ const App = () => {
         isOpen={showOpeningBalanceSetup} 
         onClose={() => setShowOpeningBalanceSetup(false)} 
       />
+
+      {/* Network status indicator */}
+      {!isOnline && (
+        <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000]">
+          You are offline
+        </div>
+      )}
     </>
   );
-}
+};
 
 export default App;
