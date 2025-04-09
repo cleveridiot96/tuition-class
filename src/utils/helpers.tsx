@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
@@ -195,8 +194,10 @@ export const formatDateForDB = (date: Date | string): string => {
  * @param balanceType Balance type (DR/CR)
  * @returns Formatted balance string
  */
-export const formatBalance = (balance: number, balanceType: 'DR' | 'CR'): string => {
-  return `${formatCurrency(balance)} ${balanceType}`;
+export const formatBalance = (balance: number, balanceType: string): string => {
+  // Ensure balanceType is either "DR" or "CR"
+  const validBalanceType = balanceType === "DR" || balanceType === "CR" ? balanceType : "DR";
+  return `${formatCurrency(balance)} ${validBalanceType}`;
 };
 
 /**
