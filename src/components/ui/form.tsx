@@ -45,11 +45,12 @@ const useFormField = () => {
   const itemContext = React.useContext(FormItemContext)
   const formContext = useFormContext()
 
+  // Check if fieldContext is missing
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
   }
 
-  // Add safety check for formContext
+  // Return safe defaults when no formContext is available
   if (!formContext) {
     return {
       id: itemContext?.id || "",
@@ -69,9 +70,14 @@ const useFormField = () => {
     }
   }
 
-  // If we have formContext, destructure it safely
+  // If we have formContext, destructure it safely with null checks
   const { getFieldState, formState } = formContext
-  const fieldState = getFieldState(fieldContext.name, formState)
+  
+  // Check if getFieldState is a function before using it
+  const fieldState = typeof getFieldState === 'function' 
+    ? getFieldState(fieldContext.name, formState)
+    : { error: undefined, isDirty: false, isTouched: false }
+  
   const { id } = itemContext || { id: "" }
 
   return {
