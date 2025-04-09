@@ -16,6 +16,26 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+// Define a fallback component for error states
+const ComboboxErrorFallback = ({
+  onRetry,
+  message = "Failed to load dropdown"
+}: {
+  onRetry: () => void;
+  message?: string;
+}) => (
+  <div className="p-4 text-center">
+    <p className="text-sm text-red-600">{message}</p>
+    <Button 
+      className="mt-2" 
+      size="sm" 
+      onClick={onRetry}
+    >
+      Retry
+    </Button>
+  </div>
+);
+
 interface ComboboxProps {
   options: { value: string; label: string }[];
   value?: string;
@@ -25,6 +45,38 @@ interface ComboboxProps {
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+}
+
+// Add a comprehensive error boundary around the component
+class ComboboxErrorBoundary extends React.Component<
+  { children: React.ReactNode; onRetry: () => void },
+  { hasError: boolean; error: string }
+> {
+  constructor(props: { children: React.ReactNode; onRetry: () => void }) {
+    super(props);
+    this.state = { hasError: false, error: "" };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("Combobox error:", error, errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return <ComboboxErrorFallback 
+        onRetry={() => {
+          this.setState({ hasError: false });
+          this.props.onRetry();
+        }}
+        message={`Dropdown error: ${this.state.error}`}
+      />;
+    }
+    return this.props.children;
+  }
 }
 
 export function Combobox({
@@ -38,9 +90,17 @@ export function Combobox({
   disabled = false
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
+  const [hasError, setHasError] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
   const popoverRef = React.useRef<HTMLDivElement>(null);
+
+  // Handle reset/retry logic
+  const handleRetry = React.useCallback(() => {
+    setHasError(false);
+    setOpen(false);
+    setTimeout(() => setOpen(true), 100);
+  }, []);
 
   // Handle clicks outside more safely
   React.useEffect(() => {
@@ -91,6 +151,7 @@ export function Combobox({
       if (onChange) onChange(currentValue);
     } catch (error) {
       console.error("Error in combobox handleSelect:", error);
+      setHasError(true);
     }
   }, [onSelect, onChange]);
 
@@ -106,6 +167,7 @@ export function Combobox({
       }
     } catch (error) {
       console.error("Error in combobox handleInputChange:", error);
+      setHasError(true);
     }
   }, [onInputChange, onChange]);
 
@@ -129,6 +191,7 @@ export function Combobox({
       });
     } catch (error) {
       console.error("Error filtering options:", error);
+      setHasError(true);
       return []; // Return empty array if filtering fails
     }
   }, [options, inputValue]);
@@ -149,112 +212,106 @@ export function Combobox({
     }
   }, [selectedValue, options, placeholder]);
 
+  // Return error UI if we've detected an error
+  if (hasError) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded p-2">
+        <p className="text-sm text-red-600">Dropdown error occurred</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="mt-2" 
+          onClick={() => setHasError(false)}
+        >
+          Reset
+        </Button>
+      </div>
+    );
+  }
+
   // Safely render component with error boundaries
   return (
     <div ref={popoverRef}>
-      <Popover 
-        open={disabled ? false : open} 
-        onOpenChange={disabled ? undefined : (isOpen) => {
-          try {
-            // Only handle state change if component is not disabled
-            if (!disabled) {
-              setOpen(isOpen);
-            }
-          } catch (error) {
-            console.error("Error changing popover state:", error);
-            setOpen(false);
-          }
-        }}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn("w-full justify-between", className)}
-            disabled={disabled}
-            onClick={(e) => {
-              try {
-                e.preventDefault();
-                e.stopPropagation(); // Prevent event bubbling
-                if (!disabled) setOpen(!open);
-              } catch (error) {
-                console.error("Error handling combobox button click:", error);
-              }
-            }}
-          >
-            {selectedValue ? displayText : placeholder}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-popover" 
-          align="start"
-          side="bottom"
-          avoidCollisions
-        >
-          {/* Using try-catch to make Command usage safer */}
-          {(() => {
+      <ComboboxErrorBoundary onRetry={handleRetry}>
+        <Popover 
+          open={disabled ? false : open} 
+          onOpenChange={disabled ? undefined : (isOpen) => {
             try {
-              return (
-                <Command shouldFilter={false}>
-                  <CommandInput 
-                    placeholder={`Search ${placeholder.toLowerCase()}...`} 
-                    value={inputValue}
-                    onValueChange={handleInputChange}
-                    className="h-9"
-                  />
-                  {filteredOptions.length === 0 ? (
-                    <CommandEmpty>No results found.</CommandEmpty>
-                  ) : (
-                    <CommandGroup>
-                      {filteredOptions.map((option) => 
-                        option ? (
-                          <CommandItem
-                            key={option.value}
-                            value={option.value}
-                            onSelect={() => handleSelect(option.value)}
-                            className="cursor-pointer"
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                selectedValue === option.value ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {option.label || option.value}
-                          </CommandItem>
-                        ) : null
-                      )}
-                    </CommandGroup>
-                  )}
-                </Command>
-              );
+              // Only handle state change if component is not disabled
+              if (!disabled) {
+                setOpen(isOpen);
+              }
             } catch (error) {
-              console.error("Error rendering Command component:", error);
-              return (
-                <div className="p-4 text-center">
-                  <p>Failed to load dropdown. Please try again.</p>
-                  <Button 
-                    className="mt-2" 
-                    size="sm" 
-                    onClick={() => {
-                      try { 
-                        setOpen(false); 
-                        setTimeout(() => setOpen(true), 100);
-                      } catch (e) {
-                        console.error(e);
-                      }
-                    }}
-                  >
-                    Retry
-                  </Button>
-                </div>
-              );
+              console.error("Error changing popover state:", error);
+              setOpen(false);
             }
-          })()}
-        </PopoverContent>
-      </Popover>
+          }}
+        >
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className={cn("w-full justify-between", className)}
+              disabled={disabled}
+              onClick={(e) => {
+                try {
+                  e.preventDefault();
+                  e.stopPropagation(); // Prevent event bubbling
+                  if (!disabled) setOpen(!open);
+                } catch (error) {
+                  console.error("Error handling combobox button click:", error);
+                }
+              }}
+            >
+              <span className="truncate">{selectedValue ? displayText : placeholder}</span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent 
+            className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-popover" 
+            align="start"
+            side="bottom"
+            avoidCollisions
+          >
+            {/* Safely render the Command component */}
+            <Command shouldFilter={false}>
+              <CommandInput 
+                placeholder={`Search ${placeholder.toLowerCase()}...`} 
+                value={inputValue}
+                onValueChange={handleInputChange}
+                className="h-9"
+              />
+              
+              {/* Safe empty state handling */}
+              {filteredOptions.length === 0 ? (
+                <CommandEmpty>No results found.</CommandEmpty>
+              ) : (
+                <CommandGroup>
+                  {filteredOptions.map((option) => 
+                    option ? (
+                      <CommandItem
+                        key={option.value}
+                        value={option.value}
+                        onSelect={() => handleSelect(option.value)}
+                        className="cursor-pointer"
+                      >
+                        <Check
+                          className={cn(
+                            "mr-2 h-4 w-4",
+                            selectedValue === option.value ? "opacity-100" : "opacity-0"
+                          )}
+                        />
+                        {option.label || option.value}
+                      </CommandItem>
+                    ) : null
+                  )}
+                </CommandGroup>
+              )}
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </ComboboxErrorBoundary>
     </div>
   );
 }

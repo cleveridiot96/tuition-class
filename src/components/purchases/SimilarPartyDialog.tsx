@@ -25,30 +25,36 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   enteredPartyName,
   useSuggestedParty,
 }) => {
-  // Prevent rendering if dialog shouldn't be shown or essential props are missing
-  if (!open || !similarParty || !similarParty.name) {
+  // Don't render at all if we shouldn't show the dialog
+  if (!open) {
     return null;
   }
   
   // Always provide fallbacks for potentially undefined values
-  const partyName = similarParty?.name || '';
-  const safeEnteredName = enteredPartyName || '';
+  const partyName = similarParty?.name || 'Unknown';
+  const safeEnteredName = enteredPartyName || 'Unknown';
   
   // Safe handlers with proper error handling
   const handleClose = React.useCallback((e?: React.MouseEvent) => {
     try {
-      if (e) e.preventDefault();
-      if (e) e.stopPropagation();
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       if (onOpenChange) onOpenChange(false);
     } catch (error) {
       console.error("Error closing similar party dialog:", error);
+      // Still try to close even if there's an error
+      try { onOpenChange && onOpenChange(false); } catch {}
     }
   }, [onOpenChange]);
   
   const handleUseSuggested = React.useCallback((e?: React.MouseEvent) => {
     try {
-      if (e) e.preventDefault();
-      if (e) e.stopPropagation();
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       if (useSuggestedParty) useSuggestedParty();
       if (onOpenChange) onOpenChange(false);
     } catch (error) {
@@ -65,11 +71,13 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
           if (onOpenChange) onOpenChange(newOpen);
         } catch (error) {
           console.error("Error changing dialog state:", error);
+          // Try to force close in case of error
+          try { onOpenChange && onOpenChange(false); } catch {}
         }
       }}
     >
       <DialogContent 
-        className="sm:max-w-md"
+        className="sm:max-w-md z-[100] bg-background" 
         onInteractOutside={(e) => {
           e.preventDefault();
         }}
