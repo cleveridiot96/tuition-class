@@ -46,7 +46,7 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-interface PaymentFormProps {
+export interface PaymentFormProps {
   onSubmit: (data: any) => void;
   onCancel: () => void;
   initialData?: any;

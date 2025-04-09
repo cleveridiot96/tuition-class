@@ -1,28 +1,23 @@
-import React, { useState, useEffect, useRef } from "react";
-import Navigation from "@/components/Navigation";
-import { Card } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, ArrowLeft, Printer, FileSpreadsheet, Search, Edit, Trash2 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { getPayments, addPayment, updatePayment, deletePayment, getAgents, getSuppliers, getBrokers, getCustomers, getTransporters } from "@/services/storageService";
-import PaymentForm from "@/components/PaymentForm";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
-import { useReactToPrint } from "react-to-print";
+import Navigation from "@/components/Navigation";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,474 +27,253 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-
-interface PaymentEntry {
-  id: string;
-  date: string;
-  partyName: string;
-  partyType: string;
-  amount: number;
-  paymentMode: string;
-  billNumber?: string;
-  billAmount?: number;
-  referenceNumber?: string;
-  notes?: string;
-}
-
-interface Party {
-  id: string;
-  name: string;
-  type: string;
-}
+import { format } from "date-fns";
+import { toast } from "sonner";
+import { 
+  getPayments, 
+  addPayment,
+  updatePayment,
+  deletePayment,
+} from "@/services/storageService";
+import { Edit, Trash2, RefreshCw, Plus } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import PaymentForm from "@/components/PaymentForm";
+import { 
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from "@/components/ui/table";
+import { formatDate } from "@/utils/helpers";
 
 const Payments = () => {
-  const { toast } = useToast();
-  const [payments, setPayments] = useState<PaymentEntry[]>([]);
-  const [filteredPayments, setFilteredPayments] = useState<PaymentEntry[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingPayment, setEditingPayment] = useState<PaymentEntry | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPartyId, setSelectedPartyId] = useState("");
-  const [parties, setParties] = useState<Party[]>([]);
-  const [viewMode, setViewMode] = useState<"cards" | "table">("table");
-  const printRef = useRef<HTMLDivElement>(null);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
+  const [editingPayment, setEditingPayment] = useState<any | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    loadPayments();
-    loadAllParties();
+    loadData();
   }, []);
 
-  useEffect(() => {
-    filterPayments();
-  }, [searchTerm, selectedPartyId, payments]);
-
-  const loadPayments = () => {
-    const storedPayments = getPayments() || [];
-    const convertedPayments = storedPayments.map(payment => ({
-      id: payment.id,
-      date: payment.date,
-      partyName: payment.party,
-      partyType: payment.partyType || "supplier",
-      amount: payment.amount,
-      paymentMode: payment.paymentMethod,
-      billNumber: payment.billNumber,
-      billAmount: payment.billAmount,
-      referenceNumber: payment.reference,
-      notes: payment.notes
-    }));
-    setPayments(convertedPayments);
-  };
-
-  const loadAllParties = () => {
-    const agents = getAgents().map(a => ({ id: a.id, name: a.name, type: "agent" }));
-    const suppliers = getSuppliers().map(s => ({ id: s.id, name: s.name, type: "supplier" }));
-    const customers = getCustomers().map(c => ({ id: c.id, name: c.name, type: "customer" }));
-    const brokers = getBrokers().map(b => ({ id: b.id, name: b.name, type: "broker" }));
-    const transporters = getTransporters().map(t => ({ id: t.id, name: t.name, type: "transporter" }));
+  const loadData = () => {
+    setIsRefreshing(true);
     
-    const allParties = [...agents, ...suppliers, ...customers, ...brokers, ...transporters];
-    setParties(allParties);
-  };
-
-  const filterPayments = () => {
-    let filtered = [...payments];
-    
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(payment => 
-        payment.partyName.toLowerCase().includes(term) ||
-        payment.notes?.toLowerCase().includes(term) ||
-        payment.billNumber?.toLowerCase().includes(term) ||
-        payment.referenceNumber?.toLowerCase().includes(term)
-      );
+    try {
+      const freshPayments = getPayments().filter(p => !p.isDeleted);
+      setPayments(freshPayments);
+      console.log("Payments data refreshed:", freshPayments);
+    } catch (err) {
+      console.error("Error loading payments data:", err);
+      toast.error("Failed to load payments data");
+    } finally {
+      setIsRefreshing(false);
     }
-    
-    if (selectedPartyId) {
-      const selectedParty = parties.find(p => p.id === selectedPartyId);
-      if (selectedParty) {
-        filtered = filtered.filter(payment => 
-          payment.partyName === selectedParty.name &&
-          payment.partyType === selectedParty.type
-        );
-      }
+  };
+
+  const handleAdd = (data: any) => {
+    try {
+      addPayment(data);
+      loadData();
+      toast.success("Payment added successfully");
+      setIsAddDialogOpen(false);
+    } catch (err) {
+      console.error("Error adding payment:", err);
+      toast.error("Failed to add payment");
     }
-    
-    setFilteredPayments(filtered);
   };
 
-  const handleSubmit = (paymentData: any) => {
-    if (editingPayment) {
-      updatePayment(paymentData);
-      toast({
-        title: "Payment Updated",
-        description: `Payment of ₹${paymentData.amount} to ${paymentData.partyName} updated successfully.`
-      });
-    } else {
-      addPayment(paymentData);
-      toast({
-        title: "Payment Added",
-        description: `Payment of ₹${paymentData.amount} to ${paymentData.partyName} added successfully.`
-      });
-    }
-    
-    loadPayments();
-    setShowForm(false);
-    setEditingPayment(null);
-  };
-
-  const handleAddNewClick = () => {
-    setEditingPayment(null);
-    setShowForm(true);
-  };
-
-  const handleEditPayment = (payment: PaymentEntry) => {
+  const handleEdit = (payment: any) => {
     setEditingPayment(payment);
-    setShowForm(true);
+    setIsEditDialogOpen(true);
   };
 
-  const handleDeletePayment = (id: string) => {
-    deletePayment(id);
-    toast({
-      title: "Payment Deleted",
-      description: "Payment was deleted successfully."
-    });
-    loadPayments();
-  };
-
-  const formatPaymentMode = (mode: string | undefined): string => {
-    if (!mode || typeof mode !== 'string') return 'Unknown';
-    return mode.charAt(0).toUpperCase() + mode.slice(1);
-  };
-
-  const getPaymentModeClass = (mode: string | undefined): string => {
-    return `px-3 py-1 rounded-full ${
-      mode === "cash" ? "bg-ag-orange text-white" : "bg-ag-green text-white"
-    }`;
-  };
-
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: "Payments_Report",
-    onAfterPrint: () => {
-      toast({
-        title: "Print Complete",
-        description: "Payment report has been sent to printer."
-      });
-    },
-  });
-
-  const handleExportExcel = () => {
-    let csvContent = "ID,Date,Party Name,Party Type,Amount,Payment Mode,Bill Number,Bill Amount,Reference,Notes\n";
+  const handleUpdate = (updatedPayment: any) => {
+    if (!editingPayment) return;
     
-    filteredPayments.forEach(payment => {
-      csvContent += `${payment.id},${payment.date},${payment.partyName},${payment.partyType},${payment.amount},${payment.paymentMode},"${payment.billNumber || ''}",${payment.billAmount || 0},"${payment.referenceNumber || ''}","${payment.notes || ''}"\n`;
-    });
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `payments_report_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast({
-      title: "Export Complete",
-      description: "Payments data has been exported to CSV format."
-    });
+    try {
+      updatePayment(updatedPayment);
+      loadData();
+      toast.success("Payment updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingPayment(null);
+    } catch (err) {
+      console.error("Error updating payment:", err);
+      toast.error("Failed to update payment");
+    }
   };
 
-  const calculateTotals = () => {
-    const total = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
-    return {
-      totalAmount: total.toLocaleString('en-IN'),
-      count: filteredPayments.length
-    };
+  const confirmDeletePayment = (id: string) => {
+    setPaymentToDelete(id);
+    setShowDeleteConfirm(true);
   };
 
-  const totals = calculateTotals();
+  const handleDelete = () => {
+    if (!paymentToDelete) return;
+    
+    try {
+      deletePayment(paymentToDelete);
+      loadData();
+      toast.success("Payment deleted successfully");
+    } catch (err) {
+      console.error("Error deleting payment:", err);
+      toast.error("Failed to delete payment");
+    } finally {
+      setShowDeleteConfirm(false);
+      setPaymentToDelete(null);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-ag-beige">
-      <Navigation title="Payments" showBackButton />
-      <div className="container mx-auto px-4 py-6">
-        {!showForm ? (
-          <>
-            <div className="flex flex-col md:flex-row justify-between mb-6 gap-4">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={handlePrint}
-                  variant="outline"
-                  className="flex gap-2 items-center"
-                >
-                  <Printer size={18} />
-                  Print
+    <div className="min-h-screen">
+      <Navigation title="Payments" showBackButton={true} />
+      
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Payment Entries</h1>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={loadData}
+              disabled={isRefreshing}
+              title="Refresh data"
+              className="mr-2"
+            >
+              <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus size={18} className="mr-1" /> Add Payment
                 </Button>
-                <Button
-                  onClick={handleExportExcel}
-                  variant="outline" 
-                  className="flex gap-2 items-center"
-                >
-                  <FileSpreadsheet size={18} />
-                  Export CSV
-                </Button>
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={() => setViewMode("cards")} 
-                    variant={viewMode === "cards" ? "default" : "outline"}
-                  >
-                    Cards
-                  </Button>
-                  <Button 
-                    onClick={() => setViewMode("table")} 
-                    variant={viewMode === "table" ? "default" : "outline"}
-                  >
-                    Table
-                  </Button>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                <div className="flex items-center gap-2 max-w-xs">
-                  <div className="relative">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Search payments..."
-                      className="pl-8 w-full"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </div>
-                </div>
-                
-                <Select value={selectedPartyId} onValueChange={setSelectedPartyId}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by party" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-parties">All Parties</SelectItem>
-                    {parties.map((party) => (
-                      <SelectItem key={party.id + "-" + party.type} value={party.id}>
-                        {party.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Button
-                  onClick={handleAddNewClick}
-                  className="action-button flex gap-2 items-center"
-                >
-                  <PlusCircle size={18} />
-                  New Payment
-                </Button>
-              </div>
-            </div>
+              </DialogTrigger>
+              <DialogContent className="w-[90vw] max-w-[900px] max-h-[90vh] overflow-hidden p-0">
+                <DialogHeader className="px-6 pt-6">
+                  <DialogTitle>Add New Payment</DialogTitle>
+                  <DialogDescription>
+                    Fill in the details to record a new payment
+                  </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
+                  <PaymentForm onSubmit={handleAdd} onCancel={() => setIsAddDialogOpen(false)} />
+                </ScrollArea>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
 
-            <div className="mb-4 flex justify-between items-center p-3 bg-white rounded-lg shadow">
-              <p className="text-ag-brown">
-                Showing <span className="font-semibold">{filteredPayments.length}</span> of {payments.length} payments
-              </p>
-              <p className="text-ag-brown">
-                Total: <span className="font-semibold text-ag-green">₹ {totals.totalAmount}</span>
-              </p>
-            </div>
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingPayment(null);
+        }}>
+          <DialogContent className="w-[90vw] max-w-[900px] max-h-[90vh] overflow-hidden p-0">
+            <DialogHeader className="px-6 pt-6">
+              <DialogTitle>Edit Payment</DialogTitle>
+              <DialogDescription>
+                Modify the payment details
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
+                <PaymentForm 
+                  onSubmit={handleUpdate} 
+                  onCancel={() => setEditDialogOpen(false)}
+                  initialData={editingPayment}
+                />
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
 
-            {payments.length === 0 ? (
-              <Card className="p-6 text-center">
-                <p className="text-xl text-ag-brown">
-                  No payments found. Click the button above to add a new payment.
-                </p>
-              </Card>
-            ) : filteredPayments.length === 0 ? (
-              <Card className="p-6 text-center">
-                <p className="text-xl text-ag-brown">
-                  No payments match your search criteria.
-                </p>
-              </Card>
-            ) : viewMode === "table" ? (
-              <div className="bg-white rounded-lg shadow overflow-hidden" ref={printRef}>
-                <div className="p-4 print:block hidden">
-                  <h1 className="text-2xl font-bold text-center">Payments Report</h1>
-                  <p className="text-center text-gray-500">Generated on {new Date().toLocaleDateString()}</p>
-                </div>
+        <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this payment? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => {
+                setShowDeleteConfirm(false);
+                setPaymentToDelete(null);
+              }}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <div className="space-y-4">
+          {payments.length === 0 ? (
+            <p className="text-center py-8 text-gray-500">No payments recorded yet. Add your first payment.</p>
+          ) : (
+            <div className="border rounded-md overflow-hidden">
+              <ScrollArea className="h-[calc(100vh-220px)]">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Party</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Mode</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Notes</TableHead>
-                      <TableHead className="print:hidden">Actions</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Date</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Party Type</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Party</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Amount (₹)</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Payment Mode</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Bill Number</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Bill Amount (₹)</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Reference Number</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Notes</TableHead>
+                      <TableHead className="sticky top-0 bg-white">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPayments.map((payment) => (
+                    {payments.map((payment) => (
                       <TableRow key={payment.id}>
-                        <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{formatDate(payment.date)}</TableCell>
+                        <TableCell>{payment.partyType}</TableCell>
+                        <TableCell>{payment.partyName}</TableCell>
+                        <TableCell>{payment.amount}</TableCell>
+                        <TableCell>{payment.paymentMode}</TableCell>
+                        <TableCell>{payment.billNumber || "-"}</TableCell>
+                        <TableCell>{payment.billAmount ? payment.billAmount.toFixed(2) : "0.00"}</TableCell>
+                        <TableCell>{payment.referenceNumber || "-"}</TableCell>
+                        <TableCell>{payment.notes || "-"}</TableCell>
                         <TableCell>
-                          <div>
-                            <p className="font-medium">{payment.partyName}</p>
-                            <p className="text-xs text-gray-500">{payment.partyType}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-semibold text-ag-green">₹ {payment.amount}</TableCell>
-                        <TableCell>
-                          <span className={getPaymentModeClass(payment.paymentMode)}>
-                            {formatPaymentMode(payment.paymentMode)}
-                          </span>
-                        </TableCell>
-                        <TableCell>{payment.referenceNumber || '-'}</TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {payment.notes || '-'}
-                        </TableCell>
-                        <TableCell className="print:hidden">
                           <div className="flex gap-2">
                             <Button 
+                              variant="ghost" 
                               size="icon"
-                              variant="ghost"
-                              onClick={() => handleEditPayment(payment)}
+                              onClick={() => handleEdit(payment)}
+                              title="Edit payment"
                             >
                               <Edit size={16} />
                             </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="ghost">
-                                  <Trash2 size={16} className="text-red-500" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Payment</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this payment of ₹{payment.amount} to {payment.partyName}? 
-                                    This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction 
-                                    onClick={() => handleDeletePayment(payment.id)}
-                                    className="bg-red-500 text-white hover:bg-red-600"
-                                  >
-                                    Delete
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => confirmDeletePayment(payment.id)}
+                              className="text-red-500 hover:text-red-700"
+                              title="Delete payment"
+                            >
+                              <Trash2 size={16} />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </div>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {filteredPayments.map((payment) => (
-                  <Card 
-                    key={payment.id} 
-                    className="p-4 relative"
-                  >
-                    <div className="absolute top-2 right-2 print:hidden">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEditPayment(payment)}>
-                            <Edit className="mr-2" size={14} /> Edit
-                          </DropdownMenuItem>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <Trash2 className="mr-2" size={14} /> Delete
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Payment</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete this payment of ₹{payment.amount} to {payment.partyName}? 
-                                  This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={() => handleDeletePayment(payment.id)}
-                                  className="bg-red-500 text-white hover:bg-red-600"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="flex justify-between items-center border-b pb-2 mb-2" onClick={() => handleEditPayment(payment)}>
-                      <h3 className="text-xl font-bold">{payment.partyName}</h3>
-                      <p className="text-ag-brown">{new Date(payment.date).toLocaleDateString()}</p>
-                    </div>
-                    <div className="mt-2" onClick={() => handleEditPayment(payment)}>
-                      <p className="text-2xl font-bold text-ag-green">₹ {payment.amount}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className={getPaymentModeClass(payment.paymentMode)}>
-                          {formatPaymentMode(payment.paymentMode)}
-                        </span>
-                        {payment.referenceNumber && (
-                          <span className="text-ag-brown">Ref: {payment.referenceNumber}</span>
-                        )}
-                      </div>
-                    </div>
-                    {payment.notes && (
-                      <p className="mt-2 text-ag-brown">
-                        <span className="font-semibold">Notes:</span> {payment.notes}
-                      </p>
-                    )}
-                  </Card>
-                ))}
-              </div>
-            )}
-          </>
-        ) : (
-          <div>
-            <div className="flex items-center mb-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => {
-                  setShowForm(false);
-                  setEditingPayment(null);
-                }}
-                className="mr-2"
-              >
-                <ArrowLeft size={24} />
-              </Button>
-              <h2 className="text-2xl font-bold">{editingPayment ? "Edit Payment" : "Add New Payment"}</h2>
+              </ScrollArea>
             </div>
-            
-            <PaymentForm 
-              onSubmit={handleSubmit} 
-              initialData={editingPayment} 
-            />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

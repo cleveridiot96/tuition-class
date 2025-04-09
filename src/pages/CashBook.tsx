@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useReactToPrint } from 'react-to-print';
