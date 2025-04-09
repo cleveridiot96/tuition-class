@@ -15,9 +15,11 @@ import {
   Warehouse
 } from "lucide-react";
 import { exportDataBackup } from "@/services/storageService";
-import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 const DashboardMenu = () => {
+  const { toast } = useToast();
+  
   const menuItems = [
     {
       title: "Purchases",
@@ -92,16 +94,29 @@ const DashboardMenu = () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
+            // Use the toast hook from useToast (not sonner)
             toast({
               title: "Backup Created",
               description: "Data backup successfully downloaded",
             });
+            
+            // Dispatch a custom event to notify other components
+            const customEvent = new CustomEvent('backup-created', {
+              detail: { success: true }
+            });
+            window.dispatchEvent(customEvent);
           } else {
             toast({
               title: "Backup Failed",
               description: "There was a problem creating the backup",
               variant: "destructive",
             });
+            
+            // Dispatch failure event
+            const customEvent = new CustomEvent('backup-created', {
+              detail: { success: false }
+            });
+            window.dispatchEvent(customEvent);
           }
         } catch (error) {
           console.error("Backup error:", error);

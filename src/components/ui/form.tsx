@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
@@ -52,9 +51,9 @@ const useFormField = () => {
   const { getFieldState, formState } = formContext || { getFieldState: undefined, formState: {} }
   
   // Create safe defaults for when form context is missing
-  const fieldState = getFieldState ? 
-    getFieldState(fieldContext.name, formState) : 
-    { invalid: false, isDirty: false, isTouched: false, error: undefined }
+  const fieldState = getFieldState 
+    ? getFieldState(fieldContext.name, formState) 
+    : { invalid: false, isDirty: false, isTouched: false, error: undefined }
 
   const { id } = itemContext || {}
 
@@ -65,7 +64,6 @@ const useFormField = () => {
     formDescriptionId: id ? `${id}-form-item-description` : "",
     formMessageId: id ? `${id}-form-item-message` : "",
     ...fieldState,
-    ...(formState || {}),
   }
 }
 

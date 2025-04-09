@@ -88,13 +88,14 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </ErrorBoundary>
+        
+        {/* Toaster component properly positioned within Router/React hierarchy */}
+        <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
+          Toast system encountered an error. Please refresh the page.
+        </div>}>
+          <Toaster />
+        </ErrorBoundary>
       </Router>
-      
-      <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
-        Toast system encountered an error. Please refresh the page.
-      </div>}>
-        <Toaster />
-      </ErrorBoundary>
       
       {/* Opening Balance Setup Dialog */}
       <OpeningBalanceSetup 
