@@ -1,5 +1,5 @@
 
-import { Action, State, TOAST_REMOVE_DELAY } from "./types";
+import { Action, State, TOAST_REMOVE_DELAY, TOAST_LIMIT } from "./types";
 
 // Map for handling toast timeouts
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
@@ -77,8 +77,8 @@ export const reducer = (state: State, action: Action): State => {
 };
 
 // Listeners and state management
-const listeners: Array<(state: State) => void> = [];
-let memoryState: State = { toasts: [] };
+export const listeners: Array<(state: State) => void> = [];
+export let memoryState: State = { toasts: [] };
 
 // Dispatch function
 export function dispatch(action: Action) {
@@ -87,6 +87,3 @@ export function dispatch(action: Action) {
     listener(memoryState);
   });
 }
-
-// Export listeners and state for use in other modules
-export { listeners, memoryState };
