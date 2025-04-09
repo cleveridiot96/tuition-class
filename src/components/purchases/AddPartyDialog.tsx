@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 interface AddPartyDialogProps {
@@ -31,11 +32,29 @@ const AddPartyDialog: React.FC<AddPartyDialogProps> = ({
   setNewPartyAddress,
   handleAddNewParty,
 }) => {
+  // Safely handle form submission with error boundary
+  const safelyHandleAddNewParty = () => {
+    try {
+      handleAddNewParty();
+    } catch (error) {
+      console.error("Error adding new party:", error);
+      // Fallback - close the dialog without crashing
+      onOpenChange(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newState) => {
+      try {
+        onOpenChange(newState);
+      } catch (error) {
+        console.error("Error changing dialog state:", error);
+      }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Party</DialogTitle>
+          <DialogDescription>Enter the details for the new party</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -43,7 +62,13 @@ const AddPartyDialog: React.FC<AddPartyDialogProps> = ({
             <Input
               placeholder="Enter party name"
               value={newPartyName}
-              onChange={(e) => setNewPartyName(e.target.value)}
+              onChange={(e) => {
+                try {
+                  setNewPartyName(e.target.value);
+                } catch (error) {
+                  console.error("Error setting party name:", error);
+                }
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -51,13 +76,25 @@ const AddPartyDialog: React.FC<AddPartyDialogProps> = ({
             <Textarea
               placeholder="Enter address (optional)"
               value={newPartyAddress}
-              onChange={(e) => setNewPartyAddress(e.target.value)}
+              onChange={(e) => {
+                try {
+                  setNewPartyAddress(e.target.value);
+                } catch (error) {
+                  console.error("Error setting address:", error);
+                }
+              }}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleAddNewParty}>Add Party</Button>
+          <Button variant="outline" onClick={() => {
+            try {
+              onOpenChange(false);
+            } catch (error) {
+              console.error("Error closing dialog:", error);
+            }
+          }}>Cancel</Button>
+          <Button onClick={safelyHandleAddNewParty}>Add Party</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

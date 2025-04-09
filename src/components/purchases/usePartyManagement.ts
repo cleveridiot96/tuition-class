@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
@@ -37,9 +36,13 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
 
   // Reset similar party state when dialog is closed
   const resetSimilarPartyState = useCallback(() => {
-    setSimilarParty(null);
-    setEnteredPartyName("");
-    setShowSimilarPartyDialog(false);
+    try {
+      setSimilarParty(null);
+      setEnteredPartyName("");
+      setShowSimilarPartyDialog(false);
+    } catch (error) {
+      console.error("Error resetting similar party state:", error);
+    }
   }, []);
 
   // Safely set the similar party dialog state with defensive coding
@@ -95,7 +98,11 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
           
           // Ensure we set the state in a safe manner
           setTimeout(() => {
-            setShowSimilarPartyDialog(true);
+            try {
+              setShowSimilarPartyDialog(true);
+            } catch (error) {
+              console.error("Error showing similar party dialog:", error);
+            }
           }, 0);
           
           return true;
@@ -125,7 +132,14 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
       
       addCustomer(newParty);
       loadData();
-      form.setValue("party", newPartyName.trim());
+      
+      // Safely set form value
+      try {
+        form.setValue("party", newPartyName.trim());
+      } catch (error) {
+        console.error("Error setting form value:", error);
+      }
+      
       setShowAddPartyDialog(false);
       setNewPartyName("");
       setNewPartyAddress("");
@@ -133,6 +147,7 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
     } catch (error) {
       console.error("Error adding new party:", error);
       toast.error("Failed to add new party");
+      setShowAddPartyDialog(false); // Close dialog on error
     }
   }, [newPartyName, newPartyAddress, form, loadData]);
 
@@ -162,6 +177,7 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
     } catch (error) {
       console.error("Error adding new broker:", error);
       toast.error("Failed to add new broker");
+      setShowAddBrokerDialog(false); // Close dialog on error
     }
   }, [newBrokerName, newBrokerAddress, newBrokerRate, form, loadData]);
 
@@ -189,6 +205,7 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
     } catch (error) {
       console.error("Error adding new transporter:", error);
       toast.error("Failed to add new transporter");
+      setShowAddTransporterDialog(false); // Close dialog on error
     }
   }, [newTransporterName, newTransporterAddress, form, loadData]);
 
@@ -201,7 +218,11 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
       // Reset state in a controlled manner
       setShowSimilarPartyDialog(false);
       setTimeout(() => {
-        resetSimilarPartyState();
+        try {
+          resetSimilarPartyState();
+        } catch (error) {
+          console.error("Error resetting party state:", error);
+        }
       }, 0);
     } catch (error) {
       console.error("Error using suggested party:", error);

@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 interface AddBrokerDialogProps {
@@ -35,11 +36,29 @@ const AddBrokerDialog: React.FC<AddBrokerDialogProps> = ({
   setNewBrokerRate,
   handleAddNewBroker,
 }) => {
+  // Safely handle form submission with error boundary
+  const safelyHandleAddNewBroker = () => {
+    try {
+      handleAddNewBroker();
+    } catch (error) {
+      console.error("Error adding new broker:", error);
+      // Fallback - close the dialog without crashing
+      onOpenChange(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newState) => {
+      try {
+        onOpenChange(newState);
+      } catch (error) {
+        console.error("Error changing dialog state:", error);
+      }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Broker</DialogTitle>
+          <DialogDescription>Enter the details for the new broker</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -47,7 +66,13 @@ const AddBrokerDialog: React.FC<AddBrokerDialogProps> = ({
             <Input
               placeholder="Enter broker name"
               value={newBrokerName}
-              onChange={(e) => setNewBrokerName(e.target.value)}
+              onChange={(e) => {
+                try {
+                  setNewBrokerName(e.target.value);
+                } catch (error) {
+                  console.error("Error setting broker name:", error);
+                }
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -55,7 +80,13 @@ const AddBrokerDialog: React.FC<AddBrokerDialogProps> = ({
             <Textarea
               placeholder="Enter address (optional)"
               value={newBrokerAddress}
-              onChange={(e) => setNewBrokerAddress(e.target.value)}
+              onChange={(e) => {
+                try {
+                  setNewBrokerAddress(e.target.value);
+                } catch (error) {
+                  console.error("Error setting address:", error);
+                }
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -64,13 +95,26 @@ const AddBrokerDialog: React.FC<AddBrokerDialogProps> = ({
               type="number"
               placeholder="Enter default commission rate"
               value={newBrokerRate}
-              onChange={(e) => setNewBrokerRate(Number(e.target.value))}
+              onChange={(e) => {
+                try {
+                  setNewBrokerRate(Number(e.target.value));
+                } catch (error) {
+                  console.error("Error setting commission rate:", error);
+                  setNewBrokerRate(0);
+                }
+              }}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleAddNewBroker}>Add Broker</Button>
+          <Button variant="outline" onClick={() => {
+            try {
+              onOpenChange(false);
+            } catch (error) {
+              console.error("Error closing dialog:", error);
+            }
+          }}>Cancel</Button>
+          <Button onClick={safelyHandleAddNewBroker}>Add Broker</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

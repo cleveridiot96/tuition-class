@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 interface AddTransporterDialogProps {
@@ -31,11 +32,29 @@ const AddTransporterDialog: React.FC<AddTransporterDialogProps> = ({
   setNewTransporterAddress,
   handleAddNewTransporter,
 }) => {
+  // Safely handle form submission with error boundary
+  const safelyHandleAddNewTransporter = () => {
+    try {
+      handleAddNewTransporter();
+    } catch (error) {
+      console.error("Error adding new transporter:", error);
+      // Fallback - close the dialog without crashing
+      onOpenChange(false);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(newState) => {
+      try {
+        onOpenChange(newState);
+      } catch (error) {
+        console.error("Error changing dialog state:", error);
+      }
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Transporter</DialogTitle>
+          <DialogDescription>Enter the details for the new transporter</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -43,7 +62,13 @@ const AddTransporterDialog: React.FC<AddTransporterDialogProps> = ({
             <Input
               placeholder="Enter transporter name"
               value={newTransporterName}
-              onChange={(e) => setNewTransporterName(e.target.value)}
+              onChange={(e) => {
+                try {
+                  setNewTransporterName(e.target.value);
+                } catch (error) {
+                  console.error("Error setting transporter name:", error);
+                }
+              }}
             />
           </div>
           <div className="space-y-2">
@@ -51,13 +76,25 @@ const AddTransporterDialog: React.FC<AddTransporterDialogProps> = ({
             <Textarea
               placeholder="Enter address (optional)"
               value={newTransporterAddress}
-              onChange={(e) => setNewTransporterAddress(e.target.value)}
+              onChange={(e) => {
+                try {
+                  setNewTransporterAddress(e.target.value);
+                } catch (error) {
+                  console.error("Error setting address:", error);
+                }
+              }}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={handleAddNewTransporter}>Add Transporter</Button>
+          <Button variant="outline" onClick={() => {
+            try {
+              onOpenChange(false);
+            } catch (error) {
+              console.error("Error closing dialog:", error);
+            }
+          }}>Cancel</Button>
+          <Button onClick={safelyHandleAddNewTransporter}>Add Transporter</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
