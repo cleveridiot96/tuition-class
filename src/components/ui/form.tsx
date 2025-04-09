@@ -48,11 +48,8 @@ const useFormField = () => {
     throw new Error("useFormField should be used within <FormField>")
   }
 
-  const { getFieldState, formState } = formContext || { getFieldState: undefined, formState: {} }
-  
-  // Create safe defaults for when form context is missing
-  const fieldState = getFieldState 
-    ? getFieldState(fieldContext.name, formState) 
+  const fieldState = formContext && formContext.getFieldState
+    ? formContext.getFieldState(fieldContext.name, formContext.formState)
     : { invalid: false, isDirty: false, isTouched: false, error: undefined }
 
   const { id } = itemContext || {}
