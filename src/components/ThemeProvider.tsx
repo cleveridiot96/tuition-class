@@ -7,7 +7,7 @@ import { PropsWithChildren } from "react";
 interface ThemeProviderProps extends PropsWithChildren {
   defaultTheme?: string;
   storageKey?: string;
-  attribute?: string | "class" | "data-theme";
+  attribute?: string;
   value?: Record<string, string>;
   enableSystem?: boolean;
   disableTransitionOnChange?: boolean;
