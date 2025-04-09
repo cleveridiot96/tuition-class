@@ -168,8 +168,14 @@ function toast({ ...props }: Toast) {
   };
 }
 
-// Create a React context for the toast state
-export const ToastContext = React.createContext<ReturnType<typeof useToast> | null>(null);
+// Define the interface for our toast context
+export interface ToastContextType extends State {
+  toast: (props: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  dismiss: (toastId?: string) => void;
+}
+
+// Create a React context with the correct type
+export const ToastContext = React.createContext<ToastContextType | null>(null);
 
 // Provider component
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -185,7 +191,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
   
-  const value = {
+  const value: ToastContextType = {
     ...state,
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
