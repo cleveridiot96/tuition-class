@@ -7,18 +7,51 @@ import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
+// Create an error boundary component to prevent crashes from propagating
+class CommandErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("Command component error:", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-2 text-sm text-red-600 bg-red-50 rounded-md">
+          Could not load dropdown component
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
 >(({ className, ...props }, ref) => (
-  <CommandPrimitive
-    ref={ref}
-    className={cn(
-      "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
-      className
-    )}
-    {...props}
-  />
+  <CommandErrorBoundary>
+    <CommandPrimitive
+      ref={ref}
+      className={cn(
+        "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
+        className
+      )}
+      {...props}
+    />
+  </CommandErrorBoundary>
 ))
 Command.displayName = CommandPrimitive.displayName
 
@@ -28,9 +61,11 @@ const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
       <DialogContent className="overflow-hidden p-0 shadow-lg">
-        <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
-          {children}
-        </Command>
+        <CommandErrorBoundary>
+          <Command className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5">
+            {children}
+          </Command>
+        </CommandErrorBoundary>
       </DialogContent>
     </Dialog>
   )
@@ -85,35 +120,34 @@ const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
 >(({ className, children, ...props }, ref) => {
-  // Safely handle children to prevent "undefined is not iterable" errors
-  const safeChildren = React.useMemo(() => {
+  // Safely validate and process children
+  const processedChildren = React.useMemo(() => {
     try {
       // Handle null/undefined case
-      if (children === undefined || children === null) {
-        console.debug("CommandGroup received null/undefined children");
+      if (children == null) {
         return null;
       }
       
-      // If single child React element
+      // If single child React element, just return it
       if (React.isValidElement(children)) {
         return children;
       }
       
-      // If children is array-like, ensure it's an actual array
-      const childArray = Array.isArray(children) ? children : [children].filter(Boolean);
+      // For arrays and array-like objects
+      const childArray = React.Children.toArray(children);
+      if (childArray.length === 0) {
+        return null;
+      }
       
-      // Return filtered, valid children only
-      return childArray.filter(child => 
-        child !== null && child !== undefined && React.isValidElement(child)
-      );
+      return childArray;
     } catch (error) {
       console.error("Error processing CommandGroup children:", error);
-      return null; // Return null on error instead of throwing
+      return null;
     }
   }, [children]);
 
-  // Only render if we have valid children
-  if (!safeChildren) {
+  // Render only if we have valid children
+  if (!processedChildren) {
     return null;
   }
 
@@ -126,10 +160,10 @@ const CommandGroup = React.forwardRef<
       )}
       {...props}
     >
-      {safeChildren}
+      {processedChildren}
     </CommandPrimitive.Group>
   );
-})
+});
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName
 
@@ -149,7 +183,6 @@ const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
 >(({ className, ...props }, ref) => {
-  // Additional safety for onSelect and onClick
   const safeProps = {
     ...props,
     onSelect: (value: string) => {
@@ -167,7 +200,7 @@ const CommandItem = React.forwardRef<
     <CommandPrimitive.Item
       ref={ref}
       className={cn(
-        "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
+        "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled='true']:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled='true']:opacity-50",
         className
       )}
       {...safeProps}
