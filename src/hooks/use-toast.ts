@@ -168,9 +168,13 @@ function toast({ ...props }: Toast) {
   };
 }
 
-export function useToast() {
-  const [state, setState] = React.useState<State>(memoryState);
+// Create a React context for the toast state
+export const ToastContext = React.createContext<ReturnType<typeof useToast> | null>(null);
 
+// Provider component
+export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [state, setState] = React.useState<State>(memoryState);
+  
   React.useEffect(() => {
     listeners.push(setState);
     return () => {
@@ -180,12 +184,30 @@ export function useToast() {
       }
     };
   }, []);
-
-  return {
+  
+  const value = {
     ...state,
     toast,
     dismiss: (toastId?: string) => dispatch({ type: "DISMISS_TOAST", toastId }),
   };
+  
+  return (
+    <ToastContext.Provider value={value}>
+      {children}
+    </ToastContext.Provider>
+  );
 }
 
+export function useToast() {
+  const context = React.useContext(ToastContext);
+  
+  if (!context) {
+    console.error("useToast called outside of ToastProvider");
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+  
+  return context;
+}
+
+// For non-component usage
 export { toast };
