@@ -40,53 +40,79 @@ const FormField = <
   )
 }
 
+// Enhanced version to handle null context and edge cases
 const useFormField = () => {
+  // Get contexts but don't destructure immediately to allow null checks
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
-  const formContext = useFormContext()
-
-  // Check if fieldContext is missing
+  
+  // Create safe defaults that work without any context
+  const defaultValues = {
+    id: itemContext?.id || "",
+    name: fieldContext?.name || "",
+    formItemId: itemContext?.id ? `${itemContext.id}-form-item` : "",
+    formDescriptionId: itemContext?.id ? `${itemContext.id}-form-item-description` : "",
+    formMessageId: itemContext?.id ? `${itemContext.id}-form-item-message` : "",
+    isLoading: false,
+    isDirty: false,
+    isValid: false,
+    isSubmitted: false,
+    isTouched: false,
+    isSubmitting: false,
+    isSubmitSuccessful: false,
+    isValidating: false,
+    error: undefined,
+  };
+  
+  // If missing field context and we're in development, log a warning
   if (!fieldContext) {
-    throw new Error("useFormField should be used within <FormField>")
-  }
-
-  // Return safe defaults when no formContext is available
-  if (!formContext) {
-    return {
-      id: itemContext?.id || "",
-      name: fieldContext.name,
-      formItemId: itemContext?.id ? `${itemContext.id}-form-item` : "",
-      formDescriptionId: itemContext?.id ? `${itemContext.id}-form-item-description` : "",
-      formMessageId: itemContext?.id ? `${itemContext.id}-form-item-message` : "",
-      isLoading: false,
-      isDirty: false,
-      isValid: false,
-      isSubmitted: false,
-      isTouched: false,
-      isSubmitting: false,
-      isSubmitSuccessful: false,
-      isValidating: false,
-      error: undefined,
+    if (process.env.NODE_ENV === 'development') {
+      console.warn("useFormField should be used within <FormField>");
     }
+    return defaultValues;
   }
-
-  // If we have formContext, destructure it safely with null checks
-  const { getFieldState, formState } = formContext
   
-  // Check if getFieldState is a function before using it
-  const fieldState = typeof getFieldState === 'function' 
-    ? getFieldState(fieldContext.name, formState)
-    : { error: undefined, isDirty: false, isTouched: false }
+  // Get form context - might be null if used outside FormProvider
+  const formContext = useFormContext();
   
-  const { id } = itemContext || { id: "" }
-
-  return {
-    id,
-    name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
-    ...fieldState,
+  // If no form context available, return safe defaults that don't cause crashes
+  if (!formContext) {
+    return defaultValues;
+  }
+  
+  // Safely extract needed properties from form context with null checks at each step
+  try {
+    const { getFieldState, formState } = formContext;
+    
+    // Only call getFieldState if it's a function and formState exists
+    const fieldState = typeof getFieldState === 'function' && formState
+      ? getFieldState(fieldContext.name, formState)
+      : { error: undefined, isDirty: false, isTouched: false };
+    
+    // Extract id safely
+    const { id } = itemContext || { id: "" };
+    
+    // Return combined state
+    return {
+      id,
+      name: fieldContext.name,
+      formItemId: id ? `${id}-form-item` : "",
+      formDescriptionId: id ? `${id}-form-item-description` : "",
+      formMessageId: id ? `${id}-form-item-message` : "",
+      ...fieldState,
+      ...(formState && {
+        isLoading: formState.isLoading || false,
+        isSubmitted: formState.isSubmitted || false,
+        isSubmitting: formState.isSubmitting || false,
+        isSubmitSuccessful: formState.isSubmitSuccessful || false,
+        isValidating: formState.isValidating || false,
+        isValid: formState.isValid || false,
+      }),
+    };
+  } catch (error) {
+    // If any exceptions occur during extraction, fail gracefully
+    console.error("Error in useFormField:", error);
+    return defaultValues;
   }
 }
 
