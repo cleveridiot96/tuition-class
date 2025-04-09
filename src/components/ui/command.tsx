@@ -17,6 +17,10 @@ const Command = React.forwardRef<
       "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
       className
     )}
+    onKeyDown={(e) => {
+      // Prevent keyboard events from causing issues
+      if (props.onKeyDown) props.onKeyDown(e);
+    }}
     {...props}
   />
 ))
@@ -94,19 +98,25 @@ const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
 >(({ className, children, ...props }, ref) => {
-  // Enhanced safety check for children to prevent "undefined is not iterable" errors
-  const processedChildren = React.useMemo(() => {
+  // Use useMemo to process children safely
+  const safeChildren = React.useMemo(() => {
     try {
-      // Return empty array if children is null or undefined to prevent iteration issues
+      // Critical fix: Return empty array if children is undefined or null
       if (children === undefined || children === null) {
+        console.log("CommandGroup received null or undefined children");
         return [];
       }
       
+      // If children exists but might be non-iterable, wrap in an array
+      if (!Array.isArray(children) && React.isValidElement(children)) {
+        return [children];
+      }
+      
       // Handle both array and non-array children safely
-      const childArray = React.Children.toArray(children);
+      const childrenArray = React.Children.toArray(children);
       
       // Filter out any null or undefined children
-      return childArray.filter(child => child !== null && child !== undefined);
+      return childrenArray.filter(child => child !== null && child !== undefined);
     } catch (error) {
       console.error("Error processing CommandGroup children:", error);
       return []; // Return empty array to avoid rendering errors
@@ -122,7 +132,7 @@ const CommandGroup = React.forwardRef<
       )}
       {...props}
     >
-      {processedChildren.length > 0 ? processedChildren : null}
+      {safeChildren.length > 0 ? safeChildren : null}
     </CommandPrimitive.Group>
   );
 })

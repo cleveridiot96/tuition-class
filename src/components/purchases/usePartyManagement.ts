@@ -39,18 +39,28 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
   const resetSimilarPartyState = useCallback(() => {
     setSimilarParty(null);
     setEnteredPartyName("");
+    setShowSimilarPartyDialog(false);
   }, []);
 
-  // Safely set the similar party dialog state
+  // Safely set the similar party dialog state with defensive coding
   const setSimilarPartyDialogState = useCallback((isOpen: boolean) => {
-    setShowSimilarPartyDialog(isOpen);
-    if (!isOpen) {
+    try {
+      setShowSimilarPartyDialog(isOpen);
+      
       // Clean up when dialog is closed
+      if (!isOpen) {
+        resetSimilarPartyState();
+      }
+    } catch (error) {
+      console.error("Error setting dialog state:", error);
+      // Attempt recovery
+      setShowSimilarPartyDialog(false);
       resetSimilarPartyState();
     }
   }, [resetSimilarPartyState]);
 
   const checkSimilarPartyNames = useCallback((name: string) => {
+    // Early return with strict type checking
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return false;
     }
@@ -59,14 +69,19 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
       const normalizedName = name.toLowerCase().trim();
       
       // Get parties with extra safety checks
-      const suppliers = getSuppliers() || [];
-      const agents = getAgents() || [];
+      const suppliers = Array.isArray(getSuppliers()) ? getSuppliers() : [];
+      const agents = Array.isArray(getAgents()) ? getAgents() : [];
       const allParties = [...suppliers, ...agents].filter(Boolean);
       
-      if (!Array.isArray(allParties) || allParties.length === 0) {
+      // If no parties exist, exit early to avoid issues
+      if (allParties.length === 0) {
         return false;
       }
       
+      // First reset existing similar party data
+      resetSimilarPartyState();
+      
+      // Then check for similar names with extra safety
       for (const party of allParties) {
         if (!party || !party.name) continue;
         
@@ -75,23 +90,24 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
         
         // Check for high similarity but not exact match
         if (similarity > 0.7 && similarity < 1) {
-          // First clear any previous similar party to prevent stale data
-          setSimilarParty(null);
-          setEnteredPartyName("");
-          
-          // Then set the new data
           setSimilarParty(party);
           setEnteredPartyName(name);
-          setShowSimilarPartyDialog(true);
+          
+          // Ensure we set the state in a safe manner
+          setTimeout(() => {
+            setShowSimilarPartyDialog(true);
+          }, 0);
+          
           return true;
         }
       }
     } catch (error) {
       console.error("Error checking similar party names:", error);
+      resetSimilarPartyState();
     }
     
     return false;
-  }, []);
+  }, [resetSimilarPartyState]);
 
   const handleAddNewParty = useCallback(() => {
     try {
@@ -181,12 +197,14 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
       if (similarParty && similarParty.name) {
         form.setValue("party", similarParty.name);
       }
+      
+      // Reset state in a controlled manner
       setShowSimilarPartyDialog(false);
-      // Clean up to prevent stale references
-      resetSimilarPartyState();
+      setTimeout(() => {
+        resetSimilarPartyState();
+      }, 0);
     } catch (error) {
       console.error("Error using suggested party:", error);
-      setShowSimilarPartyDialog(false);
       resetSimilarPartyState();
     }
   }, [similarParty, form, resetSimilarPartyState]);
