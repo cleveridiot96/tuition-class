@@ -7,27 +7,41 @@ import { cn } from "@/lib/utils"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 
 /**
- * Safely converts React children to an array with comprehensive error handling
- * Returns an empty array if children are invalid instead of throwing an error
+ * Ultra-safe children processing utility that handles all edge cases
+ * Returns a valid array in all circumstances without throwing errors
  */
 export const safeChildrenToArray = (children: React.ReactNode): React.ReactNode[] => {
-  // Handle null/undefined case early
-  if (children === undefined || children === null) {
+  // Early return for null/undefined cases
+  if (children === null || children === undefined) {
     return [];
   }
   
   try {
-    // Use React's built-in method to safely convert children to array
-    const result = React.Children.toArray(children);
-    return Array.isArray(result) ? result : [];
+    // Use React's built-in method with added safeguards
+    const childArray = React.Children.toArray(children);
+    
+    // Additional type safety check
+    if (!Array.isArray(childArray)) {
+      return [];
+    }
+    
+    // Filter out any null/undefined values for extra safety
+    return childArray.filter(child => child !== null && child !== undefined);
   } catch (error) {
-    console.error("Failed to convert children to array:", error);
+    // Silent error handling with robust logging
+    console.error("Error in safeChildrenToArray:", {
+      error,
+      childrenType: typeof children,
+      childrenIsArray: Array.isArray(children),
+      childrenValue: children
+    });
     return [];
   }
 };
 
 /**
- * Silent error boundary with detailed internal logging but user-friendly fallback
+ * Completely silent error boundary with detailed internal logging
+ * Always displays a user-friendly fallback without showing error messages
  */
 class CommandErrorBoundary extends React.Component<
   { children: React.ReactNode; componentName: string },
@@ -41,25 +55,26 @@ class CommandErrorBoundary extends React.Component<
   }
 
   static getDerivedStateFromError() {
-    // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log the error with detailed component context - but only internally
+    // Detailed internal logging without exposing to user
     console.error(
-      `Command component error in ${this.props.componentName}:`, 
-      error,
-      '\nComponent Stack:', 
-      errorInfo.componentStack
+      `Silent error in ${this.props.componentName}:`, 
+      {
+        error,
+        componentStack: errorInfo.componentStack,
+        timestamp: new Date().toISOString()
+      }
     );
   }
 
   render() {
     if (this.state.hasError) {
-      // Render a silent fallback UI without explicit error messages
+      // User-friendly fallback with no error messaging
       return (
-        <div className="p-2 text-sm text-muted-foreground">
+        <div className="p-2 text-sm text-muted-foreground text-center">
           No options available
         </div>
       );
@@ -69,11 +84,14 @@ class CommandErrorBoundary extends React.Component<
   }
 }
 
-// Enhanced Command component with error boundary
+// Enhanced Command component with complete error protection
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
 >(({ className, ...props }, ref) => {
+  // Safety check for props
+  const safeProps = { ...props };
+  
   return (
     <CommandErrorBoundary componentName="Command">
       <CommandPrimitive
@@ -82,7 +100,7 @@ const Command = React.forwardRef<
           "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
           className
         )}
-        {...props}
+        {...safeProps}
       />
     </CommandErrorBoundary>
   );
@@ -106,7 +124,7 @@ const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   );
 };
 
-// Safe input with silent error handling
+// Enhanced input with complete error handling
 const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
@@ -128,7 +146,7 @@ const CommandInput = React.forwardRef<
 
 CommandInput.displayName = CommandPrimitive.Input.displayName;
 
-// Safe list with error handling
+// Ultra-safe list component
 const CommandList = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>
@@ -144,7 +162,7 @@ const CommandList = React.forwardRef<
 
 CommandList.displayName = CommandPrimitive.List.displayName;
 
-// Safe empty state with error handling
+// Enhanced empty state with robust error protection
 const CommandEmpty = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Empty>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty>
@@ -161,60 +179,56 @@ const CommandEmpty = React.forwardRef<
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName;
 
 /**
- * Completely rebuilt CommandGroup with ultra-safe child processing and fallback UI.
+ * Completely redesigned CommandGroup with comprehensive safety measures
+ * Always renders something valid regardless of input quality
  */
 const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
 >(({ className, children, ...props }, ref) => {
-  // Ultra-safe processing of children with silent failure handling
+  // Ultra-safe children processing with guaranteed valid output
   const processedChildren = React.useMemo(() => {
     try {
-      // Handle null/undefined case early with fallback UI
+      // Handle empty cases with a user-friendly fallback
       if (children === null || children === undefined) {
         return (
-          <div className="py-2 px-2 text-sm text-muted-foreground">
+          <div className="py-2 px-2 text-sm text-muted-foreground text-center">
             No options available
           </div>
         );
       }
       
-      // Safe conversion to array with silent fallback
+      // Safe conversion with robust error handling
       const childArray = safeChildrenToArray(children);
       
-      if (childArray.length === 0) {
+      if (!childArray || childArray.length === 0) {
         return (
-          <div className="py-2 px-2 text-sm text-muted-foreground">
+          <div className="py-2 px-2 text-sm text-muted-foreground text-center">
             No options available
           </div>
         );
       }
       
-      // Pre-check each child before returning the array
-      return childArray.filter(child => child !== null && child !== undefined);
+      return childArray;
       
     } catch (error) {
-      console.error("Error processing CommandGroup children:", error);
-      // Return fallback UI without exposing error
+      // Silent internal logging without exposing errors to UI
+      console.error("Error in CommandGroup children processing:", {
+        error,
+        childrenType: typeof children,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Always return a valid UI element
       return (
-        <div className="py-2 px-2 text-sm text-muted-foreground">
+        <div className="py-2 px-2 text-sm text-muted-foreground text-center">
           No options available
         </div>
       );
     }
   }, [children]);
 
-  // Skip rendering if no valid children and return silent fallback UI
-  const hasValidChildren = Array.isArray(processedChildren) && processedChildren.length > 0;
-  
-  if (!hasValidChildren && !React.isValidElement(processedChildren)) {
-    return (
-      <div className="py-2 px-2 text-sm text-muted-foreground">
-        No options available
-      </div>
-    );
-  }
-
+  // Always render something valid
   return (
     <CommandErrorBoundary componentName="CommandGroup">
       <CommandPrimitive.Group
@@ -233,7 +247,7 @@ const CommandGroup = React.forwardRef<
 
 CommandGroup.displayName = CommandPrimitive.Group.displayName;
 
-// Safe separator with error handling
+// Enhanced separator with complete error handling
 const CommandSeparator = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Separator>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>
@@ -250,21 +264,26 @@ const CommandSeparator = React.forwardRef<
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
 
 /**
- * Enhanced CommandItem with safe callback handling
+ * Enhanced CommandItem with complete error protection and callback safety
  */
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
 >(({ className, ...props }, ref) => {
-  // Create safe props with error-protected callbacks
+  // Create completely safe props with robust error handling
   const safeProps = React.useMemo(() => {
     try {
-      // Create a safe onSelect handler that won't crash the application
+      // Wrap callback in error handler to prevent UI crashes
       const safeOnSelect = props.onSelect ? (value: string) => {
         try {
           props.onSelect?.(value);
         } catch (error) {
-          console.error("Error in CommandItem onSelect handler:", error);
+          // Silent logging without disturbing UI
+          console.error("Error in CommandItem onSelect callback:", {
+            error,
+            value,
+            timestamp: new Date().toISOString()
+          });
         }
       } : undefined;
       
@@ -273,6 +292,7 @@ const CommandItem = React.forwardRef<
         onSelect: safeOnSelect
       };
     } catch (error) {
+      // Log any issues without showing errors to user
       console.error("Error preparing CommandItem props:", error);
       return { ...props };
     }
@@ -294,7 +314,7 @@ const CommandItem = React.forwardRef<
 
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 
-// Simple component
+// Simple component with consistent styling
 const CommandShortcut = ({
   className,
   ...props

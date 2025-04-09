@@ -29,8 +29,11 @@ interface ComboboxProps {
   disabled?: boolean;
 }
 
+/**
+ * Enhanced Combobox with comprehensive error handling and fallback UI
+ */
 export function Combobox({
-  options = [], // Ensure options has a default empty array
+  options = [], // Always ensure options has a default
   value = "",
   onSelect,
   onChange,
@@ -44,7 +47,7 @@ export function Combobox({
   const [selectedValue, setSelectedValue] = React.useState(value || "");
   const popoverRef = React.useRef<HTMLDivElement>(null);
 
-  // Handle clicks outside more safely
+  // Handle clicks outside with robust error protection
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       try {
@@ -53,38 +56,41 @@ export function Combobox({
           !popoverRef.current.contains(event.target as Node) && 
           open
         ) {
-          // Only close if clicking outside and dropdown is open
           setOpen(false);
         }
       } catch (error) {
-        console.error("Error handling outside click:", error);
-        // Ensure dropdown closes on error
+        // Silent logging without UI disruption
+        console.error("Error handling outside click in Combobox:", {
+          error,
+          timestamp: new Date().toISOString()
+        });
+        // Always ensure dropdown closes on error
         setOpen(false);
       }
     };
 
-    // Add event listener with a true capture phase to catch all events
     document.addEventListener('mousedown', handleClickOutside, true);
     
-    // Cleanup listener when component unmounts
     return () => {
       document.removeEventListener('mousedown', handleClickOutside, true);
     };
   }, [open]);
 
-  // Sync with external value changes
+  // Sync with external value changes safely
   React.useEffect(() => {
     try {
-      if (value !== undefined && value !== null) {
-        setSelectedValue(value);
-      } else {
-        setSelectedValue("");
-      }
+      setSelectedValue(value || "");
     } catch (error) {
-      console.error("Error syncing with external value:", error);
+      // Silent logging without UI errors
+      console.error("Error syncing with external value in Combobox:", {
+        error,
+        value,
+        timestamp: new Date().toISOString()
+      });
     }
   }, [value]);
 
+  // Ultra-safe select handler with error protection
   const handleSelect = React.useCallback((currentValue: string) => {
     try {
       setSelectedValue(currentValue);
@@ -92,66 +98,94 @@ export function Combobox({
       if (onSelect) onSelect(currentValue);
       if (onChange) onChange(currentValue);
     } catch (error) {
-      console.error("Error in combobox handleSelect:", error);
+      // Silent logging without UI disruption
+      console.error("Error in combobox handleSelect:", {
+        error,
+        currentValue,
+        timestamp: new Date().toISOString()
+      });
     }
   }, [onSelect, onChange]);
 
+  // Safe input change handler with error protection
   const handleInputChange = React.useCallback((newValue: string) => {
     try {
       setInputValue(newValue);
       if (onInputChange) onInputChange(newValue);
       
-      // If the input is cleared, also clear the selected value
+      // If input is cleared, also clear selection
       if (!newValue) {
         setSelectedValue("");
         if (onChange) onChange("");
       }
     } catch (error) {
-      console.error("Error in combobox handleInputChange:", error);
+      // Silent logging without UI disruption
+      console.error("Error in combobox handleInputChange:", {
+        error,
+        newValue,
+        timestamp: new Date().toISOString()
+      });
     }
   }, [onInputChange, onChange]);
 
-  // Filter options based on input value - with additional safety checks
+  // Ultra-safe options filtering with comprehensive error handling
   const filteredOptions = React.useMemo(() => {
     try {
-      // Ensure options is always a valid array
+      // Always ensure we have a valid array
       const safeOptions = Array.isArray(options) ? options : [];
       
-      // Early return if no input or empty options
+      // Early return for efficiency
       if (!inputValue || safeOptions.length === 0) return safeOptions;
       
+      // Safe filtering with null checks
       return safeOptions.filter(option => {
         if (!option) return false;
         
-        const label = option.label?.toLowerCase() || '';
-        const value = option.value?.toLowerCase() || '';
+        const label = typeof option.label === 'string' ? option.label.toLowerCase() : '';
+        const value = typeof option.value === 'string' ? option.value.toLowerCase() : '';
         const search = inputValue.toLowerCase();
         
         return label.includes(search) || value.includes(search);
       });
     } catch (error) {
-      console.error("Error filtering options:", error);
-      return []; // Return empty array if filtering fails
+      // Silent logging without UI disruption
+      console.error("Error filtering options in Combobox:", {
+        error,
+        options,
+        inputValue,
+        timestamp: new Date().toISOString()
+      });
+      return []; // Safe fallback
     }
   }, [options, inputValue]);
 
-  // Find the display text with additional safety
+  // Ultra-safe display text computation
   const displayText = React.useMemo(() => {
     try {
       if (!selectedValue) return placeholder;
       
-      // Ensure options is always a valid array
+      // Always ensure options is a valid array
       const safeOptions = Array.isArray(options) ? options : [];
       
-      const foundOption = safeOptions.find(option => option && option.value === selectedValue);
+      // Safe find with null checks
+      const foundOption = safeOptions.find(option => 
+        option && option.value === selectedValue
+      );
+      
       return foundOption ? foundOption.label : selectedValue;
     } catch (error) {
-      console.error("Error finding display text:", error);
-      return placeholder; // Fallback to placeholder if lookup fails
+      // Silent logging without UI disruption
+      console.error("Error finding display text in Combobox:", {
+        error,
+        selectedValue,
+        options,
+        timestamp: new Date().toISOString()
+      });
+      return placeholder; // Safe fallback
     }
   }, [selectedValue, options, placeholder]);
 
-  // Safely render component with error boundaries
+  // Safely render with comprehensive error boundaries
   return (
     <div ref={popoverRef}>
       <CommandErrorBoundary componentName="Combobox">
@@ -159,13 +193,17 @@ export function Combobox({
           open={disabled ? false : open} 
           onOpenChange={disabled ? undefined : (isOpen) => {
             try {
-              // Only handle state change if component is not disabled
               if (!disabled) {
                 setOpen(isOpen);
               }
             } catch (error) {
-              console.error("Error changing popover state:", error);
-              setOpen(false);
+              // Silent logging without UI disruption
+              console.error("Error changing popover state in Combobox:", {
+                error,
+                isOpen,
+                timestamp: new Date().toISOString()
+              });
+              setOpen(false); // Safe fallback
             }
           }}
         >
@@ -179,10 +217,14 @@ export function Combobox({
               onClick={(e) => {
                 try {
                   e.preventDefault();
-                  e.stopPropagation(); // Prevent event bubbling
+                  e.stopPropagation();
                   if (!disabled) setOpen(!open);
                 } catch (error) {
-                  console.error("Error handling combobox button click:", error);
+                  // Silent logging without UI disruption
+                  console.error("Error handling button click in Combobox:", {
+                    error,
+                    timestamp: new Date().toISOString()
+                  });
                 }
               }}
             >

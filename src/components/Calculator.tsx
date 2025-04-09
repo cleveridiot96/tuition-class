@@ -1,17 +1,9 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import React from 'react';
+
+// This component has been completely removed as requested
 const Calculator = () => {
-  return (
-    <Card className="hidden">
-      <CardHeader>
-        <CardTitle>Calculator</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p>This component has been removed as requested.</p>
-      </CardContent>
-    </Card>
-  );
+  return null;
 };
 
 export default Calculator;

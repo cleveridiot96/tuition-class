@@ -1,7 +1,6 @@
 
 import React from "react";
 import Navigation from "@/components/Navigation";
-import Calculator from "@/components/Calculator";
 
 const CalculatorPage: React.FC = () => {
   return (
@@ -9,7 +8,10 @@ const CalculatorPage: React.FC = () => {
       <Navigation title="Calculator" />
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-md mx-auto">
-          <Calculator />
+          <div className="bg-white p-6 rounded-lg shadow">
+            <h2 className="text-2xl font-bold mb-4">Calculator</h2>
+            <p>This feature has been removed as requested.</p>
+          </div>
         </div>
       </div>
     </div>
