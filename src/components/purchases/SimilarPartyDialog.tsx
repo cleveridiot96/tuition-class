@@ -25,9 +25,14 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   enteredPartyName,
   useSuggestedParty,
 }) => {
+  // Safety check to avoid rendering with null or undefined props
+  if (!similarParty || !enteredPartyName) {
+    return null;
+  }
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Similar Party Name Found</DialogTitle>
           <DialogDescription>
@@ -35,12 +40,31 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
             <span className="block mt-1">You've entered a similar name: "{enteredPartyName}"</span>
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex justify-between sm:justify-end gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              // Prevent any potential undefined errors
+              try {
+                onOpenChange(false);
+              } catch (error) {
+                console.error("Error closing dialog:", error);
+              }
+            }}
+          >
             Use My Entry
           </Button>
-          <Button onClick={useSuggestedParty}>
-            Use "{similarParty?.name}"
+          <Button 
+            onClick={() => {
+              // Prevent any potential undefined errors
+              try {
+                useSuggestedParty();
+              } catch (error) {
+                console.error("Error using suggested party:", error);
+              }
+            }}
+          >
+            Use "{similarParty?.name || ''}"
           </Button>
         </DialogFooter>
       </DialogContent>

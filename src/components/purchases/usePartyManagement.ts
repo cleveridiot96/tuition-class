@@ -38,98 +38,129 @@ export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) 
   const checkSimilarPartyNames = (name: string) => {
     if (!name || name.trim().length < 2) return false;
 
-    const normalizedName = name.toLowerCase().trim();
-    const allParties = [...getSuppliers(), ...getAgents()];
-    
-    for (const party of allParties) {
-      const partyName = party.name.toLowerCase();
-      const similarity = stringSimilarity.compareTwoStrings(normalizedName, partyName);
+    try {
+      const normalizedName = name.toLowerCase().trim();
+      const allParties = [
+        ...(getSuppliers() || []), 
+        ...(getAgents() || [])
+      ].filter(Boolean);
       
-      // Check for high similarity but not exact match
-      if (similarity > 0.7 && similarity < 1) {
-        setSimilarParty(party);
-        setEnteredPartyName(name);
-        setShowSimilarPartyDialog(true);
-        return true;
+      if (!allParties.length) return false;
+      
+      for (const party of allParties) {
+        if (!party || !party.name) continue;
+        
+        const partyName = party.name.toLowerCase();
+        const similarity = stringSimilarity.compareTwoStrings(normalizedName, partyName);
+        
+        // Check for high similarity but not exact match
+        if (similarity > 0.7 && similarity < 1) {
+          setSimilarParty(party);
+          setEnteredPartyName(name);
+          setShowSimilarPartyDialog(true);
+          return true;
+        }
       }
+    } catch (error) {
+      console.error("Error checking similar party names:", error);
     }
     
     return false;
   };
 
   const handleAddNewParty = () => {
-    if (!newPartyName.trim()) {
-      toast.error("Party name is required");
-      return;
+    try {
+      if (!newPartyName.trim()) {
+        toast.error("Party name is required");
+        return;
+      }
+      
+      const newParty = {
+        id: `party-${Date.now()}`,
+        name: newPartyName.trim(),
+        address: newPartyAddress.trim(),
+        balance: 0
+      };
+      
+      addCustomer(newParty);
+      loadData();
+      form.setValue("party", newPartyName.trim());
+      setShowAddPartyDialog(false);
+      setNewPartyName("");
+      setNewPartyAddress("");
+      toast.success("New party added successfully");
+    } catch (error) {
+      console.error("Error adding new party:", error);
+      toast.error("Failed to add new party");
     }
-    
-    const newParty = {
-      id: `party-${Date.now()}`,
-      name: newPartyName.trim(),
-      address: newPartyAddress.trim(),
-      balance: 0
-    };
-    
-    addCustomer(newParty);
-    loadData();
-    form.setValue("party", newPartyName.trim());
-    setShowAddPartyDialog(false);
-    setNewPartyName("");
-    setNewPartyAddress("");
-    toast.success("New party added successfully");
   };
 
   const handleAddNewBroker = () => {
-    if (!newBrokerName.trim()) {
-      toast.error("Broker name is required");
-      return;
+    try {
+      if (!newBrokerName.trim()) {
+        toast.error("Broker name is required");
+        return;
+      }
+      
+      const newBroker = {
+        id: `broker-${Date.now()}`,
+        name: newBrokerName.trim(),
+        address: newBrokerAddress.trim(),
+        commissionRate: newBrokerRate,
+        balance: 0
+      };
+      
+      addBroker(newBroker);
+      loadData();
+      form.setValue("brokerId", newBroker.id);
+      setShowAddBrokerDialog(false);
+      setNewBrokerName("");
+      setNewBrokerAddress("");
+      setNewBrokerRate(1);
+      toast.success("New broker added successfully");
+    } catch (error) {
+      console.error("Error adding new broker:", error);
+      toast.error("Failed to add new broker");
     }
-    
-    const newBroker = {
-      id: `broker-${Date.now()}`,
-      name: newBrokerName.trim(),
-      address: newBrokerAddress.trim(),
-      commissionRate: newBrokerRate,
-      balance: 0
-    };
-    
-    addBroker(newBroker);
-    loadData();
-    form.setValue("brokerId", newBroker.id);
-    setShowAddBrokerDialog(false);
-    setNewBrokerName("");
-    setNewBrokerAddress("");
-    setNewBrokerRate(1);
-    toast.success("New broker added successfully");
   };
 
   const handleAddNewTransporter = () => {
-    if (!newTransporterName.trim()) {
-      toast.error("Transporter name is required");
-      return;
+    try {
+      if (!newTransporterName.trim()) {
+        toast.error("Transporter name is required");
+        return;
+      }
+      
+      const newTransporter = {
+        id: `transporter-${Date.now()}`,
+        name: newTransporterName.trim(),
+        address: newTransporterAddress.trim(),
+        balance: 0
+      };
+      
+      addTransporter(newTransporter);
+      loadData();
+      form.setValue("transporterId", newTransporter.id);
+      setShowAddTransporterDialog(false);
+      setNewTransporterName("");
+      setNewTransporterAddress("");
+      toast.success("New transporter added successfully");
+    } catch (error) {
+      console.error("Error adding new transporter:", error);
+      toast.error("Failed to add new transporter");
     }
-    
-    const newTransporter = {
-      id: `transporter-${Date.now()}`,
-      name: newTransporterName.trim(),
-      address: newTransporterAddress.trim(),
-      balance: 0
-    };
-    
-    addTransporter(newTransporter);
-    loadData();
-    form.setValue("transporterId", newTransporter.id);
-    setShowAddTransporterDialog(false);
-    setNewTransporterName("");
-    setNewTransporterAddress("");
-    toast.success("New transporter added successfully");
   };
 
   const useSuggestedParty = () => {
-    if (similarParty) {
-      form.setValue("party", similarParty.name);
+    try {
+      if (similarParty && similarParty.name) {
+        form.setValue("party", similarParty.name);
+      }
+      setShowSimilarPartyDialog(false);
+    } catch (error) {
+      console.error("Error using suggested party:", error);
+      setShowSimilarPartyDialog(false);
     }
-    setShowSimilarPartyDialog(false);
   };
 
   return {
