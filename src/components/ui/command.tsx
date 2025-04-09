@@ -17,10 +17,6 @@ const Command = React.forwardRef<
       "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
       className
     )}
-    onKeyDown={(e) => {
-      // Prevent keyboard events from causing issues
-      if (props.onKeyDown) props.onKeyDown(e);
-    }}
     {...props}
   />
 ))
@@ -52,15 +48,6 @@ const CommandInput = React.forwardRef<
         "flex h-11 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
-      onClick={(e) => {
-        // Prevent event bubbling
-        e.stopPropagation();
-        if (props.onClick) props.onClick(e);
-      }}
-      onKeyDown={(e) => {
-        // Ensure keyboard events are handled properly
-        if (props.onKeyDown) props.onKeyDown(e);
-      }}
       {...props}
     />
   </div>
@@ -98,30 +85,37 @@ const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
 >(({ className, children, ...props }, ref) => {
-  // Use useMemo to process children safely
+  // Safely handle children to prevent "undefined is not iterable" errors
   const safeChildren = React.useMemo(() => {
     try {
-      // Critical fix: Return empty array if children is undefined or null
+      // Handle null/undefined case
       if (children === undefined || children === null) {
-        console.log("CommandGroup received null or undefined children");
-        return [];
+        console.debug("CommandGroup received null/undefined children");
+        return null;
       }
       
-      // If children exists but might be non-iterable, wrap in an array
-      if (!Array.isArray(children) && React.isValidElement(children)) {
-        return [children];
+      // If single child React element
+      if (React.isValidElement(children)) {
+        return children;
       }
       
-      // Handle both array and non-array children safely
-      const childrenArray = React.Children.toArray(children);
+      // If children is array-like, ensure it's an actual array
+      const childArray = Array.isArray(children) ? children : [children].filter(Boolean);
       
-      // Filter out any null or undefined children
-      return childrenArray.filter(child => child !== null && child !== undefined);
+      // Return filtered, valid children only
+      return childArray.filter(child => 
+        child !== null && child !== undefined && React.isValidElement(child)
+      );
     } catch (error) {
       console.error("Error processing CommandGroup children:", error);
-      return []; // Return empty array to avoid rendering errors
+      return null; // Return null on error instead of throwing
     }
   }, [children]);
+
+  // Only render if we have valid children
+  if (!safeChildren) {
+    return null;
+  }
 
   return (
     <CommandPrimitive.Group
@@ -132,7 +126,7 @@ const CommandGroup = React.forwardRef<
       )}
       {...props}
     >
-      {safeChildren.length > 0 ? safeChildren : null}
+      {safeChildren}
     </CommandPrimitive.Group>
   );
 })
@@ -154,15 +148,11 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, ...props }, ref) => (
-  <CommandPrimitive.Item
-    ref={ref}
-    className={cn(
-      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
-      className
-    )}
-    onSelect={(value) => {
-      // Prevent event bubbling issues
+>(({ className, ...props }, ref) => {
+  // Additional safety for onSelect and onClick
+  const safeProps = {
+    ...props,
+    onSelect: (value: string) => {
       try {
         if (props.onSelect) {
           props.onSelect(value);
@@ -170,15 +160,20 @@ const CommandItem = React.forwardRef<
       } catch (error) {
         console.error("Error in CommandItem onSelect:", error);
       }
-    }}
-    onClick={(e) => {
-      // Prevent event bubbling
-      e.stopPropagation();
-      if (props.onClick) props.onClick(e);
-    }}
-    {...props}
-  />
-))
+    }
+  };
+
+  return (
+    <CommandPrimitive.Item
+      ref={ref}
+      className={cn(
+        "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled=true]:pointer-events-none data-[selected='true']:bg-accent data-[selected=true]:text-accent-foreground data-[disabled=true]:opacity-50",
+        className
+      )}
+      {...safeProps}
+    />
+  );
+})
 
 CommandItem.displayName = CommandPrimitive.Item.displayName
 

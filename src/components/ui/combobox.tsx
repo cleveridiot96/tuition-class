@@ -85,12 +85,10 @@ export function Combobox({
 
   const handleSelect = React.useCallback((currentValue: string) => {
     try {
-      if (currentValue) {
-        setSelectedValue(currentValue);
-        setOpen(false);
-        if (onSelect) onSelect(currentValue);
-        if (onChange) onChange(currentValue);
-      }
+      setSelectedValue(currentValue);
+      setOpen(false);
+      if (onSelect) onSelect(currentValue);
+      if (onChange) onChange(currentValue);
     } catch (error) {
       console.error("Error in combobox handleSelect:", error);
     }
@@ -131,14 +129,14 @@ export function Combobox({
       });
     } catch (error) {
       console.error("Error filtering options:", error);
-      return Array.isArray(options) ? options : []; // Return all options if filtering fails
+      return []; // Return empty array if filtering fails
     }
   }, [options, inputValue]);
 
   // Find the display text with additional safety
   const displayText = React.useMemo(() => {
     try {
-      if (!selectedValue) return "";
+      if (!selectedValue) return placeholder;
       
       // Ensure options is always a valid array
       const safeOptions = Array.isArray(options) ? options : [];
@@ -147,9 +145,9 @@ export function Combobox({
       return foundOption ? foundOption.label : selectedValue;
     } catch (error) {
       console.error("Error finding display text:", error);
-      return selectedValue || ""; // Fallback to selected value if lookup fails
+      return placeholder; // Fallback to placeholder if lookup fails
     }
-  }, [selectedValue, options]);
+  }, [selectedValue, options, placeholder]);
 
   // Safely render component with error boundaries
   return (
@@ -176,9 +174,13 @@ export function Combobox({
             className={cn("w-full justify-between", className)}
             disabled={disabled}
             onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation(); // Prevent event bubbling
-              if (!disabled) setOpen(!open);
+              try {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent event bubbling
+                if (!disabled) setOpen(!open);
+              } catch (error) {
+                console.error("Error handling combobox button click:", error);
+              }
             }}
           >
             {selectedValue ? displayText : placeholder}
@@ -186,49 +188,71 @@ export function Combobox({
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0 z-50 shadow-lg bg-popover" 
+          className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-popover" 
           align="start"
           side="bottom"
           avoidCollisions
         >
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder={`Search ${placeholder.toLowerCase()}...`} 
-              value={inputValue}
-              onValueChange={handleInputChange}
-              className="h-9"
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent event bubbling
-              }}
-            />
-            <CommandEmpty>No results found.</CommandEmpty>
-            {filteredOptions && filteredOptions.length > 0 ? (
-              <CommandGroup>
-                {filteredOptions.map((option) => 
-                  option && option.value ? (
-                    <CommandItem
-                      key={option.value}
-                      value={option.value}
-                      onSelect={() => handleSelect(option.value)}
-                      className="cursor-pointer"
-                    >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedValue === option.value ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {option.label || option.value}
-                    </CommandItem>
-                  ) : null
-                )}
-              </CommandGroup>
-            ) : (
-              <div className="py-6 text-center text-sm text-muted-foreground">
-                No options available
-              </div>
-            )}
-          </Command>
+          {/* Using try-catch to make Command usage safer */}
+          {(() => {
+            try {
+              return (
+                <Command shouldFilter={false}>
+                  <CommandInput 
+                    placeholder={`Search ${placeholder.toLowerCase()}...`} 
+                    value={inputValue}
+                    onValueChange={handleInputChange}
+                    className="h-9"
+                  />
+                  {filteredOptions.length === 0 ? (
+                    <CommandEmpty>No results found.</CommandEmpty>
+                  ) : (
+                    <CommandGroup>
+                      {filteredOptions.map((option) => 
+                        option ? (
+                          <CommandItem
+                            key={option.value}
+                            value={option.value}
+                            onSelect={() => handleSelect(option.value)}
+                            className="cursor-pointer"
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedValue === option.value ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {option.label || option.value}
+                          </CommandItem>
+                        ) : null
+                      )}
+                    </CommandGroup>
+                  )}
+                </Command>
+              );
+            } catch (error) {
+              console.error("Error rendering Command component:", error);
+              return (
+                <div className="p-4 text-center">
+                  <p>Failed to load dropdown. Please try again.</p>
+                  <Button 
+                    className="mt-2" 
+                    size="sm" 
+                    onClick={() => {
+                      try { 
+                        setOpen(false); 
+                        setTimeout(() => setOpen(true), 100);
+                      } catch (e) {
+                        console.error(e);
+                      }
+                    }}
+                  >
+                    Retry
+                  </Button>
+                </div>
+              );
+            }
+          })()}
         </PopoverContent>
       </Popover>
     </div>

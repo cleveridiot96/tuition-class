@@ -25,8 +25,8 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   enteredPartyName,
   useSuggestedParty,
 }) => {
-  // Prevent rendering if essential props are missing
-  if (!similarParty || typeof onOpenChange !== 'function' || !useSuggestedParty) {
+  // Prevent rendering if dialog shouldn't be shown or essential props are missing
+  if (!open || !similarParty || !similarParty.name) {
     return null;
   }
   
@@ -34,34 +34,35 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   const partyName = similarParty?.name || '';
   const safeEnteredName = enteredPartyName || '';
   
-  // Safe handlers with error boundaries
-  const handleClose = (e?: React.MouseEvent) => {
+  // Safe handlers with proper error handling
+  const handleClose = React.useCallback((e?: React.MouseEvent) => {
     try {
+      if (e) e.preventDefault();
       if (e) e.stopPropagation();
-      onOpenChange(false);
+      if (onOpenChange) onOpenChange(false);
     } catch (error) {
-      console.error("Error closing dialog:", error);
+      console.error("Error closing similar party dialog:", error);
     }
-  };
+  }, [onOpenChange]);
   
-  const handleUseSuggested = (e?: React.MouseEvent) => {
+  const handleUseSuggested = React.useCallback((e?: React.MouseEvent) => {
     try {
+      if (e) e.preventDefault();
       if (e) e.stopPropagation();
-      useSuggestedParty();
-      onOpenChange(false);
+      if (useSuggestedParty) useSuggestedParty();
+      if (onOpenChange) onOpenChange(false);
     } catch (error) {
       console.error("Error using suggested party:", error);
       handleClose();
     }
-  };
+  }, [useSuggestedParty, onOpenChange, handleClose]);
   
   return (
     <Dialog 
-      open={!!open} 
+      open={open} 
       onOpenChange={(newOpen) => {
         try {
-          // Stop propagation before changing state
-          onOpenChange(newOpen);
+          if (onOpenChange) onOpenChange(newOpen);
         } catch (error) {
           console.error("Error changing dialog state:", error);
         }
@@ -70,11 +71,9 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
       <DialogContent 
         className="sm:max-w-md"
         onInteractOutside={(e) => {
-          // Prevent event bubbling issues
           e.preventDefault();
         }}
         onEscapeKeyDown={(e) => {
-          // Prevent escape key issues
           e.preventDefault();
           handleClose();
         }}
