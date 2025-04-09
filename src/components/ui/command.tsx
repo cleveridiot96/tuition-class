@@ -85,15 +85,6 @@ const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive>
 >(({ className, ...props }, ref) => {
-  // Log for debugging purposes when needed
-  React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log("Command component rendered with props:", 
-        { className, children: props.children ? "Present" : "Missing" }
-      );
-    }
-  }, [className, props.children]);
-
   return (
     <CommandErrorBoundary componentName="Command">
       <CommandPrimitive

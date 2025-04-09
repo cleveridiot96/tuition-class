@@ -232,7 +232,7 @@ export function Combobox({
             </Button>
           </PopoverTrigger>
           <PopoverContent 
-            className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-background" 
+            className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-popover" 
             align="start"
             side="bottom"
             avoidCollisions
@@ -245,11 +245,11 @@ export function Combobox({
                 className="h-9"
               />
               
-              {filteredOptions.length === 0 ? (
-                <CommandEmpty>No results found.</CommandEmpty>
-              ) : (
-                <CommandGroup>
-                  {filteredOptions.map((option) => 
+              <CommandGroup>
+                {filteredOptions.length === 0 ? (
+                  <CommandEmpty>No results found.</CommandEmpty>
+                ) : (
+                  filteredOptions.map((option) => 
                     option ? (
                       <CommandItem
                         key={option.value}
@@ -266,9 +266,9 @@ export function Combobox({
                         {option.label || option.value}
                       </CommandItem>
                     ) : null
-                  )}
-                </CommandGroup>
-              )}
+                  )
+                )}
+              </CommandGroup>
             </Command>
           </PopoverContent>
         </Popover>
