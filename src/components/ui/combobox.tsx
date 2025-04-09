@@ -18,26 +18,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-// Define a fallback component for error states
-const ComboboxErrorFallback = ({
-  onRetry,
-  message = "Failed to load dropdown"
-}: {
-  onRetry: () => void;
-  message?: string;
-}) => (
-  <div className="p-4 text-center">
-    <p className="text-sm text-red-600">{message}</p>
-    <Button 
-      className="mt-2" 
-      size="sm" 
-      onClick={onRetry}
-    >
-      Retry
-    </Button>
-  </div>
-);
-
 interface ComboboxProps {
   options: { value: string; label: string }[];
   value?: string;
@@ -60,17 +40,9 @@ export function Combobox({
   disabled = false
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
-  const [hasError, setHasError] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
   const popoverRef = React.useRef<HTMLDivElement>(null);
-
-  // Handle reset/retry logic
-  const handleRetry = React.useCallback(() => {
-    setHasError(false);
-    setOpen(false);
-    setTimeout(() => setOpen(true), 100);
-  }, []);
 
   // Handle clicks outside more safely
   React.useEffect(() => {
@@ -121,7 +93,6 @@ export function Combobox({
       if (onChange) onChange(currentValue);
     } catch (error) {
       console.error("Error in combobox handleSelect:", error);
-      setHasError(true);
     }
   }, [onSelect, onChange]);
 
@@ -137,7 +108,6 @@ export function Combobox({
       }
     } catch (error) {
       console.error("Error in combobox handleInputChange:", error);
-      setHasError(true);
     }
   }, [onInputChange, onChange]);
 
@@ -161,7 +131,6 @@ export function Combobox({
       });
     } catch (error) {
       console.error("Error filtering options:", error);
-      setHasError(true);
       return []; // Return empty array if filtering fails
     }
   }, [options, inputValue]);
@@ -181,16 +150,6 @@ export function Combobox({
       return placeholder; // Fallback to placeholder if lookup fails
     }
   }, [selectedValue, options, placeholder]);
-
-  // Return error UI if we've detected an error
-  if (hasError) {
-    return (
-      <ComboboxErrorFallback 
-        onRetry={() => setHasError(false)}
-        message="Dropdown error occurred" 
-      />
-    );
-  }
 
   // Safely render component with error boundaries
   return (
