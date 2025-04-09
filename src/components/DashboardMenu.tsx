@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,17 +5,16 @@ import {
   BarChart3, 
   BookText, 
   Briefcase, 
-  Calculator, 
   CircleDollarSign, 
   ClipboardList, 
   FileSpreadsheet, 
   Package,
   ReceiptText, 
   ShoppingBag, 
-  Truck, 
   Users2, 
   Warehouse
 } from "lucide-react";
+import { exportDataBackup } from "@/services/storageService";
 
 const DashboardMenu = () => {
   const menuItems = [
@@ -57,12 +55,6 @@ const DashboardMenu = () => {
       description: "Manage incoming payments",
     },
     {
-      title: "Transport",
-      icon: <Truck className="w-6 h-6 mb-2 text-blue-600" />,
-      link: "/transport",
-      description: "Manage transporters & routes",
-    },
-    {
       title: "Contacts",
       icon: <Users2 className="w-6 h-6 mb-2 text-indigo-600" />,
       link: "/master",
@@ -81,18 +73,33 @@ const DashboardMenu = () => {
       description: "View party balances",
     },
     {
-      title: "Calculator",
-      icon: <Calculator className="w-6 h-6 mb-2 text-gray-600" />,
-      link: "/calculator", // Changed from /stock to /calculator
-      description: "Business calculations",
-    },
-    {
       title: "Backup",
       icon: <FileSpreadsheet className="w-6 h-6 mb-2 text-cyan-600" />,
       link: "#",
       description: "Backup or export data",
       onClick: () => {
-        // Placeholder for future functionality
+        const jsonData = exportDataBackup();
+        if (jsonData) {
+          const blob = new Blob([jsonData], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `kisan-khata-backup-${new Date().toISOString().split('T')[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          
+          const backupEvent = new CustomEvent('backup-created', { 
+            detail: { success: true }
+          });
+          window.dispatchEvent(backupEvent);
+        } else {
+          const backupEvent = new CustomEvent('backup-created', { 
+            detail: { success: false }
+          });
+          window.dispatchEvent(backupEvent);
+        }
       },
     },
   ];

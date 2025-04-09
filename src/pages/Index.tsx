@@ -58,6 +58,29 @@ const Index = () => {
   const [dataVersion, setDataVersion] = useState(0);
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   
+  useEffect(() => {
+    const handleBackupCreated = (event: CustomEvent) => {
+      if (event.detail.success) {
+        toast({
+          title: "Backup Created",
+          description: "Data backup successfully downloaded",
+        });
+      } else {
+        toast({
+          title: "Backup Failed",
+          description: "There was a problem creating the backup",
+          variant: "destructive",
+        });
+      }
+    };
+
+    window.addEventListener('backup-created', handleBackupCreated as EventListener);
+    
+    return () => {
+      window.removeEventListener('backup-created', handleBackupCreated as EventListener);
+    };
+  }, [toast]);
+  
   const loadDashboardData = useCallback(() => {
     setIsRefreshing(true);
     

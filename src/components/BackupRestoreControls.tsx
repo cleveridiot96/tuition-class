@@ -1,7 +1,7 @@
 
 import React, { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Download, Upload, RefreshCw, TabletSmartphone, HardDrive } from "lucide-react";
+import { Download, Upload, RefreshCw, TabletSmartphone, HardDrive, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportDataBackup, importDataBackup } from "@/services/storageService";
 import { 
@@ -72,10 +72,23 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      toast({
-        title: "Backup Created",
-        description: "Data backup successfully downloaded",
-      });
+      // Save backup to localStorage as well for redundancy
+      try {
+        localStorage.setItem('lastBackup', jsonData);
+        localStorage.setItem('lastBackupDate', new Date().toISOString());
+        
+        toast({
+          title: "Backup Created",
+          description: "Data backup successfully downloaded and saved locally",
+        });
+      } catch (error) {
+        console.error("Error saving backup to localStorage:", error);
+        
+        toast({
+          title: "Backup Downloaded",
+          description: "Data backup downloaded successfully, but couldn't save a local copy",
+        });
+      }
     } else {
       toast({
         title: "Backup Failed",
@@ -93,7 +106,7 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
           variant="outline" 
           className="flex items-center gap-2"
         >
-          <Download size={20} />
+          <Save size={20} />
           Backup
         </Button>
         <Button
