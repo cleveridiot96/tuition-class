@@ -53,6 +53,10 @@ const CommandInput = React.forwardRef<
         e.stopPropagation();
         if (props.onClick) props.onClick(e);
       }}
+      onKeyDown={(e) => {
+        // Ensure keyboard events are handled properly
+        if (props.onKeyDown) props.onKeyDown(e);
+      }}
       {...props}
     />
   </div>
@@ -99,9 +103,7 @@ const CommandGroup = React.forwardRef<
       }
       
       // Handle both array and non-array children safely
-      const childArray = Array.isArray(children) 
-        ? children 
-        : React.Children.toArray(children);
+      const childArray = React.Children.toArray(children);
       
       // Filter out any null or undefined children
       return childArray.filter(child => child !== null && child !== undefined);

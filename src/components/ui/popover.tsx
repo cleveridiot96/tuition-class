@@ -44,9 +44,16 @@ const PopoverContent = React.forwardRef<
       }}
       onInteractOutside={(event) => {
         // Handle outside clicks more reliably
-        event.preventDefault(); 
+        event.stopPropagation();
         if (props.onInteractOutside) {
           props.onInteractOutside(event);
+        }
+      }}
+      onPointerDownOutside={(event) => {
+        // Handle pointer events carefully
+        event.preventDefault();
+        if (props.onPointerDownOutside) {
+          props.onPointerDownOutside(event);
         }
       }}
       {...props}

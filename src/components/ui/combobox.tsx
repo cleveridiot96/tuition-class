@@ -202,9 +202,9 @@ export function Combobox({
               }}
             />
             <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup className="max-h-60 overflow-y-auto">
-              {Array.isArray(filteredOptions) && filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => 
+            {filteredOptions && filteredOptions.length > 0 ? (
+              <CommandGroup>
+                {filteredOptions.map((option) => 
                   option && option.value ? (
                     <CommandItem
                       key={option.value}
@@ -221,13 +221,13 @@ export function Combobox({
                       {option.label || option.value}
                     </CommandItem>
                   ) : null
-                )
-              ) : (
-                <div className="py-6 text-center text-sm text-muted-foreground">
-                  No options available
-                </div>
-              )}
-            </CommandGroup>
+                )}
+              </CommandGroup>
+            ) : (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                No options available
+              </div>
+            )}
           </Command>
         </PopoverContent>
       </Popover>
