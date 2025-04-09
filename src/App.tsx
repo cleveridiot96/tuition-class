@@ -17,6 +17,7 @@ import Stock from '@/pages/Stock';
 import Ledger from '@/pages/Ledger';
 import OpeningBalanceSetup from '@/components/OpeningBalanceSetup';
 import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } from '@/services/financialYearService';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 import '@/App.css';
 
@@ -58,25 +59,44 @@ const App = () => {
   }, []);
 
   return (
-    <>
+    <ErrorBoundary>
       <Router>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/purchases" element={<Purchases />} />
-          <Route path="/sales" element={<Sales />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/transport" element={<Transport />} />
-          <Route path="/master" element={<Master />} />
-          <Route path="/agents" element={<Agents />} />
-          <Route path="/payments" element={<Payments />} />
-          <Route path="/receipts" element={<Receipts />} />
-          <Route path="/cashbook" element={<CashBook />} />
-          <Route path="/stock" element={<Stock />} />
-          <Route path="/ledger" element={<Ledger />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={
+              <ErrorBoundary>
+                <Index />
+              </ErrorBoundary>
+            } />
+            <Route path="/purchases" element={
+              <ErrorBoundary>
+                <Purchases />
+              </ErrorBoundary>
+            } />
+            <Route path="/sales" element={
+              <ErrorBoundary>
+                <Sales />
+              </ErrorBoundary>
+            } />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/transport" element={<Transport />} />
+            <Route path="/master" element={<Master />} />
+            <Route path="/agents" element={<Agents />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/receipts" element={<Receipts />} />
+            <Route path="/cashbook" element={<CashBook />} />
+            <Route path="/stock" element={<Stock />} />
+            <Route path="/ledger" element={<Ledger />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ErrorBoundary>
       </Router>
-      <Toaster />
+      
+      <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
+        Toast system encountered an error. Please refresh the page.
+      </div>}>
+        <Toaster />
+      </ErrorBoundary>
       
       {/* Opening Balance Setup Dialog */}
       <OpeningBalanceSetup 
@@ -90,7 +110,7 @@ const App = () => {
           You are offline
         </div>
       )}
-    </>
+    </ErrorBoundary>
   );
 };
 
