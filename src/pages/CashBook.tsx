@@ -33,6 +33,8 @@ import { Printer, Download, RefreshCw, Search, Plus, FileSpreadsheet } from "luc
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ManualExpenseForm from "@/components/ManualExpenseForm";
+import PaymentForm from "@/components/PaymentForm";
+import ReceiptForm from "@/components/ReceiptForm";
 
 import { getCashBookEntries, initializeAccounting, getTodayCashTransactions } from "@/services/accountingService";
 import { formatCurrency, formatDate, formatBalance } from "@/utils/helpers";
