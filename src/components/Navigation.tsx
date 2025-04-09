@@ -1,114 +1,229 @@
-
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import { Home, ArrowLeft, RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu"
+import { ModeToggle } from "@/components/ModeToggle"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { LogOut } from "lucide-react";
 
 interface NavigationProps {
-  title?: string;
+  title: string;
   showBackButton?: boolean;
-  showHomeButton?: boolean;
   showFormatButton?: boolean;
   onFormatClick?: () => void;
-  className?: string;
 }
 
-const Navigation = ({ 
-  title = "Business Management", 
-  showBackButton = false,
-  showHomeButton = true,
-  showFormatButton = false,
-  onFormatClick,
-  className 
-}: NavigationProps) => {
-  const [isFormatPressed, setIsFormatPressed] = useState(false);
-  
-  const handleFormatClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsFormatPressed(true);
-    
-    // Reset the pressed state after animation completes
-    setTimeout(() => setIsFormatPressed(false), 1000);
-    
-    if (onFormatClick) onFormatClick();
+const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, showFormatButton = false, onFormatClick }) => {
+  const { toast } = useToast();
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    window.location.href = '/login';
   };
 
-  return (
-    <TooltipProvider>
-      <header className={cn("bg-gradient-to-r from-ag-green to-ag-green-dark text-white p-4 flex items-center justify-between shadow-md", className)}>
-        <div className="flex items-center">
-          {showBackButton && (
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  className="mr-2 text-white hover:bg-white/20 hover:text-white"
-                  onClick={() => window.history.back()}
-                >
-                  <ArrowLeft size={24} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Go back</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          
-          {/* Always show home button unless explicitly disabled */}
-          {showHomeButton && (
-            <Tooltip delayDuration={300}>
-              <TooltipTrigger asChild>
-                <Link to="/">
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="mr-2 text-white hover:bg-white/20 hover:text-white"
-                  >
-                    <Home size={24} />
-                  </Button>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Return to dashboard</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-          
-          <h1 className="text-2xl font-bold">{title}</h1>
-        </div>
+  const currentUser = localStorage.getItem('currentUser');
+  const user = currentUser ? JSON.parse(currentUser) : null;
 
-        {showFormatButton && (
-          <Tooltip delayDuration={300}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="danger"
-                className={cn(
-                  "border border-red-300/30 flex items-center gap-2 group",
-                  isFormatPressed && "animate-pulse"
-                )}
-                onClick={handleFormatClick}
-              >
-                <RefreshCw size={24} className="group-hover:rotate-180 transition-transform duration-500" />
-                <span className="font-bold">FORMAT</span>
+  return (
+    <div className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          {showBackButton && (
+            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+              Back
+            </Button>
+          )}
+          <h1 className="text-xl font-bold">{title}</h1>
+        </div>
+        <div className="flex items-center space-x-4">
+          {showFormatButton && (
+            <Button variant="outline" size="sm" onClick={onFormatClick}>
+              Format Data
+            </Button>
+          )}
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className={navigationMenuTriggerStyle()}>
+                  More
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] md:grid-cols-2">
+                    {items.map((item) => (
+                      <ListItem key={item.title} title={item.title} href={item.href}>
+                        {item.description}
+                      </ListItem>
+                    ))}
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+          <ModeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="https://github.com/shadcn.png" alt="Shadcn" />
+                  <AvatarFallback>SC</AvatarFallback>
+                </Avatar>
               </Button>
-            </TooltipTrigger>
-            <TooltipContent className="max-w-xs text-center">
-              <p className="font-bold text-red-500">USE ONLY UNDER EMERGENCY</p>
-              <p>This action cannot be undone. A backup will be created automatically.</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </header>
-    </TooltipProvider>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuItem disabled>
+                <span className="font-bold">{user?.name}</span>
+                <br />
+                <span className="text-muted-foreground">{user?.email}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Link to="/profile" className="w-full h-full block">
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Link to="/settings" className="w-full h-full block">
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
   );
 };
+
+const ListItem = React.forwardRef<
+  React.ElementRef<"a">,
+  React.ComponentPropsWithoutRef<"a">
+>(({ className, title, children, ...props }, ref) => {
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <a
+          ref={ref}
+          className={cn(
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            className
+          )}
+          {...props}
+        >
+          <div className="text-sm font-medium leading-none">{title}</div>
+          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+            {children}
+          </p>
+        </a>
+      </NavigationMenuLink>
+    </li>
+  )
+})
+ListItem.displayName = "ListItem"
+
+const NavigationMenuContent = React.forwardRef<
+  React.ElementRef<typeof NavigationMenuContent>,
+  React.ComponentPropsWithoutRef<typeof NavigationMenuContent>
+>(({ className, ...props }, ref) => (
+  <div
+    className={cn(
+      "z-50 absolute top-0 left-0 w-full origin-top-center data-[motion=from-end]:animate-in data-[motion=from-start]:animate-in data-[motion=from-end]:fade-in data-[motion=from-start]:fade-in data-[motion=from-end]:zoom-in-95 data-[motion=from-start]:zoom-in-95 data-[motion=to-end]:animate-out data-[motion=to-start]:animate-out data-[motion=to-end]:fade-out data-[motion=to-start]:fade-out data-[motion=to-end]:zoom-out-95 data-[motion=to-start]:zoom-out-95 md:w-auto",
+      className
+    )}
+    ref={ref}
+    {...props}
+  />
+))
+NavigationMenuContent.displayName = "NavigationMenuContent"
+
+const NavigationMenuTrigger = React.forwardRef<
+  React.ElementRef<typeof NavigationMenuTrigger>,
+  React.ComponentPropsWithoutRef<typeof NavigationMenuTrigger>
+>(({ className, children, ...props }, ref) => (
+  <Button
+    variant="ghost"
+    size="sm"
+    className={cn(
+      "group inline-flex h-9 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground",
+      className
+    )}
+    ref={ref}
+    {...props}
+  >
+    {children}{" "}
+    <ChevronDown className="relative left-1 h-4 w-4 transition-transform duration-200 group-[data-state=open]:rotate-180" />
+  </Button>
+))
+NavigationMenuTrigger.displayName = "NavigationMenuTrigger"
+
+import {
+  ChevronDown,
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const items = [
+  {
+    title: "Purchases",
+    href: "/purchases",
+    description: "Record and manage purchases",
+  },
+  {
+    title: "Sales",
+    href: "/sales",
+    description: "Create and manage sales",
+  },
+  {
+    title: "Inventory",
+    href: "/inventory",
+    description: "View and manage stock",
+  },
+  {
+    title: "Stock Report",
+    href: "/stock",
+    description: "Real-time stock analysis",
+  },
+  {
+    title: "Payments",
+    href: "/payments",
+    description: "Record outgoing payments",
+  },
+  {
+    title: "Receipts",
+    href: "/receipts",
+    description: "Manage incoming payments",
+  },
+  {
+    title: "Contacts",
+    href: "/master",
+    description: "Manage people & companies",
+  },
+  {
+    title: "Cash Book",
+    href: "/cashbook",
+    description: "Track cash transactions",
+  },
+  {
+    title: "Ledger",
+    href: "/ledger",
+    description: "View party balances",
+  },
+]
 
 export default Navigation;

@@ -1,63 +1,33 @@
-import React, { useEffect, useState, useCallback } from "react";
+
+import React, { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
-import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
-import { useToast } from "@/hooks/use-toast";
-import { Card } from "@/components/ui/card";
-import { 
-  seedInitialData, 
-  getPurchases, 
-  getInventory, 
-  getSales, 
-  clearAllData, 
-  exportDataBackup, 
-  clearAllMasterData 
-} from "@/services/storageService";
-import { format, parseISO } from "date-fns";
+import { FormatDataHandler } from "@/components/dashboard/FormatDataHandler";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import BackupRestoreControls from "@/components/BackupRestoreControls";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
 import DashboardSummary from "@/components/DashboardSummary";
-import { formatDate } from "@/utils/helpers";
-import YearSelector from "@/components/YearSelector";
-import { Button } from "@/components/ui/button";
-import { Settings } from "lucide-react";
+import { seedInitialData } from "@/services/storageService";
 import { initializeFinancialYears } from "@/services/financialYearService";
 import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
-
-interface ProfitData {
-  purchase: number;
-  sale: number;
-  profit: number;
-  date: string;
-  quantity: number;
-  netWeight: number;
-  id?: string;
-}
-
-interface MonthlyProfit {
-  profit: number;
-  display: string;
-}
-
-interface MonthlyProfits {
-  [key: string]: MonthlyProfit;
-}
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
   const { toast } = useToast();
-  const [summaryData, setSummaryData] = useState({
-    purchases: { amount: 0, bags: 0, kgs: 0 },
-    sales: { amount: 0, bags: 0, kgs: 0 },
-    stock: { mumbai: 0, chiplun: 0, sawantwadi: 0 }
-  });
-  const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
-  const [profitByTransaction, setProfitByTransaction] = useState([]);
-  const [profitByMonth, setProfitByMonth] = useState([]);
-  const [totalProfit, setTotalProfit] = useState(0);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dataVersion, setDataVersion] = useState(0);
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   
+  const {
+    summaryData,
+    profitByTransaction,
+    profitByMonth,
+    totalProfit,
+    isRefreshing,
+    dataVersion,
+    loadDashboardData,
+    incrementDataVersion
+  } = useDashboardData();
+
   useEffect(() => {
     const handleBackupCreated = (event: CustomEvent) => {
       if (event.detail.success) {
@@ -79,109 +49,6 @@ const Index = () => {
     return () => {
       window.removeEventListener('backup-created', handleBackupCreated as EventListener);
     };
-  }, [toast]);
-  
-  const loadDashboardData = useCallback(() => {
-    setIsRefreshing(true);
-    
-    try {
-      localStorage.setItem('lastDataRefresh', Date.now().toString());
-      
-      const purchases = getPurchases() || [];
-      const sales = getSales() || [];
-      
-      const inventory = getInventory() || [];
-      const activeInventory = inventory.filter(item => !item.isDeleted);
-      const mumbaiStock = activeInventory.filter(item => item.location === "Mumbai");
-      const chiplunStock = activeInventory.filter(item => item.location === "Chiplun");
-      const sawantwadiStock = activeInventory.filter(item => item.location === "Sawantwadi");
-      
-      console.log("Purchases data loaded:", purchases.length);
-      console.log("Sales data loaded:", sales.length);
-      console.log("Active inventory:", activeInventory.length);
-      
-      const transactionProfits = sales.filter(sale => !sale.isDeleted).map(sale => {
-        const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber && !p.isDeleted);
-        const purchaseCost = relatedPurchase ? relatedPurchase.totalAfterExpenses : 0;
-        const purchaseCostPerKg = relatedPurchase ? purchaseCost / relatedPurchase.netWeight : 0;
-        
-        const effectivePurchaseCost = purchaseCostPerKg * sale.netWeight;
-        
-        const saleRevenue = sale.totalAmount || 0;
-        const profit = Math.round(saleRevenue - effectivePurchaseCost);
-        
-        return {
-          purchase: effectivePurchaseCost,
-          sale: saleRevenue,
-          profit: profit,
-          date: sale.date,
-          quantity: sale.quantity,
-          netWeight: sale.netWeight,
-          id: sale.id
-        };
-      });
-      
-      const profitsByMonth: MonthlyProfits = {};
-      transactionProfits.forEach(transaction => {
-        if (!transaction.date) return;
-        
-        try {
-          const date = parseISO(transaction.date);
-          const monthKey = format(date, 'yyyy-MM');
-          const monthDisplay = format(date, 'MMM yyyy');
-          
-          if (!profitsByMonth[monthKey]) {
-            profitsByMonth[monthKey] = {
-              profit: 0,
-              display: monthDisplay
-            };
-          }
-          
-          profitsByMonth[monthKey].profit += transaction.profit;
-        } catch (error) {
-          console.error("Error processing date:", transaction.date, error);
-        }
-      });
-      
-      const monthlyProfits = Object.entries(profitsByMonth).map(([key, data]) => ({
-        month: data.display,
-        profit: data.profit
-      })).sort((a, b) => a.month.localeCompare(b.month));
-      
-      setProfitByTransaction(transactionProfits);
-      setProfitByMonth(monthlyProfits);
-      setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
-      
-      const activePurchases = purchases.filter(p => !p.isDeleted);
-      const activeSales = sales.filter(s => !s.isDeleted);
-      
-      setSummaryData({
-        purchases: {
-          amount: activePurchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
-          bags: activePurchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
-          kgs: activePurchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
-        },
-        sales: {
-          amount: activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0),
-          bags: activeSales.reduce((sum, s) => sum + (s.quantity || 0), 0),
-          kgs: activeSales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
-        },
-        stock: {
-          mumbai: mumbaiStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
-          chiplun: chiplunStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
-          sawantwadi: sawantwadiStock.reduce((sum, item) => sum + (item.quantity || 0), 0)
-        }
-      });
-    } catch (error) {
-      console.error("Error loading dashboard data:", error);
-      toast({
-        title: "Error Loading Data",
-        description: "There was a problem loading the dashboard data. Try refreshing.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
   }, [toast]);
   
   useEffect(() => {
@@ -224,60 +91,6 @@ const Index = () => {
     };
   }, [loadDashboardData]);
 
-  const handleFormatClick = () => {
-    setIsFormatDialogOpen(true);
-  };
-
-  const handleFormatConfirm = async () => {
-    try {
-      console.log("Format operation starting...");
-      toast({
-        title: "Format in progress",
-        description: "Creating backup and resetting data...",
-      });
-      
-      const backupData = exportDataBackup(true);
-      console.log("Backup created:", backupData ? "Success" : "Failed");
-      
-      if (backupData) {
-        localStorage.setItem('preFormatBackup', backupData);
-        
-        clearAllData();
-        clearAllMasterData();
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        seedInitialData(true);
-        
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        window.dispatchEvent(new Event('storage'));
-        
-        setDataVersion(prev => prev + 1);
-        
-        toast({
-          title: "Data Formatted Successfully",
-          description: "All data has been reset to initial state. A backup was created automatically.",
-        });
-        
-        setTimeout(() => {
-          loadDashboardData();
-        }, 500);
-      } else {
-        throw new Error("Failed to create backup data");
-      }
-    } catch (error) {
-      console.error("Error during formatting:", error);
-      toast({
-        title: "Format Error",
-        description: "There was a problem formatting the data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsFormatDialogOpen(false);
-    }
-  };
-
   const handleOpeningBalances = () => {
     setShowOpeningBalanceSetup(true);
   };
@@ -287,25 +100,12 @@ const Index = () => {
       <Navigation 
         title="Dashboard" 
         showFormatButton={true}
-        onFormatClick={handleFormatClick}
+        onFormatClick={() => document.dispatchEvent(new Event('format-click'))}
       />
+      
       <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-ag-brown-dark">
-            Business Management Software
-          </h2>
-          <div className="flex items-center space-x-4">
-            <YearSelector />
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleOpeningBalances}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Opening Balances
-            </Button>
-          </div>
-        </div>
+        <DashboardHeader onOpeningBalancesClick={handleOpeningBalances} />
+        
         <p className="text-lg text-ag-brown mt-2 mb-4 text-center">
           Agricultural Business Management System
         </p>
@@ -325,17 +125,13 @@ const Index = () => {
           totalProfit={totalProfit}
         />
       </div>
-
-      <FormatConfirmationDialog
-        isOpen={isFormatDialogOpen}
-        onClose={() => setIsFormatDialogOpen(false)}
-        onConfirm={handleFormatConfirm}
-      />
       
       <OpeningBalanceSetup 
         isOpen={showOpeningBalanceSetup}
         onClose={() => setShowOpeningBalanceSetup(false)}
       />
+      
+      <FormatDataHandler onFormatComplete={loadDashboardData} />
     </div>
   );
 };
