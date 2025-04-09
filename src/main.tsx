@@ -1,43 +1,31 @@
 
 import React from 'react'
-import { createRoot } from 'react-dom/client'
+import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// Register service worker for offline functionality
-const registerServiceWorker = () => {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js')
-        .then(registration => {
-          console.log('ServiceWorker registration successful');
-        })
-        .catch(error => {
-          console.error('ServiceWorker registration failed:', error);
-        });
-    });
-  }
-};
+const root = document.getElementById("root");
 
-// Use faster root creation and avoid strict mode for better performance
-const renderApp = () => {
-  const root = document.getElementById("root");
-  if (root) createRoot(root).render(
+if (root) {
+  ReactDOM.createRoot(root).render(
     <React.StrictMode>
       <App />
     </React.StrictMode>
   );
-};
-
-// Check if the document is ready or still loading
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', renderApp);
-} else {
-  renderApp();
 }
 
-// Register service worker for offline capabilities
-registerServiceWorker();
+// Register service worker for offline functionality
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(registration => {
+        console.log('ServiceWorker registration successful');
+      })
+      .catch(error => {
+        console.error('ServiceWorker registration failed:', error);
+      });
+  });
+}
 
 // Block any outbound connections (except for development needs)
 if (process.env.NODE_ENV === 'production') {
