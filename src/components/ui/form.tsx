@@ -40,79 +40,32 @@ const FormField = <
   )
 }
 
-// Enhanced version to handle null context and edge cases
 const useFormField = () => {
-  // Get contexts but don't destructure immediately to allow null checks
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
+  const formContext = useFormContext()
   
-  // Create safe defaults that work without any context
-  const defaultValues = {
-    id: itemContext?.id || "",
-    name: fieldContext?.name || "",
-    formItemId: itemContext?.id ? `${itemContext.id}-form-item` : "",
-    formDescriptionId: itemContext?.id ? `${itemContext.id}-form-item-description` : "",
-    formMessageId: itemContext?.id ? `${itemContext.id}-form-item-message` : "",
-    isLoading: false,
-    isDirty: false,
-    isValid: false,
-    isSubmitted: false,
-    isTouched: false,
-    isSubmitting: false,
-    isSubmitSuccessful: false,
-    isValidating: false,
-    error: undefined,
-  };
-  
-  // If missing field context and we're in development, log a warning
   if (!fieldContext) {
-    if (process.env.NODE_ENV === 'development') {
-      console.warn("useFormField should be used within <FormField>");
-    }
-    return defaultValues;
+    throw new Error("useFormField should be used within <FormField>")
   }
+
+  const { getFieldState, formState } = formContext || { getFieldState: undefined, formState: {} }
   
-  // Get form context - might be null if used outside FormProvider
-  const formContext = useFormContext();
-  
-  // If no form context available, return safe defaults that don't cause crashes
-  if (!formContext) {
-    return defaultValues;
-  }
-  
-  // Safely extract needed properties from form context with null checks at each step
-  try {
-    const { getFieldState, formState } = formContext;
-    
-    // Only call getFieldState if it's a function and formState exists
-    const fieldState = typeof getFieldState === 'function' && formState
-      ? getFieldState(fieldContext.name, formState)
-      : { error: undefined, isDirty: false, isTouched: false };
-    
-    // Extract id safely
-    const { id } = itemContext || { id: "" };
-    
-    // Return combined state
-    return {
-      id,
-      name: fieldContext.name,
-      formItemId: id ? `${id}-form-item` : "",
-      formDescriptionId: id ? `${id}-form-item-description` : "",
-      formMessageId: id ? `${id}-form-item-message` : "",
-      ...fieldState,
-      ...(formState && {
-        isLoading: formState.isLoading || false,
-        isSubmitted: formState.isSubmitted || false,
-        isSubmitting: formState.isSubmitting || false,
-        isSubmitSuccessful: formState.isSubmitSuccessful || false,
-        isValidating: formState.isValidating || false,
-        isValid: formState.isValid || false,
-      }),
-    };
-  } catch (error) {
-    // If any exceptions occur during extraction, fail gracefully
-    console.error("Error in useFormField:", error);
-    return defaultValues;
+  // Create safe defaults for when form context is missing
+  const fieldState = getFieldState ? 
+    getFieldState(fieldContext.name, formState) : 
+    { invalid: false, isDirty: false, isTouched: false, error: undefined }
+
+  const { id } = itemContext || {}
+
+  return {
+    id,
+    name: fieldContext.name,
+    formItemId: id ? `${id}-form-item` : "",
+    formDescriptionId: id ? `${id}-form-item-description` : "",
+    formMessageId: id ? `${id}-form-item-message` : "",
+    ...fieldState,
+    ...(formState || {}),
   }
 }
 

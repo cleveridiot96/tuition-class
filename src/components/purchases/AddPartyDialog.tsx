@@ -44,13 +44,7 @@ const AddPartyDialog: React.FC<AddPartyDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newState) => {
-      try {
-        onOpenChange(newState);
-      } catch (error) {
-        console.error("Error changing dialog state:", error);
-      }
-    }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add New Party</DialogTitle>
@@ -62,13 +56,7 @@ const AddPartyDialog: React.FC<AddPartyDialogProps> = ({
             <Input
               placeholder="Enter party name"
               value={newPartyName}
-              onChange={(e) => {
-                try {
-                  setNewPartyName(e.target.value);
-                } catch (error) {
-                  console.error("Error setting party name:", error);
-                }
-              }}
+              onChange={(e) => setNewPartyName(e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -76,24 +64,12 @@ const AddPartyDialog: React.FC<AddPartyDialogProps> = ({
             <Textarea
               placeholder="Enter address (optional)"
               value={newPartyAddress}
-              onChange={(e) => {
-                try {
-                  setNewPartyAddress(e.target.value);
-                } catch (error) {
-                  console.error("Error setting address:", error);
-                }
-              }}
+              onChange={(e) => setNewPartyAddress(e.target.value)}
             />
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => {
-            try {
-              onOpenChange(false);
-            } catch (error) {
-              console.error("Error closing dialog:", error);
-            }
-          }}>Cancel</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={safelyHandleAddNewParty}>Add Party</Button>
         </DialogFooter>
       </DialogContent>

@@ -1,10 +1,10 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   BarChart3, 
   BookText, 
-  Briefcase, 
   CircleDollarSign, 
   ClipboardList, 
   FileSpreadsheet, 
@@ -15,6 +15,7 @@ import {
   Warehouse
 } from "lucide-react";
 import { exportDataBackup } from "@/services/storageService";
+import { toast } from "sonner";
 
 const DashboardMenu = () => {
   const menuItems = [
@@ -78,27 +79,37 @@ const DashboardMenu = () => {
       link: "#",
       description: "Backup or export data",
       onClick: () => {
-        const jsonData = exportDataBackup();
-        if (jsonData) {
-          const blob = new Blob([jsonData], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `kisan-khata-backup-${new Date().toISOString().split('T')[0]}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          
-          const backupEvent = new CustomEvent('backup-created', { 
-            detail: { success: true }
+        try {
+          const jsonData = exportDataBackup();
+          if (jsonData) {
+            const blob = new Blob([jsonData], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `kisan-khata-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            toast({
+              title: "Backup Created",
+              description: "Data backup successfully downloaded",
+            });
+          } else {
+            toast({
+              title: "Backup Failed",
+              description: "There was a problem creating the backup",
+              variant: "destructive",
+            });
+          }
+        } catch (error) {
+          console.error("Backup error:", error);
+          toast({
+            title: "Backup Failed",
+            description: "An unexpected error occurred",
+            variant: "destructive",
           });
-          window.dispatchEvent(backupEvent);
-        } else {
-          const backupEvent = new CustomEvent('backup-created', { 
-            detail: { success: false }
-          });
-          window.dispatchEvent(backupEvent);
         }
       },
     },

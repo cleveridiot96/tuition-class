@@ -6,7 +6,6 @@ import Index from '@/pages/Index';
 import Purchases from '@/pages/Purchases';
 import Sales from '@/pages/Sales';
 import Inventory from '@/pages/Inventory';
-import Transport from '@/pages/Transport';
 import Master from '@/pages/Master';
 import Agents from '@/pages/Agents';
 import Payments from '@/pages/Payments';
@@ -79,7 +78,6 @@ const App = () => {
               </ErrorBoundary>
             } />
             <Route path="/inventory" element={<Inventory />} />
-            <Route path="/transport" element={<Transport />} />
             <Route path="/master" element={<Master />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/payments" element={<Payments />} />
