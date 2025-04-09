@@ -170,7 +170,7 @@ function toast({ ...props }: Toast) {
 
 // Define the interface for our toast context
 export interface ToastContextType extends State {
-  toast: (props: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  toast: typeof toast;
   dismiss: (toastId?: string) => void;
 }
 
