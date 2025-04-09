@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,13 +7,12 @@ import {
   NavigationMenu,
   NavigationMenuList,
   NavigationMenuItem,
-  NavigationMenuLink,
-  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu"
-import { ModeToggle } from "@/components/ModeToggle"
+import { ModeToggle } from "@/components/ModeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NavigationProps {
   title: string;
@@ -57,8 +57,9 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger className={navigationMenuTriggerStyle()}>
+                <NavigationMenuTrigger className="group inline-flex h-9 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground">
                   More
+                  <ChevronDown className="relative left-1 h-4 w-4 transition-transform duration-200 group-[data-state=open]:rotate-180" />
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
                   <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] md:grid-cols-2">
@@ -112,71 +113,60 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
   );
 };
 
+// Fixed the type definitions for the forwarded refs
 const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
+  HTMLAnchorElement,
   React.ComponentPropsWithoutRef<"a">
 >(({ className, title, children, ...props }, ref) => {
   return (
     <li>
-      <NavigationMenuLink asChild>
-        <a
-          ref={ref}
-          className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className
-          )}
-          {...props}
-        >
-          <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-            {children}
-          </p>
-        </a>
-      </NavigationMenuLink>
+      <a
+        ref={ref}
+        className={cn(
+          "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+          className
+        )}
+        {...props}
+      >
+        <div className="text-sm font-medium leading-none">{title}</div>
+        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+          {children}
+        </p>
+      </a>
     </li>
   )
-})
-ListItem.displayName = "ListItem"
+});
+ListItem.displayName = "ListItem";
 
-const NavigationMenuContent = React.forwardRef<
-  React.ElementRef<typeof NavigationMenuContent>,
-  React.ComponentPropsWithoutRef<typeof NavigationMenuContent>
->(({ className, ...props }, ref) => (
+// Fixed TypeScript for the NavigationMenuContent component
+const NavigationMenuContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
       "z-50 absolute top-0 left-0 w-full origin-top-center data-[motion=from-end]:animate-in data-[motion=from-start]:animate-in data-[motion=from-end]:fade-in data-[motion=from-start]:fade-in data-[motion=from-end]:zoom-in-95 data-[motion=from-start]:zoom-in-95 data-[motion=to-end]:animate-out data-[motion=to-start]:animate-out data-[motion=to-end]:fade-out data-[motion=to-start]:fade-out data-[motion=to-end]:zoom-out-95 data-[motion=to-start]:zoom-out-95 md:w-auto",
       className
     )}
-    ref={ref}
     {...props}
   />
-))
-NavigationMenuContent.displayName = "NavigationMenuContent"
+);
+NavigationMenuContent.displayName = "NavigationMenuContent";
 
+// Fixed TypeScript for the NavigationMenuTrigger component
 const NavigationMenuTrigger = React.forwardRef<
-  React.ElementRef<typeof NavigationMenuTrigger>,
-  React.ComponentPropsWithoutRef<typeof NavigationMenuTrigger>
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
 >(({ className, children, ...props }, ref) => (
-  <Button
-    variant="ghost"
-    size="sm"
+  <button
+    ref={ref}
     className={cn(
       "group inline-flex h-9 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground",
       className
     )}
-    ref={ref}
     {...props}
   >
-    {children}{" "}
-    <ChevronDown className="relative left-1 h-4 w-4 transition-transform duration-200 group-[data-state=open]:rotate-180" />
-  </Button>
-))
-NavigationMenuTrigger.displayName = "NavigationMenuTrigger"
-
-import {
-  ChevronDown,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
+    {children}
+  </button>
+));
+NavigationMenuTrigger.displayName = "NavigationMenuTrigger";
 
 const items = [
   {
@@ -224,6 +214,6 @@ const items = [
     href: "/ledger",
     description: "View party balances",
   },
-]
+];
 
 export default Navigation;
