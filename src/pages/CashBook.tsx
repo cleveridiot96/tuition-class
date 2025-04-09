@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useReactToPrint } from 'react-to-print';
@@ -556,7 +557,6 @@ const CashBook = () => {
           </DialogHeader>
           <ReceiptForm
             onSubmit={handleReceiptAdded}
-            onCancel={() => setReceiptDialogOpen(false)}
           />
         </DialogContent>
       </Dialog>

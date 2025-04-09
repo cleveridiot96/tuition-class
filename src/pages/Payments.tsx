@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -183,7 +184,7 @@ const Payments = () => {
             <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
                 <PaymentForm 
                   onSubmit={handleUpdate} 
-                  onCancel={() => setEditDialogOpen(false)}
+                  onCancel={() => setIsEditDialogOpen(false)}
                   initialData={editingPayment}
                 />
             </ScrollArea>
