@@ -25,46 +25,62 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   enteredPartyName,
   useSuggestedParty,
 }) => {
-  // Safety check to avoid rendering with null or undefined props
-  if (!similarParty || !enteredPartyName) {
+  // Ensure we only render the dialog when all required props are valid
+  if (!similarParty || !enteredPartyName || !useSuggestedParty || !onOpenChange) {
     return null;
   }
   
+  // Safely extract party name with fallback
+  const partyName = similarParty?.name || '';
+  
+  // Use a safe handler for closing dialog
+  const handleClose = () => {
+    try {
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error closing dialog:", error);
+    }
+  };
+  
+  // Use a safe handler for using suggested party
+  const handleUseSuggested = () => {
+    try {
+      useSuggestedParty();
+      onOpenChange(false);
+    } catch (error) {
+      console.error("Error using suggested party:", error);
+      handleClose();
+    }
+  };
+  
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog 
+      open={!!open} 
+      onOpenChange={(newOpen) => {
+        try {
+          onOpenChange(newOpen);
+        } catch (error) {
+          console.error("Error changing dialog state:", error);
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Similar Party Name Found</DialogTitle>
           <DialogDescription>
-            <span className="block mt-2">Did you mean "{similarParty?.name}"?</span>
+            <span className="block mt-2">Did you mean "{partyName}"?</span>
             <span className="block mt-1">You've entered a similar name: "{enteredPartyName}"</span>
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="flex justify-between sm:justify-end gap-2">
           <Button 
             variant="outline" 
-            onClick={() => {
-              // Prevent any potential undefined errors
-              try {
-                onOpenChange(false);
-              } catch (error) {
-                console.error("Error closing dialog:", error);
-              }
-            }}
+            onClick={handleClose}
           >
             Use My Entry
           </Button>
-          <Button 
-            onClick={() => {
-              // Prevent any potential undefined errors
-              try {
-                useSuggestedParty();
-              } catch (error) {
-                console.error("Error using suggested party:", error);
-              }
-            }}
-          >
-            Use "{similarParty?.name || ''}"
+          <Button onClick={handleUseSuggested}>
+            Use "{partyName}"
           </Button>
         </DialogFooter>
       </DialogContent>
