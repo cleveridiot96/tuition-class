@@ -44,6 +44,8 @@ const CashBook = () => {
   const [endDate, setEndDate] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [todaySummary, setTodaySummary] = useState({ cashIn: 0, cashOut: 0 });
   const printRef = useRef(null);
 
@@ -144,6 +146,88 @@ const CashBook = () => {
     }
   };
 
+  const handleBackupData = () => {
+    try {
+      // Get all necessary data
+      const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
+      const sales = JSON.parse(localStorage.getItem('sales') || '[]');
+      const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
+      const agents = JSON.parse(localStorage.getItem('agents') || '[]');
+      const suppliers = JSON.parse(localStorage.getItem('suppliers') || '[]');
+      const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+      const brokers = JSON.parse(localStorage.getItem('brokers') || '[]');
+      const transporters = JSON.parse(localStorage.getItem('transporters') || '[]');
+      const cashbookEntries = entries;
+      
+      // Create a single workbook with multiple sheets
+      const wb = XLSX.utils.book_new();
+      
+      // Add each data set as its own sheet
+      if (purchases.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(purchases);
+        XLSX.utils.book_append_sheet(wb, ws, "Purchases");
+      }
+      
+      if (sales.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(sales);
+        XLSX.utils.book_append_sheet(wb, ws, "Sales");
+      }
+      
+      if (inventory.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(inventory);
+        XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+      }
+      
+      if (agents.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(agents);
+        XLSX.utils.book_append_sheet(wb, ws, "Agents");
+      }
+      
+      if (suppliers.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(suppliers);
+        XLSX.utils.book_append_sheet(wb, ws, "Suppliers");
+      }
+      
+      if (customers.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(customers);
+        XLSX.utils.book_append_sheet(wb, ws, "Customers");
+      }
+      
+      if (brokers.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(brokers);
+        XLSX.utils.book_append_sheet(wb, ws, "Brokers");
+      }
+      
+      if (transporters.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(transporters);
+        XLSX.utils.book_append_sheet(wb, ws, "Transporters");
+      }
+      
+      if (cashbookEntries.length > 0) {
+        const ws = XLSX.utils.json_to_sheet(cashbookEntries);
+        XLSX.utils.book_append_sheet(wb, ws, "CashBook");
+      }
+      
+      // Generate file name with date
+      const fileName = `ERP_Backup_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      
+      // Save workbook
+      XLSX.writeFile(wb, fileName);
+      
+      toast({
+        title: "Backup successful",
+        description: "All data has been backed up to Excel file",
+      });
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      toast({
+        title: "Backup failed",
+        description: "There was an error creating the backup",
+        variant: "destructive"
+      });
+    }
+  };
+
   const calculateOpeningBalance = () => {
     if (entries.length === 0) return 0;
     
@@ -179,6 +263,26 @@ const CashBook = () => {
     toast({
       title: "Success",
       description: "Manual expense has been added to cashbook",
+    });
+  };
+
+  const handlePaymentAdded = () => {
+    setPaymentDialogOpen(false);
+    loadCashbookData();
+    
+    toast({
+      title: "Success",
+      description: "Payment has been added to cashbook",
+    });
+  };
+
+  const handleReceiptAdded = () => {
+    setReceiptDialogOpen(false);
+    loadCashbookData();
+    
+    toast({
+      title: "Success",
+      description: "Receipt has been added to cashbook",
     });
   };
 
@@ -227,11 +331,44 @@ const CashBook = () => {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => setExpenseDialogOpen(true)}
+                  variant="outline"
+                  onClick={handleBackupData}
                 >
-                  <Plus size={16} className="mr-2" />
-                  Add Expense
+                  <Download size={16} className="mr-2" />
+                  Backup All Data
                 </Button>
+                <div className="dropdown">
+                  <Button
+                    size="sm"
+                    onClick={() => {}}
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Transaction
+                  </Button>
+                  <div className="dropdown-content z-50 bg-white border rounded-md shadow-lg mt-2 p-2 w-48">
+                    <Button
+                      variant="ghost"
+                      className="w-full flex justify-start mb-1"
+                      onClick={() => setExpenseDialogOpen(true)}
+                    >
+                      Add Expense
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full flex justify-start mb-1"
+                      onClick={() => setPaymentDialogOpen(true)}
+                    >
+                      Add Payment
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      className="w-full flex justify-start"
+                      onClick={() => setReceiptDialogOpen(true)}
+                    >
+                      Add Receipt
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -391,6 +528,38 @@ const CashBook = () => {
         </DialogContent>
       </Dialog>
       
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add Payment</DialogTitle>
+            <DialogDescription>
+              Record a payment made to a party.
+            </DialogDescription>
+          </DialogHeader>
+          <PaymentForm
+            onSubmit={handlePaymentAdded}
+            onCancel={() => setPaymentDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Receipt Dialog */}
+      <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add Receipt</DialogTitle>
+            <DialogDescription>
+              Record a receipt from a party.
+            </DialogDescription>
+          </DialogHeader>
+          <ReceiptForm
+            onSubmit={handleReceiptAdded}
+            onCancel={() => setReceiptDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      
       {/* Print Styles */}
       <style>{`
         @media print {
@@ -409,6 +578,18 @@ const CashBook = () => {
             top: 0;
             width: 100%;
           }
+        }
+        .dropdown {
+          position: relative;
+          display: inline-block;
+        }
+        .dropdown-content {
+          display: none;
+          position: absolute;
+          right: 0;
+        }
+        .dropdown:hover .dropdown-content {
+          display: block;
         }
       `}</style>
     </div>

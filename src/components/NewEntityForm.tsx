@@ -28,40 +28,70 @@ interface NewEntityFormProps {
   initialData?: any;
 }
 
-const NewEntityForm = ({ onSubmit, fields, initialData }: NewEntityFormProps) => {
-  // Dynamically create form schema based on fields
-  const formSchema = z.object(
-    fields.reduce((acc, field) => {
-      let validator: any;
-      
-      if (field.type === 'text') {
-        validator = field.required ? 
-          z.string().min(1, `${field.label} is required`) :
-          z.string().optional();
-      } else if (field.type === 'number') {
-        validator = field.required ?
-          z.coerce.number().min(0, `${field.label} must be a valid number`) :
-          z.coerce.number().min(0).optional();
-      } else {
-        validator = z.any();
-      }
-      
-      return { ...acc, [field.name]: validator };
-    }, {} as Record<string, any>)
-  );
-
-  // Get default values from initialData or empty values
-  const defaultValues = fields.reduce((acc, field) => {
-    let defaultValue: any = '';
-    
-    if (initialData && field.name in initialData) {
-      defaultValue = initialData[field.name];
-    } else if (field.type === 'number') {
-      defaultValue = 0;
+// Helper function to safely handle form schema creation
+const createSafeFormSchema = (fields: Field[]) => {
+  try {
+    if (!Array.isArray(fields) || fields.length === 0) {
+      console.warn('Invalid or empty fields array provided to createSafeFormSchema');
+      // Return a simple empty schema to prevent crashes
+      return z.object({});
     }
     
-    return { ...acc, [field.name]: defaultValue };
-  }, {} as Record<string, any>);
+    return z.object(
+      fields.reduce((acc, field) => {
+        let validator: any;
+        
+        if (field.type === 'text') {
+          validator = field.required ? 
+            z.string().min(1, `${field.label} is required`) :
+            z.string().optional();
+        } else if (field.type === 'number') {
+          validator = field.required ?
+            z.coerce.number().min(0, `${field.label} must be a valid number`) :
+            z.coerce.number().min(0).optional();
+        } else {
+          validator = z.any();
+        }
+        
+        return { ...acc, [field.name]: validator };
+      }, {} as Record<string, any>)
+    );
+  } catch (error) {
+    console.error('Error creating form schema:', error);
+    // Return a safe fallback schema
+    return z.object({});
+  }
+};
+
+// Helper function to safely get default values
+const getSafeDefaultValues = (fields: Field[], initialData?: any) => {
+  try {
+    if (!Array.isArray(fields)) {
+      console.warn('Invalid fields array provided to getSafeDefaultValues');
+      return {};
+    }
+    
+    return fields.reduce((acc, field) => {
+      let defaultValue: any = '';
+      
+      if (initialData && field.name in initialData) {
+        defaultValue = initialData[field.name];
+      } else if (field.type === 'number') {
+        defaultValue = 0;
+      }
+      
+      return { ...acc, [field.name]: defaultValue };
+    }, {} as Record<string, any>);
+  } catch (error) {
+    console.error('Error getting default values:', error);
+    return {};
+  }
+};
+
+const NewEntityForm = ({ onSubmit, fields, initialData }: NewEntityFormProps) => {
+  // Safely create form schema and default values
+  const formSchema = createSafeFormSchema(fields);
+  const defaultValues = getSafeDefaultValues(fields, initialData);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -69,8 +99,22 @@ const NewEntityForm = ({ onSubmit, fields, initialData }: NewEntityFormProps) =>
   });
 
   const handleSubmit = (data: any) => {
-    onSubmit(data);
+    try {
+      onSubmit(data);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      // You could add error handling UI here
+    }
   };
+
+  // Fallback if fields is invalid
+  if (!Array.isArray(fields) || fields.length === 0) {
+    return (
+      <div className="p-4 border border-yellow-300 bg-yellow-50 rounded">
+        <p className="text-yellow-800">No form fields provided. Please try again.</p>
+      </div>
+    );
+  }
 
   return (
     <Form {...form}>
