@@ -3,11 +3,11 @@ import React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { PropsWithChildren } from "react";
 
-// Instead of creating our own Attribute type, we'll directly use what next-themes expects
+// Use the correct type for attribute
 interface ThemeProviderProps extends PropsWithChildren {
   defaultTheme?: string;
   storageKey?: string;
-  attribute?: string | string[];
+  attribute?: string | "class" | "data-theme";
   value?: Record<string, string>;
   enableSystem?: boolean;
   disableTransitionOnChange?: boolean;
