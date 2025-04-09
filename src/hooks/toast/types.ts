@@ -17,6 +17,13 @@ export type ToastActionElement = React.ReactElement;
 
 export type Toast = Omit<ToasterToast, "id">;
 
+// Context type definition
+export interface ToastContextType {
+  toasts: ToasterToast[];
+  toast: (props: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  dismiss: (toastId?: string) => void;
+}
+
 // Action types
 export const actionTypes = {
   ADD_TOAST: "ADD_TOAST",

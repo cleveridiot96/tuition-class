@@ -18,6 +18,7 @@ import Ledger from '@/pages/Ledger';
 import OpeningBalanceSetup from '@/components/OpeningBalanceSetup';
 import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } from '@/services/financialYearService';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { toast } from '@/hooks/use-toast';
 
 import '@/App.css';
 
@@ -27,7 +28,24 @@ const App = () => {
 
   // Check online/offline status
   useEffect(() => {
-    const handleOnlineStatus = () => setIsOnline(navigator.onLine);
+    const handleOnlineStatus = () => {
+      const online = navigator.onLine;
+      setIsOnline(online);
+      
+      // Show toast notification when connection status changes
+      if (online) {
+        toast({
+          title: "You're back online",
+          description: "Internet connection has been restored",
+        });
+      } else {
+        toast({
+          title: "You're offline",
+          description: "Check your internet connection",
+          variant: "destructive",
+        });
+      }
+    };
     
     // Set initial state
     setIsOnline(navigator.onLine);
