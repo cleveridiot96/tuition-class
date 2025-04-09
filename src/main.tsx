@@ -4,9 +4,11 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
+// Initialize React correctly
 const root = document.getElementById("root");
 
 if (root) {
+  // Use createRoot API correctly
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
       <App />
