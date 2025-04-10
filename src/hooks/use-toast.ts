@@ -23,4 +23,4 @@ export function useToast(): ToastContextType {
 
 // Re-export the toast functions and provider
 export { ToastProvider } from "./toast/toast-context";
-export { toast, dismissToast as dismiss };
+export { toast, dismissToast as dismiss } from "./toast/toast-utils";
