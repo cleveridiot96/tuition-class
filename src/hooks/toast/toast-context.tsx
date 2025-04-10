@@ -4,31 +4,21 @@ import { memoryState, listeners, dispatch } from "./reducer";
 import { State, ToastContextType } from "./types";
 import { toast, dismissToast } from "./toast-utils";
 
-// Create context with proper type
 export const ToastContext = createContext<ToastContextType | null>(null);
 
-// Provider component
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>(memoryState);
-  
+
   useEffect(() => {
     listeners.push(setState);
     return () => {
       const index = listeners.indexOf(setState);
-      if (index > -1) {
-        listeners.splice(index, 1);
-      }
+      if (index > -1) listeners.splice(index, 1);
     };
   }, []);
-  
+
   return (
-    <ToastContext.Provider 
-      value={{
-        ...state,
-        toast,
-        dismiss: dismissToast,
-      }}
-    >
+    <ToastContext.Provider value={{ ...state, toast, dismiss: dismissToast }}>
       {children}
     </ToastContext.Provider>
   );

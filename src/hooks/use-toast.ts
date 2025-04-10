@@ -9,13 +9,7 @@ export function useToast(): ToastContextType {
   const context = useContext(ToastContext);
   
   if (!context) {
-    // Providing a fallback instead of throwing an error
-    console.warn("useToast called outside of ToastProvider");
-    return {
-      toasts: [],
-      toast,
-      dismiss: dismissToast
-    };
+    throw new Error("useToast must be used within a ToastProvider");
   }
   
   return context;
