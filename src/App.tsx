@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
@@ -150,7 +149,6 @@ const App = () => {
             </Routes>
           </ErrorBoundary>
           
-          {/* Toaster component properly positioned within Router/React hierarchy */}
           <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
             Toast system encountered an error. Please refresh the page.
           </div>}>
@@ -158,13 +156,11 @@ const App = () => {
           </ErrorBoundary>
         </Router>
         
-        {/* Opening Balance Setup Dialog */}
         <OpeningBalanceSetup 
           isOpen={showOpeningBalanceSetup} 
           onClose={() => setShowOpeningBalanceSetup(false)} 
         />
 
-        {/* Network status indicator */}
         {!isOnline && (
           <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000]">
             You are offline
