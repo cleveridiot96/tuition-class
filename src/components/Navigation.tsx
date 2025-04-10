@@ -1,8 +1,7 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -22,8 +21,6 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, showFormatButton = false, onFormatClick }) => {
-  const { toast } = useToast();
-
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('currentUser');
@@ -113,7 +110,6 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
   );
 };
 
-// Fixed the type definitions for the forwarded refs
 const ListItem = React.forwardRef<
   HTMLAnchorElement,
   React.ComponentPropsWithoutRef<"a">
@@ -138,7 +134,6 @@ const ListItem = React.forwardRef<
 });
 ListItem.displayName = "ListItem";
 
-// Fixed TypeScript for the NavigationMenuContent component
 const NavigationMenuContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
@@ -150,7 +145,6 @@ const NavigationMenuContent = ({ className, ...props }: React.HTMLAttributes<HTM
 );
 NavigationMenuContent.displayName = "NavigationMenuContent";
 
-// Fixed TypeScript for the NavigationMenuTrigger component
 const NavigationMenuTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement>

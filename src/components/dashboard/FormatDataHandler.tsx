@@ -7,7 +7,7 @@ import {
   clearAllMasterData, 
   seedInitialData 
 } from "@/services/storageService";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast"; // Changed to direct import
 import FormatEventConnector from './FormatEventConnector';
 
 interface FormatDataHandlerProps {
@@ -15,7 +15,7 @@ interface FormatDataHandlerProps {
 }
 
 const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
-  const { toast } = useToast();
+  // Removed useToast hook
   const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
 
   const handleFormatClick = () => {

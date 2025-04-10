@@ -15,10 +15,10 @@ import {
   Warehouse
 } from "lucide-react";
 import { exportDataBackup } from "@/services/storageService";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast"; // Changed to direct import
 
 const DashboardMenu = () => {
-  const { toast } = useToast();
+  // Remove the useToast hook call
   
   const menuItems = [
     {
@@ -94,7 +94,7 @@ const DashboardMenu = () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            // Use the toast hook from useToast (not sonner)
+            // Use the direct toast import 
             toast({
               title: "Backup Created",
               description: "Data backup successfully downloaded",
