@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -11,10 +10,10 @@ import DashboardSummary from "@/components/DashboardSummary";
 import { seedInitialData } from "@/services/storageService";
 import { initializeFinancialYears } from "@/services/financialYearService";
 import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/hooks/use-toast"; // Use direct import for toast function
 
 const Index = () => {
-  const { toast } = useToast();
+  // Remove the useToast() call that's causing the error
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   
   const {
@@ -49,7 +48,7 @@ const Index = () => {
     return () => {
       window.removeEventListener('backup-created', handleBackupCreated as EventListener);
     };
-  }, [toast]);
+  }, []);
   
   useEffect(() => {
     try {
