@@ -75,6 +75,47 @@ const App = () => {
         setShowOpeningBalanceSetup(true);
       }
     }
+    
+    // Auto-maintenance - run system checks periodically
+    const autoMaintenanceInterval = setInterval(() => {
+      try {
+        // Check if local storage is available
+        if (typeof localStorage === 'undefined') {
+          console.error('LocalStorage not available');
+          return;
+        }
+        
+        // Verify essential data structures
+        if (!localStorage.getItem('financialYears')) {
+          initializeFinancialYears();
+          console.log('Auto-maintenance: Re-initialized financial years');
+        }
+        
+        // Check for and repair data consistency issues
+        const checkDataConsistency = () => {
+          try {
+            // Add any data consistency checks here
+            
+            // Example: Verify the active year exists
+            const activeYear = getActiveFinancialYear();
+            if (!activeYear) {
+              initializeFinancialYears();
+              console.log('Auto-maintenance: Fixed missing active year');
+            }
+          } catch (error) {
+            console.error('Error in data consistency check:', error);
+          }
+        };
+        
+        checkDataConsistency();
+      } catch (error) {
+        console.error('Error during auto-maintenance:', error);
+      }
+    }, 60000); // Run every minute
+    
+    return () => {
+      clearInterval(autoMaintenanceInterval);
+    };
   }, []);
 
   return (

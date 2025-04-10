@@ -7,7 +7,7 @@
     <title>किसान खाता सहायक - Start</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             background-color: #f5f0e6;
             display: flex;
             justify-content: center;
@@ -47,13 +47,6 @@
         .button:hover {
             background-color: #4C7C6B;
         }
-        .instructions {
-            text-align: left;
-            margin-top: 30px;
-            padding: 20px;
-            background-color: #f9f5ed;
-            border-radius: 6px;
-        }
         .logo {
             width: 120px;
             height: 120px;
@@ -67,6 +60,25 @@
             font-size: 36px;
             font-weight: bold;
         }
+        .progress {
+            width: 100%;
+            height: 8px;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+            display: none;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #5B8E7D;
+            width: 0;
+            animation: progress 1.5s ease-in-out forwards;
+        }
+        @keyframes progress {
+            from { width: 0; }
+            to { width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -75,24 +87,22 @@
         <h1>किसान खाता सहायक</h1>
         <p class="subtitle">आपका कृषि व्यापार प्रबंधन सॉफ्टवेयर</p>
         
-        <button class="button" onclick="launchApp()">शुरू करें (Start)</button>
+        <button class="button" id="startButton">शुरू करें (Start)</button>
         
-        <div class="instructions">
-            <h3>उपयोग के निर्देश (Instructions):</h3>
-            <p>1. ऐप शुरू करने के लिए उपरोक्त बटन पर क्लिक करें।</p>
-            <p>2. यदि ऐप ब्राउज़र में बंद हो जाता है, तो इस फ़ाइल को फिर से खोलें।</p>
-            <p>3. अपने डेटा को सुरक्षित रखने के लिए नियमित रूप से बैकअप लें।</p>
-            <hr>
-            <p>1. Click the button above to launch the app.</p>
-            <p>2. If the app gets closed in the browser, reopen this file.</p>
-            <p>3. Take regular backups to keep your data safe.</p>
+        <div class="progress" id="progress">
+            <div class="progress-bar"></div>
         </div>
     </div>
     
     <script>
-        function launchApp() {
-            window.open('index.html', '_blank');
-        }
+        document.getElementById('startButton').addEventListener('click', function() {
+            this.style.display = 'none';
+            document.getElementById('progress').style.display = 'block';
+            
+            setTimeout(function() {
+                window.location.href = 'index.html';
+            }, 1000);
+        });
     </script>
 </body>
 </html>

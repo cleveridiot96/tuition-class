@@ -51,17 +51,6 @@ const Index = () => {
     };
   }, [toast]);
   
-  // Test toast functionality
-  useEffect(() => {
-    // Show a welcome toast when the dashboard loads
-    setTimeout(() => {
-      toast({
-        title: "Welcome to Dashboard",
-        description: "Your agricultural business management system is ready",
-      });
-    }, 1000);
-  }, [toast]);
-  
   useEffect(() => {
     try {
       initializeFinancialYears();
