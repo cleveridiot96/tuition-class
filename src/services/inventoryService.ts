@@ -3,7 +3,7 @@ import { InventoryItem } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
 export const getInventory = (): InventoryItem[] => {
-  return getYearSpecificStorageItem<InventoryItem>('inventory');
+  return getYearSpecificStorageItem<InventoryItem>('inventory') || [];
 };
 
 export const saveInventory = (inventory: InventoryItem[]): void => {
@@ -34,4 +34,18 @@ export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number
     
     saveInventory(inventory);
   }
+};
+
+// Helper function to get all locations from inventory
+export const getLocations = (): string[] => {
+  const inventory = getInventory();
+  const locations = new Set<string>();
+  
+  inventory.forEach(item => {
+    if (item.location) {
+      locations.add(item.location);
+    }
+  });
+  
+  return Array.from(locations);
 };

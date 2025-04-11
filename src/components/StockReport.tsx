@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import * as XLSX from 'xlsx';
@@ -32,25 +31,7 @@ import { Printer, Download, Search, FileSpreadsheet } from "lucide-react";
 
 import { getInventory, getAgents, getLocations } from '@/services/storageService';
 import { formatCurrency } from '@/utils/helpers';
-
-// Create enhanced inventory item type with calculations
-interface EnhancedInventoryItem {
-  id: string;
-  lotNumber: string;
-  location: string;
-  quantity: number;
-  remainingQuantity: number;
-  netWeight: number;
-  remainingWeight: number;
-  purchaseRate: number;
-  finalCost: number;
-  totalValue: number;
-  agentName: string;
-  agentId: string; // Added this missing property
-  soldQuantity: number;
-  soldWeight: number;
-  date: string;
-}
+import { EnhancedInventoryItem } from '@/services/types';
 
 const StockReport = () => {
   const { toast } = useToast();
@@ -69,22 +50,30 @@ const StockReport = () => {
   useEffect(() => {
     try {
       const rawInventory = getInventory() || [];
-      const inventoryItems = rawInventory.filter(item => item && !item.isDeleted && item.remainingQuantity > 0);
+      const inventoryItems = rawInventory.filter(item => item && !item.isDeleted && (item.remainingQuantity ?? item.quantity) > 0);
       const agentsData = getAgents() || [];
       const locationsData = getLocations() || [];
       
       // Enhance inventory with calculated fields
-      const enhancedInventory = inventoryItems.map(item => {
+      const enhancedInventory: EnhancedInventoryItem[] = inventoryItems.map(item => {
         const agent = agentsData.find(a => a && a.id === item.agentId);
         
         // Calculate values
-        const soldQuantity = item.quantity - item.remainingQuantity;
-        const soldWeight = item.netWeight - (item.netWeight * (item.remainingQuantity / item.quantity));
-        const remainingWeight = item.netWeight * (item.remainingQuantity / item.quantity);
-        const totalValue = item.finalCost * remainingWeight;
+        const remainingQuantity = item.remainingQuantity !== undefined ? item.remainingQuantity : item.quantity;
+        const soldQuantity = item.quantity - remainingQuantity;
+        const soldWeight = item.netWeight - (item.netWeight * (remainingQuantity / item.quantity));
+        const remainingWeight = item.netWeight * (remainingQuantity / item.quantity);
+        const finalCost = item.finalCost || 0;
+        const purchaseRate = item.purchaseRate || 0;
+        const totalValue = finalCost * remainingWeight;
         
         return {
           ...item,
+          remainingQuantity,
+          purchaseRate,
+          finalCost,
+          agentId: item.agentId || '',
+          date: item.date || item.dateAdded,
           agentName: agent?.name || 'Unknown',
           soldQuantity,
           soldWeight,

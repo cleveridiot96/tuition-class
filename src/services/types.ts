@@ -1,5 +1,5 @@
-
 // Common interfaces for all entities
+
 export interface Agent {
   id: string;
   name: string;
@@ -148,17 +148,17 @@ export interface InventoryItem {
   isDeleted?: boolean;
 }
 
-export interface EnhancedInventoryItem extends InventoryItem {
+export interface EnhancedInventoryItem extends Omit<InventoryItem, 'remainingQuantity' | 'purchaseRate' | 'finalCost' | 'agentId' | 'date' | 'agentName'> {
   remainingQuantity: number;
   purchaseRate: number;
   finalCost: number;
   agentId: string;
   date: string;
   agentName: string;
-  soldQuantity?: number;
-  soldWeight?: number;
-  remainingWeight?: number;
-  totalValue?: number;
+  soldQuantity: number;
+  soldWeight: number;
+  remainingWeight: number;
+  totalValue: number;
 }
 
 export interface LedgerEntry {

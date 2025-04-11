@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -26,17 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getInventory, saveInventory, getPurchases, savePurchases } from "@/services/storageService";
-
-interface InventoryItem {
-  id: string;
-  lotNumber: string;
-  quantity: number;
-  location: string;
-  dateAdded: string;
-  netWeight?: number;
-  isDeleted?: boolean;
-}
+import { getInventory, saveInventory, getPurchases, savePurchases, InventoryItem } from "@/services/storageService";
 
 const Inventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
