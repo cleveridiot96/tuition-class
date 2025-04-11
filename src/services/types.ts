@@ -139,7 +139,26 @@ export interface InventoryItem {
   location: string;
   dateAdded: string;
   netWeight: number;
+  remainingQuantity?: number;
+  purchaseRate?: number;
+  finalCost?: number;
+  agentId?: string;
+  agentName?: string;
+  date?: string;
   isDeleted?: boolean;
+}
+
+export interface EnhancedInventoryItem extends InventoryItem {
+  remainingQuantity: number;
+  purchaseRate: number;
+  finalCost: number;
+  agentId: string;
+  date: string;
+  agentName: string;
+  soldQuantity?: number;
+  soldWeight?: number;
+  remainingWeight?: number;
+  totalValue?: number;
 }
 
 export interface LedgerEntry {

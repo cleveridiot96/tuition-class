@@ -22,11 +22,13 @@ export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number
   
   if (index !== -1) {
     const item = inventory[index];
-    const remainingQuantity = Math.max(0, item.remainingQuantity || item.quantity - quantitySold);
+    // Calculate remaining quantity, using the remainingQuantity field if it exists, otherwise use the quantity
+    const currentRemaining = item.remainingQuantity !== undefined ? item.remainingQuantity : item.quantity;
+    const remainingQuantity = Math.max(0, currentRemaining - quantitySold);
     
     inventory[index] = {
       ...item,
-      remainingQuantity,
+      remainingQuantity: remainingQuantity,
       isDeleted: remainingQuantity === 0
     };
     
