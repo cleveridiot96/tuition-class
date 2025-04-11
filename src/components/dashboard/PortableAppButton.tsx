@@ -25,9 +25,10 @@ const PortableAppButton = () => {
     <Button 
       onClick={handleCreatePortable}
       disabled={isCreating}
-      className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+      className="flex items-center gap-3 bg-green-600 hover:bg-green-700 text-lg py-6 px-8"
+      size="lg"
     >
-      <Package size={16} />
+      <Package size={24} />
       {isCreating ? "Creating..." : "Create Portable Version"}
     </Button>
   );

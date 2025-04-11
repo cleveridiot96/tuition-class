@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -35,31 +36,31 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
   const user = currentUser ? JSON.parse(currentUser) : null;
 
   return (
-    <div className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+    <div className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50 w-full">
+      <div className="w-full px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {showBackButton && (
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+            <Button variant="ghost" size="lg" onClick={() => window.history.back()}>
               Back
             </Button>
           )}
-          <h1 className="text-xl font-bold">{title}</h1>
+          <h1 className="text-2xl font-bold">{title}</h1>
         </div>
         <div className="flex items-center space-x-4">
           {showFormatButton && (
-            <Button variant="outline" size="sm" onClick={onFormatClick}>
+            <Button variant="outline" size="lg" onClick={onFormatClick}>
               Format Data
             </Button>
           )}
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="group inline-flex h-9 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground">
+                <NavigationMenuTrigger className="text-lg">
                   More
-                  <ChevronDown className="relative left-1 h-4 w-4 transition-transform duration-200 group-[data-state=open]:rotate-180" />
+                  <ChevronDown className="relative left-1 h-5 w-5 transition-transform duration-200 group-[data-state=open]:rotate-180" />
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] md:grid-cols-2">
+                  <ul className="grid gap-3 p-6 md:w-[500px] lg:w-[600px] md:grid-cols-2">
                     {items.map((item) => (
                       <ListItem key={item.title} title={item.title} href={item.href}>
                         {item.description}
@@ -73,33 +74,33 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
           <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-8 w-8 p-0">
-                <Avatar className="h-8 w-8">
+              <Button variant="ghost" className="h-12 w-12 p-0">
+                <Avatar className="h-10 w-10">
                   <AvatarImage src="https://github.com/shadcn.png" alt="Shadcn" />
                   <AvatarFallback>SC</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem disabled>
+            <DropdownMenuContent className="w-64" align="end" forceMount>
+              <DropdownMenuItem disabled className="text-base">
                 <span className="font-bold">{user?.name}</span>
                 <br />
                 <span className="text-muted-foreground">{user?.email}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem className="text-base">
                 <Link to="/profile" className="w-full h-full block">
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem className="text-base">
                 <Link to="/settings" className="w-full h-full block">
                   Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={handleLogout} className="text-base">
+                <LogOut className="mr-2 h-5 w-5" />
                 <span>Log out</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -119,13 +120,13 @@ const ListItem = React.forwardRef<
       <a
         ref={ref}
         className={cn(
-          "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+          "block select-none space-y-1 rounded-md p-4 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-lg",
           className
         )}
         {...props}
       >
-        <div className="text-sm font-medium leading-none">{title}</div>
-        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+        <div className="text-lg font-medium leading-none">{title}</div>
+        <p className="line-clamp-2 text-base leading-snug text-muted-foreground">
           {children}
         </p>
       </a>
@@ -152,7 +153,7 @@ const NavigationMenuTrigger = React.forwardRef<
   <button
     ref={ref}
     className={cn(
-      "group inline-flex h-9 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground",
+      "group inline-flex h-12 items-center justify-center rounded-md bg-background px-5 py-3 text-lg font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground",
       className
     )}
     {...props}

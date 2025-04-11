@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
@@ -120,52 +121,54 @@ const App = () => {
     <ErrorBoundary>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <Router>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={
-                <ErrorBoundary>
-                  <Index />
-                </ErrorBoundary>
-              } />
-              <Route path="/purchases" element={
-                <ErrorBoundary>
-                  <Purchases />
-                </ErrorBoundary>
-              } />
-              <Route path="/sales" element={
-                <ErrorBoundary>
-                  <Sales />
-                </ErrorBoundary>
-              } />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/master" element={<Master />} />
-              <Route path="/agents" element={<Agents />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/receipts" element={<Receipts />} />
-              <Route path="/cashbook" element={<CashBook />} />
-              <Route path="/stock" element={<Stock />} />
-              <Route path="/ledger" element={<Ledger />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-          
-          <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
-            Toast system encountered an error. Please refresh the page.
-          </div>}>
-            <Toaster />
-          </ErrorBoundary>
-        </Router>
-        
-        <OpeningBalanceSetup 
-          isOpen={showOpeningBalanceSetup} 
-          onClose={() => setShowOpeningBalanceSetup(false)} 
-        />
-
-        {!isOnline && (
-          <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000]">
-            You are offline
+          <div className="min-h-screen w-full overflow-x-hidden">
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={
+                  <ErrorBoundary>
+                    <Index />
+                  </ErrorBoundary>
+                } />
+                <Route path="/purchases" element={
+                  <ErrorBoundary>
+                    <Purchases />
+                  </ErrorBoundary>
+                } />
+                <Route path="/sales" element={
+                  <ErrorBoundary>
+                    <Sales />
+                  </ErrorBoundary>
+                } />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/master" element={<Master />} />
+                <Route path="/agents" element={<Agents />} />
+                <Route path="/payments" element={<Payments />} />
+                <Route path="/receipts" element={<Receipts />} />
+                <Route path="/cashbook" element={<CashBook />} />
+                <Route path="/stock" element={<Stock />} />
+                <Route path="/ledger" element={<Ledger />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </ErrorBoundary>
+            
+            <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
+              Toast system encountered an error. Please refresh the page.
+            </div>}>
+              <Toaster />
+            </ErrorBoundary>
           </div>
-        )}
+          
+          <OpeningBalanceSetup 
+            isOpen={showOpeningBalanceSetup} 
+            onClose={() => setShowOpeningBalanceSetup(false)} 
+          />
+
+          {!isOnline && (
+            <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000] text-lg">
+              You are offline
+            </div>
+          )}
+        </Router>
       </ThemeProvider>
     </ErrorBoundary>
   );

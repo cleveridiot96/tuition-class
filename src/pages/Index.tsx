@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -13,7 +14,6 @@ import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
 import { toast } from "@/hooks/use-toast"; // Use direct import for toast function
 
 const Index = () => {
-  // Remove the useToast() call that's causing the error
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   
   const {
@@ -95,17 +95,17 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige">
+    <div className="min-h-screen w-full bg-ag-beige">
       <Navigation 
         title="Dashboard" 
         showFormatButton={true}
         onFormatClick={() => document.dispatchEvent(new Event('format-click'))}
       />
       
-      <div className="container mx-auto px-4 py-6">
+      <div className="w-full px-4 py-6">
         <DashboardHeader onOpeningBalancesClick={handleOpeningBalances} />
         
-        <p className="text-lg text-ag-brown mt-2 mb-4 text-center">
+        <p className="text-xl text-ag-brown mt-2 mb-6 text-center">
           Agricultural Business Management System
         </p>
         

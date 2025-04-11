@@ -79,6 +79,39 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 16px;
+  }
+  
+  h1 {
+    font-size: 2.5rem;
+    line-height: 1.2;
+  }
+  
+  h2 {
+    font-size: 2rem;
+    line-height: 1.2;
+  }
+  
+  h3 {
+    font-size: 1.75rem;
+    line-height: 1.2;
+  }
+  
+  p, span, div, button, a {
+    font-size: 1.1rem;
+  }
+  
+  input, select, textarea {
+    font-size: 1.1rem;
+  }
+  
+  button {
+    padding: 0.75rem 1.25rem;
+  }
+  
+  label {
+    font-size: 1.1rem;
+    font-weight: 500;
   }
 }
 
@@ -110,17 +143,19 @@
 table.excel-style {
   border-collapse: collapse;
   width: 100%;
+  font-size: 1.1rem;
 }
 
 table.excel-style th,
 table.excel-style td {
   border: 1px solid #e2e8f0;
-  padding: 8px;
+  padding: 12px;
 }
 
 table.excel-style thead th {
   background-color: #f8fafc;
   font-weight: 600;
+  font-size: 1.2rem;
 }
 
 table.excel-style tbody tr:hover {
@@ -193,8 +228,37 @@ table.excel-style tbody tr:hover {
 
 .menu-card {
   transition: all 0.3s ease;
+  font-size: 1.1rem;
+  padding: 1.5rem;
 }
 
 .menu-card:hover {
   transform: translateY(-5px);
+}
+
+/* Full width containers */
+.full-width-container {
+  width: 100vw;
+  max-width: 100%;
+  margin: 0;
+  padding: 1rem;
+}
+
+/* Responsive text sizes */
+@media screen and (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.75rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+  }
 }
