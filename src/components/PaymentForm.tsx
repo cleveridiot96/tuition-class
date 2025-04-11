@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -29,7 +30,9 @@ import {
   getSuppliers,
   getBrokers,
   getCustomers,
-  getTransporters
+  getTransporters,
+  getPurchases,
+  getSales
 } from "@/services/storageService";
 
 const formSchema = z.object({
@@ -42,6 +45,9 @@ const formSchema = z.object({
   billAmount: z.coerce.number().min(0, "Bill amount must be valid"),
   referenceNumber: z.string().optional(),
   notes: z.string().optional(),
+  isAgainstTransaction: z.boolean().default(false),
+  transactionId: z.string().optional(),
+  isOnAccount: z.boolean().default(false)
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,9 +59,12 @@ export interface PaymentFormProps {
 }
 
 const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
-  const [parties, setParties] = React.useState<any[]>([]);
-  const [partyType, setPartyType] = React.useState<string>(initialData?.partyType || "agent");
-  
+  const [parties, setParties] = useState<any[]>([]);
+  const [partyType, setPartyType] = useState<string>(initialData?.partyType || "agent");
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [showTransactions, setShowTransactions] = useState<boolean>(initialData?.isAgainstTransaction || false);
+  const [isOnAccount, setIsOnAccount] = useState<boolean>(initialData?.isOnAccount || false);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -65,6 +74,9 @@ const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
       partyId: initialData.partyId || "",
       paymentMode: initialData.paymentMode || "cash",
       billAmount: initialData.billAmount || 0,
+      isAgainstTransaction: initialData.isAgainstTransaction || false,
+      transactionId: initialData.transactionId || "",
+      isOnAccount: initialData.isOnAccount || false
     } : {
       date: format(new Date(), 'yyyy-MM-dd'),
       amount: 0,
@@ -75,13 +87,24 @@ const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
       billAmount: 0,
       referenceNumber: "",
       notes: "",
+      isAgainstTransaction: false,
+      transactionId: "",
+      isOnAccount: false
     }
   });
 
   // Load party data when party type changes
-  React.useEffect(() => {
+  useEffect(() => {
     loadParties(partyType);
   }, [partyType]);
+
+  // Load related transactions when party changes
+  useEffect(() => {
+    const partyId = form.watch("partyId");
+    if (partyId && showTransactions) {
+      loadTransactions(partyId, partyType);
+    }
+  }, [form.watch("partyId"), showTransactions, partyType]);
 
   const loadParties = (type: string) => {
     let partyList: any[] = [];
@@ -110,19 +133,76 @@ const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
     form.setValue("partyId", "");
   };
 
+  const loadTransactions = (partyId: string, partyType: string) => {
+    try {
+      let relatedTransactions = [];
+      
+      // Get transactions based on party type
+      if (partyType === 'supplier' || partyType === 'agent') {
+        const purchases = getPurchases().filter(p => !p.isDeleted);
+        relatedTransactions = purchases.filter(p => 
+          (partyType === 'agent' && p.agentId === partyId) || 
+          (partyType === 'supplier' && p.partyId === partyId)
+        ).map(p => ({
+          id: p.id,
+          date: p.date,
+          type: 'purchase',
+          number: p.lotNumber,
+          amount: p.totalAfterExpenses
+        }));
+      } else if (partyType === 'customer') {
+        const sales = getSales().filter(s => !s.isDeleted);
+        relatedTransactions = sales.filter(s => s.customerId === partyId).map(s => ({
+          id: s.id,
+          date: s.date,
+          type: 'sale',
+          number: s.billNumber || s.lotNumber,
+          amount: s.totalAmount
+        }));
+      }
+      
+      setTransactions(relatedTransactions);
+    } catch (error) {
+      console.error("Error loading transactions:", error);
+      setTransactions([]);
+    }
+  };
+
   const handlePartyTypeChange = (value: string) => {
     setPartyType(value);
     form.setValue("partyType", value);
+    form.setValue("transactionId", "");
+    setTransactions([]);
+  };
+
+  const handleTransactionToggle = (checked: boolean) => {
+    setShowTransactions(checked);
+    form.setValue("isAgainstTransaction", checked);
+    if (!checked) {
+      form.setValue("transactionId", "");
+    }
+  };
+
+  const handleOnAccountToggle = (checked: boolean) => {
+    setIsOnAccount(checked);
+    form.setValue("isOnAccount", checked);
   };
 
   const handleFormSubmit = (data: FormData) => {
     // Get party name for record
     const selectedParty = parties.find(p => p.id === data.partyId);
     
+    // Get transaction details if selected
+    let transactionDetails = null;
+    if (data.isAgainstTransaction && data.transactionId) {
+      transactionDetails = transactions.find(t => t.id === data.transactionId);
+    }
+    
     // Format data for submission
     const submitData = {
       ...data,
       partyName: selectedParty?.name || "",
+      transactionDetails: transactionDetails,
       id: initialData?.id || Date.now().toString()
     };
     
@@ -224,6 +304,67 @@ const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
             )}
           />
         </FormRow>
+
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="againstTransaction" 
+              checked={showTransactions}
+              onCheckedChange={handleTransactionToggle}
+            />
+            <label
+              htmlFor="againstTransaction"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Payment against specific transaction
+            </label>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="onAccount" 
+              checked={isOnAccount}
+              onCheckedChange={handleOnAccountToggle}
+            />
+            <label
+              htmlFor="onAccount"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              Payment on account
+            </label>
+          </div>
+        </div>
+        
+        {showTransactions && (
+          <FormField
+            control={form.control}
+            name="transactionId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Select Transaction</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select transaction" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {transactions.length > 0 ? (
+                      transactions.map((transaction) => (
+                        <SelectItem key={transaction.id} value={transaction.id}>
+                          {`${transaction.type === 'purchase' ? 'Lot' : 'Bill'} ${transaction.number} - ₹${transaction.amount.toFixed(2)} (${format(new Date(transaction.date), 'dd/MM/yyyy')})`}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem disabled value="no-transactions">No transactions found</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
         
         <FormRow columns={2}>
           <FormField

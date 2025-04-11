@@ -10,7 +10,7 @@ import {
   deletePayment,
 } from "@/services/storageService";
 
-// Import the new components
+// Import the components
 import PaymentsHeader from "@/components/payments/PaymentsHeader";
 import PaymentsTable from "@/components/payments/PaymentsTable";
 import AddPaymentDialog from "@/components/payments/AddPaymentDialog";

@@ -12,6 +12,7 @@ import {
   TableCell
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 interface PaymentsTableProps {
   payments: any[];
@@ -40,9 +41,10 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({
               <TableHead className="sticky top-0 bg-white">Party Type</TableHead>
               <TableHead className="sticky top-0 bg-white">Party</TableHead>
               <TableHead className="sticky top-0 bg-white">Amount (₹)</TableHead>
+              <TableHead className="sticky top-0 bg-white">Transaction</TableHead>
+              <TableHead className="sticky top-0 bg-white">Status</TableHead>
               <TableHead className="sticky top-0 bg-white">Payment Mode</TableHead>
               <TableHead className="sticky top-0 bg-white">Bill Number</TableHead>
-              <TableHead className="sticky top-0 bg-white">Bill Amount (₹)</TableHead>
               <TableHead className="sticky top-0 bg-white">Reference Number</TableHead>
               <TableHead className="sticky top-0 bg-white">Notes</TableHead>
               <TableHead className="sticky top-0 bg-white">Actions</TableHead>
@@ -55,9 +57,30 @@ const PaymentsTable: React.FC<PaymentsTableProps> = ({
                 <TableCell>{payment.partyType}</TableCell>
                 <TableCell>{payment.partyName}</TableCell>
                 <TableCell>{payment.amount}</TableCell>
+                <TableCell>
+                  {payment.transactionDetails ? (
+                    `${payment.transactionDetails.type === 'purchase' ? 'Lot' : 'Bill'} ${payment.transactionDetails.number}`
+                  ) : (
+                    "-"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {payment.isOnAccount ? (
+                    <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">
+                      On Account
+                    </Badge>
+                  ) : payment.isAgainstTransaction ? (
+                    <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
+                      Against Transaction
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-300">
+                      General
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell>{payment.paymentMode}</TableCell>
                 <TableCell>{payment.billNumber || "-"}</TableCell>
-                <TableCell>{payment.billAmount ? payment.billAmount.toFixed(2) : "0.00"}</TableCell>
                 <TableCell>{payment.referenceNumber || "-"}</TableCell>
                 <TableCell>{payment.notes || "-"}</TableCell>
                 <TableCell>
