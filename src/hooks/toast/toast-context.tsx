@@ -2,7 +2,7 @@
 import React, { createContext, useState } from "react";
 import { State, ToastContextType } from "./types";
 import { toast, dismissToast } from "./toast-utils";
-import { memoryState } from "./reducer";
+import { memoryState, listeners } from "./reducer";
 
 export const ToastContext = createContext<ToastContextType | null>(null);
 
@@ -18,9 +18,6 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   // Register this setState in the listeners from reducer
   React.useEffect(() => {
-    // Import the listeners from the reducer
-    const { listeners } = require("./reducer");
-    
     // Add this setState to the listeners
     listeners.push(setState);
     

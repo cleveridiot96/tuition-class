@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Dialog } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast"; // Changed from "sonner" to our custom toast
 import Navigation from "@/components/Navigation";
 import { 
   getPayments, 
