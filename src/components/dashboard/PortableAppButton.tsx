@@ -1,11 +1,11 @@
 
-import React, { useState } from 'react';
+import * as React from 'react';
 import { Button } from "@/components/ui/button";
 import { Package } from "lucide-react";
 import { createPortableVersion } from "@/utils/portableAppUtils";
 
 const PortableAppButton = () => {
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = React.useState(false);
 
   const handleCreatePortable = async () => {
     setIsCreating(true);

@@ -9,6 +9,12 @@ export * from './brokerService';
 export * from './transporterService';
 export * from './purchaseService';
 export * from './saleService';
-export * from './inventoryService';
+// Don't re-export getLocations from inventoryService as it's already exported from storageUtils
+export { 
+  getInventory,
+  saveInventory,
+  addInventoryItem,
+  updateInventoryAfterSale
+} from './inventoryService';
 export * from './paymentService';
 export * from './receiptService';
