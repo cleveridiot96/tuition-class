@@ -8,7 +8,7 @@ import {
   addPayment,
   updatePayment,
   deletePayment,
-} from "@/services/storageService";
+} from "@/services/paymentService"; // Updated import
 
 // Import the components
 import PaymentsHeader from "@/components/payments/PaymentsHeader";
