@@ -17,10 +17,19 @@ export type ToastActionElement = React.ReactElement;
 
 export type Toast = Omit<ToasterToast, "id">;
 
+// Extend the toast function type to include variant methods
+export interface ToastFunction {
+  (props: Toast): { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  success: (title: string, description?: string) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  error: (title: string, description?: string) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  warning: (title: string, description?: string) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  info: (title: string, description?: string) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+}
+
 // Context type definition
 export interface ToastContextType {
   toasts: ToasterToast[];
-  toast: (props: Toast) => { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+  toast: ToastFunction;
   dismiss: (toastId?: string) => void;
 }
 

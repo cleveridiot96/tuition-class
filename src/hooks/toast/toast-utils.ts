@@ -46,3 +46,39 @@ export function toast({ ...props }: Toast) {
 export function dismissToast(toastId?: string) {
   dispatch({ type: "DISMISS_TOAST", toastId });
 }
+
+// Add variant toast methods
+toast.success = (title: string, description?: string) => {
+  return toast({
+    title,
+    description,
+    variant: "default",
+    className: "bg-green-500 text-white",
+  });
+};
+
+toast.error = (title: string, description?: string) => {
+  return toast({
+    title,
+    description,
+    variant: "destructive",
+  });
+};
+
+toast.warning = (title: string, description?: string) => {
+  return toast({
+    title,
+    description,
+    variant: "default",
+    className: "bg-yellow-500 text-white",
+  });
+};
+
+toast.info = (title: string, description?: string) => {
+  return toast({
+    title,
+    description,
+    variant: "default",
+    className: "bg-blue-500 text-white",
+  });
+};
