@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { TextSize, ZoomIn, ZoomOut } from 'lucide-react';
+import { Type, ZoomIn, ZoomOut } from 'lucide-react';
 
 const FontSizeControl: React.FC = () => {
   const [fontSize, setFontSize] = useState<string>(
@@ -72,7 +72,7 @@ const FontSizeControl: React.FC = () => {
         className="android-ripple"
         title="Reset font size"
       >
-        <TextSize className="h-4 w-4" />
+        <Type className="h-4 w-4" />
       </Button>
       
       <Button
