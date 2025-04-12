@@ -292,3 +292,14 @@ button:active:after,
     transform: scale(40, 40);
   }
 }
+
+/* Hide dark mode and overlay elements */
+.dark-mode-toggle,
+.fixed-overlay,
+[data-radix-popper-content-wrapper],
+[data-overlay="true"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

@@ -86,9 +86,13 @@ html, body {
   transition: 0s;
 }
 
-/* Remove dark mode overlay */
-.fixed-overlay {
+/* Remove fixed overlay completely */
+.fixed-overlay,
+[data-overlay="true"] {
   display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /* Font size controls */

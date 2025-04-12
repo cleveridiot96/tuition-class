@@ -18,7 +18,7 @@ const NavigationDropdown = () => {
             <ChevronDown className="relative left-0 md:left-1 h-4 w-4 md:h-5 md:w-5 transition-transform duration-200 group-[data-state=open]:rotate-180" />
           </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <ul className="grid gap-2 md:gap-3 p-3 md:p-6 md:w-[500px] lg:w-[600px] md:grid-cols-2 max-h-[80vh] overflow-y-auto navigation-dropdown-right">
+            <ul className="grid gap-2 md:gap-3 p-3 md:p-6 md:w-[500px] lg:w-[600px] md:grid-cols-2 max-h-[80vh] overflow-y-auto navigation-dropdown-right bg-white shadow-lg rounded-md border">
               {items.map((item) => (
                 <ListItem key={item.title} title={item.title} href={item.href}>
                   {item.description}
