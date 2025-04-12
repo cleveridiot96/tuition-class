@@ -95,6 +95,11 @@ html, body {
   pointer-events: none !important;
 }
 
+/* Navigation dropdown should not appear on specific pages */
+.stock-page .navigation-dropdown {
+  display: none !important;
+}
+
 /* Font size controls */
 .font-size-controls {
   display: flex;

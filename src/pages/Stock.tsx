@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import StockReport from "@/components/StockReport";
@@ -32,7 +31,7 @@ const Stock = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-ag-beige">
+    <div className="min-h-screen bg-ag-beige stock-page">
       <Navigation title="Stock Report" showBackButton />
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 gap-6">

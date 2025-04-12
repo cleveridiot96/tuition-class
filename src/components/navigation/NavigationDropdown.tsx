@@ -1,6 +1,7 @@
 
 import React from "react";
 import { ChevronDown } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import {
   NavigationMenu,
   NavigationMenuList,
@@ -9,6 +10,14 @@ import {
 import { NavigationMenuContent, NavigationMenuTrigger, ListItem, items } from "./NavigationItems";
 
 const NavigationDropdown = () => {
+  // Get current location to conditionally hide the dropdown on stock page
+  const location = useLocation();
+  
+  // Don't render the dropdown on the stock page
+  if (location.pathname === "/stock") {
+    return null;
+  }
+
   return (
     <NavigationMenu>
       <NavigationMenuList>
