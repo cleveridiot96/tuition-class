@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from '@/components/ThemeProvider';
 import Index from '@/pages/Index';
 import Purchases from '@/pages/Purchases';
 import Sales from '@/pages/Sales';
@@ -117,59 +116,63 @@ const App = () => {
     };
   }, []);
 
+  // Apply font size from localStorage when app loads
+  useEffect(() => {
+    const savedFontSize = localStorage.getItem('app-font-size') || 'normal';
+    document.documentElement.classList.add(`font-size-${savedFontSize}`);
+  }, []);
+
   return (
     <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <Router>
-          <div className="min-h-screen w-full overflow-x-hidden">
-            <ErrorBoundary>
-              <Routes>
-                <Route path="/" element={
-                  <ErrorBoundary>
-                    <Index />
-                  </ErrorBoundary>
-                } />
-                <Route path="/purchases" element={
-                  <ErrorBoundary>
-                    <Purchases />
-                  </ErrorBoundary>
-                } />
-                <Route path="/sales" element={
-                  <ErrorBoundary>
-                    <Sales />
-                  </ErrorBoundary>
-                } />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/master" element={<Master />} />
-                <Route path="/agents" element={<Agents />} />
-                <Route path="/payments" element={<Payments />} />
-                <Route path="/receipts" element={<Receipts />} />
-                <Route path="/cashbook" element={<CashBook />} />
-                <Route path="/stock" element={<Stock />} />
-                <Route path="/ledger" element={<Ledger />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </ErrorBoundary>
-            
-            <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
-              Toast system encountered an error. Please refresh the page.
-            </div>}>
-              <Toaster />
-            </ErrorBoundary>
-          </div>
+      <Router>
+        <div className="min-h-screen w-full overflow-x-hidden">
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={
+                <ErrorBoundary>
+                  <Index />
+                </ErrorBoundary>
+              } />
+              <Route path="/purchases" element={
+                <ErrorBoundary>
+                  <Purchases />
+                </ErrorBoundary>
+              } />
+              <Route path="/sales" element={
+                <ErrorBoundary>
+                  <Sales />
+                </ErrorBoundary>
+              } />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/master" element={<Master />} />
+              <Route path="/agents" element={<Agents />} />
+              <Route path="/payments" element={<Payments />} />
+              <Route path="/receipts" element={<Receipts />} />
+              <Route path="/cashbook" element={<CashBook />} />
+              <Route path="/stock" element={<Stock />} />
+              <Route path="/ledger" element={<Ledger />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
           
-          <OpeningBalanceSetup 
-            isOpen={showOpeningBalanceSetup} 
-            onClose={() => setShowOpeningBalanceSetup(false)} 
-          />
+          <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
+            Toast system encountered an error. Please refresh the page.
+          </div>}>
+            <Toaster />
+          </ErrorBoundary>
+        </div>
+        
+        <OpeningBalanceSetup 
+          isOpen={showOpeningBalanceSetup} 
+          onClose={() => setShowOpeningBalanceSetup(false)} 
+        />
 
-          {!isOnline && (
-            <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000] text-lg">
-              You are offline
-            </div>
-          )}
-        </Router>
-      </ThemeProvider>
+        {!isOnline && (
+          <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000] text-lg">
+            You are offline
+          </div>
+        )}
+      </Router>
     </ErrorBoundary>
   );
 };
