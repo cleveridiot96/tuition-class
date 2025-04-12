@@ -88,7 +88,12 @@ html, body {
 
 /* Remove fixed overlay completely */
 .fixed-overlay,
-[data-overlay="true"] {
+[data-overlay="true"],
+[data-state="open"][data-radix-menu-content],
+[data-radix-menu-content],
+[data-radix-popper-content-wrapper],
+[data-radix-dropdown-menu-content],
+[data-radix-navigation-menu-viewport] {
   display: none !important;
   opacity: 0 !important;
   visibility: hidden !important;
@@ -98,6 +103,22 @@ html, body {
 /* Navigation dropdown should not appear on specific pages */
 .stock-page .navigation-dropdown {
   display: none !important;
+}
+
+/* Ensure navigation menu content appears only when clicked */
+.navigation-dropdown [data-radix-navigation-menu-content] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Proper overlay positioning */
+.navigation-dropdown [data-radix-navigation-menu-content] {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 100;
 }
 
 /* Font size controls */
