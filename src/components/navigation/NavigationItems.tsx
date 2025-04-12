@@ -1,5 +1,5 @@
-
 import React from "react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface ListItemProps extends React.ComponentPropsWithoutRef<"a"> {
@@ -10,19 +10,19 @@ export const ListItem = React.forwardRef<HTMLAnchorElement, ListItemProps>(
   ({ className, title, children, ...props }, ref) => {
     return (
       <li>
-        <a
-          ref={ref}
+        <Link
+          to={props.href || "#"}
           className={cn(
-            "block select-none space-y-1 rounded-md p-4 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-lg",
+            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-base md:text-lg",
             className
           )}
           {...props}
         >
-          <div className="text-lg font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-base leading-snug text-muted-foreground">
+          <div className="text-base md:text-lg font-medium leading-none">{title}</div>
+          <p className="line-clamp-2 text-sm md:text-base leading-snug text-muted-foreground mt-1">
             {children}
           </p>
-        </a>
+        </Link>
       </li>
     );
   }
@@ -80,7 +80,7 @@ export const items = [
 export const NavigationMenuContent = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "z-50 absolute top-0 left-0 w-full origin-top-center data-[motion=from-end]:animate-in data-[motion=from-start]:animate-in data-[motion=from-end]:fade-in data-[motion=from-start]:fade-in data-[motion=from-end]:zoom-in-95 data-[motion=from-start]:zoom-in-95 data-[motion=to-end]:animate-out data-[motion=to-start]:animate-out data-[motion=to-end]:fade-out data-[motion=to-start]:fade-out data-[motion=to-end]:zoom-out-95 data-[motion=to-start]:zoom-out-95 md:w-auto",
+      "z-50 absolute top-0 right-0 w-[280px] sm:w-[350px] md:w-[500px] origin-top-right data-[motion=from-end]:animate-in data-[motion=from-start]:animate-in data-[motion=from-end]:fade-in data-[motion=from-start]:fade-in data-[motion=from-end]:zoom-in-95 data-[motion=from-start]:zoom-in-95 data-[motion=to-end]:animate-out data-[motion=to-start]:animate-out data-[motion=to-end]:fade-out data-[motion=to-start]:fade-out data-[motion=to-end]:zoom-out-95 data-[motion=to-start]:zoom-out-95",
       className
     )}
     {...props}
@@ -95,7 +95,7 @@ export const NavigationMenuTrigger = React.forwardRef<
   <button
     ref={ref}
     className={cn(
-      "group inline-flex h-12 items-center justify-center rounded-md bg-background px-5 py-3 text-lg font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground",
+      "group inline-flex h-9 md:h-12 items-center justify-center rounded-md bg-background px-3 md:px-5 py-2 md:py-3 text-sm md:text-lg font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent data-[active]:text-accent-foreground",
       className
     )}
     {...props}

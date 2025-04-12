@@ -13,12 +13,12 @@ const NavigationDropdown = () => {
     <NavigationMenu>
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="text-lg">
+          <NavigationMenuTrigger className="text-sm md:text-lg px-2 md:px-4 py-1 md:py-2">
             More
-            <ChevronDown className="relative left-1 h-5 w-5 transition-transform duration-200 group-[data-state=open]:rotate-180" />
+            <ChevronDown className="relative left-0 md:left-1 h-4 w-4 md:h-5 md:w-5 transition-transform duration-200 group-[data-state=open]:rotate-180" />
           </NavigationMenuTrigger>
           <NavigationMenuContent>
-            <ul className="grid gap-3 p-6 md:w-[500px] lg:w-[600px] md:grid-cols-2">
+            <ul className="grid gap-2 md:gap-3 p-3 md:p-6 md:w-[500px] lg:w-[600px] md:grid-cols-2 max-h-[80vh] overflow-y-auto">
               {items.map((item) => (
                 <ListItem key={item.title} title={item.title} href={item.href}>
                   {item.description}

@@ -1,9 +1,11 @@
 
 #root {
   width: 100%;
+  max-width: 100vw;
   margin: 0;
   padding: 0;
   text-align: center;
+  overflow-x: hidden;
 }
 
 .logo {
@@ -40,4 +42,16 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Fix overflow issues */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Ensure menu opens in the right direction */
+.navigation-dropdown-right {
+  right: 0;
+  left: auto;
 }
