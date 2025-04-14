@@ -1,64 +1,113 @@
 
-import { getStorageInfo } from '../services/storageUtils';
+import LZString from 'lz-string';
 
-const COMPRESSION_THRESHOLD = 500 * 1024; // 500KB
-const AUTO_COMPRESS_INTERVAL = 5 * 60 * 1000; // 5 minutes
-
-// Check if data should be compressed
-export const shouldCompressStorage = (): boolean => {
-  const { totalSize, compressedSize } = getStorageInfo();
-  return totalSize > COMPRESSION_THRESHOLD && compressedSize / totalSize < 0.7;
-};
-
-// Initialize background compression for large datasets
+/**
+ * Initialize background compression system
+ */
 export const initBackgroundCompression = () => {
-  // Immediate check
-  compressDataIfNeeded();
+  console.log('Initializing background compression system...');
   
-  // Set up interval for regular checks
+  // Set up a periodic check for large uncompressed data
   setInterval(() => {
-    compressDataIfNeeded();
-  }, AUTO_COMPRESS_INTERVAL);
-  
-  // Compress before app closes
-  window.addEventListener('beforeunload', () => {
-    compressDataIfNeeded(true); // force compression on exit
-  });
+    compressLargeDataItems();
+  }, 60000); // Check every minute
 };
 
-// Compress data if total size exceeds threshold
-export const compressDataIfNeeded = (force = false) => {
-  const storageInfo = getStorageInfo();
-  console.log('Storage stats:', storageInfo);
+/**
+ * Scan localStorage and compress any large items that aren't already compressed
+ */
+const compressLargeDataItems = () => {
+  const sizeThreshold = 100 * 1024; // 100KB
+  const compressionPrefix = 'lz:';
   
-  if (force || (storageInfo.totalSize > COMPRESSION_THRESHOLD && storageInfo.compressionRatio < 0.7)) {
-    console.log('Starting background compression of data...');
-    
-    // We'll process a few items at a time to avoid UI freezing
-    const itemsToProcess = storageInfo.items
-      .filter(item => !item.compressed && item.size > 1024)
-      .slice(0, 5);
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
       
-    if (itemsToProcess.length > 0) {
-      console.log(`Compressing ${itemsToProcess.length} storage items`);
-      // We'll delegate the actual compression to another function
-      // that will be called from app initialization
+      const value = localStorage.getItem(key);
+      if (!value) continue;
+      
+      // Skip if already compressed
+      if (value.startsWith(compressionPrefix)) continue;
+      
+      // Check if size exceeds threshold
+      if (value.length * 2 > sizeThreshold) {
+        console.log(`Compressing large item: ${key} (${formatBytes(value.length * 2)})`);
+        
+        try {
+          const compressed = LZString.compress(value);
+          localStorage.setItem(key, `${compressionPrefix}${compressed}`);
+          console.log(`Compressed ${key}: ${formatBytes(value.length * 2)} → ${formatBytes(compressed.length * 2)}`);
+        } catch (compressError) {
+          console.error(`Failed to compress ${key}:`, compressError);
+        }
+      }
     }
+  } catch (error) {
+    console.error('Error during background compression:', error);
   }
 };
 
-// Debug utility to show storage stats
-export const logStorageStats = () => {
-  const { totalSize, compressedSize, items } = getStorageInfo();
-  console.log(
-    `Storage stats: Total ${(totalSize/1024).toFixed(2)}KB, ` +
-    `Compressed ${(compressedSize/1024).toFixed(2)}KB, ` +
-    `Saved ${(1-(compressedSize/totalSize || 1)).toFixed(2)*100}%`
-  );
+/**
+ * Format bytes to a human-readable string
+ */
+const formatBytes = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
   
-  console.table(items.slice(0, 10).map(item => ({
-    key: item.key,
-    size: `${(item.size/1024).toFixed(2)}KB`,
-    compressed: item.compressed
-  })));
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+/**
+ * Calculate and log storage statistics
+ */
+export const logStorageStats = () => {
+  try {
+    let totalSize = 0;
+    let compressedSize = 0;
+    let compressedItems = 0;
+    let uncompressedItems = 0;
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      
+      const value = localStorage.getItem(key) || '';
+      const itemSize = (key.length + value.length) * 2; // Unicode = 2 bytes per char
+      totalSize += itemSize;
+      
+      if (value.startsWith('lz:')) {
+        compressedSize += itemSize;
+        compressedItems++;
+      } else {
+        uncompressedItems++;
+      }
+    }
+    
+    console.log('=== Storage Statistics ===');
+    console.log(`Total Size: ${formatBytes(totalSize)}`);
+    console.log(`Compressed Data: ${formatBytes(compressedSize)} (${compressedItems} items)`);
+    console.log(`Uncompressed Data: ${formatBytes(totalSize - compressedSize)} (${uncompressedItems} items)`);
+    console.log(`Storage Limit: ${formatBytes(5 * 1024 * 1024)}`); // 5MB typical limit
+    console.log('========================');
+    
+    // Check if approaching storage limits
+    if (totalSize > 4 * 1024 * 1024) { // 4MB
+      console.warn('Storage usage is approaching the browser limit!');
+    }
+    
+    return {
+      totalSize,
+      compressedSize,
+      compressedItems,
+      uncompressedItems
+    };
+  } catch (error) {
+    console.error('Error calculating storage stats:', error);
+    return null;
+  }
 };

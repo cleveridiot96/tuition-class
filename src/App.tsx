@@ -19,6 +19,7 @@ import SaleDetail from '@/pages/SaleDetail';
 import LedgerPage from '@/pages/LedgerPage';
 import CashBook from '@/pages/CashBook';
 import ExpensesPage from '@/pages/ExpensesPage';
+import Master from '@/pages/Master'; // Added Master page
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { initBackgroundCompression, logStorageStats } from '@/utils/compressionUtils';
@@ -61,6 +62,7 @@ function App() {
           <Route path="/ledger" element={<LedgerPage />} />
           <Route path="/cashbook" element={<CashBook />} />
           <Route path="/expenses" element={<ExpensesPage />} />
+          <Route path="/master" element={<Master />} /> {/* Added Master route */}
         </Routes>
       </Router>
       <Toaster />

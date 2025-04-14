@@ -1,100 +1,87 @@
 
-import { compress, decompress } from 'lz-string';
+import LZString from 'lz-string';
 
 /**
- * Storage utility functions with compression for better performance with large datasets
+ * Helper function to get an item from localStorage with decompression support
  */
-
-// Get year-specific storage key
-export const getYearSpecificKey = (key: string): string => {
-  const currentYear = localStorage.getItem('currentFinancialYear') || new Date().getFullYear().toString();
-  return `${key}_${currentYear}`;
-};
-
-// Get year-specific storage item with automatic decompression
-export const getYearSpecificStorageItem = <T>(key: string, defaultValue: T[] = [] as T[]): T[] => {
+export function getStorageItem(key: string, decompress = false) {
   try {
-    const yearSpecificKey = getYearSpecificKey(key);
-    const compressedData = localStorage.getItem(yearSpecificKey);
+    const data = localStorage.getItem(key);
+    if (!data) return null;
     
-    if (compressedData) {
-      // Check if data is compressed (starts with a specific pattern)
-      if (compressedData.startsWith('lz:')) {
-        const decompressedData = decompress(compressedData.substring(3));
-        return decompressedData ? JSON.parse(decompressedData) : defaultValue;
-      } else {
-        // Legacy data - not compressed
-        return JSON.parse(compressedData) || defaultValue;
-      }
+    // Check if data is compressed
+    if (decompress && data.startsWith('lz:')) {
+      const compressedData = data.substring(3); // Remove 'lz:' prefix
+      const decompressedData = LZString.decompress(compressedData);
+      return decompressedData ? JSON.parse(decompressedData) : null;
     }
-    return defaultValue;
+    
+    // Regular JSON parsing
+    return JSON.parse(data);
   } catch (error) {
     console.error(`Error getting ${key} from storage:`, error);
-    return defaultValue;
+    return null;
   }
-};
+}
 
-// Save year-specific storage item with compression
-export const saveYearSpecificStorageItem = <T>(key: string, data: T[]): void => {
+/**
+ * Helper function to save an item to localStorage with compression support
+ */
+export function saveStorageItem(key: string, data: any, compress = false) {
   try {
-    const yearSpecificKey = getYearSpecificKey(key);
-    
-    // Only compress if data is substantial
-    if (JSON.stringify(data).length > 1024) {
-      const compressedData = compress(JSON.stringify(data));
-      localStorage.setItem(yearSpecificKey, `lz:${compressedData}`);
+    if (compress) {
+      // Compress the data using LZ-string
+      const jsonData = JSON.stringify(data);
+      const compressedData = LZString.compress(jsonData);
+      localStorage.setItem(key, `lz:${compressedData}`);
     } else {
-      // Don't compress small data to avoid overhead
-      localStorage.setItem(yearSpecificKey, JSON.stringify(data));
+      // Regular JSON serialization
+      localStorage.setItem(key, JSON.stringify(data));
     }
-    
-    // Trigger data saved event for portable app
-    window.dispatchEvent(new CustomEvent('data-saved', { 
-      detail: { key: yearSpecificKey }
-    }));
+    return true;
   } catch (error) {
     console.error(`Error saving ${key} to storage:`, error);
+    return false;
   }
-};
+}
 
-// Get storage size info
-export const getStorageInfo = () => {
+/**
+ * Helper function to remove an item from localStorage
+ */
+export function removeStorageItem(key: string) {
   try {
-    let totalSize = 0;
-    let compressedSize = 0;
-    const items: {key: string, size: number, compressed: boolean}[] = [];
-    
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) {
-        const value = localStorage.getItem(key) || '';
-        const isCompressed = value.startsWith('lz:');
-        const size = new Blob([value]).size;
-        
-        totalSize += size;
-        if (isCompressed) compressedSize += size;
-        
-        items.push({
-          key,
-          size,
-          compressed: isCompressed
-        });
-      }
-    }
-    
-    return {
-      totalSize,
-      compressedSize,
-      compressionRatio: totalSize > 0 ? (compressedSize / totalSize) : 0,
-      items: items.sort((a, b) => b.size - a.size)
-    };
+    localStorage.removeItem(key);
+    return true;
   } catch (error) {
-    console.error('Error calculating storage size:', error);
-    return {
-      totalSize: 0,
-      compressedSize: 0,
-      compressionRatio: 0,
-      items: []
-    };
+    console.error(`Error removing ${key} from storage:`, error);
+    return false;
   }
-};
+}
+
+/**
+ * Helper function to clear all items from localStorage
+ */
+export function clearStorage() {
+  try {
+    localStorage.clear();
+    return true;
+  } catch (error) {
+    console.error('Error clearing storage:', error);
+    return false;
+  }
+}
+
+/**
+ * Calculate the approximate size of localStorage data in bytes
+ */
+export function getStorageSize(): number {
+  let totalSize = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key) {
+      const value = localStorage.getItem(key) || '';
+      totalSize += key.length + value.length;
+    }
+  }
+  return totalSize * 2; // Unicode characters use 2 bytes per character in JS
+}
