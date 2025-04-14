@@ -1,6 +1,5 @@
-
-// Service Worker for offline and portable functionality
-const CACHE_NAME = 'kisan-khata-sahayak-v4';
+// Service Worker for offline and portable functionality with data compression
+const CACHE_NAME = 'kisan-khata-sahayak-v5';
 
 // List of assets to cache for offline use
 const urlsToCache = [
@@ -92,33 +91,95 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle portable mode detection and data management
+// Handle compression for portable data
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'PORTABLE_MODE') {
-    console.log('Running in portable mode');
-    // Special handling for portable mode if needed
+    console.log('Running in portable mode with data compression enabled');
   }
   
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
   
-  // Handle auto-saving in portable mode
+  // Handle auto-saving in portable mode with compression
   if (event.data && event.data.type === 'SAVE_DATA') {
     try {
-      console.log('Service worker received data to save');
+      console.log('Service worker received data to save - compressing...');
       const dataToSave = event.data.data;
+      
+      // Import compression library dynamically
+      importScripts('/assets/lz-string.min.js');
       
       // Store in cache for retrieval when app reopens
       caches.open('portable-data-cache').then(cache => {
-        const blob = new Blob([JSON.stringify(dataToSave)], { type: 'application/json' });
-        const response = new Response(blob);
+        // Compress data if available
+        let dataToStore;
+        
+        if (typeof LZString !== 'undefined' && JSON.stringify(dataToSave).length > 1024) {
+          dataToStore = LZString.compress(JSON.stringify(dataToSave));
+          console.log('Data compressed for storage');
+        } else {
+          dataToStore = JSON.stringify(dataToSave);
+        }
+        
+        const blob = new Blob([dataToStore], { 
+          type: 'application/octet-stream' 
+        });
+        const response = new Response(blob, {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Compressed': typeof LZString !== 'undefined' ? 'true' : 'false'
+          }
+        });
         cache.put('data.json', response);
-        console.log('Service worker cached updated data');
+        console.log('Service worker cached compressed data');
       });
     } catch (error) {
       console.error('Service worker failed to save data:', error);
     }
+  }
+});
+
+// Handle auto-recovery from cached data with decompression
+self.addEventListener('fetch', (event) => {
+  if (event.request.url.includes('data.json')) {
+    event.respondWith(
+      caches.match('data.json', { cacheName: 'portable-data-cache' })
+        .then(response => {
+          if (response) {
+            console.log('Recovered data from service worker cache');
+            
+            return response.clone().text().then(text => {
+              // Check if data is compressed
+              const isCompressed = response.headers.get('X-Compressed') === 'true';
+              
+              if (isCompressed && typeof LZString !== 'undefined') {
+                try {
+                  const decompressed = LZString.decompress(text);
+                  return new Response(decompressed, {
+                    headers: { 'Content-Type': 'application/json' }
+                  });
+                } catch (e) {
+                  console.error('Error decompressing data:', e);
+                  return response;
+                }
+              } else {
+                return response;
+              }
+            });
+          }
+          return fetch(event.request);
+        })
+        .catch(() => fetch(event.request))
+    );
+  }
+});
+
+// Background sync for data operations when offline
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-data') {
+    console.log('Attempting to sync data in background');
+    // We'll implement this when needed
   }
 });
 

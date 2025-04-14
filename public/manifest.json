@@ -2,7 +2,7 @@
 {
   "short_name": "Kisan Khata",
   "name": "Kisan Khata Sahayak",
-  "description": "Agricultural Business Management System - Portable Edition",
+  "description": "Agricultural Business Management System - Portable Edition with Data Compression",
   "icons": [
     {
       "src": "favicon.ico",
@@ -37,7 +37,8 @@
     {
       "action": ".",
       "accept": {
-        "application/json": [".json"]
+        "application/json": [".json"],
+        "application/octet-stream": [".data"]
       },
       "name": "Kisan Khata Data"
     }

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Package, Download } from "lucide-react";
 import { createPortableVersion } from "@/utils/portableAppUtils";
 import { toast } from "sonner";
+import { logStorageStats } from "@/utils/compressionUtils";
 
 const PortableAppButton = () => {
   const [isCreating, setIsCreating] = React.useState(false);
@@ -11,6 +12,9 @@ const PortableAppButton = () => {
   const handleCreatePortable = async () => {
     setIsCreating(true);
     try {
+      // Log current storage stats before creating portable version
+      logStorageStats();
+      
       await createPortableVersion();
       toast.success("Portable version created! Extract to your USB drive and open index.html to use anywhere. All changes automatically save to the drive.");
     } catch (error) {

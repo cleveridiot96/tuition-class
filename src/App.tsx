@@ -1,180 +1,71 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Toaster } from '@/components/ui/toaster';
 import Index from '@/pages/Index';
 import Purchases from '@/pages/Purchases';
 import Sales from '@/pages/Sales';
 import Inventory from '@/pages/Inventory';
-import Master from '@/pages/Master';
 import Agents from '@/pages/Agents';
+import Customers from '@/pages/Customers';
+import Suppliers from '@/pages/Suppliers';
+import Brokers from '@/pages/Brokers';
+import Transporters from '@/pages/Transporters';
+import Settings from '@/pages/Settings';
+import Reports from '@/pages/Reports';
 import Payments from '@/pages/Payments';
 import Receipts from '@/pages/Receipts';
-import NotFound from '@/pages/NotFound';
+import PurchaseDetail from '@/pages/PurchaseDetail';
+import SaleDetail from '@/pages/SaleDetail';
+import LedgerPage from '@/pages/LedgerPage';
 import CashBook from '@/pages/CashBook';
-import Stock from '@/pages/Stock';
-import Ledger from '@/pages/Ledger';
-import OpeningBalanceSetup from '@/components/OpeningBalanceSetup';
-import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } from '@/services/financialYearService';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import { toast } from '@/hooks/use-toast';
+import ExpensesPage from '@/pages/ExpensesPage';
+import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/toaster';
+import { initBackgroundCompression, logStorageStats } from '@/utils/compressionUtils';
 
-import '@/App.css';
-
-const App = () => {
-  const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
-
-  // Check online/offline status
+function App() {
   useEffect(() => {
-    const handleOnlineStatus = () => {
-      const online = navigator.onLine;
-      setIsOnline(online);
-      
-      // Show toast notification when connection status changes
-      if (online) {
-        toast({
-          title: "You're back online",
-          description: "Internet connection has been restored",
-        });
-      } else {
-        toast({
-          title: "You're offline",
-          description: "Check your internet connection",
-          variant: "destructive",
-        });
-      }
-    };
+    // Initialize compression system
+    initBackgroundCompression();
     
-    // Set initial state
-    setIsOnline(navigator.onLine);
+    // Log storage stats on startup
+    logStorageStats();
     
-    // Listen for online/offline events
-    window.addEventListener('online', handleOnlineStatus);
-    window.addEventListener('offline', handleOnlineStatus);
+    // Log stats periodically
+    const interval = setInterval(() => {
+      logStorageStats();
+    }, 30 * 60 * 1000); // every 30 minutes
     
-    // Cleanup
-    return () => {
-      window.removeEventListener('online', handleOnlineStatus);
-      window.removeEventListener('offline', handleOnlineStatus);
-    };
-  }, []);
-  
-  useEffect(() => {
-    // Initialize financial years
-    initializeFinancialYears();
-    
-    // Check if opening balances need to be set up
-    const activeYear = getActiveFinancialYear();
-    if (activeYear && !activeYear.isSetup) {
-      const openingBalances = getOpeningBalances(activeYear.id);
-      if (!openingBalances) {
-        // Opening balances not set for this year
-        setShowOpeningBalanceSetup(true);
-      }
-    }
-    
-    // Auto-maintenance - run system checks periodically
-    const autoMaintenanceInterval = setInterval(() => {
-      try {
-        // Check if local storage is available
-        if (typeof localStorage === 'undefined') {
-          console.error('LocalStorage not available');
-          return;
-        }
-        
-        // Verify essential data structures
-        if (!localStorage.getItem('financialYears')) {
-          initializeFinancialYears();
-          console.log('Auto-maintenance: Re-initialized financial years');
-        }
-        
-        // Check for and repair data consistency issues
-        const checkDataConsistency = () => {
-          try {
-            // Add any data consistency checks here
-            
-            // Example: Verify the active year exists
-            const activeYear = getActiveFinancialYear();
-            if (!activeYear) {
-              initializeFinancialYears();
-              console.log('Auto-maintenance: Fixed missing active year');
-            }
-          } catch (error) {
-            console.error('Error in data consistency check:', error);
-          }
-        };
-        
-        checkDataConsistency();
-      } catch (error) {
-        console.error('Error during auto-maintenance:', error);
-      }
-    }, 60000); // Run every minute
-    
-    return () => {
-      clearInterval(autoMaintenanceInterval);
-    };
-  }, []);
-
-  // Apply font size from localStorage when app loads
-  useEffect(() => {
-    const savedFontSize = localStorage.getItem('app-font-size') || 'normal';
-    document.documentElement.classList.add(`font-size-${savedFontSize}`);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <ErrorBoundary>
+    <ThemeProvider defaultTheme="light" storageKey="kisan-khata-theme">
       <Router>
-        <div className="min-h-screen w-full overflow-x-hidden">
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={
-                <ErrorBoundary>
-                  <Index />
-                </ErrorBoundary>
-              } />
-              <Route path="/purchases" element={
-                <ErrorBoundary>
-                  <Purchases />
-                </ErrorBoundary>
-              } />
-              <Route path="/sales" element={
-                <ErrorBoundary>
-                  <Sales />
-                </ErrorBoundary>
-              } />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/master" element={<Master />} />
-              <Route path="/agents" element={<Agents />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/receipts" element={<Receipts />} />
-              <Route path="/cashbook" element={<CashBook />} />
-              <Route path="/stock" element={<Stock />} />
-              <Route path="/ledger" element={<Ledger />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-          
-          <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
-            Toast system encountered an error. Please refresh the page.
-          </div>}>
-            <Toaster />
-          </ErrorBoundary>
-        </div>
-        
-        <OpeningBalanceSetup 
-          isOpen={showOpeningBalanceSetup} 
-          onClose={() => setShowOpeningBalanceSetup(false)} 
-        />
-
-        {!isOnline && (
-          <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000] text-lg">
-            You are offline
-          </div>
-        )}
+        <Routes>
+          <Route path="/" element={<Index />} />
+          <Route path="/purchases" element={<Purchases />} />
+          <Route path="/sales" element={<Sales />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/agents" element={<Agents />} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/suppliers" element={<Suppliers />} />
+          <Route path="/brokers" element={<Brokers />} />
+          <Route path="/transporters" element={<Transporters />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/payments" element={<Payments />} />
+          <Route path="/receipts" element={<Receipts />} />
+          <Route path="/purchase/:id" element={<PurchaseDetail />} />
+          <Route path="/sale/:id" element={<SaleDetail />} />
+          <Route path="/ledger" element={<LedgerPage />} />
+          <Route path="/cashbook" element={<CashBook />} />
+          <Route path="/expenses" element={<ExpensesPage />} />
+        </Routes>
       </Router>
-    </ErrorBoundary>
+      <Toaster />
+    </ThemeProvider>
   );
-};
+}
 
 export default App;
