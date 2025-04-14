@@ -1,5 +1,6 @@
-// Service Worker for offline functionality
-const CACHE_NAME = 'kisan-khata-sahayak-v3';
+
+// Service Worker for offline and portable functionality
+const CACHE_NAME = 'kisan-khata-sahayak-v4';
 
 // List of assets to cache for offline use
 const urlsToCache = [
@@ -34,7 +35,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.filter((name) => {
-          return name !== CACHE_NAME;
+          return name !== CACHE_NAME && name !== 'portable-data-cache';
         }).map((name) => {
           console.log('Deleting old cache:', name);
           return caches.delete(name);
@@ -91,7 +92,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle portable mode detection
+// Handle portable mode detection and data management
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'PORTABLE_MODE') {
     console.log('Running in portable mode');
@@ -101,9 +102,27 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  
+  // Handle auto-saving in portable mode
+  if (event.data && event.data.type === 'SAVE_DATA') {
+    try {
+      console.log('Service worker received data to save');
+      const dataToSave = event.data.data;
+      
+      // Store in cache for retrieval when app reopens
+      caches.open('portable-data-cache').then(cache => {
+        const blob = new Blob([JSON.stringify(dataToSave)], { type: 'application/json' });
+        const response = new Response(blob);
+        cache.put('data.json', response);
+        console.log('Service worker cached updated data');
+      });
+    } catch (error) {
+      console.error('Service worker failed to save data:', error);
+    }
+  }
 });
 
-// Ensure the app works well in a portable environment
+// Handle file:// protocol for portable mode
 self.addEventListener('fetch', (event) => {
   // For local file access (file:// protocol in portable mode)
   if (event.request.url.startsWith('file://')) {
@@ -113,6 +132,23 @@ self.addEventListener('fetch', (event) => {
           console.error('Error fetching local file:', error);
           return caches.match('/index.html');
         })
+    );
+  }
+});
+
+// Handle auto-recovery from cached data
+self.addEventListener('fetch', (event) => {
+  if (event.request.url.includes('data.json')) {
+    event.respondWith(
+      caches.match('data.json', { cacheName: 'portable-data-cache' })
+        .then(response => {
+          if (response) {
+            console.log('Recovered data from service worker cache');
+            return response;
+          }
+          return fetch(event.request);
+        })
+        .catch(() => fetch(event.request))
     );
   }
 });

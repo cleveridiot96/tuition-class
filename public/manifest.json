@@ -24,8 +24,8 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#f8f3e9",
-  "background_color": "#ffffff",
+  "theme_color": "#4d7c0f",
+  "background_color": "#f8f3e9",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "dir": "ltr",
@@ -33,20 +33,6 @@
   "categories": ["business", "finance", "productivity"],
   "display_override": ["window-controls-overlay"],
   "scope": "/",
-  "screenshots": [
-    {
-      "src": "screenshot1.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "screenshot2.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
   "file_handlers": [
     {
       "action": ".",
@@ -58,5 +44,13 @@
   ],
   "launch_handler": {
     "client_mode": "focus-existing"
-  }
+  },
+  "usb_device_filter": [
+    {
+      "device_class": 0,
+      "device_subclass": 0,
+      "device_protocol": 0
+    }
+  ],
+  "isolated_storage": true
 }

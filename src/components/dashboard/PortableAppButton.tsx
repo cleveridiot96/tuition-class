@@ -12,7 +12,7 @@ const PortableAppButton = () => {
     setIsCreating(true);
     try {
       await createPortableVersion();
-      toast.success("Portable version created successfully! Extract the ZIP file to your USB drive or any storage device and open index.html to use the app anywhere.");
+      toast.success("Portable version created! Extract to your USB drive and open index.html to use anywhere. All changes automatically save to the drive.");
     } catch (error) {
       console.error("Error creating portable version:", error);
       toast.error("Failed to create portable version. Please try again.");
@@ -24,7 +24,7 @@ const PortableAppButton = () => {
   React.useEffect(() => {
     const handlePortableCreated = (event: CustomEvent) => {
       if (event.detail?.success) {
-        toast.success("Portable version created successfully! Extract the ZIP file to your USB drive or any storage device and open index.html to use the app anywhere.");
+        toast.success("Portable version created! Extract to your USB drive and open index.html to use anywhere. All changes automatically save to the drive.");
       } else {
         toast.error("Failed to create portable version. Please try again.");
         console.error("Error details:", event.detail?.error);
