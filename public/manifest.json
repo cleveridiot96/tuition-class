@@ -2,7 +2,7 @@
 {
   "short_name": "Kisan Khata",
   "name": "Kisan Khata Sahayak",
-  "description": "Agricultural Business Management System - Works Offline",
+  "description": "Agricultural Business Management System - Portable Edition",
   "icons": [
     {
       "src": "favicon.ico",
@@ -33,20 +33,6 @@
   "categories": ["business", "finance", "productivity"],
   "display_override": ["window-controls-overlay"],
   "scope": "/",
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "url": "/"
-    },
-    {
-      "name": "Sales",
-      "url": "/sales"
-    },
-    {
-      "name": "Purchases",
-      "url": "/purchases"
-    }
-  ],
   "screenshots": [
     {
       "src": "screenshot1.png",
@@ -60,5 +46,17 @@
       "type": "image/png",
       "form_factor": "narrow"
     }
-  ]
+  ],
+  "file_handlers": [
+    {
+      "action": ".",
+      "accept": {
+        "application/json": [".json"]
+      },
+      "name": "Kisan Khata Data"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  }
 }

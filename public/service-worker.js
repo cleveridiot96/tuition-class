@@ -1,5 +1,5 @@
 // Service Worker for offline functionality
-const CACHE_NAME = 'kisan-khata-sahayak-v2';
+const CACHE_NAME = 'kisan-khata-sahayak-v3';
 
 // List of assets to cache for offline use
 const urlsToCache = [
@@ -49,8 +49,8 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - serve from cache, fall back to network
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests and requests to external domains
-  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') {
     return;
   }
 
@@ -91,22 +91,28 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Handle offline functionality
+// Handle portable mode detection
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'PORTABLE_MODE') {
+    console.log('Running in portable mode');
+    // Special handling for portable mode if needed
+  }
+  
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
 
-// Periodic background sync for important updates when back online
-self.addEventListener('periodicsync', (event) => {
-  if (event.tag === 'sync-data') {
-    event.waitUntil(syncData());
+// Ensure the app works well in a portable environment
+self.addEventListener('fetch', (event) => {
+  // For local file access (file:// protocol in portable mode)
+  if (event.request.url.startsWith('file://')) {
+    event.respondWith(
+      fetch(event.request)
+        .catch((error) => {
+          console.error('Error fetching local file:', error);
+          return caches.match('/index.html');
+        })
+    );
   }
 });
-
-async function syncData() {
-  // This would sync any local data when the user comes back online
-  console.log('Background sync triggered');
-  // For truly offline app, this would just save data locally
-}
