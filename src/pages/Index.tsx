@@ -1,136 +1,38 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
-import DashboardMenu from "@/components/DashboardMenu";
-import { FormatDataHandler } from "@/components/dashboard/FormatDataHandler";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import BackupRestoreControls from "@/components/BackupRestoreControls";
-import ProfitLossStatement from "@/components/ProfitLossStatement";
 import DashboardSummary from "@/components/DashboardSummary";
-import { seedInitialData } from "@/services/storageService";
+import DashboardMenu from "@/components/DashboardMenu";
+import SampleDataGenerator from '@/components/SampleDataGenerator';
+import { seedInitialData } from '@/services/storageUtils';
 import { initializeFinancialYears } from "@/services/financialYearService";
-import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
-import { toast } from "@/hooks/use-toast"; // Use direct import for toast function
 
 const Index = () => {
-  const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
-  
-  const {
-    summaryData,
-    profitByTransaction,
-    profitByMonth,
-    totalProfit,
-    isRefreshing,
-    dataVersion,
-    loadDashboardData,
-    incrementDataVersion
-  } = useDashboardData();
-
   useEffect(() => {
-    const handleBackupCreated = (event: CustomEvent) => {
-      if (event.detail.success) {
-        toast({
-          title: "Backup Created",
-          description: "Data backup successfully downloaded",
-        });
-      } else {
-        toast({
-          title: "Backup Failed",
-          description: "There was a problem creating the backup",
-          variant: "destructive",
-        });
-      }
-    };
-
-    window.addEventListener('backup-created', handleBackupCreated as EventListener);
-    
-    return () => {
-      window.removeEventListener('backup-created', handleBackupCreated as EventListener);
-    };
+    // Initialize data on first load if needed
+    seedInitialData();
+    initializeFinancialYears();
   }, []);
-  
-  useEffect(() => {
-    try {
-      initializeFinancialYears();
-      seedInitialData();
-      loadDashboardData();
-    } catch (error) {
-      console.error("Error during initialization:", error);
-    }
-    
-    const handleFocus = () => {
-      loadDashboardData();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [loadDashboardData]);
-
-  useEffect(() => {
-    if (dataVersion > 0) {
-      loadDashboardData();
-    }
-  }, [dataVersion, loadDashboardData]);
-
-  useEffect(() => {
-    const handleRouteChange = () => {
-      loadDashboardData();
-    };
-    
-    handleRouteChange();
-    
-    window.addEventListener('popstate', handleRouteChange);
-    
-    return () => {
-      window.removeEventListener('popstate', handleRouteChange);
-    };
-  }, [loadDashboardData]);
-
-  const handleOpeningBalances = () => {
-    setShowOpeningBalanceSetup(true);
-  };
 
   return (
-    <div className="min-h-screen w-full bg-ag-beige">
-      <Navigation 
-        title="Dashboard" 
-        showFormatButton={true}
-        onFormatClick={() => document.dispatchEvent(new Event('format-click'))}
-      />
-      
-      <div className="w-full px-4 py-6">
-        <DashboardHeader onOpeningBalancesClick={handleOpeningBalances} />
-        
-        <p className="text-xl text-ag-brown mt-2 mb-6 text-center">
-          Agricultural Business Management System
-        </p>
-        
-        <BackupRestoreControls 
-          onRefresh={loadDashboardData} 
-          isRefreshing={isRefreshing} 
-        />
-        
+    <div className="min-h-screen bg-background">
+      <Navigation title="Dashboard" />
+      <div className="container mx-auto p-4 md:p-6">
+        <SampleDataGenerator />
+        <DashboardSummary />
         <DashboardMenu />
         
-        <DashboardSummary summaryData={summaryData} />
-        
-        <ProfitLossStatement 
-          profitByTransaction={profitByTransaction}
-          profitByMonth={profitByMonth}
-          totalProfit={totalProfit}
-        />
+        {/* Additional info section at the bottom */}
+        <div className="mt-8 p-4 bg-muted rounded-lg border">
+          <h3 className="font-medium mb-2">Quick Tips</h3>
+          <ul className="space-y-1 text-sm">
+            <li>• Go to <Link to="/ledger" className="text-primary underline">Ledger</Link> to view party balances and transaction history</li>
+            <li>• Visit <Link to="/cashbook" className="text-primary underline">Cash Book</Link> to track cash flow</li>
+            <li>• Create sample data using the generator above to see the app in action</li>
+          </ul>
+        </div>
       </div>
-      
-      <OpeningBalanceSetup 
-        isOpen={showOpeningBalanceSetup}
-        onClose={() => setShowOpeningBalanceSetup(false)}
-      />
-      
-      <FormatDataHandler onFormatComplete={loadDashboardData} />
     </div>
   );
 };

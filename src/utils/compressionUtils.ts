@@ -1,113 +1,213 @@
 
 import LZString from 'lz-string';
+import { getStorageSize, getStorageItem, saveStorageItem } from '@/services/storageUtils';
+import { toast } from '@/components/ui/use-toast';
+
+// Compression threshold in bytes (5MB)
+const COMPRESSION_THRESHOLD = 5 * 1024 * 1024;
+
+// Keys that should always be kept uncompressed for performance
+const ALWAYS_UNCOMPRESSED_KEYS = [
+  'theme',
+  'font-size',
+  'financial-years',
+  'active-financial-year',
+  'user-preferences'
+];
 
 /**
  * Initialize background compression system
  */
-export const initBackgroundCompression = () => {
-  console.log('Initializing background compression system...');
+export function initBackgroundCompression() {
+  console.log('Initializing background compression system');
   
-  // Set up a periodic check for large uncompressed data
-  setInterval(() => {
-    compressLargeDataItems();
-  }, 60000); // Check every minute
-};
+  // Perform initial compression check
+  checkAndCompressLargeData();
+  
+  // Set up periodic compression check
+  setInterval(checkAndCompressLargeData, 15 * 60 * 1000); // Every 15 minutes
+}
 
 /**
- * Scan localStorage and compress any large items that aren't already compressed
+ * Check storage size and compress data if needed
  */
-const compressLargeDataItems = () => {
-  const sizeThreshold = 100 * 1024; // 100KB
-  const compressionPrefix = 'lz:';
-  
+function checkAndCompressLargeData() {
   try {
+    const currentSize = getStorageSize();
+    console.log(`Current localStorage size: ${(currentSize / 1024).toFixed(2)} KB`);
+    
+    // If storage size exceeds threshold, compress large items
+    if (currentSize > COMPRESSION_THRESHOLD) {
+      console.log('Storage size exceeds threshold, compressing large data items...');
+      compressLargeItems();
+    }
+  } catch (error) {
+    console.error('Error in compression check:', error);
+  }
+}
+
+/**
+ * Compress large items in localStorage
+ */
+function compressLargeItems() {
+  try {
+    let itemsCompressed = 0;
+    let bytesReclaimed = 0;
+    const startSize = getStorageSize();
+    
+    // Iterate through all localStorage items
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key) continue;
+      
+      // Skip already compressed items or items in the exclusion list
+      if (key.startsWith('lz:') || ALWAYS_UNCOMPRESSED_KEYS.includes(key)) {
+        continue;
+      }
       
       const value = localStorage.getItem(key);
       if (!value) continue;
       
-      // Skip if already compressed
-      if (value.startsWith(compressionPrefix)) continue;
-      
-      // Check if size exceeds threshold
-      if (value.length * 2 > sizeThreshold) {
-        console.log(`Compressing large item: ${key} (${formatBytes(value.length * 2)})`);
+      // Only compress items larger than 10KB
+      if (value.length > 10 * 1024) {
+        const originalSize = value.length * 2; // UTF-16 characters
+        const compressedValue = `lz:${LZString.compress(value)}`;
+        localStorage.setItem(key, compressedValue);
         
-        try {
-          const compressed = LZString.compress(value);
-          localStorage.setItem(key, `${compressionPrefix}${compressed}`);
-          console.log(`Compressed ${key}: ${formatBytes(value.length * 2)} → ${formatBytes(compressed.length * 2)}`);
-        } catch (compressError) {
-          console.error(`Failed to compress ${key}:`, compressError);
+        const newSize = compressedValue.length * 2; // UTF-16 characters
+        const reclaimed = originalSize - newSize;
+        
+        if (reclaimed > 0) {
+          bytesReclaimed += reclaimed;
+          itemsCompressed++;
+          console.log(`Compressed item: ${key}, saved ${(reclaimed / 1024).toFixed(2)} KB`);
+        } else {
+          // If compression didn't save space, revert
+          localStorage.setItem(key, value);
         }
       }
     }
+    
+    const endSize = getStorageSize();
+    const percentReduced = startSize > 0 ? ((startSize - endSize) / startSize) * 100 : 0;
+    
+    console.log(`Compression complete: ${itemsCompressed} items compressed`);
+    console.log(`Storage reduced from ${(startSize / 1024).toFixed(2)} KB to ${(endSize / 1024).toFixed(2)} KB (${percentReduced.toFixed(1)}%)`);
+    
+    if (itemsCompressed > 0) {
+      toast({
+        title: "Storage optimized",
+        description: `${itemsCompressed} data items compressed, saving ${(bytesReclaimed / 1024).toFixed(1)} KB`,
+        duration: 3000
+      });
+    }
   } catch (error) {
-    console.error('Error during background compression:', error);
+    console.error('Error compressing items:', error);
   }
-};
+}
 
 /**
- * Format bytes to a human-readable string
+ * Log current storage statistics
  */
-const formatBytes = (bytes: number): string => {
-  if (bytes === 0) return '0 Bytes';
+export function logStorageStats() {
+  const currentSize = getStorageSize();
+  const compressedItems = [...Array(localStorage.length)]
+    .map((_, i) => localStorage.key(i))
+    .filter(key => key && key.startsWith('lz:'))
+    .length;
   
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  console.log('Storage Stats:');
+  console.log(`- Current size: ${(currentSize / 1024).toFixed(2)} KB`);
+  console.log(`- Compressed items: ${compressedItems}`);
+  console.log(`- Total items: ${localStorage.length}`);
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
+  // Check browser storage limits
+  const quota = navigator.storage && navigator.storage.estimate ? 
+    navigator.storage.estimate().then(estimate => {
+      const percentUsed = estimate.usage && estimate.quota ? 
+        (estimate.usage / estimate.quota) * 100 : null;
+      
+      console.log(`- Browser quota: ${estimate.quota ? (estimate.quota / (1024 * 1024)).toFixed(2) + ' MB' : 'unknown'}`);
+      console.log(`- Usage: ${estimate.usage ? (estimate.usage / (1024 * 1024)).toFixed(2) + ' MB' : 'unknown'}`);
+      console.log(`- Percent used: ${percentUsed ? percentUsed.toFixed(1) + '%' : 'unknown'}`);
+      
+      // Warn if approaching quota
+      if (percentUsed && percentUsed > 80) {
+        console.warn(`WARNING: Storage usage is high (${percentUsed.toFixed(1)}% of quota)`);
+        toast({
+          title: "Storage warning",
+          description: `Your browser storage is ${percentUsed.toFixed(0)}% full. Consider backing up your data.`,
+          variant: "destructive",
+          duration: 6000
+        });
+      }
+    }) : 
+    Promise.resolve(console.log('- Storage quota information not available'));
+  
+  return {
+    size: currentSize,
+    compressedItems,
+    totalItems: localStorage.length
+  };
+}
 
 /**
- * Calculate and log storage statistics
+ * Export the current compression stats
  */
-export const logStorageStats = () => {
+export function getCompressionStats() {
+  const totalItems = localStorage.length;
+  const compressedItems = [...Array(totalItems)]
+    .map((_, i) => localStorage.key(i))
+    .filter(key => key && key.startsWith('lz:'))
+    .length;
+  
+  return {
+    totalSize: getStorageSize(),
+    totalItems,
+    compressedItems,
+    compressionRatio: compressedItems / totalItems
+  };
+}
+
+/**
+ * Force compression of all suitable data
+ */
+export function forceCompressAll() {
+  compressLargeItems();
+}
+
+/**
+ * Decompress all items (useful before backup)
+ */
+export function decompressAll() {
   try {
-    let totalSize = 0;
-    let compressedSize = 0;
-    let compressedItems = 0;
-    let uncompressedItems = 0;
+    let itemsDecompressed = 0;
     
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (!key) continue;
+      if (!key || !key.startsWith('lz:')) continue;
       
-      const value = localStorage.getItem(key) || '';
-      const itemSize = (key.length + value.length) * 2; // Unicode = 2 bytes per char
-      totalSize += itemSize;
+      const value = localStorage.getItem(key);
+      if (!value) continue;
       
-      if (value.startsWith('lz:')) {
-        compressedSize += itemSize;
-        compressedItems++;
-      } else {
-        uncompressedItems++;
+      try {
+        const originalKey = key.substring(3); // Remove 'lz:' prefix
+        const decompressedValue = LZString.decompress(value);
+        
+        if (decompressedValue) {
+          localStorage.removeItem(key);
+          localStorage.setItem(originalKey, decompressedValue);
+          itemsDecompressed++;
+        }
+      } catch (err) {
+        console.error(`Failed to decompress item: ${key}`, err);
       }
     }
     
-    console.log('=== Storage Statistics ===');
-    console.log(`Total Size: ${formatBytes(totalSize)}`);
-    console.log(`Compressed Data: ${formatBytes(compressedSize)} (${compressedItems} items)`);
-    console.log(`Uncompressed Data: ${formatBytes(totalSize - compressedSize)} (${uncompressedItems} items)`);
-    console.log(`Storage Limit: ${formatBytes(5 * 1024 * 1024)}`); // 5MB typical limit
-    console.log('========================');
-    
-    // Check if approaching storage limits
-    if (totalSize > 4 * 1024 * 1024) { // 4MB
-      console.warn('Storage usage is approaching the browser limit!');
-    }
-    
-    return {
-      totalSize,
-      compressedSize,
-      compressedItems,
-      uncompressedItems
-    };
+    console.log(`Decompressed ${itemsDecompressed} items`);
+    return itemsDecompressed;
   } catch (error) {
-    console.error('Error calculating storage stats:', error);
-    return null;
+    console.error('Error decompressing items:', error);
+    return 0;
   }
-};
+}
