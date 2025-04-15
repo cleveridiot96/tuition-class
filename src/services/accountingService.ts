@@ -1,10 +1,9 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import {
-  getFinancialYear,
+  getFinancialYears, // Fixed: was getFinancialYear
   getActiveFinancialYear,
-  saveFinancialYear,
-  getYearSpecificStorageItem,
-  saveYearSpecificStorageItem,
+  addFinancialYear, // Fixed: was saveFinancialYear
 } from './financialYearService';
 import {
   getAgents,
@@ -14,6 +13,8 @@ import {
   getTransporters,
   saveStorageItem,
   getStorageItem,
+  getYearSpecificStorageItem, // Now importing from storageUtils
+  saveYearSpecificStorageItem, // Now importing from storageUtils
 } from './storageService';
 import {
   FinancialYear,
@@ -27,13 +28,16 @@ import {
 } from './types';
 
 // Define types for accounts and ledger entries
+export type AccountType = 'agent' | 'customer' | 'supplier' | 'broker' | 'transporter' | 'cash' | 'bank' | 'stock';
+
 export interface Account {
   id: string;
   name: string;
-  type: 'agent' | 'customer' | 'supplier' | 'broker' | 'transporter' | 'cash' | 'bank' | 'stock';
+  type: AccountType;
   openingBalance: number;
   openingBalanceType: 'debit' | 'credit';
   isDeleted?: boolean;
+  isSystemAccount?: boolean;
 }
 
 export interface LedgerEntry {
@@ -46,6 +50,18 @@ export interface LedgerEntry {
   credit: number;
   balance: number;
   balanceType: 'debit' | 'credit';
+}
+
+export interface ManualExpense {
+  id: string;
+  date: string;
+  amount: number;
+  description: string;
+  paymentMode: 'cash' | 'bank';
+  category: string;
+  reference?: string;
+  partyId?: string;
+  partyName?: string;
 }
 
 // Helper function to determine balance type
@@ -261,6 +277,100 @@ export const updateAccountBalance = (accountId: string, balance: number, balance
   updateAccount(account);
 };
 
+// Add manual expense function
+export const addManualExpense = (expense: ManualExpense): ManualExpense => {
+  // Get existing expenses or initialize
+  const expenses = getStorageItem('expenses') || [];
+  
+  // Add new expense
+  expenses.push(expense);
+  
+  // Save to storage
+  saveStorageItem('expenses', expenses);
+  
+  // Create ledger entry for this expense
+  const ledgerEntry: LedgerEntry = {
+    id: uuidv4(),
+    accountId: expense.paymentMode === 'cash' ? 'cash' : 'bank',
+    date: expense.date,
+    reference: expense.reference || expense.category,
+    narration: expense.description,
+    debit: expense.amount,
+    credit: 0,
+    balance: 0, // Will be calculated below
+    balanceType: 'debit',
+  };
+  
+  // Add to ledger and update running balance
+  addLedgerEntry(ledgerEntry);
+  
+  return expense;
+};
+
+// Function for cash book entries
+export const getCashBookEntries = (startDate?: string, endDate?: string): LedgerEntry[] => {
+  const ledger = getLedger();
+  
+  // Filter for cash and bank accounts
+  let entries = ledger.filter(entry => entry.accountId === 'cash');
+  
+  // Filter by date if provided
+  if (startDate) {
+    entries = entries.filter(entry => entry.date >= startDate);
+  }
+  
+  if (endDate) {
+    entries = entries.filter(entry => entry.date <= endDate);
+  }
+  
+  // Sort by date ascending
+  entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // Calculate running balance
+  let balance = 0;
+  
+  entries.forEach(entry => {
+    if (entry.debit > 0) {
+      balance -= entry.debit;
+    } else if (entry.credit > 0) {
+      balance += entry.credit;
+    }
+    entry.balance = balance;
+    entry.balanceType = balance >= 0 ? 'credit' : 'debit';
+  });
+  
+  return entries;
+};
+
+// Get today's cash transactions
+export const getTodayCashTransactions = () => {
+  const today = new Date().toISOString().split('T')[0];
+  const ledger = getLedger();
+  
+  // Filter for today's cash transactions
+  const todaysEntries = ledger.filter(
+    entry => entry.accountId === 'cash' && entry.date === today
+  );
+  
+  // Calculate totals
+  let cashIn = 0;
+  let cashOut = 0;
+  
+  todaysEntries.forEach(entry => {
+    if (entry.credit > 0) {
+      cashIn += entry.credit;
+    }
+    if (entry.debit > 0) {
+      cashOut += entry.debit;
+    }
+  });
+  
+  return { cashIn, cashOut };
+};
+
+// Alias for initializeAccounts to fix the reference in CashBook.tsx
+export const initializeAccounting = initializeAccounts;
+
 // Seed initial data
 export const seedInitialData = () => {
   initializeAccounts();
@@ -274,6 +384,7 @@ export const seedInitialData = () => {
       type: 'cash',
       openingBalance: 0,
       openingBalanceType: 'credit',
+      isSystemAccount: true,
     });
   }
 
@@ -284,6 +395,7 @@ export const seedInitialData = () => {
       type: 'bank',
       openingBalance: 0,
       openingBalanceType: 'credit',
+      isSystemAccount: true,
     });
   }
 };

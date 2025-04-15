@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, DatabaseBackup, Download, Check } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from "sonner";
 import { Progress } from '@/components/ui/progress';
 
 import { generateSampleData } from '@/utils/demoDataGenerator';
@@ -39,7 +39,6 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
       
       // Generate sample data
       toast({
-        title: "Generating sample data",
         description: "Please wait while we create 200+ transactions...",
       });
       
@@ -47,18 +46,10 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
       clearInterval(progressInterval);
       setProgress(100);
       
-      // Set result with proper structure
-      setResult({
-        purchaseCount: data.purchaseCount,
-        saleCount: data.saleCount,
-        paymentCount: data.paymentCount,
-        receiptCount: data.receiptCount,
-        totalCount: data.totalCount,
-        csvData: data.csvData || ""  // Ensure csvData is present, default to empty string if not
-      });
+      // Set result
+      setResult(data);
       
       toast({
-        title: "Sample data generated",
         description: `Successfully created ${data.totalCount} transactions.`,
       });
       
@@ -67,8 +58,6 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
     } catch (error) {
       console.error("Error generating sample data:", error);
       toast({
-        variant: "destructive",
-        title: "Error generating data",
         description: "There was a problem creating the sample data.",
       });
     } finally {
@@ -92,14 +81,11 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
       URL.revokeObjectURL(url);
       
       toast({
-        title: "Download started",
         description: "Sample data CSV is being downloaded.",
       });
     } catch (error) {
       console.error("Error downloading CSV:", error);
       toast({
-        variant: "destructive",
-        title: "Download failed",
         description: "There was a problem downloading the CSV file.",
       });
     }

@@ -23,6 +23,7 @@ const SampleDataGenerator = () => {
     receiptCount: number;
     totalCount: number;
     csvUrl: string;
+    csvData?: string;
   } | null>(null);
 
   const handleGenerateData = async () => {
@@ -36,7 +37,10 @@ const SampleDataGenerator = () => {
       });
       
       const stats = await generateSampleData();
-      setGenerationStats(stats);
+      setGenerationStats({
+        ...stats,
+        csvData: "",  // Add csvData property with empty string for compatibility
+      });
       
       toast.success("Sample data generated successfully! CSV file downloaded.", {
         id: "generate-sample-data"
