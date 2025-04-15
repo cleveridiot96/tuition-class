@@ -47,14 +47,14 @@ const StockReport = ({ filterLocation }: StockReportProps) => {
       );
       
       // Enhance inventory with calculated fields
-      const enhancedItems = activeItems.map(item => {
+      const enhancedItems: EnhancedInventoryItem[] = activeItems.map(item => {
         const totalValue = item.quantity * item.rate;
-        const averageRate = item.quantity > 0 ? totalValue / item.quantity : 0;
+        const avgRate = item.quantity > 0 ? totalValue / item.quantity : 0;
         
         return {
           ...item,
           totalValue,
-          averageRate,
+          avgRate,
           locationInfo: item.location || 'Unknown',
         };
       });
@@ -104,7 +104,7 @@ const StockReport = ({ filterLocation }: StockReportProps) => {
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.lotNumber}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{item.locationInfo}</Badge>
+                    <Badge variant="outline">{item.location}</Badge>
                   </TableCell>
                   <TableCell className="text-right">{item.quantity}</TableCell>
                   <TableCell className="text-right">

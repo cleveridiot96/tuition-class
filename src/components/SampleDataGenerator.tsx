@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, DatabaseBackup, Download, Check } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 
-import { generateSampleData, downloadSampleDataAsCsv } from '@/utils/demoDataGenerator';
+import { generateSampleData } from '@/utils/demoDataGenerator';
 
 interface SampleDataGeneratorProps {
   onComplete?: () => void;
@@ -46,7 +46,16 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
       const data = await generateSampleData();
       clearInterval(progressInterval);
       setProgress(100);
-      setResult(data);
+      
+      // Set result with proper structure
+      setResult({
+        purchaseCount: data.purchaseCount,
+        saleCount: data.saleCount,
+        paymentCount: data.paymentCount,
+        receiptCount: data.receiptCount,
+        totalCount: data.totalCount,
+        csvData: data.csvData || ""  // Ensure csvData is present, default to empty string if not
+      });
       
       toast({
         title: "Sample data generated",
@@ -71,14 +80,21 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
     if (!result?.csvData) return;
     
     try {
-      const success = downloadSampleDataAsCsv(result.csvData);
+      // Create and download CSV file
+      const blob = new Blob([result.csvData], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sample-data.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       
-      if (success) {
-        toast({
-          title: "Download started",
-          description: "Sample data CSV is being downloaded.",
-        });
-      }
+      toast({
+        title: "Download started",
+        description: "Sample data CSV is being downloaded.",
+      });
     } catch (error) {
       console.error("Error downloading CSV:", error);
       toast({

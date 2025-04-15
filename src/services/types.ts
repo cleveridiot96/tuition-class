@@ -79,6 +79,7 @@ export interface Broker {
   rate?: number;
   balance: number;
   isDeleted?: boolean;
+  commissionRate?: number; // Added commissionRate property
 }
 
 export interface Transporter {
@@ -189,5 +190,5 @@ export interface Receipt {
 export interface EnhancedInventoryItem extends InventoryItem {
   totalValue: number;
   avgRate: number;
+  locationInfo?: string;
 }
-

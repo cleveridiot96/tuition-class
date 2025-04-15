@@ -32,8 +32,7 @@ export {
   saveYearSpecificStorageItem,
   // Import necessary functions from storageUtils but avoid re-exporting getFinancialYearKeyPrefix
   getStorageItem,
-  saveStorageItem
+  saveStorageItem,
+  // NOTE: Deliberately not re-exporting getFinancialYearKeyPrefix from storageUtils
+  // to avoid the ambiguity with the function from financialYearService
 } from './storageUtils';
-
-// Note: We're not re-exporting getFinancialYearKeyPrefix from storageUtils
-// to avoid the ambiguity with the function from financialYearService
