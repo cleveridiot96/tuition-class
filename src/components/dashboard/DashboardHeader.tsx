@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Calculator, Database, RefreshCw } from "lucide-react";
+import { Database, RefreshCw, Download, Upload } from "lucide-react";
 import PortableAppButton from "@/components/dashboard/PortableAppButton";
 import { generateSampleData } from "@/utils/dataGeneratorUtils";
 import { toast } from "sonner";
 import { getCurrentFinancialYear } from "@/services/financialYearService";
+import { exportDataBackup, importDataBackup } from "@/services/storageUtils";
 
 interface DashboardHeaderProps {
   onOpeningBalancesClick: () => void;
@@ -27,13 +28,56 @@ const DashboardHeader = ({ onOpeningBalancesClick }: DashboardHeaderProps) => {
         id: "generate-sample-data"
       });
       
-      window.dispatchEvent(new Event('data-updated'));
+      window.dispatchEvent(new Event('storage'));
     } catch (error) {
       console.error("Error generating sample data:", error);
       toast.error("Failed to generate sample data. Please try again.", {
         id: "generate-sample-data"
       });
     }
+  };
+  
+  const handleBackup = () => {
+    try {
+      exportDataBackup();
+      toast.success("Backup file downloaded successfully!");
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      toast.error("Failed to create backup. Please try again.");
+    }
+  };
+
+  const handleRestore = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const content = event.target?.result as string;
+          try {
+            const success = importDataBackup(content);
+            if (success) {
+              window.dispatchEvent(new Event('storage'));
+              toast.success("Data restored successfully!");
+            }
+          } catch (error) {
+            console.error("Import error:", error);
+            toast.error("Failed to restore data. Invalid backup file.");
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleRefresh = () => {
+    window.dispatchEvent(new Event('storage'));
+    toast.success("Data refreshed successfully!");
   };
   
   return (
@@ -44,13 +88,40 @@ const DashboardHeader = ({ onOpeningBalancesClick }: DashboardHeaderProps) => {
           <p className="text-gray-600">Financial Year: {financialYear?.toString()}</p>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={handleBackup}
+          >
+            <Download size={18} />
+            <span>Backup</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={handleRestore}
+          >
+            <Upload size={18} />
+            <span>Restore</span>
+          </Button>
+          
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={handleRefresh}
+          >
+            <RefreshCw size={18} />
+            <span>Refresh</span>
+          </Button>
+          
           <Button
             variant="outline"
             className="flex items-center gap-2"
             onClick={onOpeningBalancesClick}
           >
-            <Calculator size={18} />
+            <Database size={18} />
             <span className="hidden sm:inline">Opening Balances</span>
             <span className="sm:hidden">Balances</span>
           </Button>
@@ -74,3 +145,4 @@ const DashboardHeader = ({ onOpeningBalancesClick }: DashboardHeaderProps) => {
 };
 
 export default DashboardHeader;
+
