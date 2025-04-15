@@ -10,81 +10,96 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export interface SelectOption {
+interface SelectOption {
   value: string;
   label: string;
 }
 
 interface SearchableSelectProps {
-  options?: SelectOption[] | null | any; // Accept ANYTHING
+  options?: SelectOption[] | null | undefined;
   value?: string | null;
   onValueChange: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
-  label?: string;
   disabled?: boolean;
   className?: string;
 }
 
 export function SearchableSelect({
-  options = [], // DEFAULT TO EMPTY ARRAY (CRITICAL)
+  options = [], // Default to empty array
   value,
   onValueChange,
   placeholder = "Select an option",
   emptyMessage = "No results found.",
-  label,
   disabled = false,
   className,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
-  
-  // 1. FORCE options to ALWAYS be an array, no matter what
+
+  // 1. Nuclear-proof options normalization
   const safeOptions = React.useMemo(() => {
-    // For debugging
-    console.log("SearchableSelect OPTIONS DEBUG:", {
-      type: typeof options,
-      isArray: Array.isArray(options),
-      raw: options,
-      sample: options?.[0],
-      value: value
-    });
-    
-    if (!options) return [];
-    if (Array.isArray(options)) {
+    try {
+      // For debugging
+      console.log("SearchableSelect OPTIONS DEBUG:", {
+        type: typeof options,
+        isArray: Array.isArray(options),
+        raw: options,
+        sample: options?.[0],
+        value: value
+      });
+      
+      // If options is null/undefined, return empty array
+      if (!options) return [];
+      
+      // If it's not an array, try to convert it
+      if (!Array.isArray(options)) {
+        // Handle single option case
+        if (options && typeof options === 'object' && 'value' in options) {
+          return [{
+            value: String(options.value),
+            label: String(options.label || options.value)
+          }];
+        }
+        console.warn('Options is not an array:', options);
+        return [];
+      }
+
+      // Process array options
       return options
-        .filter(o => o !== null && o !== undefined)
-        .map((o) => ({
-          value: String(o?.value ?? ""),
-          label: String(o?.label ?? "")
+        .filter(Boolean) // Remove null/undefined
+        .map(option => ({
+          value: String(option?.value ?? ''),
+          label: String(option?.label ?? option?.value ?? '')
         }))
-        .filter((o) => o.value); // Remove empty values
+        .filter(option => option.value); // Remove empty values
+    } catch (error) {
+      console.error('Error normalizing options:', error);
+      return [];
     }
-    console.error("OPTIONS IS NOT ARRAY:", options);
-    return [];
   }, [options, value]);
-  
-  // 2. SAFE filtered options
+
+  // 2. Safe filtered options
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return safeOptions;
     
     try {
       const term = searchTerm.toLowerCase();
       return safeOptions.filter(option => 
-        String(option.label).toLowerCase().includes(term)
+        option.label.toLowerCase().includes(term)
       );
     } catch (error) {
-      console.error("Error filtering options:", error);
+      console.error('Error filtering options:', error);
       return safeOptions;
     }
   }, [safeOptions, searchTerm]);
-  
-  // 3. SAFE selected value
+
+  // 3. Safe selected option
   const selectedOption = React.useMemo(() => {
     try {
       return safeOptions.find(option => option.value === value) || null;
     } catch (error) {
-      console.error("Error finding selected option:", error);
+      console.error('Error finding selected option:', error);
       return null;
     }
   }, [safeOptions, value]);
@@ -103,7 +118,9 @@ export function SearchableSelect({
           )}
           disabled={disabled}
         >
-          {selectedOption ? selectedOption.label : placeholder}
+          <span className="truncate">
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -146,7 +163,7 @@ export function SearchableSelect({
                       value === option.value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {option.label}
+                  <span className="truncate">{option.label}</span>
                 </div>
               ))}
             </div>
@@ -156,3 +173,4 @@ export function SearchableSelect({
     </Popover>
   );
 }
+
