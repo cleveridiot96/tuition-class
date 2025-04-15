@@ -73,11 +73,11 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
                   <ChevronDown className="h-4 w-4 transition-transform duration-200" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-white" align="end" forceMount>
-                <div className="max-h-[70vh] overflow-y-auto">
+              <DropdownMenuContent className="w-64 bg-white" align="end" forceMount>
+                <div className="max-h-[70vh] overflow-y-auto py-1">
                   {items.map((item) => (
-                    <DropdownMenuItem key={item.title}>
-                      <Link to={item.href} className="w-full">
+                    <DropdownMenuItem key={item.title} asChild className="py-2">
+                      <Link to={item.href} className="flex flex-col w-full">
                         <div className="font-medium">{item.title}</div>
                         <div className="text-xs text-muted-foreground">{item.description}</div>
                       </Link>
@@ -103,12 +103,12 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
                 <span className="text-muted-foreground">{user?.email}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link to="/profile" className="w-full h-full block">
                   Profile
                 </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link to="/settings" className="w-full h-full block">
                   Settings
                 </Link>
