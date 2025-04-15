@@ -28,7 +28,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options = [], // Default to empty array
+  options,
   value = "",
   onSelect,
   onChange,
@@ -41,67 +41,61 @@ export function Combobox({
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
   
-  // IMPROVED: Sync with external value changes
+  // Sync with external value changes
   React.useEffect(() => {
     setSelectedValue(value || "");
   }, [value]);
 
-  // IMPORTANT FIX: Guarantee options is always a valid array of objects with value and label
+  // CRITICAL FIX: Ensure options is always an array
   const safeOptions = React.useMemo(() => {
-    // First ensure options is an array
+    // Return empty array if options is falsy
+    if (!options) return [];
+    
+    // Ensure options is an array
     if (!Array.isArray(options)) {
-      console.log("Combobox: options is not an array, defaulting to []");
+      console.warn("Combobox: options is not an array, defaulting to []");
       return [];
     }
     
-    // Then filter out invalid options
-    const validOptions = options.filter(option => 
-      option !== null &&
-      option !== undefined &&
+    // Filter out invalid options
+    return options.filter(option => 
+      option &&
       typeof option === 'object' && 
       'value' in option && 
       'label' in option
     );
-    
-    if (validOptions.length < options.length) {
-      console.log("Combobox: Some options were invalid and filtered out");
-    }
-    
-    return validOptions;
   }, [options]);
 
-  // IMPROVED: Filter options based on input with proper null checking
+  // Filter options based on input
   const filteredOptions = React.useMemo(() => {
     if (!inputValue) return safeOptions;
     
     return safeOptions.filter(option => {
-      if (!option || !option.label) return false;
-      
-      const label = String(option.label).toLowerCase();
+      const label = String(option.label || "").toLowerCase();
       const search = inputValue.toLowerCase();
       return label.includes(search);
     });
   }, [safeOptions, inputValue]);
 
-  // IMPROVED: Select handler with null checking
+  // Handle selection
   const handleSelect = (currentValue: string) => {
     const validValue = currentValue || "";
     setSelectedValue(validValue);
     setOpen(false);
     
     // Only call handlers if they exist
-    if (validValue && onSelect) onSelect(validValue);
-    if (validValue && onChange) onChange(validValue);
+    if (onSelect) onSelect(validValue);
+    if (onChange) onChange(validValue);
   };
 
-  // IMPROVED: Input change handler with null checking
+  // Handle input change
   const handleInputChange = (newValue: string) => {
     const validValue = newValue || "";
     setInputValue(validValue);
-    if (onInputChange && validValue !== undefined) onInputChange(validValue);
+    if (onInputChange) onInputChange(validValue);
   };
 
-  // IMPROVED: Get display text for selected value with null checking
+  // Get display text
   const displayText = React.useMemo(() => {
     if (!selectedValue) return placeholder;
     

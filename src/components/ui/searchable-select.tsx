@@ -34,7 +34,7 @@ interface SearchableSelectProps {
 }
 
 export function SearchableSelect({
-  options = [], // Default to empty array
+  options,
   value,
   onValueChange,
   placeholder = "Select an option",
@@ -43,50 +43,44 @@ export function SearchableSelect({
   disabled = false,
   className,
 }: SearchableSelectProps) {
-  const [open, setOpen] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState("");
-
-  // IMPORTANT FIX: Guarantee options is always a valid array of objects with value and label
+  // CRITICAL FIX: Ensure options is always a valid array
   const safeOptions = React.useMemo(() => {
-    // First ensure options is an array
+    // Return empty array if options is falsy
+    if (!options) return [];
+    
+    // Ensure options is an array
     if (!Array.isArray(options)) {
-      console.log("SearchableSelect: options is not an array, defaulting to []");
+      console.warn("SearchableSelect: options is not an array, defaulting to []");
       return [];
     }
     
-    // Then filter out invalid options
-    const validOptions = options.filter(option => 
-      option !== null && 
-      option !== undefined && 
+    // Filter out invalid options
+    return options.filter(option => 
+      option && 
       typeof option === 'object' && 
       'value' in option && 
       'label' in option
     );
-    
-    if (validOptions.length < options.length) {
-      console.log("SearchableSelect: Some options were invalid and filtered out");
-    }
-    
-    return validOptions;
   }, [options]);
   
-  // IMPROVED: Filter options based on search term with proper null checking
+  const [open, setOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  
+  // Filter options based on search term - safely
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      if (!option.label) return false;
-      
-      const label = String(option.label).toLowerCase();
+      const label = String(option.label || "").toLowerCase();
       const search = searchTerm.toLowerCase();
       return label.includes(search);
     });
   }, [safeOptions, searchTerm]);
   
-  // IMPROVED: Safely find selected option
+  // Safely find selected option
   const selectedOption = React.useMemo(() => {
     if (!value) return null;
-    return safeOptions.find((option) => option.value === value) || null;
+    return safeOptions.find(option => option.value === value) || null;
   }, [safeOptions, value]);
 
   return (
