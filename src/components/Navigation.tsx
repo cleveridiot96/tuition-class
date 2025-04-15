@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ChevronDown, LogOut, Home } from "lucide-react";
+import { ChevronDown, LogOut, Home, Menu as MenuIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavigationProps {
@@ -67,11 +68,12 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
             <NavigationMenuList>
               <NavigationMenuItem>
                 <div className="group inline-flex h-9 items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground disabled:pointer-events-none disabled:opacity-50 data-[active]:bg-accent/50 data-[state=open]:bg-accent/50">
-                  More
+                  <MenuIcon className="mr-2 h-4 w-4" />
+                  Menu
                   <ChevronDown className="relative left-1 h-4 w-4 transition-transform duration-200 group-[data-state=open]:rotate-180" />
                 </div>
                 <div className="z-50 absolute top-full left-0 w-full origin-top-center data-[motion=from-end]:animate-in data-[motion=from-start]:animate-in data-[motion=from-end]:fade-in data-[motion=from-start]:fade-in data-[motion=from-end]:zoom-in-95 data-[motion=from-start]:zoom-in-95 data-[motion=to-end]:animate-out data-[motion=to-start]:animate-out data-[motion=to-end]:fade-out data-[motion=to-start]:fade-out data-[motion=to-end]:zoom-out-95 data-[motion=to-start]:zoom-out-95 md:w-auto">
-                  <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] md:grid-cols-2 bg-white shadow-lg rounded-md">
+                  <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] md:grid-cols-2 bg-white shadow-lg rounded-md max-h-[70vh] overflow-y-auto">
                     {items.map((item) => (
                       <ListItem key={item.title} title={item.title} href={item.href}>
                         {item.description}
