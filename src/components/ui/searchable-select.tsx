@@ -34,7 +34,7 @@ interface SearchableSelectProps {
 }
 
 export function SearchableSelect({
-  options,
+  options = [], // Ensure options has a default value
   value,
   onValueChange,
   placeholder = "Select an option",
@@ -45,7 +45,9 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
 
-  const selectedOption = options.find((option) => option.value === value);
+  // Ensure options is always an array
+  const safeOptions = Array.isArray(options) ? options : [];
+  const selectedOption = safeOptions.find((option) => option.value === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -71,7 +73,7 @@ export function SearchableSelect({
           <CommandEmpty>{emptyMessage}</CommandEmpty>
           <ScrollArea className="max-h-60">
             <CommandGroup>
-              {options.map((option) => (
+              {safeOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}

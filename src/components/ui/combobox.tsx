@@ -9,8 +9,6 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
-  safeChildrenToArray,
-  CommandErrorBoundary
 } from "@/components/ui/command";
 import {
   Popover,
@@ -29,9 +27,6 @@ interface ComboboxProps {
   disabled?: boolean;
 }
 
-/**
- * Enhanced Combobox with comprehensive error handling and fallback UI
- */
 export function Combobox({
   options = [], // Always ensure options has a default
   value = "",
@@ -47,24 +42,14 @@ export function Combobox({
   const [selectedValue, setSelectedValue] = React.useState(value || "");
   const popoverRef = React.useRef<HTMLDivElement>(null);
 
-  // Handle clicks outside with robust error protection
+  // Handle clicks outside
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      try {
-        if (
-          popoverRef.current && 
-          !popoverRef.current.contains(event.target as Node) && 
-          open
-        ) {
-          setOpen(false);
-        }
-      } catch (error) {
-        // Silent logging without UI disruption
-        console.error("Error handling outside click in Combobox:", {
-          error,
-          timestamp: new Date().toISOString()
-        });
-        // Always ensure dropdown closes on error
+      if (
+        popoverRef.current && 
+        !popoverRef.current.contains(event.target as Node) && 
+        open
+      ) {
         setOpen(false);
       }
     };
@@ -76,204 +61,118 @@ export function Combobox({
     };
   }, [open]);
 
-  // Sync with external value changes safely
+  // Sync with external value changes
   React.useEffect(() => {
-    try {
-      setSelectedValue(value || "");
-    } catch (error) {
-      // Silent logging without UI errors
-      console.error("Error syncing with external value in Combobox:", {
-        error,
-        value,
-        timestamp: new Date().toISOString()
-      });
-    }
+    setSelectedValue(value || "");
   }, [value]);
 
-  // Ultra-safe select handler with error protection
-  const handleSelect = React.useCallback((currentValue: string) => {
-    try {
-      setSelectedValue(currentValue);
-      setOpen(false);
-      if (onSelect) onSelect(currentValue);
-      if (onChange) onChange(currentValue);
-    } catch (error) {
-      // Silent logging without UI disruption
-      console.error("Error in combobox handleSelect:", {
-        error,
-        currentValue,
-        timestamp: new Date().toISOString()
-      });
-    }
-  }, [onSelect, onChange]);
+  // Select handler
+  const handleSelect = (currentValue: string) => {
+    setSelectedValue(currentValue);
+    setOpen(false);
+    if (onSelect) onSelect(currentValue);
+    if (onChange) onChange(currentValue);
+  };
 
-  // Safe input change handler with error protection
-  const handleInputChange = React.useCallback((newValue: string) => {
-    try {
-      setInputValue(newValue);
-      if (onInputChange) onInputChange(newValue);
-      
-      // If input is cleared, also clear selection
-      if (!newValue) {
-        setSelectedValue("");
-        if (onChange) onChange("");
-      }
-    } catch (error) {
-      // Silent logging without UI disruption
-      console.error("Error in combobox handleInputChange:", {
-        error,
-        newValue,
-        timestamp: new Date().toISOString()
-      });
+  // Input change handler
+  const handleInputChange = (newValue: string) => {
+    setInputValue(newValue);
+    if (onInputChange) onInputChange(newValue);
+    
+    // If input is cleared, also clear selection
+    if (!newValue) {
+      setSelectedValue("");
+      if (onChange) onChange("");
     }
-  }, [onInputChange, onChange]);
+  };
 
-  // Ultra-safe options filtering with comprehensive error handling
+  // Filter options based on input
   const filteredOptions = React.useMemo(() => {
-    try {
-      // Always ensure we have a valid array
-      const safeOptions = Array.isArray(options) ? options : [];
+    // Ensure options is an array
+    const safeOptions = Array.isArray(options) ? options : [];
+    
+    if (!inputValue || safeOptions.length === 0) return safeOptions;
+    
+    return safeOptions.filter(option => {
+      if (!option) return false;
       
-      // Early return for efficiency
-      if (!inputValue || safeOptions.length === 0) return safeOptions;
+      const label = typeof option.label === 'string' ? option.label.toLowerCase() : '';
+      const optionValue = typeof option.value === 'string' ? option.value.toLowerCase() : '';
+      const search = inputValue.toLowerCase();
       
-      // Safe filtering with null checks
-      return safeOptions.filter(option => {
-        if (!option) return false;
-        
-        const label = typeof option.label === 'string' ? option.label.toLowerCase() : '';
-        const value = typeof option.value === 'string' ? option.value.toLowerCase() : '';
-        const search = inputValue.toLowerCase();
-        
-        return label.includes(search) || value.includes(search);
-      });
-    } catch (error) {
-      // Silent logging without UI disruption
-      console.error("Error filtering options in Combobox:", {
-        error,
-        options,
-        inputValue,
-        timestamp: new Date().toISOString()
-      });
-      return []; // Safe fallback
-    }
+      return label.includes(search) || optionValue.includes(search);
+    });
   }, [options, inputValue]);
 
-  // Ultra-safe display text computation
+  // Get display text for selected value
   const displayText = React.useMemo(() => {
-    try {
-      if (!selectedValue) return placeholder;
-      
-      // Always ensure options is a valid array
-      const safeOptions = Array.isArray(options) ? options : [];
-      
-      // Safe find with null checks
-      const foundOption = safeOptions.find(option => 
-        option && option.value === selectedValue
-      );
-      
-      return foundOption ? foundOption.label : selectedValue;
-    } catch (error) {
-      // Silent logging without UI disruption
-      console.error("Error finding display text in Combobox:", {
-        error,
-        selectedValue,
-        options,
-        timestamp: new Date().toISOString()
-      });
-      return placeholder; // Safe fallback
-    }
+    if (!selectedValue) return placeholder;
+    
+    const foundOption = options.find(option => option && option.value === selectedValue);
+    return foundOption ? foundOption.label : selectedValue;
   }, [selectedValue, options, placeholder]);
 
-  // Safely render with comprehensive error boundaries
   return (
     <div ref={popoverRef}>
-      <CommandErrorBoundary componentName="Combobox">
-        <Popover 
-          open={disabled ? false : open} 
-          onOpenChange={disabled ? undefined : (isOpen) => {
-            try {
-              if (!disabled) {
-                setOpen(isOpen);
-              }
-            } catch (error) {
-              // Silent logging without UI disruption
-              console.error("Error changing popover state in Combobox:", {
-                error,
-                isOpen,
-                timestamp: new Date().toISOString()
-              });
-              setOpen(false); // Safe fallback
-            }
-          }}
-        >
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={open}
-              className={cn("w-full justify-between", className)}
-              disabled={disabled}
-              onClick={(e) => {
-                try {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!disabled) setOpen(!open);
-                } catch (error) {
-                  // Silent logging without UI disruption
-                  console.error("Error handling button click in Combobox:", {
-                    error,
-                    timestamp: new Date().toISOString()
-                  });
-                }
-              }}
-            >
-              <span className="truncate">{selectedValue ? displayText : placeholder}</span>
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent 
-            className="w-[--radix-popover-trigger-width] p-0 z-[9999] shadow-lg bg-popover" 
-            align="start"
-            side="bottom"
-            avoidCollisions
+      <Popover 
+        open={disabled ? false : open} 
+        onOpenChange={disabled ? undefined : setOpen}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn("w-full justify-between", className)}
+            disabled={disabled}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (!disabled) setOpen(!open);
+            }}
           >
-            <Command shouldFilter={false}>
-              <CommandInput 
-                placeholder={`Search ${placeholder.toLowerCase()}...`} 
-                value={inputValue}
-                onValueChange={handleInputChange}
-                className="h-9"
-              />
-              
-              <CommandGroup>
-                {filteredOptions.length === 0 ? (
-                  <CommandEmpty>No results found.</CommandEmpty>
-                ) : (
-                  filteredOptions.map((option) => 
-                    option ? (
-                      <CommandItem
-                        key={option.value}
-                        value={option.value}
-                        onSelect={() => handleSelect(option.value)}
-                        className="cursor-pointer"
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedValue === option.value ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {option.label || option.value}
-                      </CommandItem>
-                    ) : null
-                  )
-                )}
-              </CommandGroup>
-            </Command>
-          </PopoverContent>
-        </Popover>
-      </CommandErrorBoundary>
+            <span className="truncate">{selectedValue ? displayText : placeholder}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0 z-[9999] bg-white shadow-lg" 
+          align="start"
+          side="bottom"
+          avoidCollisions
+        >
+          <Command shouldFilter={false}>
+            <CommandInput 
+              placeholder={`Search ${placeholder.toLowerCase()}...`} 
+              value={inputValue}
+              onValueChange={handleInputChange}
+              className="h-9"
+            />
+            <CommandGroup>
+              {filteredOptions.length === 0 ? (
+                <CommandEmpty>No results found.</CommandEmpty>
+              ) : (
+                filteredOptions.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={handleSelect}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedValue === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </CommandItem>
+                ))
+              )}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
