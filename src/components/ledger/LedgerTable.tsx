@@ -50,7 +50,7 @@ export function LedgerTable({ entries }: LedgerTableProps) {
                     {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatBalance(entry.balance, entry.balanceType)}
+                    {formatBalance(entry.balance)}
                   </TableCell>
                 </TableRow>
               ))

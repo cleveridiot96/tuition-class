@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { addPurchase } from '@/services/purchaseService';
 import { addSale } from '@/services/saleService';
@@ -237,7 +236,9 @@ export function generateSampleData() {
     const customer = selectedCustomer.name;
     
     // Determine if bill amount should include GST
-    const includeGST = selectedCustomer.payableByCustomer !== false && Math.random() > 0.5;
+    const includeGST = (selectedCustomer.payableByCustomer !== undefined 
+      ? selectedCustomer.payableByCustomer !== false 
+      : true) && Math.random() > 0.5;
     const billAmount = includeGST ? totalAmount * 1.18 : totalAmount; // 18% GST
     
     // Random transport details
