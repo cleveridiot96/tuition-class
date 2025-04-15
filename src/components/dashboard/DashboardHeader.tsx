@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Download, Upload, RefreshCw } from "lucide-react";
+import { Database, RefreshCw, Download, Upload } from "lucide-react";
 import PortableAppButton from "@/components/dashboard/PortableAppButton";
-import { exportDataBackup, importDataBackup } from "@/services/storageUtils";
-import { getCurrentFinancialYear } from "@/services/financialYearService";
+import { generateSampleData } from "@/utils/dataGeneratorUtils";
 import { toast } from "sonner";
+import { getCurrentFinancialYear } from "@/services/financialYearService";
+import { exportDataBackup, importDataBackup } from "@/services/storageUtils";
 
 interface DashboardHeaderProps {
   onOpeningBalancesClick: () => void;
@@ -13,6 +14,28 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ onOpeningBalancesClick }: DashboardHeaderProps) => {
   const financialYear = getCurrentFinancialYear();
+  
+  const handleGenerateData = async () => {
+    try {
+      toast.info("Generating 200 sample transactions...", {
+        duration: 0,
+        id: "generate-sample-data"
+      });
+      
+      const stats = await generateSampleData();
+      
+      toast.success(`Successfully generated ${stats.totalCount} transactions!`, {
+        id: "generate-sample-data"
+      });
+      
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      console.error("Error generating sample data:", error);
+      toast.error("Failed to generate sample data. Please try again.", {
+        id: "generate-sample-data"
+      });
+    }
+  };
   
   const handleBackup = () => {
     try {
@@ -92,10 +115,29 @@ const DashboardHeader = ({ onOpeningBalancesClick }: DashboardHeaderProps) => {
             <RefreshCw size={18} />
             <span>Refresh</span>
           </Button>
+          
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={onOpeningBalancesClick}
+          >
+            <Database size={18} />
+            <span className="hidden sm:inline">Opening Balances</span>
+            <span className="sm:hidden">Balances</span>
+          </Button>
+          
+          <Button
+            onClick={handleGenerateData}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+            size="sm"
+          >
+            <Database size={16} />
+            Generate Sample Data
+          </Button>
         </div>
       </div>
-
-      <div className="flex flex-col items-center gap-4">
+      
+      <div className="flex flex-col lg:flex-row justify-center items-center gap-6 my-6">
         <PortableAppButton />
       </div>
     </div>
