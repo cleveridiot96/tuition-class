@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, DatabaseBackup, Download, Check } from 'lucide-react';
-import { toast } from "sonner";
+import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
 import { generateSampleData } from '@/utils/demoDataGenerator';
@@ -13,6 +13,7 @@ interface SampleDataGeneratorProps {
 }
 
 const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
+  const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{
@@ -39,7 +40,8 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
       
       // Generate sample data
       toast({
-        description: "Please wait while we create 200+ transactions...",
+        title: "Generating",
+        description: "Please wait while we create 200+ transactions..."
       });
       
       const data = await generateSampleData();
@@ -47,10 +49,14 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
       setProgress(100);
       
       // Set result
-      setResult(data);
+      setResult({
+        ...data,
+        csvData: "" // Add the missing csvData property
+      });
       
       toast({
-        description: `Successfully created ${data.totalCount} transactions.`,
+        title: "Success",
+        description: `Successfully created ${data.totalCount} transactions.`
       });
       
       if (onComplete) onComplete();
@@ -58,7 +64,8 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
     } catch (error) {
       console.error("Error generating sample data:", error);
       toast({
-        description: "There was a problem creating the sample data.",
+        title: "Error",
+        description: "There was a problem creating the sample data."
       });
     } finally {
       setIsGenerating(false);
@@ -81,12 +88,14 @@ const SampleDataGenerator = ({ onComplete }: SampleDataGeneratorProps) => {
       URL.revokeObjectURL(url);
       
       toast({
-        description: "Sample data CSV is being downloaded.",
+        title: "Download",
+        description: "Sample data CSV is being downloaded."
       });
     } catch (error) {
       console.error("Error downloading CSV:", error);
       toast({
-        description: "There was a problem downloading the CSV file.",
+        title: "Error",
+        description: "There was a problem downloading the CSV file."
       });
     }
   };

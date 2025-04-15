@@ -1,48 +1,48 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { getStorageItem, saveStorageItem } from '../storageUtils';
-import { LedgerEntry, Account } from './types';
-import { getAccountById, updateAccount } from './accountService';
+import { LedgerEntry } from './types';
+import { getItem, setItem } from '../storageService';
 
-// Initialize ledger if it doesn't exist
-export const initializeLedger = () => {
-  if (!getStorageItem('ledger')) {
-    saveStorageItem('ledger', []);
+const LEDGER_STORAGE_KEY = 'ledger';
+
+export const ledgerService = {
+  initializeLedger: () => {
+    // Initialize ledger if it doesn't exist in storage
+    if (!getItem(LEDGER_STORAGE_KEY)) {
+      setItem(LEDGER_STORAGE_KEY, []);
+    }
+  },
+
+  getLedger: (): LedgerEntry[] => {
+    return getItem(LEDGER_STORAGE_KEY) || [];
+  },
+
+  addLedgerEntry: (entry: LedgerEntry): void => {
+    const ledger = ledgerService.getLedger();
+    ledger.push(entry);
+    setItem(LEDGER_STORAGE_KEY, ledger);
+  },
+
+  updateLedgerEntry: (updatedEntry: LedgerEntry): void => {
+    const ledger = ledgerService.getLedger();
+    const index = ledger.findIndex(entry => entry.id === updatedEntry.id);
+    
+    if (index !== -1) {
+      ledger[index] = updatedEntry;
+      setItem(LEDGER_STORAGE_KEY, ledger);
+    }
+  },
+
+  deleteLedgerEntry: (id: string): void => {
+    const ledger = ledgerService.getLedger();
+    const filteredLedger = ledger.filter(entry => entry.id !== id);
+    setItem(LEDGER_STORAGE_KEY, filteredLedger);
   }
 };
 
-// Function to get all ledger entries
-export const getLedger = (): LedgerEntry[] => {
-  initializeLedger();
-  return getStorageItem('ledger') || [];
-};
-
-// Function to get ledger entries for a specific account
-export const getAccountLedger = (accountId: string): LedgerEntry[] => {
-  const ledger = getLedger();
-  return ledger.filter(entry => entry.accountId === accountId);
-};
-
-// Function to add a ledger entry
-export const addLedgerEntry = (entry: LedgerEntry) => {
-  const ledger = getLedger();
-  ledger.push(entry);
-  saveStorageItem('ledger', ledger);
-};
-
-// Helper function to determine balance type
-export const determineBalanceType = (balance: number): 'debit' | 'credit' => {
-  return balance >= 0 ? 'credit' : 'debit';
-};
-
-// Function to update account balance
-export const updateAccountBalance = (accountId: string, balance: number, balanceType: 'debit' | 'credit') => {
-  const account = getAccountById(accountId);
-  if (!account) {
-    throw new Error('Account not found');
-  }
-
-  account.openingBalance = balance;
-  account.openingBalanceType = balanceType;
-  updateAccount(account);
-};
+export const {
+  initializeLedger,
+  getLedger,
+  addLedgerEntry,
+  updateLedgerEntry,
+  deleteLedgerEntry
+} = ledgerService;

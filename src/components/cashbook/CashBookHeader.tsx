@@ -1,48 +1,56 @@
 
-import React from "react";
+import React from 'react';
 import { Button } from "@/components/ui/button";
-import { Printer, FileSpreadsheet, Download } from "lucide-react";
+import { Printer, FileSpreadsheet, Save } from "lucide-react";
 
 interface CashBookHeaderProps {
-  onPrint: () => void;
-  onExportToExcel: () => void;
-  onBackupData: () => void;
+  onPrint?: () => void;
+  onExportToExcel?: () => void;
+  onBackupData?: () => void;
 }
 
-const CashBookHeader = ({ onPrint, onExportToExcel, onBackupData }: CashBookHeaderProps) => {
+const CashBookHeader: React.FC<CashBookHeaderProps> = ({
+  onPrint,
+  onExportToExcel,
+  onBackupData
+}) => {
   return (
-    <div className="flex justify-between items-center flex-wrap gap-4">
-      <div>
-        <h2 className="text-xl font-bold">Cash Book</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage your cash transactions and expenses
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onPrint}
-        >
-          <Printer size={16} className="mr-2" />
-          Print
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onExportToExcel}
-        >
-          <FileSpreadsheet size={16} className="mr-2" />
-          Export
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onBackupData}
-        >
-          <Download size={16} className="mr-2" />
-          Backup All Data
-        </Button>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <h2 className="text-2xl font-semibold">Cash Book</h2>
+      
+      <div className="flex gap-2">
+        {onPrint && (
+          <Button 
+            variant="outline" 
+            onClick={onPrint}
+            className="flex items-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            <span className="hidden sm:inline">Print</span>
+          </Button>
+        )}
+        
+        {onExportToExcel && (
+          <Button 
+            variant="outline" 
+            onClick={onExportToExcel}
+            className="flex items-center gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span className="hidden sm:inline">Export</span>
+          </Button>
+        )}
+        
+        {onBackupData && (
+          <Button 
+            variant="default" 
+            onClick={onBackupData}
+            className="flex items-center gap-2"
+          >
+            <Save className="h-4 w-4" />
+            <span className="hidden sm:inline">Backup</span>
+          </Button>
+        )}
       </div>
     </div>
   );

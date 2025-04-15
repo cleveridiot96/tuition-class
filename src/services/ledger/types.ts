@@ -1,21 +1,19 @@
 
-export type AccountType = 'agent' | 'customer' | 'supplier' | 'broker' | 'transporter' | 'cash' | 'bank' | 'stock';
-
 export interface Account {
   id: string;
   name: string;
-  type: AccountType;
+  type: string;
   openingBalance: number;
   openingBalanceType: 'debit' | 'credit';
-  isDeleted?: boolean;
   isSystemAccount?: boolean;
 }
 
 export interface LedgerEntry {
   id: string;
-  accountId: string;
   date: string;
+  accountId: string;
   reference: string;
+  referenceId?: string;
   narration: string;
   debit: number;
   credit: number;
@@ -28,9 +26,9 @@ export interface ManualExpense {
   date: string;
   amount: number;
   description: string;
-  paymentMode: 'cash' | 'bank';
-  category: string;
+  category?: string;
+  expenseAccount?: string;
   reference?: string;
-  partyId?: string;
-  partyName?: string;
 }
+
+export type AccountType = 'customer' | 'supplier' | 'agent' | 'broker' | 'transporter' | 'bank' | 'cash' | 'expense' | 'income' | 'asset' | 'liability' | 'equity' | 'other';

@@ -1,30 +1,12 @@
 
-import React from "react";
-import { format } from "date-fns";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatCurrency, formatDate, formatBalance } from "@/utils/helpers";
-
-interface CashBookEntry {
-  transactionId: string;
-  date: string;
-  reference: string;
-  narration: string;
-  debit: number;
-  credit: number;
-  balance: number;
-  balanceType: string;
-}
+import React from 'react';
+import { format } from 'date-fns';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { LedgerEntry } from '@/services/ledger/types';
+import { formatCurrency } from '@/utils/helpers';
 
 interface CashBookTableProps {
-  entries: CashBookEntry[];
+  entries: LedgerEntry[];
   openingBalance: number;
   closingBalance: number;
   lastBalanceType: string;
@@ -40,83 +22,92 @@ const CashBookTable: React.FC<CashBookTableProps> = ({
   lastBalanceType,
   startDate,
   endDate,
-  printRef,
+  printRef
 }) => {
+  const formatDateDisplay = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy');
+    } catch (e) {
+      return dateString;
+    }
+  };
+
   return (
-    <div className="rounded-md border overflow-hidden" ref={printRef}>
-      <div className="bg-gray-50 p-4 text-center border-b print-header">
-        <h2 className="text-xl font-bold">Cash Book</h2>
-        <p className="text-gray-600">
-          {startDate ? format(startDate, 'dd/MM/yyyy') : 'All time'} to {endDate ? format(endDate, 'dd/MM/yyyy') : 'present'}
-        </p>
+    <div ref={printRef}>
+      {/* Print-only header */}
+      <div className="print-only mb-4">
+        <h1 className="text-2xl font-bold text-center">Cash Book</h1>
+        {(startDate || endDate) && (
+          <p className="text-center text-gray-500">
+            {startDate ? format(startDate, 'dd/MM/yyyy') : 'Beginning'} to {endDate ? format(endDate, 'dd/MM/yyyy') : 'Present'}
+          </p>
+        )}
       </div>
-      
-      <div className="grid grid-cols-2 gap-4 p-4 border-b bg-gray-50">
-        <div>
-          <div className="text-sm font-medium">Opening Balance:</div>
-          <div className="text-lg font-bold">
-            {formatCurrency(openingBalance)}
-          </div>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-medium">Closing Balance:</div>
-          <div className="text-lg font-bold">
-            {formatBalance(closingBalance, lastBalanceType)}
-          </div>
-        </div>
-      </div>
-      
-      <ScrollArea className="h-[calc(100vh-500px)]">
+
+      <div className="border rounded-md overflow-hidden mt-4">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[120px]">Date</TableHead>
+              <TableHead className="w-[110px]">Date</TableHead>
               <TableHead>Reference</TableHead>
-              <TableHead>Narration</TableHead>
-              <TableHead className="text-right">Debit (₹)</TableHead>
-              <TableHead className="text-right">Credit (₹)</TableHead>
-              <TableHead className="text-right">Balance</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead className="text-right">Cash In (₹)</TableHead>
+              <TableHead className="text-right">Cash Out (₹)</TableHead>
+              <TableHead className="text-right">Balance (₹)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {entries.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="h-24 text-center">
-                  No cash entries found for the selected period.
+                  No transactions found in the specified date range.
                 </TableCell>
               </TableRow>
             ) : (
-              entries.map((entry, index) => (
-                <TableRow key={`${entry.transactionId}-${index}`} className={
-                  entry.reference === 'Opening Balance' ? 'bg-gray-50' :
-                  entry.debit > 0 ? 'bg-green-50' : 'bg-red-50'
-                }>
-                  <TableCell className="font-medium">{formatDate(entry.date)}</TableCell>
-                  <TableCell>{entry.reference}</TableCell>
-                  <TableCell>{entry.narration}</TableCell>
-                  <TableCell className="text-right">
-                    {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+              <>
+                {/* Opening balance row */}
+                <TableRow className="bg-gray-50">
+                  <TableCell colSpan={5} className="font-medium">
+                    Opening Balance
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    {formatBalance(entry.balance, entry.balanceType)}
+                    {formatCurrency(openingBalance)}
                   </TableCell>
                 </TableRow>
-              ))
+
+                {/* Transaction rows */}
+                {entries.map((entry, index) => (
+                  <TableRow key={entry.id || index} className={
+                    entry.credit > 0 ? 'bg-green-50/50' : 'bg-red-50/50'
+                  }>
+                    <TableCell>{formatDateDisplay(entry.date)}</TableCell>
+                    <TableCell>{entry.reference}</TableCell>
+                    <TableCell>{entry.narration}</TableCell>
+                    <TableCell className="text-right">
+                      {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCurrency(entry.balance)} {entry.balanceType === 'credit' ? 'CR' : 'DR'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+                {/* Closing balance row */}
+                <TableRow className="bg-gray-100 font-medium">
+                  <TableCell colSpan={5} className="font-bold">
+                    Closing Balance
+                  </TableCell>
+                  <TableCell className="text-right font-bold">
+                    {formatCurrency(closingBalance)} {lastBalanceType === 'credit' ? 'CR' : 'DR'}
+                  </TableCell>
+                </TableRow>
+              </>
             )}
           </TableBody>
         </Table>
-      </ScrollArea>
-      
-      <div className="bg-gray-50 p-4 border-t flex justify-between">
-        <div>
-          <span className="font-medium">Total Entries:</span> {entries.length}
-        </div>
-        <div>
-          <span className="font-medium">Closing Balance:</span> {formatBalance(closingBalance, lastBalanceType)}
-        </div>
       </div>
     </div>
   );

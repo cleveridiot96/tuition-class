@@ -6,7 +6,12 @@ import CashBookHeader from "./CashBookHeader";
 import CashBookContent from "./CashBookContent";
 import PrintStyles from "./PrintStyles";
 
-const CashBookLayout = () => {
+// Define props for the components
+interface CashBookLayoutProps {
+  // Add any props if needed in the future
+}
+
+const CashBookLayout: React.FC<CashBookLayoutProps> = () => {
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation title="Cash Book" showBackButton />

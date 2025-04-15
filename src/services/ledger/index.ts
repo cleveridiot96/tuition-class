@@ -1,4 +1,10 @@
 
+import { accountService } from './accountService';
+import { ledgerService } from './ledgerService';
+import { expenseService } from './expenseService';
+import { cashBookService } from './cashBookService';
+
+// Re-export all services
 export * from './types';
 export * from './accountService';
 export * from './ledgerService';
@@ -7,12 +13,12 @@ export * from './cashBookService';
 
 // Initialize the system
 export const initializeAccounting = () => {
-  initializeAccounts();
-  initializeLedger();
+  accountService.initializeAccounts();
+  ledgerService.initializeLedger();
   
   // Create default accounts for cash and bank if they don't exist
-  if (!getAccountById('cash')) {
-    addAccount({
+  if (!accountService.getAccountById('cash')) {
+    accountService.addAccount({
       id: 'cash',
       name: 'Cash Account',
       type: 'cash',
@@ -22,8 +28,8 @@ export const initializeAccounting = () => {
     });
   }
 
-  if (!getAccountById('bank')) {
-    addAccount({
+  if (!accountService.getAccountById('bank')) {
+    accountService.addAccount({
       id: 'bank',
       name: 'Bank Account',
       type: 'bank',

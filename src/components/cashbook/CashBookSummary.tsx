@@ -1,7 +1,8 @@
 
-import React from "react";
+import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { formatCurrency, formatBalance } from "@/utils/helpers";
+import { CurrencyRupee, TrendingUp, TrendingDown } from "lucide-react";
+import { formatCurrency } from '@/utils/helpers';
 
 interface CashBookSummaryProps {
   todaySummary: {
@@ -12,31 +13,55 @@ interface CashBookSummaryProps {
   lastBalanceType: string;
 }
 
-const CashBookSummary = ({ todaySummary, closingBalance, lastBalanceType }: CashBookSummaryProps) => {
+const CashBookSummary: React.FC<CashBookSummaryProps> = ({
+  todaySummary,
+  closingBalance,
+  lastBalanceType
+}) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      <Card className="bg-green-50">
-        <CardContent className="p-4">
-          <div className="text-sm font-medium text-muted-foreground">Today's Cash In</div>
-          <div className="text-2xl font-bold text-green-600">{formatCurrency(todaySummary.cashIn)}</div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Current Balance</p>
+              <h3 className="text-2xl font-bold flex items-center">
+                <CurrencyRupee className="h-5 w-5 mr-1" />
+                {formatCurrency(closingBalance)} 
+                <span className="text-sm ml-2 font-normal text-muted-foreground">
+                  {lastBalanceType === 'credit' ? 'CR' : 'DR'}
+                </span>
+              </h3>
+            </div>
+          </div>
         </CardContent>
       </Card>
-      <Card className="bg-red-50">
-        <CardContent className="p-4">
-          <div className="text-sm font-medium text-muted-foreground">Today's Cash Out</div>
-          <div className="text-2xl font-bold text-red-600">{formatCurrency(todaySummary.cashOut)}</div>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Today's Cash In</p>
+              <h3 className="text-2xl font-bold text-green-600 flex items-center">
+                <TrendingUp className="h-5 w-5 mr-1" />
+                {formatCurrency(todaySummary.cashIn)}
+              </h3>
+            </div>
+          </div>
         </CardContent>
       </Card>
-      <Card className="bg-blue-50">
-        <CardContent className="p-4">
-          <div className="text-sm font-medium text-muted-foreground">Net Balance</div>
-          <div className="text-2xl font-bold text-blue-600">{formatCurrency(todaySummary.cashIn - todaySummary.cashOut)}</div>
-        </CardContent>
-      </Card>
-      <Card className="bg-purple-50">
-        <CardContent className="p-4">
-          <div className="text-sm font-medium text-muted-foreground">Total Cash Balance</div>
-          <div className="text-2xl font-bold text-purple-600">{formatBalance(closingBalance, lastBalanceType)}</div>
+      
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground">Today's Cash Out</p>
+              <h3 className="text-2xl font-bold text-red-600 flex items-center">
+                <TrendingDown className="h-5 w-5 mr-1" />
+                {formatCurrency(todaySummary.cashOut)}
+              </h3>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

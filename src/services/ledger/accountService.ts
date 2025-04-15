@@ -1,47 +1,53 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { getStorageItem, saveStorageItem } from '../storageUtils';
 import { Account } from './types';
+import { getItem, setItem } from '../storageService';
 
-// Initialize accounts if they don't exist
-export const initializeAccounts = () => {
-  if (!getStorageItem('accounts')) {
-    saveStorageItem('accounts', []);
+const ACCOUNTS_STORAGE_KEY = 'accounts';
+
+export const accountService = {
+  initializeAccounts: () => {
+    // Initialize accounts if they don't exist in storage
+    if (!getItem(ACCOUNTS_STORAGE_KEY)) {
+      setItem(ACCOUNTS_STORAGE_KEY, []);
+    }
+  },
+
+  getAccounts: (): Account[] => {
+    return getItem(ACCOUNTS_STORAGE_KEY) || [];
+  },
+
+  getAccountById: (id: string): Account | null => {
+    const accounts = accountService.getAccounts();
+    return accounts.find(account => account.id === id) || null;
+  },
+
+  addAccount: (account: Account): void => {
+    const accounts = accountService.getAccounts();
+    accounts.push(account);
+    setItem(ACCOUNTS_STORAGE_KEY, accounts);
+  },
+
+  updateAccount: (updatedAccount: Account): void => {
+    const accounts = accountService.getAccounts();
+    const index = accounts.findIndex(account => account.id === updatedAccount.id);
+    if (index !== -1) {
+      accounts[index] = updatedAccount;
+      setItem(ACCOUNTS_STORAGE_KEY, accounts);
+    }
+  },
+
+  deleteAccount: (id: string): void => {
+    const accounts = accountService.getAccounts();
+    const filtered = accounts.filter(account => account.id !== id);
+    setItem(ACCOUNTS_STORAGE_KEY, filtered);
   }
 };
 
-// Function to get all accounts
-export const getAccounts = (): Account[] => {
-  initializeAccounts();
-  return getStorageItem('accounts') || [];
-};
-
-// Function to get an account by ID
-export const getAccountById = (id: string): Account | null => {
-  const accounts = getAccounts();
-  return accounts.find(account => account.id === id) || null;
-};
-
-// Function to add a new account
-export const addAccount = (account: Account) => {
-  const accounts = getAccounts();
-  account.id = account.id || uuidv4();
-  accounts.push(account);
-  saveStorageItem('accounts', accounts);
-};
-
-// Function to update an existing account
-export const updateAccount = (updatedAccount: Account) => {
-  const accounts = getAccounts();
-  const updatedAccounts = accounts.map(account =>
-    account.id === updatedAccount.id ? updatedAccount : account
-  );
-  saveStorageItem('accounts', updatedAccounts);
-};
-
-// Function to delete an account
-export const deleteAccount = (id: string) => {
-  const accounts = getAccounts();
-  const updatedAccounts = accounts.filter(account => account.id !== id);
-  saveStorageItem('accounts', updatedAccounts);
-};
+export const {
+  initializeAccounts,
+  getAccounts,
+  getAccountById,
+  addAccount,
+  updateAccount,
+  deleteAccount
+} = accountService;
