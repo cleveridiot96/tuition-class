@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import * as XLSX from 'xlsx';
@@ -31,7 +30,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Printer, FileSpreadsheet } from "lucide-react";
 
 import { getInventory } from '@/services/inventoryService';
-import { getAgents, getLocations } from '@/services/storageUtils';
+import { getSales } from '@/services/salesService';
+import { getAgents } from '@/services/agentService';
+import { getLocations } from '@/services/storageUtils';
 import { formatCurrency } from '@/utils/helpers';
 import { EnhancedInventoryItem } from '@/services/types';
 
@@ -48,59 +49,57 @@ const StockReport = () => {
   const [filteredStockValue, setFilteredStockValue] = useState(0);
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Load inventory data
   useEffect(() => {
-    try {
-      const rawInventory = getInventory() || [];
-      const inventoryItems = rawInventory.filter(item => item && !item.isDeleted && item.remainingQuantity > 0);
-      const agentsData = getAgents() || [];
-      const locationsData = getLocations() || [];
-      
-      // Enhance inventory with calculated fields
-      const enhancedInventory: EnhancedInventoryItem[] = inventoryItems.map(item => {
-        const agent = agentsData.find(a => a && a.id === item.agentId);
+    const inventory = getInventory() || [];
+    const sales = getSales() || [];
+    const agents = getAgents() || [];
+    const locations = getLocations() || ["Mumbai", "Chiplun", "Sawantwadi"];
+    
+    const calculatedInventory = inventory
+      .filter(item => !item.isDeleted)
+      .map(item => {
+        const lotSales = sales.filter(
+          sale => sale.lotNumber === item.lotNumber && !sale.isDeleted
+        );
+        const soldQuantity = lotSales.reduce(
+          (total, sale) => total + sale.quantity,
+          0
+        );
+        const soldWeight = lotSales.reduce(
+          (total, sale) => total + sale.netWeight,
+          0
+        );
+        const remainingWeight = item.netWeight - soldWeight;
+        const agentName = 
+          agents.find(a => a.id === item.agentId)?.name || 'Unknown';
         
-        // Calculate values
-        const soldQuantity = item.quantity - (item.remainingQuantity || item.quantity);
-        const soldWeight = item.netWeight - (item.netWeight * ((item.remainingQuantity || item.quantity) / item.quantity));
-        const remainingWeight = item.netWeight * ((item.remainingQuantity || item.quantity) / item.quantity);
-        const totalValue = (item.finalCost || 0) * remainingWeight;
-        
+        const totalValue = remainingWeight * item.purchaseRate;
+
         return {
           ...item,
-          agentName: agent?.name || 'Unknown',
-          agentId: item.agentId || '', // Ensure agentId is always defined
-          remainingQuantity: item.remainingQuantity || item.quantity,
-          purchaseRate: item.purchaseRate || 0,
-          finalCost: item.finalCost || 0,
+          agentName,
           soldQuantity,
           soldWeight,
           remainingWeight,
-          totalValue
-        };
+          totalValue,
+          agentId: item.agentId || '',
+          remainingQuantity: item.remainingQuantity || 0,
+          purchaseRate: item.purchaseRate || 0,
+          finalCost: item.finalCost || 0,
+          date: item.date || '',
+        } as EnhancedInventoryItem;
       });
-      
-      // Set state
-      setInventory(enhancedInventory);
-      setFilteredInventory(enhancedInventory);
-      setAgents(agentsData);
-      setLocations(locationsData || ['Mumbai', 'Chiplun', 'Sawantwadi']);
-      
-      // Calculate total stock value
-      const totalValue = enhancedInventory.reduce((sum, item) => sum + item.totalValue, 0);
-      setTotalStockValue(totalValue);
-      setFilteredStockValue(totalValue);
-    } catch (error) {
-      console.error("Error loading inventory data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load inventory data",
-        variant: "destructive"
-      });
-    }
+    
+    setInventory(calculatedInventory);
+    setFilteredInventory(calculatedInventory);
+    setAgents(agents);
+    setLocations(locations);
+    
+    const totalValue = calculatedInventory.reduce((sum, item) => sum + item.totalValue, 0);
+    setTotalStockValue(totalValue);
+    setFilteredStockValue(totalValue);
   }, [toast]);
 
-  // Filter inventory when search term or filters change
   useEffect(() => {
     if (!inventory || inventory.length === 0) {
       setFilteredInventory([]);
@@ -110,7 +109,6 @@ const StockReport = () => {
     
     let filtered = [...inventory];
     
-    // Filter by search term
     if (searchTerm) {
       filtered = filtered.filter(item => 
         item.lotNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -118,23 +116,19 @@ const StockReport = () => {
       );
     }
     
-    // Filter by location
     if (selectedLocation) {
       filtered = filtered.filter(item => item.location === selectedLocation);
     }
     
-    // Filter by agent
     if (selectedAgent) {
       filtered = filtered.filter(item => item.agentId === selectedAgent);
     }
     
-    // Update filtered data and value
     setFilteredInventory(filtered);
     const filteredValue = filtered.reduce((sum, item) => sum + item.totalValue, 0);
     setFilteredStockValue(filteredValue);
   }, [searchTerm, selectedLocation, selectedAgent, inventory]);
 
-  // Handle printing
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: "Stock Report",
@@ -146,10 +140,8 @@ const StockReport = () => {
     },
   });
 
-  // Handle export to Excel
   const handleExportToExcel = () => {
     try {
-      // Check if there is data to export
       if (!filteredInventory || filteredInventory.length === 0) {
         toast({
           title: "Export failed",
@@ -159,7 +151,6 @@ const StockReport = () => {
         return;
       }
       
-      // Prepare data for Excel export
       const excelData = filteredInventory.map(item => ({
         'Lot Number': item.lotNumber,
         'Location': item.location,
@@ -175,17 +166,13 @@ const StockReport = () => {
         'Stock Value (₹)': item.totalValue.toFixed(2),
       }));
       
-      // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
       
-      // Add worksheet to workbook
       XLSX.utils.book_append_sheet(wb, ws, "Stock Report");
       
-      // Generate file name with date
       const fileName = `Stock_Report_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
       
-      // Save workbook
       XLSX.writeFile(wb, fileName);
       
       toast({
@@ -202,7 +189,6 @@ const StockReport = () => {
     }
   };
 
-  // Reset filters
   const handleResetFilters = () => {
     setSearchTerm('');
     setSelectedLocation('');
@@ -369,7 +355,6 @@ const StockReport = () => {
         </div>
       </CardContent>
       
-      {/* Print Styles */}
       <style>{`
         @media print {
           body * {

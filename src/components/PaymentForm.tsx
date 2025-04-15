@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -141,8 +140,8 @@ const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
       if (partyType === 'supplier' || partyType === 'agent') {
         const purchases = getPurchases().filter(p => !p.isDeleted);
         relatedTransactions = purchases.filter(p => 
-          (partyType === 'agent' && p.agentId === partyId) || 
-          (partyType === 'supplier' && p.partyId === partyId)
+          (partyType === 'agent' && (p.agentId === partyId || p.agent === getPartyNameById(partyId))) || 
+          (partyType === 'supplier' && (p.partyId === partyId || p.party === getPartyNameById(partyId)))
         ).map(p => ({
           id: p.id,
           date: p.date,
@@ -166,6 +165,28 @@ const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
       console.error("Error loading transactions:", error);
       setTransactions([]);
     }
+  };
+
+  const getPartyNameById = (id: string): string => {
+    let name = "";
+    switch (partyType) {
+      case 'agent':
+        name = getAgents().find(p => p.id === id)?.name || "";
+        break;
+      case 'supplier':
+        name = getSuppliers().find(p => p.id === id)?.name || "";
+        break;
+      case 'customer':
+        name = getCustomers().find(p => p.id === id)?.name || "";
+        break;
+      case 'broker':
+        name = getBrokers().find(p => p.id === id)?.name || "";
+        break;
+      case 'transporter':
+        name = getTransporters().find(p => p.id === id)?.name || "";
+        break;
+    }
+    return name;
   };
 
   const handlePartyTypeChange = (value: string) => {

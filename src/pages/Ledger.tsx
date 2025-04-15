@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useReactToPrint } from 'react-to-print';
@@ -80,7 +79,10 @@ const Ledger = () => {
     
     // Process agent transactions
     const agentTransactions = agents.map(agent => {
-      const relatedPurchases = purchases.filter(p => p.agentId === agent.id);
+      // Use agentId property if available, otherwise check if agent name matches
+      const relatedPurchases = purchases.filter(p => 
+        (p.agentId === agent.id) || (p.agent === agent.name)
+      );
       const relatedPayments = payments.filter(p => p.partyId === agent.id);
       
       const totalPurchases = relatedPurchases.reduce((sum, p) => sum + p.totalAfterExpenses, 0);
@@ -101,7 +103,7 @@ const Ledger = () => {
           })),
           ...relatedPayments.map(p => ({
             date: p.date,
-            description: `Payment: ${p.reference || 'Cash'}`,
+            description: `Payment: ${p.referenceNumber || p.reference || 'Cash'}`,
             amount: p.amount,
             type: 'credit'
           }))
@@ -135,13 +137,13 @@ const Ledger = () => {
           })),
           ...relatedPayments.map(p => ({
             date: p.date,
-            description: `Payment: ${p.reference || 'Cash'}`,
+            description: `Payment: ${p.referenceNumber || p.reference || 'Cash'}`,
             amount: p.amount,
             type: 'credit'
           })),
           ...relatedReceipts.map(r => ({
             date: r.date,
-            description: `Receipt: ${r.reference || 'Cash'}`,
+            description: `Receipt: ${r.referenceNumber || r.reference || 'Cash'}`,
             amount: r.amount,
             type: 'debit'
           }))
@@ -172,7 +174,7 @@ const Ledger = () => {
           })),
           ...relatedReceipts.map(r => ({
             date: r.date,
-            description: `Receipt: ${r.reference || 'Cash'}`,
+            description: `Receipt: ${r.referenceNumber || r.reference || 'Cash'}`,
             amount: r.amount,
             type: 'credit'
           }))
@@ -212,7 +214,7 @@ const Ledger = () => {
           })),
           ...relatedPayments.map(p => ({
             date: p.date,
-            description: `Payment: ${p.reference || 'Cash'}`,
+            description: `Payment: ${p.referenceNumber || p.reference || 'Cash'}`,
             amount: p.amount,
             type: 'credit'
           }))

@@ -1,3 +1,4 @@
+
 import { getYearSpecificKey } from '@/services/financialYearService';
 
 export const getStorageItem = <T>(key: string): T | null => {
@@ -30,9 +31,9 @@ export const removeStorageItem = (key: string): void => {
   }
 };
 
-export const getYearSpecificStorageItem = <T>(key: string): T | null => {
+export const getYearSpecificStorageItem = <T>(key: string): T => {
   const yearSpecificKey = getYearSpecificKey(key);
-  return getStorageItem<T>(yearSpecificKey);
+  return getStorageItem<T>(yearSpecificKey) || ([] as unknown as T);
 };
 
 export const saveYearSpecificStorageItem = <T>(key: string, value: T): void => {
@@ -183,10 +184,15 @@ export const getLocations = (): string[] => {
 
 export const checkDuplicateLot = (lotNumber: string): boolean => {
   try {
-    const purchases = getYearSpecificStorageItem('purchases');
-    return purchases && purchases.some((p: any) => p.lotNumber === lotNumber && !p.isDeleted);
+    const purchases = getYearSpecificStorageItem<any[]>('purchases') || [];
+    return purchases.some((p: any) => p.lotNumber === lotNumber && !p.isDeleted);
   } catch (error) {
     console.error("Error checking duplicate lot:", error);
     return false;
   }
+};
+
+// Add getAgents function that was missing from storageUtils
+export const getAgents = () => {
+  return getStorageItem<any[]>('agents') || [];
 };

@@ -87,14 +87,20 @@ const Purchases = () => {
     try {
       addPurchase(data);
       
-      // Add to inventory
+      // Add to inventory - fixing the missing properties
       addInventoryItem({
         id: Date.now().toString() + '-inv',
         lotNumber: data.lotNumber,
         quantity: data.quantity,
-        location: data.location,
+        location: data.location || "",
         dateAdded: data.date,
-        netWeight: data.netWeight
+        netWeight: data.netWeight,
+        remainingQuantity: data.quantity,  // Added missing property
+        purchaseRate: data.rate,           // Added missing property
+        finalCost: data.totalAfterExpenses || data.totalAmount, // Added missing property
+        agentId: data.agentId || "",       // Added missing property
+        agentName: data.agent || "",       // Added missing property
+        date: data.date                    // Added missing property
       });
       
       // Update agent balance if applicable

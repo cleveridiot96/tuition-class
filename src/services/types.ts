@@ -68,6 +68,10 @@ export interface Purchase extends BaseEntity {
   ratePerKgAfterExpenses?: number;
   notes?: string;
   location?: string;
+  agent?: string;  // Added agent field
+  agentId?: string; // Added agentId field
+  transporter?: string; // Added transporter field
+  partyId?: string; // Added partyId field
 }
 
 export interface Sale extends BaseEntity {
@@ -92,6 +96,7 @@ export interface Sale extends BaseEntity {
   billAmount?: number;
   amount?: number;
   notes?: string;
+  netAmount: number; // Added as required by component
 }
 
 export interface Payment extends BaseEntity {
@@ -102,6 +107,8 @@ export interface Payment extends BaseEntity {
   partyType: "supplier" | "transporter" | "broker" | "agent" | "other";
   mode: "cash" | "bank" | "upi" | "other";
   referenceNumber?: string;
+  reference?: string; // Added for compatibility
+  paymentMethod?: string; // Added for compatibility
   notes?: string;
 }
 
@@ -112,6 +119,8 @@ export interface Receipt extends BaseEntity {
   customerName: string;
   mode: "cash" | "bank" | "upi" | "other";
   referenceNumber?: string;
+  reference?: string; // Added for compatibility
+  customer?: string; // Added for compatibility
   notes?: string;
 }
 

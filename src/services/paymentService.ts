@@ -3,7 +3,7 @@ import { Payment } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
 export const getPayments = (): Payment[] => {
-  return getYearSpecificStorageItem<Payment>('payments');
+  return getYearSpecificStorageItem<Payment[]>('payments') || [];
 };
 
 export const addPayment = (payment: Payment): void => {

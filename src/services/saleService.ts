@@ -3,7 +3,7 @@ import { Sale } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
 export const getSales = (): Sale[] => {
-  return getYearSpecificStorageItem<Sale>('sales');
+  return getYearSpecificStorageItem<Sale[]>('sales') || [];
 };
 
 export const addSale = (sale: Sale): void => {
@@ -28,4 +28,8 @@ export const deleteSale = (id: string): void => {
     sales[index] = { ...sales[index], isDeleted: true };
     saveYearSpecificStorageItem('sales', sales);
   }
+};
+
+export const saveSales = (sales: Sale[]): void => {
+  saveYearSpecificStorageItem('sales', sales);
 };

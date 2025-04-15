@@ -3,7 +3,7 @@ import { Purchase } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
 export const getPurchases = (): Purchase[] => {
-  return getYearSpecificStorageItem<Purchase>('purchases');
+  return getYearSpecificStorageItem<Purchase[]>('purchases') || [];
 };
 
 export const addPurchase = (purchase: Purchase): void => {

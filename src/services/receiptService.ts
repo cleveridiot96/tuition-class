@@ -3,7 +3,7 @@ import { Receipt } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
 export const getReceipts = (): Receipt[] => {
-  return getYearSpecificStorageItem<Receipt>('receipts');
+  return getYearSpecificStorageItem<Receipt[]>('receipts') || [];
 };
 
 export const addReceipt = (receipt: Receipt): void => {

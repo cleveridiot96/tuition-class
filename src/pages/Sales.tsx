@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -45,6 +44,7 @@ import {
 import { useReactToPrint } from "react-to-print";
 import SalesReceipt from "@/components/SalesReceipt";
 import { getSaleIdFromUrl } from "@/utils/helpers";
+import { normalizeSale, normalizeSales } from "@/utils/typeNormalizers";
 
 interface Sale {
   id: string;
@@ -114,8 +114,8 @@ const Sales = () => {
     
     try {
       const allSales = getSales() || [];
-      const activeSales = allSales.filter(s => !s.isDeleted) || [];
-      const deletedSalesData = allSales.filter(s => s.isDeleted) || [];
+      const activeSales = normalizeSales(allSales.filter(s => !s.isDeleted)) || [];
+      const deletedSalesData = normalizeSales(allSales.filter(s => s.isDeleted)) || [];
       
       setSales(activeSales);
       setDeletedSales(deletedSalesData);
@@ -131,13 +131,13 @@ const Sales = () => {
 
   const handleAdd = (data: Sale) => {
     try {
-      const saleWithLocation = {
+      const normalizedSale = normalizeSale({
         ...data,
         amount: data.totalAmount,
         transportCost: data.transportCost || 0,
-      };
+      });
       
-      addSale(saleWithLocation);
+      addSale(normalizedSale);
       
       updateInventoryAfterSale(data.lotNumber, data.quantity);
       
@@ -166,7 +166,6 @@ const Sales = () => {
       };
       
       if (updatedSale.quantity !== editingSale.quantity || updatedSale.lotNumber !== editingSale.lotNumber) {
-        // Update inventory for both the old and new quantities if they changed
         updateInventoryAfterSale(editingSale.lotNumber, -editingSale.quantity);
         updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
       }
