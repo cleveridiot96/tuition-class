@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { format } from 'date-fns';
@@ -64,7 +63,6 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
     documentTitle: `Ledger - ${account?.name || 'Party'}`,
     onAfterPrint: () => {
       toast({
-        title: 'Print Successful',
         description: 'Ledger has been sent to printer',
       });
     },
@@ -99,13 +97,11 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
       XLSX.writeFile(wb, fileName);
       
       toast({
-        title: "Export completed",
         description: "Ledger data has been exported to Excel",
       });
     } catch (error) {
       console.error("Error exporting to Excel:", error);
       toast({
-        title: "Export failed",
         description: "There was an error exporting to Excel",
         variant: "destructive"
       });
@@ -126,7 +122,6 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
     }
     
     toast({
-      title: 'Opening Balance Updated',
       description: 'Party opening balance has been updated successfully',
     });
   };
@@ -135,7 +130,6 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
     ? ledger[0]
     : null;
 
-  // Filter out opening balance from the main list if it exists
   const transactionEntries = openingBalance
     ? ledger.filter(entry => entry.reference !== 'Opening Balance')
     : ledger;
@@ -272,7 +266,6 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
         </DrawerContent>
       </Drawer>
       
-      {/* Opening Balance Dialog */}
       <Dialog open={isOpeningBalanceDialogOpen} onOpenChange={setIsOpeningBalanceDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -286,7 +279,6 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
         </DialogContent>
       </Dialog>
       
-      {/* Print Styles */}
       <style>{`
         @media print {
           body * {

@@ -13,7 +13,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import { 
   Table, 
@@ -183,7 +184,7 @@ const BrokersPage = () => {
                 {filteredBrokers.map((broker) => (
                   <TableRow key={broker.id}>
                     <TableCell>{broker.name}</TableCell>
-                    <TableCell>{broker.contactNumber}</TableCell>
+                    <TableCell>{broker.phone}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button

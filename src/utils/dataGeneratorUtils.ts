@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { addPurchase } from '@/services/purchaseService';
 import { addSale } from '@/services/saleService';
@@ -133,7 +132,7 @@ export function generateSampleData() {
     // Total after expenses
     const totalAfterExpenses = totalAmount + transportCost + brokerageAmount + expenses;
     
-    // Create the purchase object
+    // Create the purchase object with correct brokerageType
     const purchase = {
       id: uuidv4(),
       date: format(purchaseDate, 'yyyy-MM-dd'),
@@ -151,7 +150,7 @@ export function generateSampleData() {
       expenses,
       totalAmount,
       totalAfterExpenses,
-      brokerageType: useBroker ? (Math.random() > 0.5 ? "percentage" : "fixed") : undefined,
+      brokerageType: useBroker ? (Math.random() > 0.5 ? "percentage" : "fixed") as "percentage" | "fixed" : "percentage" as "percentage" | "fixed",
       brokerageValue: useBroker ? (Math.random() * 2) + 0.5 : undefined, // 0.5% to 2.5% or fixed amount
       brokerageAmount,
       transportCost,
@@ -184,7 +183,7 @@ export function generateSampleData() {
     }
   }
   
-  // Generate 40 sales
+  // Generate sales
   const sales = [];
   for (let i = 0; i < 40; i++) {
     // Pick a random purchase to sell from
