@@ -1,10 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
-import { getStorageItem, saveStorageItem } from './storageUtils';
-import { Supplier } from './types';
 
-export function getSuppliers(): Supplier[] {
-  return getStorageItem('suppliers', []);
-}
+import { Supplier } from './types';
+import { getStorageItem, saveStorageItem } from './storageUtils';
+
+export const getSuppliers = (): Supplier[] => {
+  return getStorageItem<Supplier>('suppliers');
+};
 
 export const addSupplier = (supplier: Supplier): void => {
   const suppliers = getSuppliers();

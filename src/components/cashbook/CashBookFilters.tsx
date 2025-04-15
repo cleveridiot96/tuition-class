@@ -27,16 +27,18 @@ const CashBookFilters = ({
       <div>
         <Label htmlFor="startDate">Start Date</Label>
         <DatePicker
-          date={startDate}
-          setDate={setStartDate}
+          id="startDate"
+          selected={startDate}
+          onSelect={setStartDate}
           className="w-full"
         />
       </div>
       <div>
         <Label htmlFor="endDate">End Date</Label>
         <DatePicker
-          date={endDate}
-          setDate={setEndDate}
+          id="endDate"
+          selected={endDate}
+          onSelect={setEndDate}
           className="w-full"
         />
       </div>

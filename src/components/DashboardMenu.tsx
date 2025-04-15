@@ -14,10 +14,12 @@ import {
   Users2, 
   Warehouse
 } from "lucide-react";
-import { exportDataBackup } from "@/services/storageUtils";
-import { toast } from "@/hooks/use-toast"; 
+import { exportDataBackup } from "@/services/storageService";
+import { toast } from "@/hooks/use-toast"; // Changed to direct import
 
 const DashboardMenu = () => {
+  // Remove the useToast hook call
+  
   const menuItems = [
     {
       title: "Purchases",
@@ -81,8 +83,17 @@ const DashboardMenu = () => {
       onClick: () => {
         try {
           const jsonData = exportDataBackup();
-          
           if (jsonData) {
+            const blob = new Blob([jsonData], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `kisan-khata-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
             // Use the direct toast import 
             toast({
               title: "Backup Created",

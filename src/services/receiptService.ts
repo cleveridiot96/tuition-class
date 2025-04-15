@@ -1,38 +1,31 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 import { Receipt } from './types';
+import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
-export function getReceipts(): Receipt[] {
-  return getYearSpecificStorageItem('receipts', []);
-}
+export const getReceipts = (): Receipt[] => {
+  return getYearSpecificStorageItem<Receipt>('receipts');
+};
 
-export function saveReceipts(receipts: Receipt[]): void {
-  saveYearSpecificStorageItem('receipts', receipts);
-}
-
-export function addReceipt(receipt: Receipt): void {
+export const addReceipt = (receipt: Receipt): void => {
   const receipts = getReceipts();
   receipts.push(receipt);
-  saveReceipts(receipts);
-}
+  saveYearSpecificStorageItem('receipts', receipts);
+};
 
-export function updateReceipt(updatedReceipt: Receipt): void {
+export const updateReceipt = (updatedReceipt: Receipt): void => {
   const receipts = getReceipts();
   const index = receipts.findIndex(receipt => receipt.id === updatedReceipt.id);
-  
   if (index !== -1) {
     receipts[index] = updatedReceipt;
-    saveReceipts(receipts);
+    saveYearSpecificStorageItem('receipts', receipts);
   }
-}
+};
 
-export function deleteReceipt(id: string): void {
+export const deleteReceipt = (id: string): void => {
   const receipts = getReceipts();
   const index = receipts.findIndex(receipt => receipt.id === id);
-  
   if (index !== -1) {
     receipts[index] = { ...receipts[index], isDeleted: true };
-    saveReceipts(receipts);
+    saveYearSpecificStorageItem('receipts', receipts);
   }
-}
+};

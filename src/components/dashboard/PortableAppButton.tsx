@@ -1,56 +1,29 @@
 
-import * as React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Package, Download } from "lucide-react";
+import { Package } from "lucide-react";
 import { createPortableVersion } from "@/utils/portableAppUtils";
-import { toast } from "sonner";
-import { logStorageStats } from "@/utils/compressionUtils";
 
 const PortableAppButton = () => {
-  const [isCreating, setIsCreating] = React.useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleCreatePortable = async () => {
     setIsCreating(true);
     try {
-      // Log current storage stats before creating portable version
-      logStorageStats();
-      
       await createPortableVersion();
-      toast.success("Portable version created! Extract to your USB drive and open index.html to use anywhere. All changes automatically save to the drive.");
-    } catch (error) {
-      console.error("Error creating portable version:", error);
-      toast.error("Failed to create portable version. Please try again.");
     } finally {
       setIsCreating(false);
     }
   };
 
-  React.useEffect(() => {
-    const handlePortableCreated = (event: CustomEvent) => {
-      if (event.detail?.success) {
-        toast.success("Portable version created! Extract to your USB drive and open index.html to use anywhere. All changes automatically save to the drive.");
-      } else {
-        toast.error("Failed to create portable version. Please try again.");
-        console.error("Error details:", event.detail?.error);
-      }
-    };
-
-    window.addEventListener('portable-version-created', handlePortableCreated as EventListener);
-    
-    return () => {
-      window.removeEventListener('portable-version-created', handlePortableCreated as EventListener);
-    };
-  }, []);
-
   return (
     <Button 
       onClick={handleCreatePortable}
       disabled={isCreating}
-      className="flex items-center gap-3 bg-green-600 hover:bg-green-700 text-lg py-6 px-8 android-ripple"
-      size="lg"
+      className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
     >
-      {isCreating ? <Package className="animate-pulse" size={24} /> : <Download size={24} />}
-      {isCreating ? "Creating Portable Version..." : "Create USB Drive Version"}
+      <Package size={16} />
+      {isCreating ? "Creating..." : "Create Portable Version"}
     </Button>
   );
 };

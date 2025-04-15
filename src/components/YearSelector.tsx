@@ -6,12 +6,12 @@ import { CalendarIcon, PlusCircle } from 'lucide-react';
 import { 
   getFinancialYears, 
   getActiveFinancialYear, 
-  setActiveFinancialYear
+  setActiveFinancialYear,
+  FinancialYear
 } from '@/services/financialYearService';
 import NewFinancialYearDialog from './NewFinancialYearDialog';
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from 'date-fns';
-import { FinancialYear } from '@/services/types';
 
 const YearSelector = () => {
   const { toast } = useToast();

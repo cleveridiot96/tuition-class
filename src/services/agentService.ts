@@ -1,11 +1,10 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { getStorageItem, saveStorageItem } from './storageUtils';
 import { Agent } from './types';
+import { getStorageItem, saveStorageItem } from './storageUtils';
 
-export function getAgents(): Agent[] {
-  return getStorageItem('agents', []);
-}
+export const getAgents = (): Agent[] => {
+  return getStorageItem<Agent>('agents');
+};
 
 export const addAgent = (agent: Agent): void => {
   const agents = getAgents();
@@ -26,19 +25,21 @@ export const deleteAgent = (id: string): void => {
   const agents = getAgents();
   const index = agents.findIndex(agent => agent.id === id);
   if (index !== -1) {
-    agents[index] = { ...agents[index], isDeleted: true };
+    agents.splice(index, 1);
     saveStorageItem('agents', agents);
   }
 };
 
-export const updateAgentBalance = (id: string, amount: number): void => {
+export const updateAgentBalance = (id: string, amount: number, isCredit = false): void => {
   const agents = getAgents();
   const index = agents.findIndex(agent => agent.id === id);
+  
   if (index !== -1) {
-    if (agents[index].balance === undefined) {
-      agents[index].balance = 0;
+    if (isCredit) {
+      agents[index].balance -= amount;
+    } else {
+      agents[index].balance += amount;
     }
-    agents[index].balance += amount;
     saveStorageItem('agents', agents);
   }
 };

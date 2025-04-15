@@ -1,43 +1,37 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 import { InventoryItem } from './types';
+import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
-export function getInventory(): InventoryItem[] {
-  return getYearSpecificStorageItem('inventory', []);
-}
+export const getInventory = (): InventoryItem[] => {
+  return getYearSpecificStorageItem<InventoryItem>('inventory');
+};
 
-export function saveInventory(inventory: InventoryItem[]): void {
+export const saveInventory = (inventory: InventoryItem[]): void => {
   saveYearSpecificStorageItem('inventory', inventory);
-}
+};
 
-export function addInventoryItem(item: InventoryItem): void {
+export const addInventoryItem = (item: InventoryItem): void => {
   const inventory = getInventory();
   inventory.push(item);
   saveInventory(inventory);
-}
+};
 
-export function updateInventoryAfterSale(lotNumber: string, quantity: number): void {
+export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number): void => {
   const inventory = getInventory();
-  const itemIndex = inventory.findIndex((item) => 
-    item.lotNumber === lotNumber && !item.isDeleted
-  );
-
-  if (itemIndex !== -1) {
-    inventory[itemIndex].quantity -= quantity;
+  const index = inventory.findIndex(item => item.lotNumber === lotNumber && !item.isDeleted);
+  
+  if (index !== -1) {
+    const item = inventory[index];
+    // Calculate remaining quantity, using the remainingQuantity field if it exists, otherwise use the quantity
+    const currentRemaining = item.remainingQuantity !== undefined ? item.remainingQuantity : item.quantity;
+    const remainingQuantity = Math.max(0, currentRemaining - quantitySold);
     
-    if (inventory[itemIndex].netWeight) {
-      // Calculate how much of the net weight corresponds to this quantity
-      const weightPerBag = inventory[itemIndex].netWeight / inventory[itemIndex].quantity;
-      const weightToDeduct = weightPerBag * quantity;
-      inventory[itemIndex].netWeight -= weightToDeduct;
-    }
-    
-    // If quantity reaches 0, mark as deleted
-    if (inventory[itemIndex].quantity <= 0) {
-      inventory[itemIndex].isDeleted = true;
-    }
+    inventory[index] = {
+      ...item,
+      remainingQuantity: remainingQuantity,
+      isDeleted: remainingQuantity === 0
+    };
     
     saveInventory(inventory);
   }
-}
+};

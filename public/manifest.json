@@ -2,7 +2,7 @@
 {
   "short_name": "Kisan Khata",
   "name": "Kisan Khata Sahayak",
-  "description": "Agricultural Business Management System - Portable Edition with Data Compression",
+  "description": "Agricultural Business Management System - Works Offline",
   "icons": [
     {
       "src": "favicon.ico",
@@ -24,8 +24,8 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#4d7c0f",
-  "background_color": "#f8f3e9",
+  "theme_color": "#f8f3e9",
+  "background_color": "#ffffff",
   "orientation": "portrait-primary",
   "prefer_related_applications": false,
   "dir": "ltr",
@@ -33,25 +33,32 @@
   "categories": ["business", "finance", "productivity"],
   "display_override": ["window-controls-overlay"],
   "scope": "/",
-  "file_handlers": [
+  "shortcuts": [
     {
-      "action": ".",
-      "accept": {
-        "application/json": [".json"],
-        "application/octet-stream": [".data"]
-      },
-      "name": "Kisan Khata Data"
+      "name": "Dashboard",
+      "url": "/"
+    },
+    {
+      "name": "Sales",
+      "url": "/sales"
+    },
+    {
+      "name": "Purchases",
+      "url": "/purchases"
     }
   ],
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  },
-  "usb_device_filter": [
+  "screenshots": [
     {
-      "device_class": 0,
-      "device_subclass": 0,
-      "device_protocol": 0
+      "src": "screenshot1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "screenshot2.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
-  ],
-  "isolated_storage": true
+  ]
 }

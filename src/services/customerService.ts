@@ -1,10 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
-import { getStorageItem, saveStorageItem } from './storageUtils';
-import { Customer } from './types';
 
-export function getCustomers(): Customer[] {
-  return getStorageItem('customers', []);
-}
+import { Customer } from './types';
+import { getStorageItem, saveStorageItem } from './storageUtils';
+
+export const getCustomers = (): Customer[] => {
+  return getStorageItem<Customer>('customers');
+};
 
 export const addCustomer = (customer: Customer): void => {
   const customers = getCustomers();

@@ -2,7 +2,6 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { DayPicker } from "react-day-picker";
-import { format as dateFnsFormat } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
@@ -60,7 +59,7 @@ function Calendar({
       formatters={{
         formatDay: (date) => date.getDate().toString(),
         formatCaption: (date, { locale }) => {
-          return formatDate(date, 'MMMM yyyy', { locale });
+          return format(date, 'MMMM yyyy', { locale });
         },
       }}
       {...props}
@@ -71,11 +70,12 @@ Calendar.displayName = "Calendar";
 
 export { Calendar };
 
-function formatDate(date: Date, formatStr: string, options?: { locale?: any }): string {
-  // Format date using date-fns
-  if (formatStr === 'MMMM yyyy') {
-    return dateFnsFormat(date, 'MMMM yyyy', options);
+function format(date: Date, format: string, options?: { locale?: any }): string {
+  // Format date using DD/MM/YY format or other formats as needed
+  if (format === 'MMMM yyyy') {
+    const month = date.toLocaleDateString('en-US', { month: 'long' });
+    const year = date.getFullYear();
+    return `${month} ${year}`;
   }
-  // Default format
-  return dateFnsFormat(date, 'dd/MM/yyyy', options);
+  return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
 }

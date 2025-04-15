@@ -9,7 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 import { 
   getActiveFinancialYear, 
   getOpeningBalances, 
-  saveOpeningBalances
+  saveOpeningBalances,
+  OpeningBalance, 
+  StockOpeningBalance,
+  PartyOpeningBalance
 } from '@/services/financialYearService';
 import {
   getAgents,
@@ -21,44 +24,18 @@ import {
 } from '@/services/storageService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { v4 as uuidv4 } from 'uuid';
-import { OpeningBalance, StockOpeningBalance, PartyOpeningBalance } from '@/services/types';
 
 interface OpeningBalanceSetupProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface StockItem {
-  id: string;
-  name: string;
-  lotNumber: string;
-  quantity: number;
-  location: string;
-  rate: number;
-  netWeight: number;
-  amount: number;
-  balanceType: 'debit';
-}
-
-interface PartyItem {
-  id: string;
-  name: string;
-  type: 'agent' | 'broker' | 'customer' | 'supplier' | 'transporter';
-  partyId: string;
-  partyName: string;
-  partyType: string;
-  amount: number;
-  balanceType: 'debit' | 'credit';
-}
-
 const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('cash');
   const [cash, setCash] = useState(0);
-  const [bank, setBank] = useState(0);
-  const [stockItems, setStockItems] = useState<StockItem[]>([]);
-  const [partyBalances, setPartyBalances] = useState<PartyItem[]>([]);
+  const [stockItems, setStockItems] = useState<StockOpeningBalance[]>([]);
+  const [partyBalances, setPartyBalances] = useState<PartyOpeningBalance[]>([]);
   const [newLot, setNewLot] = useState({
     lotNumber: '',
     quantity: 0,
@@ -76,32 +53,11 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
         
         if (openingBalances) {
           setCash(openingBalances.cash || 0);
-          setBank(openingBalances.bank || 0);
-          setStockItems(openingBalances.stock.map(item => ({
-            id: item.id || uuidv4(),
-            name: item.name || item.lotNumber || 'Stock Item',
-            lotNumber: item.lotNumber || '',
-            quantity: item.quantity || 0,
-            location: item.location || '',
-            rate: item.rate || 0,
-            netWeight: item.netWeight || 0,
-            amount: item.amount || 0,
-            balanceType: 'debit'
-          })));
-          setPartyBalances(openingBalances.parties.map(party => ({
-            id: party.id || uuidv4(),
-            name: party.name || party.partyName || '',
-            type: party.type || (party.partyType as any) || 'customer',
-            partyId: party.partyId || '',
-            partyName: party.partyName || party.name || '',
-            partyType: party.partyType || party.type || '',
-            amount: party.amount || 0,
-            balanceType: party.balanceType || 'credit'
-          })));
+          setStockItems(openingBalances.stock || []);
+          setPartyBalances(openingBalances.parties || []);
         } else {
           // Initialize with default values
           setCash(0);
-          setBank(0);
           setStockItems([]);
           initializePartyBalances();
         }
@@ -111,56 +67,41 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
 
   const initializePartyBalances = () => {
     const agents = getAgents().map(agent => ({
-      id: uuidv4(),
-      name: agent.name,
-      type: 'agent' as const,
       partyId: agent.id,
       partyName: agent.name,
-      partyType: 'agent',
+      partyType: 'agent' as const,
       amount: 0,
       balanceType: 'credit' as const
     }));
     
     const brokers = getBrokers().map(broker => ({
-      id: uuidv4(),
-      name: broker.name,
-      type: 'broker' as const,
       partyId: broker.id,
       partyName: broker.name,
-      partyType: 'broker',
+      partyType: 'broker' as const,
       amount: 0,
       balanceType: 'credit' as const
     }));
     
     const customers = getCustomers().map(customer => ({
-      id: uuidv4(),
-      name: customer.name,
-      type: 'customer' as const,
       partyId: customer.id,
       partyName: customer.name,
-      partyType: 'customer',
+      partyType: 'customer' as const,
       amount: 0,
       balanceType: 'debit' as const
     }));
     
     const suppliers = getSuppliers().map(supplier => ({
-      id: uuidv4(),
-      name: supplier.name,
-      type: 'supplier' as const,
       partyId: supplier.id,
       partyName: supplier.name,
-      partyType: 'supplier',
+      partyType: 'supplier' as const,
       amount: 0,
       balanceType: 'credit' as const
     }));
     
     const transporters = getTransporters().map(transporter => ({
-      id: uuidv4(),
-      name: transporter.name,
-      type: 'transporter' as const,
       partyId: transporter.id,
       partyName: transporter.name,
-      partyType: 'transporter',
+      partyType: 'transporter' as const,
       amount: 0,
       balanceType: 'credit' as const
     }));
@@ -179,37 +120,13 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
       return;
     }
     
-    // Convert to proper format for saving
-    const formattedStockItems: StockOpeningBalance[] = stockItems.map(item => ({
-      id: item.id,
-      name: item.lotNumber || item.name,
-      lotNumber: item.lotNumber,
-      quantity: item.quantity,
-      location: item.location,
-      rate: item.rate,
-      netWeight: item.netWeight,
-      amount: item.quantity * item.rate,
-      balanceType: 'debit'
-    }));
-    
-    const formattedPartyItems: PartyOpeningBalance[] = partyBalances.map(party => ({
-      id: party.id,
-      name: party.partyName,
-      type: party.type,
-      partyId: party.partyId,
-      partyName: party.partyName,
-      partyType: party.partyType,
-      amount: party.amount,
-      balanceType: party.balanceType
-    }));
-    
     const openingBalances: OpeningBalance = {
-      id: uuidv4(),
       yearId: activeYear.id,
       cash,
-      bank,
-      stock: formattedStockItems,
-      parties: formattedPartyItems
+      stock: stockItems,
+      parties: partyBalances,
+      // Add an empty bank field to satisfy the type requirement
+      bank: 0
     };
     
     if (saveOpeningBalances(openingBalances)) {
@@ -247,20 +164,7 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
       return;
     }
     
-    const newItem: StockItem = {
-      id: uuidv4(),
-      name: newLot.lotNumber,
-      lotNumber: newLot.lotNumber,
-      quantity: newLot.quantity,
-      location: newLot.location,
-      rate: newLot.rate,
-      netWeight: newLot.netWeight,
-      amount: newLot.quantity * newLot.rate,
-      balanceType: 'debit'
-    };
-    
-    setStockItems([...stockItems, newItem]);
-    
+    setStockItems([...stockItems, { ...newLot }]);
     setNewLot({
       lotNumber: '',
       quantity: 0,
@@ -316,19 +220,6 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
                       className="col-span-3"
                     />
                   </div>
-                  
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="bank-balance" className="text-right">
-                      Bank Balance
-                    </Label>
-                    <Input
-                      id="bank-balance"
-                      type="number"
-                      value={bank}
-                      onChange={(e) => setBank(Number(e.target.value))}
-                      className="col-span-3"
-                    />
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -359,10 +250,10 @@ const OpeningBalanceSetup = ({ isOpen, onClose }: OpeningBalanceSetupProps) => {
                         </TableHeader>
                         <TableBody>
                           {partyBalances
-                            .filter(party => party.type === partyType.slice(0, -1)) // Remove 's' from plural
+                            .filter(party => party.partyType === partyType.slice(0, -1)) // Remove 's' from plural
                             .map((party, index) => {
                               const originalIndex = partyBalances.findIndex(p => 
-                                p.partyId === party.partyId && p.type === party.type
+                                p.partyId === party.partyId && p.partyType === party.partyType
                               );
                               
                               return (

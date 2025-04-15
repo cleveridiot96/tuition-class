@@ -1,3 +1,4 @@
+
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -19,14 +20,34 @@ export async function createPortableVersion() {
     // Add the data file to the zip
     zip.file("data.json", JSON.stringify(storedData));
     
-    // Create a simple launcher HTML file that will load the application
-    const launcherHTML = `
+    // Create a simple loader script
+    const loaderScript = `
+      // Restore data from data.json to localStorage
+      fetch('./data.json')
+        .then(response => response.json())
+        .then(data => {
+          Object.keys(data).forEach(key => {
+            localStorage.setItem(key, data[key]);
+          });
+          console.log('Data restored to localStorage');
+          
+          // Redirect to the app
+          window.location.href = 'index.html';
+        })
+        .catch(error => {
+          console.error('Error loading data:', error);
+          document.getElementById('error-message').style.display = 'block';
+        });
+    `;
+    
+    // Add the loader HTML file
+    const loaderHTML = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Kisan Khata Sahayak - Launch</title>
+      <title>Kisan Khata Sahayak - Launcher</title>
       <style>
         body {
           font-family: system-ui, -apple-system, sans-serif;
@@ -39,38 +60,45 @@ export async function createPortableVersion() {
           min-height: 100vh;
           background-color: #f8f3e9;
           color: #333;
-          text-align: center;
         }
         .container {
-          max-width: 600px;
+          text-align: center;
           padding: 2rem;
-          background: white;
+          max-width: 600px;
+          background-color: white;
           border-radius: 8px;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        h1 { 
+        h1 {
           color: #4d7c0f;
-          margin-top: 0;
+          margin-bottom: 1rem;
         }
-        .button {
-          background-color: #4d7c0f;
-          color: white;
-          border: none;
-          padding: 12px 24px;
+        .loading {
+          margin: 20px 0;
           font-size: 18px;
-          border-radius: 4px;
-          cursor: pointer;
-          margin-top: 20px;
-          text-decoration: none;
-          display: inline-block;
         }
-        .instructions {
-          margin-top: 30px;
-          text-align: left;
-          background: #f9f9f9;
-          padding: 15px;
+        .progress {
+          width: 100%;
+          height: 8px;
+          background-color: #e5e7eb;
           border-radius: 4px;
-          border-left: 4px solid #4d7c0f;
+          margin: 20px 0;
+          overflow: hidden;
+        }
+        .progress-bar {
+          height: 100%;
+          background-color: #4d7c0f;
+          width: 0;
+          animation: progress 2s ease-in-out forwards;
+        }
+        @keyframes progress {
+          from { width: 0; }
+          to { width: 100%; }
+        }
+        #error-message {
+          display: none;
+          color: #dc2626;
+          margin-top: 1rem;
         }
       </style>
     </head>
@@ -79,205 +107,37 @@ export async function createPortableVersion() {
         <h1>Kisan Khata Sahayak</h1>
         <p>Agricultural Business Management System</p>
         
-        <a href="app/index.html" class="button">Launch Application</a>
+        <div class="loading">Loading your application...</div>
+        <div class="progress">
+          <div class="progress-bar"></div>
+        </div>
         
-        <div class="instructions">
-          <h3>Simple Instructions:</h3>
-          <ol>
-            <li>Just click the green button above to start!</li>
-            <li>Your data automatically saves to this drive</li>
-            <li>No internet needed - works anywhere</li>
-          </ol>
+        <div id="error-message">
+          There was a problem loading your data. Please try again.
         </div>
       </div>
+
+      <script>
+        ${loaderScript}
+      </script>
     </body>
     </html>
     `;
     
-    // Add the launcher HTML file (this will be the entry point)
-    zip.file("index.html", launcherHTML);
+    zip.file("launch.html", loaderHTML);
     
-    // Create the app folder
-    const appFolder = zip.folder("app");
-    if (!appFolder) {
-      throw new Error("Failed to create app folder in the zip file");
-    }
-    
-    // Essential files list - keep it minimal for smaller size
-    const essentialPaths = [
-      "/index.html",
-      "/manifest.json",
-      "/favicon.ico",
-      "/logo192.png",
-      "/assets/index.css", 
-      "/assets/index.js"
-    ];
-    
-    // Create a modified index.html that loads data from data.json AND auto-saves changes
-    const indexHtmlResponse = await fetch("/index.html");
-    let indexHtml = await indexHtmlResponse.text();
-    
-    // Create data restoration and auto-save script
-    const dataScript = `
-    <script>
-      // Load data from data.json and restore to localStorage before the app starts
-      fetch('../data.json')
-        .then(response => response.json())
-        .then(data => {
-          Object.keys(data).forEach(key => {
-            localStorage.setItem(key, data[key]);
-          });
-          console.log('Data successfully restored to localStorage');
-          
-          // Set up auto-save functionality
-          setInterval(() => {
-            try {
-              // Get all current localStorage data
-              const updatedData = {};
-              for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key) {
-                  updatedData[key] = localStorage.getItem(key);
-                }
-              }
-              
-              // Create a Blob and save it back to the data.json file
-              const dataStr = JSON.stringify(updatedData);
-              const blob = new Blob([dataStr], { type: 'application/json' });
-              
-              // Use FileSaver API if device supports it
-              if (window.navigator && window.navigator.msSaveBlob) {
-                // For IE
-                window.navigator.msSaveBlob(blob, '../data.json');
-              } else {
-                // For other browsers, use the download attribute
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = '../data.json';
-                link.click();
-                URL.revokeObjectURL(link.href);
-              }
-              
-              console.log('Auto-saved data to USB drive');
-            } catch (error) {
-              console.error('Error auto-saving data:', error);
-            }
-          }, 30000); // Auto-save every 30 seconds
-          
-          // Also save when user is about to leave the page
-          window.addEventListener('beforeunload', () => {
-            try {
-              // Get all current localStorage data
-              const updatedData = {};
-              for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key) {
-                  updatedData[key] = localStorage.getItem(key);
-                }
-              }
-              
-              // Use synchronous localStorage to store backup
-              localStorage.setItem('portable_backup', JSON.stringify(updatedData));
-              console.log('Saved exit backup to localStorage');
-              
-              // Send data to service worker for syncing
-              if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.controller.postMessage({
-                  type: 'SAVE_DATA',
-                  data: updatedData
-                });
-              }
-            } catch (error) {
-              console.error('Error saving data on exit:', error);
-            }
-          });
-        })
-        .catch(error => {
-          console.error('Error loading data:', error);
-          alert('There was an error loading your data. The application may not work correctly.');
-        });
-    </script>`;
-    
-    // Insert the data script before the closing </body> tag
-    indexHtml = indexHtml.replace('</body>', `${dataScript}\n</body>`);
-    
-    // Add the modified index.html to the app folder
-    appFolder.file("index.html", indexHtml);
-    
-    // Create a readme file with simple instructions
-    const readmeContent = `
-# Kisan Khata Sahayak - Plug & Play USB Version
-
-## Super Simple Instructions
-1. Double-click "index.html" to start
-2. Use the app normally
-3. Your data AUTOMATICALLY SAVES to the USB drive
-4. No need to do anything special - just use and go!
-
-No internet needed. Works on any computer or device with a browser.
-`;
-    
-    zip.file("README.txt", readmeContent);
-    
-    // Fetch and add essential files to the portable version
-    for (const path of essentialPaths) {
-      try {
-        const fileResponse = await fetch(path);
-        if (fileResponse.ok) {
-          const content = await fileResponse.blob();
-          // Remove the leading slash if present and add to the app folder
-          const filePath = path.startsWith('/') ? path.substring(1) : path;
-          appFolder.file(filePath, content);
-        }
-      } catch (error) {
-        console.warn(`Could not add ${path} to the portable version`);
-      }
-    }
-
-    // Update service worker to support auto-saving in portable mode
-    const serviceWorkerJs = `
-    // Service Worker for offline and portable functionality
-    const CACHE_NAME = 'kisan-khata-sahayak-v4';
-    
-    self.addEventListener('install', (event) => {
-      self.skipWaiting();
-    });
-    
-    self.addEventListener('activate', (event) => {
-      event.waitUntil(self.clients.claim());
-    });
-    
-    // Handle auto-saving in portable mode
-    self.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'SAVE_DATA') {
-        try {
-          console.log('Service worker received data to save');
-          const dataToSave = event.data.data;
-          
-          // Store in cache for retrieval when app reopens
-          caches.open('portable-data-cache').then(cache => {
-            const blob = new Blob([JSON.stringify(dataToSave)], { type: 'application/json' });
-            const response = new Response(blob);
-            cache.put('data.json', response);
-            console.log('Service worker cached updated data');
-          });
-        } catch (error) {
-          console.error('Service worker failed to save data:', error);
-        }
-      }
-    });
-    `;
-    
-    appFolder.file("service-worker.js", serviceWorkerJs);
+    // Get the current HTML content
+    const currentHtml = await fetch(window.location.origin + "/index.html").then(response => response.text());
+    zip.file("index.html", currentHtml);
     
     // Create the zip file
-    const content = await zip.generateAsync({type: "blob", compression: "DEFLATE", compressionOptions: {level: 9}});
+    const content = await zip.generateAsync({type: "blob"});
     
     // Trigger download
     saveAs(content, "kisan-khata-portable.zip");
     
     // Dispatch an event to notify the application about the successful creation
-    const event = new CustomEvent('portable-version-created', { 
+    const event = new CustomEvent('backup-created', { 
       detail: { success: true } 
     });
     window.dispatchEvent(event);
@@ -287,8 +147,8 @@ No internet needed. Works on any computer or device with a browser.
     console.error("Error creating portable version:", error);
     
     // Dispatch an event to notify the application about the failed creation
-    const event = new CustomEvent('portable-version-created', { 
-      detail: { success: false, error } 
+    const event = new CustomEvent('backup-created', { 
+      detail: { success: false } 
     });
     window.dispatchEvent(event);
     

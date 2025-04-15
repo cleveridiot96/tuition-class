@@ -1,10 +1,10 @@
-import { v4 as uuidv4 } from 'uuid';
-import { getStorageItem, saveStorageItem } from './storageUtils';
-import { Broker } from './types';
 
-export function getBrokers(): Broker[] {
-  return getStorageItem('brokers', []);
-}
+import { Broker } from './types';
+import { getStorageItem, saveStorageItem } from './storageUtils';
+
+export const getBrokers = (): Broker[] => {
+  return getStorageItem<Broker>('brokers');
+};
 
 export const addBroker = (broker: Broker): void => {
   const brokers = getBrokers();

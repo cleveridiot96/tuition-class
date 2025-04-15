@@ -1,38 +1,31 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 import { Sale } from './types';
+import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
-export function getSales(): Sale[] {
-  return getYearSpecificStorageItem('sales', []);
-}
+export const getSales = (): Sale[] => {
+  return getYearSpecificStorageItem<Sale>('sales');
+};
 
-export function saveSales(sales: Sale[]): void {
-  saveYearSpecificStorageItem('sales', sales);
-}
-
-export function addSale(sale: Sale): void {
+export const addSale = (sale: Sale): void => {
   const sales = getSales();
   sales.push(sale);
-  saveSales(sales);
-}
+  saveYearSpecificStorageItem('sales', sales);
+};
 
-export function updateSale(updatedSale: Sale): void {
+export const updateSale = (updatedSale: Sale): void => {
   const sales = getSales();
   const index = sales.findIndex(sale => sale.id === updatedSale.id);
-  
   if (index !== -1) {
     sales[index] = updatedSale;
-    saveSales(sales);
+    saveYearSpecificStorageItem('sales', sales);
   }
-}
+};
 
-export function deleteSale(id: string): void {
+export const deleteSale = (id: string): void => {
   const sales = getSales();
   const index = sales.findIndex(sale => sale.id === id);
-  
   if (index !== -1) {
     sales[index] = { ...sales[index], isDeleted: true };
-    saveSales(sales);
+    saveYearSpecificStorageItem('sales', sales);
   }
-}
+};

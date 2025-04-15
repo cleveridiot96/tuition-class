@@ -1,94 +1,39 @@
 
-// This is a partial implementation - you'll need to define the full types
-
-export interface FinancialYear {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  isSetup: boolean;
-}
-
-export interface OpeningBalance {
-  id: string;
-  yearId: string;
-  cash: number;
-  bank: number;
-  stock: StockOpeningBalance[];
-  parties: PartyOpeningBalance[];
-}
-
-export interface StockOpeningBalance {
-  id: string;
-  name: string;
-  lotNumber: string;
-  quantity: number;
-  location: string;
-  rate: number;
-  netWeight: number;
-  amount: number;
-  balanceType: 'debit';
-}
-
-export interface PartyOpeningBalance {
-  id: string;
-  name: string;
-  type: 'agent' | 'broker' | 'customer' | 'supplier' | 'transporter';
-  partyId: string;
-  partyName: string;
-  partyType: string;
-  amount: number;
-  balanceType: 'debit' | 'credit';
-}
-
+// Common interfaces for all entities
 export interface Agent {
   id: string;
   name: string;
-  phone?: string;
-  address?: string;
-  rate?: number;
+  address: string;
   balance: number;
-  isDeleted?: boolean;
 }
 
 export interface Supplier {
   id: string;
   name: string;
-  phone?: string;
-  address?: string;
+  address: string;
   balance: number;
-  isDeleted?: boolean;
 }
 
 export interface Customer {
   id: string;
   name: string;
-  phone?: string;
-  address?: string;
-  payableByCustomer?: boolean;
+  address: string;
   balance: number;
-  isDeleted?: boolean;
 }
 
 export interface Broker {
   id: string;
   name: string;
-  phone?: string;
-  address?: string;
-  rate?: number;
+  address: string;
+  commissionRate: number;
   balance: number;
-  isDeleted?: boolean;
-  commissionRate?: number; // Added commissionRate property
 }
 
 export interface Transporter {
   id: string;
   name: string;
-  phone?: string;
-  address?: string;
+  address: string;
   balance: number;
-  isDeleted?: boolean;
 }
 
 export interface Purchase {
@@ -96,26 +41,27 @@ export interface Purchase {
   date: string;
   lotNumber: string;
   quantity: number;
+  agent: string;
+  agentId?: string; 
+  party: string;
+  partyId?: string;
+  location: string;
   netWeight: number;
   rate: number;
-  totalAmount: number;
-  expenses: number;
-  totalAfterExpenses: number;
-  agent?: string;
-  agentId?: string;
-  party?: string;
-  partyId?: string;
-  brokerageRate?: number;
-  brokerageAmount?: number;
-  brokerageType: "percentage" | "fixed";
-  broker?: string;
-  brokerId?: string;
-  transporter?: string;
+  transporter: string;
   transporterId?: string;
   transportRate?: number;
-  transportCost?: number;
-  location: string;
-  notes?: string;
+  transportCost: number;
+  totalAmount: number;
+  expenses: number;
+  broker?: string;
+  brokerId?: string;
+  brokerageRate?: number;
+  brokerageAmount?: number;
+  brokerageType?: "percentage" | "fixed";
+  totalAfterExpenses: number;
+  ratePerKgAfterExpenses: number;
+  notes: string;
   isDeleted?: boolean;
 }
 
@@ -130,9 +76,6 @@ export interface Sale {
   quantity: number;
   netWeight: number;
   rate: number;
-  totalAmount: number;
-  transportCost: number; // Making this non-optional
-  netAmount: number;
   broker?: string;
   brokerId?: string;
   brokerageRate?: number;
@@ -141,10 +84,52 @@ export interface Sale {
   transporter?: string;
   transporterId?: string;
   transportRate?: number;
+  transportCost: number;
   location?: string;
   notes?: string;
-  isDeleted?: boolean;
+  totalAmount: number;
+  netAmount: number;
   amount: number;
+  isDeleted?: boolean;
+}
+
+export interface Payment {
+  id: string;
+  date: string;
+  party: string;
+  partyId: string;
+  partyName?: string;
+  partyType?: string;
+  amount: number;
+  paymentMethod: string;
+  paymentMode?: string;
+  reference: string;
+  notes: string;
+  billNumber?: string;
+  billAmount?: number;
+  referenceNumber?: string;
+  isDeleted?: boolean;
+  isOnAccount?: boolean;
+  isAgainstTransaction?: boolean;
+  transactionDetails?: {
+    type: 'purchase' | 'sale';
+    id: string;
+    number: string;
+  }
+}
+
+export interface Receipt {
+  id: string;
+  date: string;
+  customer: string;
+  customerId: string;
+  customerName?: string;
+  amount: number;
+  paymentMethod: string;
+  paymentMode?: string;
+  reference: string;
+  notes: string;
+  isDeleted?: boolean;
 }
 
 export interface InventoryItem {
@@ -154,41 +139,45 @@ export interface InventoryItem {
   location: string;
   dateAdded: string;
   netWeight: number;
-  rate: number; // Added rate field
-  finalCost?: number;
   remainingQuantity?: number;
+  purchaseRate?: number;
+  finalCost?: number;
+  agentId?: string;
+  agentName?: string;
+  date?: string;
   isDeleted?: boolean;
-}
-
-export interface Payment {
-  id: string;
-  date: string;
-  amount: number;
-  partyId: string;
-  partyName: string;
-  partyType: string;
-  reference?: string;
-  paymentMethod?: string;
-  notes?: string;
-  isDeleted?: boolean;
-  paymentMode?: string;
-}
-
-export interface Receipt {
-  id: string;
-  date: string;
-  amount: number;
-  customerId: string;
-  customerName: string;
-  reference?: string;
-  paymentMethod?: string;
-  notes?: string;
-  isDeleted?: boolean;
-  paymentMode?: string;
 }
 
 export interface EnhancedInventoryItem extends InventoryItem {
-  totalValue: number;
-  avgRate: number;
-  locationInfo?: string;
+  remainingQuantity: number;
+  purchaseRate: number;
+  finalCost: number;
+  agentId: string;
+  date: string;
+  agentName: string;
+  soldQuantity?: number;
+  soldWeight?: number;
+  remainingWeight?: number;
+  totalValue?: number;
+}
+
+export interface LedgerEntry {
+  id: string;
+  date: string;
+  partyName: string;
+  partyType: string;
+  description: string;
+  debit: number;
+  credit: number;
+  balance: number;
+  referenceId?: string;
+  referenceType?: string;
+}
+
+export interface CashBookEntry {
+  id: string;
+  date: string;
+  description: string;
+  type: "debit" | "credit";
+  amount: number;
 }

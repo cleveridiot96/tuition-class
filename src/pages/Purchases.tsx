@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -93,8 +94,7 @@ const Purchases = () => {
         quantity: data.quantity,
         location: data.location,
         dateAdded: data.date,
-        netWeight: data.netWeight,
-        rate: data.rate
+        netWeight: data.netWeight
       });
       
       // Update agent balance if applicable

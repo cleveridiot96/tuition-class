@@ -65,7 +65,7 @@ const ManualExpenseForm: React.FC<ManualExpenseFormProps> = ({
 }) => {
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -83,12 +83,12 @@ const ManualExpenseForm: React.FC<ManualExpenseFormProps> = ({
   React.useEffect(() => {
     // Load non-system accounts for optional party selection
     const partyAccounts = getAccounts().filter(
-      account => !account.isSystemAccount && account.isDeleted !== true
+      account => !account.isSystemAccount && !account.isDeleted
     );
     setAccounts(partyAccounts);
   }, []);
 
-  const handleDateChange = (date: Date | undefined) => {
+  const handleDateChange = (date: Date | null) => {
     setSelectedDate(date);
     if (date) {
       form.setValue('date', format(date, 'yyyy-MM-dd'));
@@ -137,7 +137,7 @@ const ManualExpenseForm: React.FC<ManualExpenseFormProps> = ({
       });
 
       // Call parent onSubmit if provided
-      if (onSubmit && savedExpense) {
+      if (onSubmit) {
         onSubmit(savedExpense);
       }
     } catch (error) {
@@ -162,8 +162,8 @@ const ManualExpenseForm: React.FC<ManualExpenseFormProps> = ({
                 <FormLabel>Date</FormLabel>
                 <FormControl>
                   <DatePicker
-                    date={selectedDate}
-                    setDate={handleDateChange}
+                    selected={selectedDate}
+                    onSelect={handleDateChange}
                     className="w-full"
                   />
                 </FormControl>
