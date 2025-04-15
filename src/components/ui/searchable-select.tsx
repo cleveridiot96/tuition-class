@@ -46,19 +46,29 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // Always ensure options is an array of valid objects
+  // Guarantee options is always a valid array of objects with value and label
   const safeOptions = React.useMemo(() => {
-    return Array.isArray(options) ? options.filter(option => 
-      option && typeof option === 'object' && 'value' in option && 'label' in option
-    ) : [];
+    // First ensure options is an array
+    if (!Array.isArray(options)) return [];
+    
+    // Then filter out invalid options
+    return options.filter(option => 
+      option !== null && 
+      option !== undefined && 
+      typeof option === 'object' && 
+      'value' in option && 
+      'label' in option
+    );
   }, [options]);
   
-  // Filter options based on search term
+  // Filter options based on search term with proper null checking
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      const label = option.label.toLowerCase();
+      if (!option || !option.label) return false;
+      
+      const label = String(option.label).toLowerCase();
       const search = searchTerm.toLowerCase();
       return label.includes(search);
     });
