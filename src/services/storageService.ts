@@ -30,6 +30,5 @@ export {
   clearAllMasterData,
   seedInitialData,
   getYearSpecificStorageItem,
-  saveYearSpecificStorageItem,
-  getYearSpecificKey
+  saveYearSpecificStorageItem
 } from './storageUtils';

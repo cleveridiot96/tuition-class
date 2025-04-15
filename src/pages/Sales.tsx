@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -166,7 +165,6 @@ const Sales = () => {
       };
       
       if (updatedSale.quantity !== editingSale.quantity || updatedSale.lotNumber !== editingSale.lotNumber) {
-        // Update inventory for both the old and new quantities if they changed
         updateInventoryAfterSale(editingSale.lotNumber, -editingSale.quantity);
         updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
       }

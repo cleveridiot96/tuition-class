@@ -1,137 +1,142 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { getStorageItem, saveStorageItem, getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
-import { FinancialYear, OpeningBalance } from './types';
-import { addDays, format, parseISO, addYears } from 'date-fns';
+import { getStorageItem, saveStorageItem } from './storageUtils';
+import { FinancialYear } from './types';
+import { add } from 'date-fns'; // Using date-fns add instead of addDays
 
-// Basic financial year management
+// Storage key for financial years
+const FINANCIAL_YEARS_KEY = 'financialYears';
+const ACTIVE_FINANCIAL_YEAR_KEY = 'activeFinancialYear';
+
+// Get all financial years
 export function getFinancialYears(): FinancialYear[] {
-  return getStorageItem<FinancialYear[]>('financialYears', []);
+  return getStorageItem(FINANCIAL_YEARS_KEY, []);
 }
 
-export function addFinancialYear(year: Omit<FinancialYear, 'id'>): FinancialYear {
+// Get active financial year
+export function getActiveFinancialYear(): FinancialYear | null {
+  const years = getFinancialYears();
+  const activeYearId = getStorageItem(ACTIVE_FINANCIAL_YEAR_KEY, '');
+  
+  if (!activeYearId) {
+    return years.find(y => y.isActive) || null;
+  }
+  
+  return years.find(y => y.id === activeYearId) || null;
+}
+
+// Get current financial year for dashboard
+export function getCurrentFinancialYear(): FinancialYear | null {
+  return getActiveFinancialYear();
+}
+
+// Set active financial year
+export function setActiveFinancialYear(yearId: string): boolean {
+  const years = getFinancialYears();
+  const yearToActivate = years.find(y => y.id === yearId);
+  
+  if (!yearToActivate) return false;
+  
+  saveStorageItem(ACTIVE_FINANCIAL_YEAR_KEY, yearId);
+  return true;
+}
+
+// Add new financial year
+export function addFinancialYear(yearData: Partial<FinancialYear>): FinancialYear {
   const years = getFinancialYears();
   
+  // Deactivate all other years
+  const updatedYears = years.map(y => ({
+    ...y,
+    isActive: false
+  }));
+  
+  // Create new year
   const newYear: FinancialYear = {
-    ...year,
-    id: uuidv4()
+    id: yearData.id || uuidv4(),
+    name: yearData.name || `FY ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+    startDate: yearData.startDate || new Date().toISOString(),
+    endDate: yearData.endDate || add(new Date(), { days: 365 }).toISOString(), // Using add instead of addDays
+    isActive: true,
+    isSetup: yearData.isSetup || false
   };
   
-  years.push(newYear);
-  saveStorageItem('financialYears', years);
+  // Add new year to the array
+  updatedYears.push(newYear);
+  
+  // Save updated array
+  saveStorageItem(FINANCIAL_YEARS_KEY, updatedYears);
+  saveStorageItem(ACTIVE_FINANCIAL_YEAR_KEY, newYear.id);
   
   return newYear;
 }
 
-export function updateFinancialYear(year: FinancialYear): void {
-  const years = getFinancialYears();
-  const index = years.findIndex(y => y.id === year.id);
-  
-  if (index !== -1) {
-    years[index] = year;
-    saveStorageItem('financialYears', years);
-  }
-}
-
-export function getActiveFinancialYear(): FinancialYear | undefined {
-  const activeId = getStorageItem<string>('activeFinancialYear', '');
+// Initialize financial years if none exist
+export function initializeFinancialYears(): void {
   const years = getFinancialYears();
   
-  return years.find(year => year.id === activeId);
-}
-
-export function setActiveFinancialYear(yearId: string): boolean {
-  const years = getFinancialYears();
-  
-  if (years.some(year => year.id === yearId)) {
-    saveStorageItem('activeFinancialYear', yearId);
-    return true;
-  }
-  
-  return false;
-}
-
-// Generate next financial year based on the previous one
-export function generateNextFinancialYear(previousYearId?: string): FinancialYear {
-  const years = getFinancialYears();
-  const previousYear = previousYearId 
-    ? years.find(y => y.id === previousYearId) 
-    : years.length > 0 
-      ? years.reduce((latest, y) => new Date(y.endDate) > new Date(latest.endDate) ? y : latest, years[0])
-      : null;
-  
-  if (previousYear) {
-    // Calculate the next year's dates based on the previous year's end date
-    const endDate = parseISO(previousYear.endDate);
-    const startDate = addDays(endDate, 1);
-    const nextEndDate = addYears(endDate, 1);
-    
-    // Try to extract year numbers from the previous name, e.g., "2023-24" -> "2024-25"
-    const nameMatch = previousYear.name.match(/(\d{4})-(\d{2})/);
-    let nextYearName = '';
-    
-    if (nameMatch && nameMatch.length >= 3) {
-      const currentYear = parseInt(nameMatch[1], 10);
-      const currentEndYear = parseInt(nameMatch[2], 10);
-      nextYearName = `${currentYear + 1}-${(currentEndYear + 1).toString().padStart(2, '0')}`;
-    } else {
-      // If no pattern matched, just use the date format
-      nextYearName = `${format(startDate, 'yyyy')}-${format(nextEndDate, 'yy')}`;
-    }
-    
-    return {
-      id: '',
-      name: nextYearName,
-      startDate: format(startDate, 'yyyy-MM-dd'),
-      endDate: format(nextEndDate, 'yyyy-MM-dd'),
-      isActive: false,
-      isSetup: false
-    };
-  } else {
-    // If no previous year, create a new one starting from today
+  if (years.length === 0) {
     const now = new Date();
     const startOfYear = new Date(now.getFullYear(), 3, 1); // April 1st
-    const endOfYear = new Date(now.getFullYear() + 1, 2, 31); // March 31st next year
     
-    return {
-      id: '',
-      name: `${format(startOfYear, 'yyyy')}-${format(endOfYear, 'yy')}`,
-      startDate: format(startOfYear, 'yyyy-MM-dd'),
-      endDate: format(endOfYear, 'yyyy-MM-dd'),
-      isActive: false,
+    // If current date is before April, use previous year's April 1
+    if (now < startOfYear) {
+      startOfYear.setFullYear(startOfYear.getFullYear() - 1);
+    }
+    
+    const endOfYear = new Date(startOfYear);
+    endOfYear.setFullYear(endOfYear.getFullYear() + 1);
+    endOfYear.setDate(endOfYear.getDate() - 1); // March 31st
+    
+    const yearName = `FY ${startOfYear.getFullYear()}-${endOfYear.getFullYear().toString().substr(2, 2)}`;
+    
+    addFinancialYear({
+      name: yearName,
+      startDate: startOfYear.toISOString(),
+      endDate: endOfYear.toISOString(),
+      isActive: true,
       isSetup: false
-    };
+    });
   }
 }
 
-// Opening balance management
-export function getOpeningBalances(yearId: string): OpeningBalance | null {
-  const key = `openingBalances_${yearId}`;
-  return getStorageItem(key, null);
-}
-
-export function saveOpeningBalances(balances: OpeningBalance): boolean {
-  if (!balances.yearId) {
-    console.error("Year ID is required for opening balances");
-    return false;
-  }
-  
-  const key = `openingBalances_${balances.yearId}`;
-  saveStorageItem(key, balances);
-  
-  // Mark the financial year as set up
+// Update financial year
+export function updateFinancialYear(updatedYear: FinancialYear): void {
   const years = getFinancialYears();
-  const yearIndex = years.findIndex(y => y.id === balances.yearId);
+  const index = years.findIndex(y => y.id === updatedYear.id);
   
-  if (yearIndex !== -1) {
-    years[yearIndex].isSetup = true;
-    saveStorageItem('financialYears', years);
+  if (index !== -1) {
+    years[index] = updatedYear;
+    saveStorageItem(FINANCIAL_YEARS_KEY, years);
   }
-  
-  return true;
 }
 
-// Closing balance calculation for year transition
-export function getClosingBalancesFromPreviousYear(previousYearId: string): OpeningBalance | null {
-  return getOpeningBalances(previousYearId);
+// Delete financial year
+export function deleteFinancialYear(yearId: string): void {
+  const years = getFinancialYears();
+  const filteredYears = years.filter(y => y.id !== yearId);
+  
+  if (filteredYears.length > 0 && years.find(y => y.id === yearId)?.isActive) {
+    filteredYears[0].isActive = true;
+    saveStorageItem(ACTIVE_FINANCIAL_YEAR_KEY, filteredYears[0].id);
+  }
+  
+  saveStorageItem(FINANCIAL_YEARS_KEY, filteredYears);
+}
+
+// Mark financial year as setup complete
+export function markFinancialYearAsSetup(yearId: string): void {
+  const years = getFinancialYears();
+  const index = years.findIndex(y => y.id === yearId);
+  
+  if (index !== -1) {
+    years[index].isSetup = true;
+    saveStorageItem(FINANCIAL_YEARS_KEY, years);
+  }
+}
+
+// Get storage key with year prefix
+export function getFinancialYearKeyPrefix(): string {
+  const activeYear = getActiveFinancialYear();
+  return activeYear ? `year_${activeYear.id}_` : '';
 }

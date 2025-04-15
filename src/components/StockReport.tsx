@@ -12,16 +12,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/utils/helpers';
 import { getInventory } from '@/services/storageService';
-import { InventoryItem } from '@/services/types';
+import { InventoryItem, EnhancedInventoryItem } from '@/services/types';
 
 interface StockReportProps {
   filterLocation?: string;
-}
-
-interface EnhancedInventoryItem extends InventoryItem {
-  totalValue: number;
-  averageRate: number;
-  locationInfo: string;
 }
 
 const StockReport = ({ filterLocation }: StockReportProps) => {

@@ -102,12 +102,15 @@ export interface Purchase {
   party: string;
   brokerId?: string;
   broker?: string;
+  agent?: string; // Added agent property
+  agentId?: string; // Added agentId property
   location: string;
   transporterId: string;
   transporter?: string;
   transportRate: number;
   expenses: number;
   totalAmount: number;
+  totalAfterExpenses?: number; // Added totalAfterExpenses property
   brokerageType?: "percentage" | "fixed";
   brokerageValue?: number;
   brokerageAmount?: number;
@@ -150,6 +153,7 @@ export interface Payment {
   partyType: string;
   amount: number;
   paymentMethod: string;
+  reference?: string;  // Added reference property
   referenceNumber?: string;
   notes?: string;
   isDeleted?: boolean;
@@ -161,8 +165,10 @@ export interface Receipt {
   partyName: string;
   partyId: string;
   partyType: string;
+  customerId?: string;  // Added customerId property
   amount: number;
   paymentMethod: string;
+  reference?: string;  // Added reference property
   referenceNumber?: string;
   notes?: string;
   isDeleted?: boolean;
@@ -176,6 +182,7 @@ export interface InventoryItem {
   rate: number;
   location: string;
   productName?: string;
+  dateAdded?: string; // Added dateAdded property
   isDeleted?: boolean;
 }
 

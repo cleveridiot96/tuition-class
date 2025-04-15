@@ -54,6 +54,15 @@ export function safeFilename(text: string): string {
     .trim();
 }
 
+// Format balance with proper positive/negative indicator
+export function formatBalance(amount: number): string {
+  if (amount === 0) return '₹0.00';
+  const formattedAmount = Math.abs(amount).toFixed(2);
+  return amount > 0 
+    ? `₹${formattedAmount} CR` 
+    : `₹${formattedAmount} DR`;
+}
+
 // Filter and sort an array by search text
 export function filterAndSort<T extends { name: string }>(
   items: T[], 
