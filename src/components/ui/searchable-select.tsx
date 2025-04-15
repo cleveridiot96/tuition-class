@@ -54,12 +54,16 @@ export function SearchableSelect({
       
       // If it's not an array, try to convert it
       if (!Array.isArray(options)) {
-        // Handle single option case
-        if (options && typeof options === 'object' && 'value' in options) {
-          return [{
-            value: String(options.value),
-            label: String(options.label || options.value)
-          }];
+        // Handle single option case - fix the TypeScript error by adding proper type assertions
+        if (options && typeof options === 'object') {
+          // Type assertion to give TypeScript more information about the shape
+          const optionObj = options as Record<string, any>;
+          if ('value' in optionObj) {
+            return [{
+              value: String(optionObj.value ?? ''),
+              label: String(optionObj.label ?? optionObj.value ?? '')
+            }];
+          }
         }
         console.warn('Options is not an array:', options);
         return [];
@@ -173,4 +177,3 @@ export function SearchableSelect({
     </Popover>
   );
 }
-
