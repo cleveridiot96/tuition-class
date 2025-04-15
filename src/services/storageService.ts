@@ -18,6 +18,15 @@ export {
 export * from './paymentService';
 export * from './receiptService';
 
+// Make sure we explicitly re-export the functions from saleService for clarity
+export {
+  getSales,
+  saveSales,
+  addSale,
+  updateSale,
+  deleteSale
+} from './saleService';
+
 // For backward compatibility, ensure these functions are always available
 export { 
   getLocations, 
