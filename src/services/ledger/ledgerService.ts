@@ -1,4 +1,3 @@
-
 import { LedgerEntry } from './types';
 import { getStorageItem, saveStorageItem } from '../storageUtils';
 
@@ -6,7 +5,6 @@ const LEDGER_STORAGE_KEY = 'ledger';
 
 export const ledgerService = {
   initializeLedger: () => {
-    // Initialize ledger if it doesn't exist in storage
     if (!getStorageItem(LEDGER_STORAGE_KEY)) {
       saveStorageItem(LEDGER_STORAGE_KEY, []);
     }
@@ -14,6 +12,11 @@ export const ledgerService = {
 
   getLedger: (): LedgerEntry[] => {
     return getStorageItem(LEDGER_STORAGE_KEY) || [];
+  },
+
+  getAccountLedger: (accountId: string): LedgerEntry[] => {
+    const ledger = ledgerService.getLedger();
+    return ledger.filter(entry => entry.accountId === accountId);
   },
 
   addLedgerEntry: (entry: LedgerEntry): void => {
@@ -36,12 +39,6 @@ export const ledgerService = {
     const ledger = ledgerService.getLedger();
     const filteredLedger = ledger.filter(entry => entry.id !== id);
     saveStorageItem(LEDGER_STORAGE_KEY, filteredLedger);
-  },
-
-  // Add function to get ledger entries for a specific account
-  getAccountLedger: (accountId: string): LedgerEntry[] => {
-    const ledger = ledgerService.getLedger();
-    return ledger.filter(entry => entry.accountId === accountId);
   }
 };
 

@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useRef } from 'react';
+
+import React, { useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
-import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
 import { 
   Drawer, 
   DrawerContent, 
@@ -11,28 +10,14 @@ import {
   DrawerFooter,
   DrawerClose
 } from "@/components/ui/drawer";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Printer, FileSpreadsheet, X } from "lucide-react";
-import { useToast } from '@/hooks/use-toast';
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Printer, FileSpreadsheet } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import AccountOpeningBalance from './AccountOpeningBalance';
-
-import { 
-  getAccountById, 
-  getAccountLedger,
-  Account, 
-  LedgerEntry
-} from '@/services/accountingService';
-import { formatDate, formatBalance, formatCurrency } from '@/utils/helpers';
+import { LedgerTable } from './ledger/LedgerTable';
+import { usePartyLedger } from '@/hooks/usePartyLedger';
+import { formatCurrency } from '@/utils/helpers';
+import { useToast } from '@/hooks/use-toast';
 
 interface PartyLedgerProps {
   isOpen: boolean;
@@ -42,101 +27,27 @@ interface PartyLedgerProps {
 
 const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
   const { toast } = useToast();
-  const [account, setAccount] = useState<Account | null>(null);
-  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
-  const [isOpeningBalanceDialogOpen, setIsOpeningBalanceDialogOpen] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && accountId) {
-      const accountData = getAccountById(accountId);
-      if (accountData) {
-        setAccount(accountData);
-        const ledgerData = getAccountLedger(accountId);
-        setLedger(ledgerData);
-      }
-    }
-  }, [isOpen, accountId]);
+  const {
+    account,
+    transactionEntries,
+    openingBalance,
+    closingBalance,
+    isOpeningBalanceDialogOpen,
+    setIsOpeningBalanceDialogOpen,
+    handleExportToExcel,
+    handleOpeningBalanceSave
+  } = usePartyLedger(accountId, isOpen);
 
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: `Ledger - ${account?.name || 'Party'}`,
     onAfterPrint: () => {
       toast({
-        description: 'Ledger has been sent to printer',
+        description: 'Ledger has been sent to printer'
       });
     },
   });
-
-  const handleExportToExcel = () => {
-    try {
-      if (!account) return;
-      
-      // Prepare data for Excel export
-      const excelData = ledger.map(entry => ({
-        Date: formatDate(entry.date),
-        Reference: entry.reference,
-        Narration: entry.narration,
-        Debit: entry.debit > 0 ? entry.debit : '',
-        Credit: entry.credit > 0 ? entry.credit : '',
-        Balance: entry.balance,
-        'Balance Type': entry.balanceType
-      }));
-      
-      // Create workbook and worksheet
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(excelData);
-      
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(wb, ws, `${account.name} Ledger`);
-      
-      // Generate file name with date
-      const fileName = `Ledger_${account.name}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-      
-      // Save workbook
-      XLSX.writeFile(wb, fileName);
-      
-      toast({
-        description: "Ledger data has been exported to Excel",
-      });
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      toast({
-        description: "There was an error exporting to Excel",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleOpeningBalanceSave = () => {
-    setIsOpeningBalanceDialogOpen(false);
-    
-    // Refresh ledger data
-    if (accountId) {
-      const accountData = getAccountById(accountId);
-      if (accountData) {
-        setAccount(accountData);
-        const ledgerData = getAccountLedger(accountId);
-        setLedger(ledgerData);
-      }
-    }
-    
-    toast({
-      description: 'Party opening balance has been updated successfully',
-    });
-  };
-
-  const openingBalance = ledger.length > 0 && ledger[0].reference === 'Opening Balance'
-    ? ledger[0]
-    : null;
-
-  const transactionEntries = openingBalance
-    ? ledger.filter(entry => entry.reference !== 'Opening Balance')
-    : ledger;
-
-  const closingBalance = ledger.length > 0
-    ? ledger[ledger.length - 1]
-    : null;
 
   return (
     <>
@@ -182,58 +93,15 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
             
             {openingBalance && (
               <div className="mb-4 p-3 bg-gray-50 rounded-md border">
-                <strong>Opening Balance:</strong> {formatBalance(openingBalance.balance, openingBalance.balanceType)}
+                <strong>Opening Balance:</strong> {formatCurrency(openingBalance.balance)} {openingBalance.balanceType === 'debit' ? 'DR' : 'CR'}
               </div>
             )}
             
-            <ScrollArea className="h-[calc(90vh-240px)]">
-              <div className="border rounded-md overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Date</TableHead>
-                      <TableHead className="whitespace-nowrap">Reference</TableHead>
-                      <TableHead>Narration</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Debit (₹)</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Credit (₹)</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactionEntries.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No transactions found for this account.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      transactionEntries.map((entry, index) => (
-                        <TableRow key={index} className={
-                          entry.debit > 0 ? 'bg-green-50' : 'bg-red-50'
-                        }>
-                          <TableCell className="font-medium">{formatDate(entry.date)}</TableCell>
-                          <TableCell>{entry.reference}</TableCell>
-                          <TableCell>{entry.narration}</TableCell>
-                          <TableCell className="text-right">
-                            {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatBalance(entry.balance, entry.balanceType)}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </ScrollArea>
+            <LedgerTable entries={transactionEntries} />
             
             {closingBalance && (
               <div className="mt-4 p-3 bg-gray-50 rounded-md border">
-                <strong>Closing Balance:</strong> {formatBalance(closingBalance.balance, closingBalance.balanceType)}
+                <strong>Closing Balance:</strong> {formatCurrency(closingBalance.balance)} {closingBalance.balanceType === 'debit' ? 'DR' : 'CR'}
               </div>
             )}
           </div>
