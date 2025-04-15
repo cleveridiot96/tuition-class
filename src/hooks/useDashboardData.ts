@@ -1,9 +1,10 @@
-
 import { useCallback, useState } from "react";
 import { 
   getPurchases, 
   getInventory, 
   getSales, 
+  getPayments,
+  getReceipts,
   exportDataBackup 
 } from "@/services/storageService";
 import { useToast } from "@/hooks/use-toast";
@@ -36,11 +37,24 @@ export interface SummaryData {
 
 export const useDashboardData = () => {
   const { toast } = useToast();
-  const [summaryData, setSummaryData] = useState<SummaryData>({
+  const [summaryData, setSummaryData] = useState<{
+    totalSales: number;
+    totalPurchases: number;
+    totalPayments: number;
+    totalReceipts: number;
+  }>({
+    totalSales: 0,
+    totalPurchases: 0,
+    totalPayments: 0,
+    totalReceipts: 0
+  });
+  
+  const [detailedSummary, setDetailedSummary] = useState<SummaryData>({
     purchases: { amount: 0, bags: 0, kgs: 0 },
     sales: { amount: 0, bags: 0, kgs: 0 },
     stock: { mumbai: 0, chiplun: 0, sawantwadi: 0 }
   });
+  
   const [profitByTransaction, setProfitByTransaction] = useState<ProfitData[]>([]);
   const [profitByMonth, setProfitByMonth] = useState<any[]>([]);
   const [totalProfit, setTotalProfit] = useState(0);
@@ -55,6 +69,8 @@ export const useDashboardData = () => {
       
       const purchases = getPurchases() || [];
       const sales = getSales() || [];
+      const payments = getPayments() || [];
+      const receipts = getReceipts() || [];
       
       const inventory = getInventory() || [];
       const activeInventory = inventory.filter(item => !item.isDeleted);
@@ -65,6 +81,18 @@ export const useDashboardData = () => {
       console.log("Purchases data loaded:", purchases.length);
       console.log("Sales data loaded:", sales.length);
       console.log("Active inventory:", activeInventory.length);
+      
+      const activePurchases = purchases.filter(p => !p.isDeleted);
+      const activeSales = sales.filter(s => !s.isDeleted);
+      const activePayments = payments.filter(p => !p.isDeleted);
+      const activeReceipts = receipts.filter(r => !r.isDeleted);
+      
+      setSummaryData({
+        totalSales: activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0),
+        totalPurchases: activePurchases.reduce((sum, p) => sum + (p.totalAmount || 0), 0),
+        totalPayments: activePayments.reduce((sum, p) => sum + (p.amount || 0), 0),
+        totalReceipts: activeReceipts.reduce((sum, r) => sum + (r.amount || 0), 0)
+      });
       
       const transactionProfits = sales.filter(sale => !sale.isDeleted).map(sale => {
         const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber && !p.isDeleted);
@@ -118,10 +146,7 @@ export const useDashboardData = () => {
       setProfitByMonth(monthlyProfits);
       setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
       
-      const activePurchases = purchases.filter(p => !p.isDeleted);
-      const activeSales = sales.filter(s => !s.isDeleted);
-      
-      setSummaryData({
+      setDetailedSummary({
         purchases: {
           amount: activePurchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
           bags: activePurchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
@@ -156,6 +181,7 @@ export const useDashboardData = () => {
 
   return {
     summaryData,
+    detailedSummary,
     profitByTransaction,
     profitByMonth,
     totalProfit,
