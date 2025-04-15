@@ -15,11 +15,9 @@ import {
   Warehouse
 } from "lucide-react";
 import { exportDataBackup } from "@/services/storageService";
-import { toast } from "@/hooks/use-toast"; // Changed to direct import
+import { toast } from "@/hooks/use-toast";
 
 const DashboardMenu = () => {
-  // Remove the useToast hook call
-  
   const menuItems = [
     {
       title: "Purchases",
@@ -58,7 +56,7 @@ const DashboardMenu = () => {
       description: "Manage incoming payments",
     },
     {
-      title: "Contacts",
+      title: "Ledger",
       icon: <Users2 className="w-6 h-6 mb-2 text-indigo-600" />,
       link: "/master",
       description: "Manage people & companies",
@@ -94,13 +92,11 @@ const DashboardMenu = () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            // Use the direct toast import 
             toast({
               title: "Backup Created",
               description: "Data backup successfully downloaded",
             });
             
-            // Dispatch a custom event to notify other components
             const customEvent = new CustomEvent('backup-created', {
               detail: { success: true }
             });
@@ -112,7 +108,6 @@ const DashboardMenu = () => {
               variant: "destructive",
             });
             
-            // Dispatch failure event
             const customEvent = new CustomEvent('backup-created', {
               detail: { success: false }
             });
@@ -136,7 +131,7 @@ const DashboardMenu = () => {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         {menuItems && menuItems.map((item) => (
           <Card 
-            key={item.title}
+            key={item.title + item.link}
             className="hover:border-primary hover:shadow-md transition-all duration-200"
           >
             {item.onClick ? (

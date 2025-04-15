@@ -20,115 +20,52 @@ export async function createPortableVersion() {
     // Add the data file to the zip
     zip.file("data.json", JSON.stringify(storedData));
     
-    // Create a simple loader script
-    const loaderScript = `
-      // Restore data from data.json to localStorage
-      fetch('./data.json')
-        .then(response => response.json())
-        .then(data => {
-          Object.keys(data).forEach(key => {
-            localStorage.setItem(key, data[key]);
-          });
-          console.log('Data restored to localStorage');
-          
-          // Redirect to the app
-          window.location.href = 'index.html';
-        })
-        .catch(error => {
-          console.error('Error loading data:', error);
-          document.getElementById('error-message').style.display = 'block';
-        });
-    `;
-    
-    // Add the loader HTML file
+    // Create a simplified loader HTML file that automatically loads the data
     const loaderHTML = `
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Kisan Khata Sahayak - Launcher</title>
+      <title>Kisan Khata Sahayak</title>
       <style>
         body {
           font-family: system-ui, -apple-system, sans-serif;
-          margin: 0;
-          padding: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          min-height: 100vh;
           background-color: #f8f3e9;
           color: #333;
-        }
-        .container {
+          margin: 0;
+          padding: 20px;
           text-align: center;
-          padding: 2rem;
-          max-width: 600px;
-          background-color: white;
-          border-radius: 8px;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        h1 {
-          color: #4d7c0f;
-          margin-bottom: 1rem;
-        }
-        .loading {
-          margin: 20px 0;
-          font-size: 18px;
-        }
-        .progress {
-          width: 100%;
-          height: 8px;
-          background-color: #e5e7eb;
-          border-radius: 4px;
-          margin: 20px 0;
-          overflow: hidden;
-        }
-        .progress-bar {
-          height: 100%;
-          background-color: #4d7c0f;
-          width: 0;
-          animation: progress 2s ease-in-out forwards;
-        }
-        @keyframes progress {
-          from { width: 0; }
-          to { width: 100%; }
-        }
-        #error-message {
-          display: none;
-          color: #dc2626;
-          margin-top: 1rem;
         }
       </style>
     </head>
     <body>
-      <div class="container">
-        <h1>Kisan Khata Sahayak</h1>
-        <p>Agricultural Business Management System</p>
-        
-        <div class="loading">Loading your application...</div>
-        <div class="progress">
-          <div class="progress-bar"></div>
-        </div>
-        
-        <div id="error-message">
-          There was a problem loading your data. Please try again.
-        </div>
-      </div>
-
+      <h1>Kisan Khata Sahayak</h1>
+      <p>Loading your data...</p>
+      
       <script>
-        ${loaderScript}
+        // Automatically restore data and redirect
+        fetch('./data.json')
+          .then(response => response.json())
+          .then(data => {
+            Object.keys(data).forEach(key => {
+              localStorage.setItem(key, data[key]);
+            });
+            window.location.href = 'index.html';
+          })
+          .catch(error => {
+            document.body.innerHTML += '<p style="color: red">Error loading data. Please refresh the page.</p>';
+          });
       </script>
     </body>
     </html>
     `;
     
-    zip.file("launch.html", loaderHTML);
+    zip.file("index.html", loaderHTML);
     
-    // Get the current HTML content
+    // Get the current HTML content for the actual app
     const currentHtml = await fetch(window.location.origin + "/index.html").then(response => response.text());
-    zip.file("index.html", currentHtml);
+    zip.file("app.html", currentHtml);
     
     // Create the zip file
     const content = await zip.generateAsync({type: "blob"});
@@ -136,7 +73,7 @@ export async function createPortableVersion() {
     // Trigger download
     saveAs(content, "kisan-khata-portable.zip");
     
-    // Dispatch an event to notify the application about the successful creation
+    // Dispatch success event
     const event = new CustomEvent('backup-created', { 
       detail: { success: true } 
     });
@@ -146,7 +83,7 @@ export async function createPortableVersion() {
   } catch (error) {
     console.error("Error creating portable version:", error);
     
-    // Dispatch an event to notify the application about the failed creation
+    // Dispatch failure event
     const event = new CustomEvent('backup-created', { 
       detail: { success: false } 
     });

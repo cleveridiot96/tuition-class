@@ -1,7 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
-import { ThemeProvider } from '@/components/ThemeProvider';
 import Index from '@/pages/Index';
 import Purchases from '@/pages/Purchases';
 import Sales from '@/pages/Sales';
@@ -118,43 +118,41 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <Router>
-          <ErrorBoundary>
-            <Routes>
-              <Route path="/" element={
-                <ErrorBoundary>
-                  <Index />
-                </ErrorBoundary>
-              } />
-              <Route path="/purchases" element={
-                <ErrorBoundary>
-                  <Purchases />
-                </ErrorBoundary>
-              } />
-              <Route path="/sales" element={
-                <ErrorBoundary>
-                  <Sales />
-                </ErrorBoundary>
-              } />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/master" element={<Master />} />
-              <Route path="/agents" element={<Agents />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/receipts" element={<Receipts />} />
-              <Route path="/cashbook" element={<CashBook />} />
-              <Route path="/stock" element={<Stock />} />
-              <Route path="/ledger" element={<Ledger />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </ErrorBoundary>
-          
-          <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
-            Toast system encountered an error. Please refresh the page.
-          </div>}>
-            <Toaster />
-          </ErrorBoundary>
-        </Router>
+      <Router>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={
+              <ErrorBoundary>
+                <Index />
+              </ErrorBoundary>
+            } />
+            <Route path="/purchases" element={
+              <ErrorBoundary>
+                <Purchases />
+              </ErrorBoundary>
+            } />
+            <Route path="/sales" element={
+              <ErrorBoundary>
+                <Sales />
+              </ErrorBoundary>
+            } />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/master" element={<Master />} />
+            <Route path="/agents" element={<Agents />} />
+            <Route path="/payments" element={<Payments />} />
+            <Route path="/receipts" element={<Receipts />} />
+            <Route path="/cashbook" element={<CashBook />} />
+            <Route path="/stock" element={<Stock />} />
+            <Route path="/ledger" element={<Ledger />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </ErrorBoundary>
+        
+        <ErrorBoundary fallback={<div className="p-4 bg-red-100 text-red-800 rounded-md">
+          Toast system encountered an error. Please refresh the page.
+        </div>}>
+          <Toaster />
+        </ErrorBoundary>
         
         <OpeningBalanceSetup 
           isOpen={showOpeningBalanceSetup} 
@@ -166,7 +164,7 @@ const App = () => {
             You are offline
           </div>
         )}
-      </ThemeProvider>
+      </Router>
     </ErrorBoundary>
   );
 };

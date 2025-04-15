@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import {
   NavigationMenuList,
   NavigationMenuItem,
 } from "@/components/ui/navigation-menu"
-import { ModeToggle } from "@/components/ModeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown, LogOut } from "lucide-react";
@@ -33,9 +33,17 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
 
   const currentUser = localStorage.getItem('currentUser');
   const user = currentUser ? JSON.parse(currentUser) : null;
+  
+  const handleFormatData = () => {
+    if (onFormatClick) {
+      // Dispatch a custom event that will be captured by FormatEventConnector
+      document.dispatchEvent(new CustomEvent('format-click'));
+      onFormatClick();
+    }
+  };
 
   return (
-    <div className="bg-white dark:bg-gray-900 shadow-md sticky top-0 z-50">
+    <div className="bg-white shadow-md sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           {showBackButton && (
@@ -47,7 +55,7 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
         </div>
         <div className="flex items-center space-x-4">
           {showFormatButton && (
-            <Button variant="outline" size="sm" onClick={onFormatClick}>
+            <Button variant="outline" size="sm" onClick={handleFormatData}>
               Format Data
             </Button>
           )}
@@ -70,7 +78,6 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-          <ModeToggle />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -194,7 +201,7 @@ const items = [
     description: "Manage incoming payments",
   },
   {
-    title: "Contacts",
+    title: "Ledger",
     href: "/master",
     description: "Manage people & companies",
   },

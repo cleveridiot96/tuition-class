@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Package } from "lucide-react";
 import { createPortableVersion } from "@/utils/portableAppUtils";
+import { toast } from "@/hooks/use-toast";
 
 const PortableAppButton = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -10,7 +11,25 @@ const PortableAppButton = () => {
   const handleCreatePortable = async () => {
     setIsCreating(true);
     try {
-      await createPortableVersion();
+      const result = await createPortableVersion();
+      if (result) {
+        toast({
+          title: "Portable App Created",
+          description: "Just unzip and open index.html to use your app anywhere!",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create portable version",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
     } finally {
       setIsCreating(false);
     }
