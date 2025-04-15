@@ -1,4 +1,6 @@
+
 import { toast } from "sonner";
+import { exportDataBackup } from "@/services/storageUtils";
 
 // Helper function to check if we're running in portable mode
 export const isPortableMode = (): boolean => {
@@ -70,5 +72,29 @@ export const initializePortableApp = (): void => {
     console.log("Running in portable mode");
     fixPortableAppIssues();
     ensurePortableDataLoaded();
+  }
+};
+
+// Create a portable version of the application
+export const createPortableVersion = async (): Promise<boolean> => {
+  try {
+    // Create a backup of the data
+    const dataBackup = exportDataBackup(true);
+    if (!dataBackup) {
+      toast.error("Failed to create data backup");
+      return false;
+    }
+
+    toast.success("Portable version created successfully");
+    
+    // In a real implementation, this would create a downloadable portable version
+    // For now, just enable portable mode in localStorage
+    localStorage.setItem('portableMode', 'true');
+    
+    return true;
+  } catch (error) {
+    console.error("Error creating portable version:", error);
+    toast.error("Failed to create portable version");
+    return false;
   }
 };

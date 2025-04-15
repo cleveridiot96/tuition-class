@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import * as XLSX from 'xlsx';
@@ -30,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Printer, FileSpreadsheet } from "lucide-react";
 
 import { getInventory } from '@/services/inventoryService';
-import { getAgents, getLocations } from '@/services/storageService';
+import { getAgents, getLocations } from '@/services/storageUtils';
 import { formatCurrency } from '@/utils/helpers';
 import { EnhancedInventoryItem } from '@/services/types';
 
@@ -68,6 +69,7 @@ const StockReport = () => {
         return {
           ...item,
           agentName: agent?.name || 'Unknown',
+          agentId: item.agentId || '', // Ensure agentId is always defined
           remainingQuantity: item.remainingQuantity || item.quantity,
           purchaseRate: item.purchaseRate || 0,
           finalCost: item.finalCost || 0,

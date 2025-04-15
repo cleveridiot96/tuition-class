@@ -1,5 +1,6 @@
 
 import { toast } from "sonner";
+import { getLocations } from "@/services/storageUtils";
 
 // Helper function to check if we're running in portable mode
 export const isPortableMode = (): boolean => {
@@ -26,8 +27,8 @@ export const ensurePortableDataLoaded = (): boolean => {
     }
     
     // Initialize default locations if needed
-    const locations = localStorage.getItem('locations');
-    if (!locations) {
+    const locations = getLocations();
+    if (!locations || locations.length === 0) {
       localStorage.setItem('locations', JSON.stringify(["Mumbai", "Chiplun", "Sawantwadi"]));
     }
     

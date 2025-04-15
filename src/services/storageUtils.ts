@@ -44,3 +44,149 @@ export const removeYearSpecificStorageItem = (key: string): void => {
   const yearSpecificKey = getYearSpecificKey(key);
   removeStorageItem(yearSpecificKey);
 };
+
+// Data backup and restore functions
+export const exportDataBackup = (silent: boolean = false): string | null => {
+  try {
+    const data: Record<string, any> = {};
+    
+    // Get all keys from localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        try {
+          data[key] = JSON.parse(localStorage.getItem(key) || "null");
+        } catch (e) {
+          data[key] = localStorage.getItem(key);
+        }
+      }
+    }
+    
+    const jsonData = JSON.stringify(data, null, 2);
+    if (!silent) {
+      console.log("Data backup created successfully");
+    }
+    return jsonData;
+  } catch (error) {
+    console.error("Error creating data backup:", error);
+    return null;
+  }
+};
+
+export const importDataBackup = (jsonData: string): boolean => {
+  try {
+    const data = JSON.parse(jsonData);
+    
+    // Clear existing data first
+    localStorage.clear();
+    
+    // Import all data
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        localStorage.setItem(key, JSON.stringify(data[key]));
+      }
+    }
+    
+    console.log("Data imported successfully");
+    return true;
+  } catch (error) {
+    console.error("Error importing data:", error);
+    return false;
+  }
+};
+
+// Data management functions
+export const clearAllData = (): void => {
+  try {
+    const currentYear = localStorage.getItem('currentFinancialYear');
+    const currentLocations = localStorage.getItem('locations');
+    
+    // Keep only configuration data
+    localStorage.clear();
+    
+    if (currentYear) {
+      localStorage.setItem('currentFinancialYear', currentYear);
+    }
+    
+    if (currentLocations) {
+      localStorage.setItem('locations', currentLocations);
+    }
+    
+    console.log("All transaction data cleared");
+  } catch (error) {
+    console.error("Error clearing data:", error);
+  }
+};
+
+export const clearAllMasterData = (): void => {
+  try {
+    localStorage.removeItem('agents');
+    localStorage.removeItem('customers');
+    localStorage.removeItem('suppliers');
+    localStorage.removeItem('brokers');
+    localStorage.removeItem('transporters');
+    console.log("All master data cleared");
+  } catch (error) {
+    console.error("Error clearing master data:", error);
+  }
+};
+
+export const seedInitialData = (silent: boolean = false): void => {
+  try {
+    // Seed default locations if they don't exist
+    if (!localStorage.getItem('locations')) {
+      localStorage.setItem('locations', JSON.stringify(["Mumbai", "Chiplun", "Sawantwadi"]));
+    }
+    
+    // Seed empty arrays for various data types if they don't exist
+    const dataTypes = [
+      'agents', 'customers', 'suppliers', 'brokers', 'transporters',
+      'inventory', 'purchases', 'sales', 'payments', 'receipts'
+    ];
+    
+    dataTypes.forEach(type => {
+      if (!localStorage.getItem(type)) {
+        localStorage.setItem(type, JSON.stringify([]));
+      }
+    });
+    
+    // Also seed year-specific data
+    const yearSpecificTypes = ['inventory', 'purchases', 'sales', 'payments', 'receipts'];
+    const currentYear = localStorage.getItem('currentFinancialYear');
+    
+    if (currentYear) {
+      yearSpecificTypes.forEach(type => {
+        const yearKey = `${type}_${currentYear}`;
+        if (!localStorage.getItem(yearKey)) {
+          localStorage.setItem(yearKey, JSON.stringify([]));
+        }
+      });
+    }
+    
+    if (!silent) {
+      console.log("Initial data seeded successfully");
+    }
+  } catch (error) {
+    console.error("Error seeding initial data:", error);
+  }
+};
+
+export const getLocations = (): string[] => {
+  try {
+    const locations = localStorage.getItem('locations');
+    return locations ? JSON.parse(locations) : ["Mumbai", "Chiplun", "Sawantwadi"];
+  } catch (error) {
+    console.error("Error getting locations:", error);
+    return ["Mumbai", "Chiplun", "Sawantwadi"];
+  }
+};
+
+export const checkDuplicateLot = (lotNumber: string): boolean => {
+  try {
+    const purchases = getYearSpecificStorageItem('purchases');
+    return purchases && purchases.some((p: any) => p.lotNumber === lotNumber && !p.isDeleted);
+  } catch (error) {
+    console.error("Error checking duplicate lot:", error);
+    return false;
+  }
+};
