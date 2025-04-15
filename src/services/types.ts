@@ -86,7 +86,7 @@ export interface Sale extends BaseEntity {
   transporterId?: string;
   transporter?: string;
   transportRate?: number;
-  transportCost?: number;
+  transportCost: number; // Changed from optional to required
   brokerId?: string;
   broker?: string;
   brokerageType?: string;
@@ -120,6 +120,7 @@ export interface Receipt extends BaseEntity {
   mode: "cash" | "bank" | "upi" | "other";
   referenceNumber?: string;
   reference?: string; // Added for compatibility
+  paymentMethod?: string; // Added for compatibility
   customer?: string; // Added for compatibility
   notes?: string;
 }

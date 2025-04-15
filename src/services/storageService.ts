@@ -4,7 +4,7 @@ export * from './types';
 export * from './storageUtils';
 
 // Specific services
-export { getAgents, addAgent, updateAgent, deleteAgent } from './agentService';
+export { getAgents, addAgent, updateAgent, deleteAgent, updateAgentBalance } from './agentService';
 export * from './supplierService';
 export * from './customerService';
 export * from './brokerService';

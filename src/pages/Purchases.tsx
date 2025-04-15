@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
@@ -95,12 +94,12 @@ const Purchases = () => {
         location: data.location || "",
         dateAdded: data.date,
         netWeight: data.netWeight,
-        remainingQuantity: data.quantity,  // Added missing property
-        purchaseRate: data.rate,           // Added missing property
-        finalCost: data.totalAfterExpenses || data.totalAmount, // Added missing property
-        agentId: data.agentId || "",       // Added missing property
-        agentName: data.agent || "",       // Added missing property
-        date: data.date                    // Added missing property
+        remainingQuantity: data.quantity,
+        purchaseRate: data.rate,
+        finalCost: data.totalAfterExpenses || data.totalAmount,
+        agentId: data.agentId || "",
+        agentName: data.agent || "",
+        date: data.date
       });
       
       // Update agent balance if applicable
