@@ -1,3 +1,4 @@
+
 import { toast } from "sonner";
 
 // Helper function to check if we're running in portable mode

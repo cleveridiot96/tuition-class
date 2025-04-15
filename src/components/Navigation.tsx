@@ -7,10 +7,12 @@ import {
   NavigationMenu,
   NavigationMenuList,
   NavigationMenuItem,
+  NavigationMenuTrigger,
+  NavigationMenuContent,
 } from "@/components/ui/navigation-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ChevronDown, LogOut } from "lucide-react";
+import { ChevronDown, LogOut, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavigationProps {
@@ -51,6 +53,11 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
               Back
             </Button>
           )}
+          <Link to="/" className="flex items-center mr-4">
+            <Button variant="ghost" size="icon" className="mr-2">
+              <Home size={18} />
+            </Button>
+          </Link>
           <h1 className="text-xl font-bold">{title}</h1>
         </div>
         <div className="flex items-center space-x-4">
@@ -66,8 +73,8 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
                   More
                   <ChevronDown className="relative left-1 h-4 w-4 transition-transform duration-200 group-[data-state=open]:rotate-180" />
                 </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] md:grid-cols-2">
+                <NavigationMenuContent className="bg-white">
+                  <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] md:grid-cols-2 bg-white">
                     {items.map((item) => (
                       <ListItem key={item.title} title={item.title} href={item.href}>
                         {item.description}
@@ -87,7 +94,7 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, 
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuContent className="w-56 bg-white" align="end" forceMount>
               <DropdownMenuItem disabled>
                 <span className="font-bold">{user?.name}</span>
                 <br />
