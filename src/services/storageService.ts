@@ -8,7 +8,7 @@ export * from './customerService';
 export * from './brokerService';
 export * from './transporterService';
 export * from './purchaseService';
-export * from './saleService';
+export * from './saleService';  // This line ensures sale-related functions are exported
 export * from './financialYearService';
 export {
   getInventory,
