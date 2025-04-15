@@ -58,6 +58,19 @@ export function Combobox({
     );
   }, [options]);
 
+  // Filter options based on input
+  const filteredOptions = React.useMemo(() => {
+    if (!inputValue) return safeOptions;
+    
+    return safeOptions.filter(option => {
+      const label = String(option.label).toLowerCase();
+      const optionValue = String(option.value).toLowerCase();
+      const search = inputValue.toLowerCase();
+      
+      return label.includes(search) || optionValue.includes(search);
+    });
+  }, [safeOptions, inputValue]);
+
   // Select handler
   const handleSelect = (currentValue: string) => {
     setSelectedValue(currentValue);
@@ -70,26 +83,7 @@ export function Combobox({
   const handleInputChange = (newValue: string) => {
     setInputValue(newValue);
     if (onInputChange) onInputChange(newValue);
-    
-    // If input is cleared, also clear selection
-    if (!newValue) {
-      setSelectedValue("");
-      if (onChange) onChange("");
-    }
   };
-
-  // Filter options based on input
-  const filteredOptions = React.useMemo(() => {
-    if (!inputValue) return safeOptions;
-    
-    return safeOptions.filter(option => {
-      const label = option.label.toLowerCase();
-      const optionValue = option.value.toLowerCase();
-      const search = inputValue.toLowerCase();
-      
-      return label.includes(search) || optionValue.includes(search);
-    });
-  }, [safeOptions, inputValue]);
 
   // Get display text for selected value
   const displayText = React.useMemo(() => {
@@ -109,7 +103,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn("w-full justify-between bg-white", className)}
           disabled={disabled}
         >
           <span className="truncate">{displayText}</span>
@@ -129,11 +123,11 @@ export function Combobox({
             value={inputValue}
             onValueChange={handleInputChange}
           />
-          <CommandGroup>
-            {filteredOptions.length === 0 ? (
-              <CommandEmpty>No results found.</CommandEmpty>
-            ) : (
-              filteredOptions.map((option) => (
+          {filteredOptions.length === 0 ? (
+            <CommandEmpty>No results found.</CommandEmpty>
+          ) : (
+            <CommandGroup>
+              {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
                   value={option.value}
@@ -147,9 +141,9 @@ export function Combobox({
                   />
                   {option.label}
                 </CommandItem>
-              ))
-            )}
-          </CommandGroup>
+              ))}
+            </CommandGroup>
+          )}
         </Command>
       </PopoverContent>
     </Popover>

@@ -46,23 +46,30 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // Always ensure options is an array
-  const safeOptions = Array.isArray(options) ? options : [];
+  // Always ensure options is an array of valid objects
+  const safeOptions = React.useMemo(() => {
+    if (!Array.isArray(options)) return [];
+    
+    return options.filter(option => 
+      option && 
+      typeof option === 'object' &&
+      'value' in option &&
+      'label' in option
+    );
+  }, [options]);
   
   // Filter options based on search term
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      if (!option || typeof option !== 'object') return false;
-      
-      const label = (option.label || "").toLowerCase();
+      const label = option.label.toLowerCase();
       const search = searchTerm.toLowerCase();
       return label.includes(search);
     });
   }, [safeOptions, searchTerm]);
   
-  const selectedOption = safeOptions.find((option) => option?.value === value);
+  const selectedOption = safeOptions.find((option) => option.value === value);
 
   return (
     <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
@@ -96,10 +103,10 @@ export function SearchableSelect({
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          {filteredOptions.length === 0 ? (
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
-          ) : (
-            <ScrollArea className="max-h-60">
+          <ScrollArea className="max-h-60">
+            {filteredOptions.length === 0 ? (
+              <CommandEmpty>{emptyMessage}</CommandEmpty>
+            ) : (
               <CommandGroup>
                 {filteredOptions.map((option) => (
                   <CommandItem
@@ -121,8 +128,8 @@ export function SearchableSelect({
                   </CommandItem>
                 ))}
               </CommandGroup>
-            </ScrollArea>
-          )}
+            )}
+          </ScrollArea>
         </Command>
       </PopoverContent>
     </Popover>
