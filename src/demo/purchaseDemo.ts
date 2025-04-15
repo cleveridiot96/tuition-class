@@ -93,6 +93,7 @@ const sale = {
   broker: broker.name,
   amount: 151 * 430,
   netAmount: 151 * 430,
+  transportCost: 0, // Added the missing required property
   notes: 'High rate sale of PP/20 to JNT via broker LB'
 };
 
@@ -102,4 +103,3 @@ addSale(sale);
 // Update inventory after sale
 const { updateInventoryAfterSale } = await import('@/services/inventoryService');
 updateInventoryAfterSale('PP/20', 3); // Update based on number of bags sold
-
