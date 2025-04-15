@@ -1,7 +1,6 @@
 
 // Re-export all entity services for backward compatibility
 export * from './types';
-export * from './storageUtils';
 export * from './agentService';
 export * from './supplierService';
 export * from './customerService';
@@ -30,5 +29,11 @@ export {
   clearAllMasterData,
   seedInitialData,
   getYearSpecificStorageItem,
-  saveYearSpecificStorageItem
+  saveYearSpecificStorageItem,
+  // Import necessary functions from storageUtils but avoid re-exporting getFinancialYearKeyPrefix
+  getStorageItem,
+  saveStorageItem
 } from './storageUtils';
+
+// Note: We're not re-exporting getFinancialYearKeyPrefix from storageUtils
+// to avoid the ambiguity with the function from financialYearService

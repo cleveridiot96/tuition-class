@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -27,18 +26,16 @@ const CashBookFilters = ({
       <div>
         <Label htmlFor="startDate">Start Date</Label>
         <DatePicker
-          id="startDate"
-          selected={startDate}
-          onSelect={setStartDate}
+          date={startDate}
+          setDate={setStartDate}
           className="w-full"
         />
       </div>
       <div>
         <Label htmlFor="endDate">End Date</Label>
         <DatePicker
-          id="endDate"
-          selected={endDate}
-          onSelect={setEndDate}
+          date={endDate}
+          setDate={setEndDate}
           className="w-full"
         />
       </div>

@@ -12,11 +12,11 @@ import {
 } from "@/components/ui/popover"
 
 export interface DatePickerProps {
-  date?: Date
-  setDate: (date: Date | undefined) => void
-  className?: string
-  placeholder?: string
-  onDateChange?: (date: Date | undefined) => void
+  date?: Date | undefined;
+  setDate: (date: Date | undefined) => void;
+  className?: string;
+  placeholder?: string;
+  onDateChange?: (date: Date | undefined) => void;
 }
 
 export function DatePicker({ 
@@ -55,6 +55,7 @@ export function DatePicker({
           selected={date}
           onSelect={handleSelect}
           initialFocus
+          className="pointer-events-auto"
         />
       </PopoverContent>
     </Popover>
