@@ -1,56 +1,58 @@
+
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import DashboardSummary from "@/components/DashboardSummary";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardMenu from "@/components/DashboardMenu";
 import { seedInitialData } from '@/services/storageUtils';
 import { initializeFinancialYears } from "@/services/financialYearService";
-import { getSales, getPurchases, getPayments, getReceipts } from "@/services/storageService";
+import { getDashboardSummary } from "@/utils/accountingUtils";
+import StockReport from "@/components/StockReport";
+import ProfitLossStatement from "@/components/ProfitLossStatement";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 const Index = () => {
-  const [summaryData, setSummaryData] = useState({
-    totalSales: 0,
-    totalPurchases: 0,
-    totalPayments: 0,
-    totalReceipts: 0
-  });
+  const [openingBalancesOpen, setOpeningBalancesOpen] = useState(false);
+  const {
+    summaryData,
+    profitByTransaction,
+    profitByMonth,
+    totalProfit,
+    loadDashboardData,
+  } = useDashboardData();
 
   useEffect(() => {
     // Initialize data on first load if needed
     seedInitialData();
     initializeFinancialYears();
+    loadDashboardData();
 
-    // Load summary data
-    const loadSummaryData = () => {
-      try {
-        const sales = getSales();
-        const purchases = getPurchases();
-        const payments = getPayments();
-        const receipts = getReceipts();
-        
-        const totalSales = sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
-        const totalPurchases = purchases.reduce((sum, purchase) => sum + (purchase.totalAmount || 0), 0);
-        const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
-        const totalReceipts = receipts.reduce((sum, receipt) => sum + receipt.amount, 0);
-
-        setSummaryData({ totalSales, totalPurchases, totalPayments, totalReceipts });
-      } catch (error) {
-        console.error("Error loading summary data:", error);
-      }
-    };
-
-    loadSummaryData();
-    
     // Listen for storage events
-    window.addEventListener('storage', loadSummaryData);
-    return () => window.removeEventListener('storage', loadSummaryData);
-  }, []);
+    window.addEventListener('storage', loadDashboardData);
+    return () => window.removeEventListener('storage', loadDashboardData);
+  }, [loadDashboardData]);
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation title="Dashboard" />
       <div className="container mx-auto p-4 md:p-6">
+        <DashboardHeader 
+          onOpeningBalancesClick={() => setOpeningBalancesOpen(true)} 
+        />
+        
         <DashboardSummary summaryData={summaryData} />
+        
+        <div className="grid gap-6">
+          <ProfitLossStatement 
+            profitByTransaction={profitByTransaction}
+            profitByMonth={profitByMonth}
+            totalProfit={totalProfit}
+          />
+          
+          <StockReport />
+        </div>
+        
         <DashboardMenu />
         
         {/* Additional info section at the bottom */}
