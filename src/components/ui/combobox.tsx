@@ -46,16 +46,11 @@ export function Combobox({
     setSelectedValue(value || "");
   }, [value]);
 
-  // Ensure options is always an array of valid objects
+  // Ensure options is always a valid array
   const safeOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) return [];
-    
-    return options.filter(option => 
-      option && 
-      typeof option === 'object' && 
-      'value' in option && 
-      'label' in option
-    );
+    return Array.isArray(options) ? options.filter(option => 
+      option && typeof option === 'object' && 'value' in option && 'label' in option
+    ) : [];
   }, [options]);
 
   // Filter options based on input
@@ -64,10 +59,8 @@ export function Combobox({
     
     return safeOptions.filter(option => {
       const label = String(option.label).toLowerCase();
-      const optionValue = String(option.value).toLowerCase();
       const search = inputValue.toLowerCase();
-      
-      return label.includes(search) || optionValue.includes(search);
+      return label.includes(search);
     });
   }, [safeOptions, inputValue]);
 

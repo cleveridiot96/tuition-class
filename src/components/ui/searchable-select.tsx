@@ -48,14 +48,9 @@ export function SearchableSelect({
 
   // Always ensure options is an array of valid objects
   const safeOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) return [];
-    
-    return options.filter(option => 
-      option && 
-      typeof option === 'object' &&
-      'value' in option &&
-      'label' in option
-    );
+    return Array.isArray(options) ? options.filter(option => 
+      option && typeof option === 'object' && 'value' in option && 'label' in option
+    ) : [];
   }, [options]);
   
   // Filter options based on search term
