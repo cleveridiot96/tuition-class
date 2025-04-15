@@ -145,3 +145,4 @@ const DashboardHeader = ({ onOpeningBalancesClick }: DashboardHeaderProps) => {
 };
 
 export default DashboardHeader;
+
