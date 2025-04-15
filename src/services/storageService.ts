@@ -10,7 +10,7 @@ export * from './customerService';
 export * from './brokerService';
 export * from './transporterService';
 export * from './purchaseService';
-export * from './saleService';
+export { getSales, addSale, updateSale, deleteSale, saveSales } from './saleService';
 export * from './inventoryService';
 export * from './paymentService';
 export * from './receiptService';
