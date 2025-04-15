@@ -45,22 +45,11 @@ export function SearchableSelect({
 }: SearchableSelectProps) {
   // CRITICAL FIX: Ensure options is always a valid array
   const safeOptions = React.useMemo(() => {
-    // Return empty array if options is falsy
-    if (!options) return [];
-    
-    // Ensure options is an array
     if (!Array.isArray(options)) {
       console.warn("SearchableSelect: options is not an array, defaulting to []");
       return [];
     }
-    
-    // Filter out invalid options
-    return options.filter(option => 
-      option && 
-      typeof option === 'object' && 
-      'value' in option && 
-      'label' in option
-    );
+    return options;
   }, [options]);
   
   const [open, setOpen] = React.useState(false);
@@ -71,7 +60,7 @@ export function SearchableSelect({
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      const label = String(option.label || "").toLowerCase();
+      const label = String(option?.label || "").toLowerCase();
       const search = searchTerm.toLowerCase();
       return label.includes(search);
     });
