@@ -85,12 +85,9 @@ const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
 >(({ className, children, ...props }, ref) => {
-  // Safely handle children, to avoid "undefined is not iterable" errors
-  const safeChildren = React.useMemo(() => {
-    if (!children) return null;
-    return children;
-  }, [children]);
-
+  // Convert children to array and filter out null/undefined values
+  const safeChildren = React.Children.toArray(children).filter(Boolean);
+  
   return (
     <CommandPrimitive.Group
       ref={ref}

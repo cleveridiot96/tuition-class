@@ -34,7 +34,7 @@ interface SearchableSelectProps {
 }
 
 export function SearchableSelect({
-  options = [], // Ensure options has a default value
+  options = [],
   value,
   onValueChange,
   placeholder = "Select an option",
@@ -46,7 +46,7 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // Ensure options is always an array
+  // Always ensure options is an array
   const safeOptions = Array.isArray(options) ? options : [];
   
   // Filter options based on search term
@@ -54,21 +54,18 @@ export function SearchableSelect({
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      const label = option.label.toLowerCase();
+      if (!option || typeof option !== 'object') return false;
+      
+      const label = (option.label || "").toLowerCase();
       const search = searchTerm.toLowerCase();
       return label.includes(search);
     });
   }, [safeOptions, searchTerm]);
   
-  const selectedOption = safeOptions.find((option) => option.value === value);
-
-  // Handle search input change
-  const handleSearchChange = (search: string) => {
-    setSearchTerm(search);
-  };
+  const selectedOption = safeOptions.find((option) => option?.value === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -85,13 +82,19 @@ export function SearchableSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full min-w-[200px] p-0 bg-white shadow-lg">
-        <Command>
+      <PopoverContent 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
+        align="start"
+        avoidCollisions
+        side="bottom"
+        sideOffset={4}
+      >
+        <Command shouldFilter={false}>
           <CommandInput 
             placeholder={`Search ${placeholder.toLowerCase()}...`} 
             className="h-9"
             value={searchTerm}
-            onValueChange={handleSearchChange}
+            onValueChange={setSearchTerm}
           />
           {filteredOptions.length === 0 ? (
             <CommandEmpty>{emptyMessage}</CommandEmpty>

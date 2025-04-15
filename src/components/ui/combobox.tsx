@@ -28,7 +28,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options = [], // Always ensure options has a default value
+  options = [],
   value = "",
   onSelect,
   onChange,
@@ -45,6 +45,18 @@ export function Combobox({
   React.useEffect(() => {
     setSelectedValue(value || "");
   }, [value]);
+
+  // Ensure options is always an array of valid objects
+  const safeOptions = React.useMemo(() => {
+    if (!Array.isArray(options)) return [];
+    
+    return options.filter(option => 
+      option && 
+      typeof option === 'object' && 
+      'value' in option && 
+      'label' in option
+    );
+  }, [options]);
 
   // Select handler
   const handleSelect = (currentValue: string) => {
@@ -68,31 +80,24 @@ export function Combobox({
 
   // Filter options based on input
   const filteredOptions = React.useMemo(() => {
-    // Ensure options is an array
-    const safeOptions = Array.isArray(options) ? options : [];
-    
-    if (!inputValue || safeOptions.length === 0) return safeOptions;
+    if (!inputValue) return safeOptions;
     
     return safeOptions.filter(option => {
-      if (!option) return false;
-      
-      const label = typeof option.label === 'string' ? option.label.toLowerCase() : '';
-      const optionValue = typeof option.value === 'string' ? option.value.toLowerCase() : '';
+      const label = option.label.toLowerCase();
+      const optionValue = option.value.toLowerCase();
       const search = inputValue.toLowerCase();
       
       return label.includes(search) || optionValue.includes(search);
     });
-  }, [options, inputValue]);
+  }, [safeOptions, inputValue]);
 
   // Get display text for selected value
   const displayText = React.useMemo(() => {
     if (!selectedValue) return placeholder;
     
-    // Ensure options is an array
-    const safeOptions = Array.isArray(options) ? options : [];
-    const foundOption = safeOptions.find(option => option && option.value === selectedValue);
+    const foundOption = safeOptions.find(option => option.value === selectedValue);
     return foundOption ? foundOption.label : selectedValue;
-  }, [selectedValue, options, placeholder]);
+  }, [selectedValue, safeOptions, placeholder]);
 
   return (
     <Popover 
@@ -115,6 +120,8 @@ export function Combobox({
         className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
         align="start"
         avoidCollisions
+        side="bottom"
+        sideOffset={4}
       >
         <Command shouldFilter={false}>
           <CommandInput 
