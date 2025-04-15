@@ -23,8 +23,8 @@ export interface SelectOption {
 }
 
 interface SearchableSelectProps {
-  options?: SelectOption[]; // Make options optional
-  value?: string;
+  options?: SelectOption[] | null | any; // Accept ANYTHING
+  value?: string | null;
   onValueChange: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
@@ -34,7 +34,7 @@ interface SearchableSelectProps {
 }
 
 export function SearchableSelect({
-  options = [], // Default to empty array
+  options = [], // DEFAULT TO EMPTY ARRAY (CRITICAL)
   value,
   onValueChange,
   placeholder = "Select an option",
@@ -46,39 +46,70 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   
-  // Validate and normalize options
-  const normalizedOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) {
-      console.warn("SearchableSelect: options must be an array");
-      return [];
-    }
-
-    return options.map(option => {
-      if (!option || typeof option !== 'object') {
-        console.warn("SearchableSelect: invalid option format");
-        return { value: '', label: 'Invalid option' };
-      }
-      return {
-        value: String(option.value || ''),
-        label: String(option.label || '')
-      };
-    }).filter(option => option.value); // Filter out empty values
-  }, [options]);
-  
-  // Filter options based on search term
-  const filteredOptions = React.useMemo(() => {
-    if (!searchTerm) return normalizedOptions;
+  // 1. FORCE options to ALWAYS be an array, no matter what
+  const safeOptions = React.useMemo(() => {
+    // For debugging
+    console.log("SearchableSelect OPTIONS DEBUG:", {
+      type: typeof options,
+      isArray: Array.isArray(options),
+      raw: options,
+      sample: options?.[0],
+      value: value
+    });
     
-    return normalizedOptions.filter(option => 
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [normalizedOptions, searchTerm]);
+    if (!options) return [];
+    if (Array.isArray(options)) {
+      return options
+        .filter(o => o !== null && o !== undefined)
+        .map((o) => ({
+          value: String(o?.value ?? ""),
+          label: String(o?.label ?? "")
+        }))
+        .filter((o) => o.value); // Remove empty values
+    }
+    console.error("OPTIONS IS NOT ARRAY:", options);
+    return [];
+  }, [options, value]);
   
-  // Find selected option
-  const selectedOption = React.useMemo(() => 
-    normalizedOptions.find(option => option.value === value) || null,
-    [normalizedOptions, value]
-  );
+  // 2. SAFE filtered options
+  const filteredOptions = React.useMemo(() => {
+    if (!searchTerm) return safeOptions;
+    
+    try {
+      const term = searchTerm.toLowerCase();
+      return safeOptions.filter(option => 
+        String(option.label).toLowerCase().includes(term)
+      );
+    } catch (error) {
+      console.error("Error filtering options:", error);
+      return safeOptions;
+    }
+  }, [safeOptions, searchTerm]);
+  
+  // 3. SAFE selected value
+  const selectedOption = React.useMemo(() => {
+    try {
+      return safeOptions.find(option => option.value === value) || null;
+    } catch (error) {
+      console.error("Error finding selected option:", error);
+      return null;
+    }
+  }, [safeOptions, value]);
+
+  // Create a safe command item wrapper to catch any errors
+  const SafeCommandItem = React.forwardRef<
+    HTMLDivElement, 
+    React.ComponentPropsWithoutRef<typeof CommandItem>
+  >((props, ref) => {
+    try {
+      return <CommandItem ref={ref} {...props} />;
+    } catch (error) {
+      console.error("CommandItem crashed:", error);
+      return <div className="p-2 text-sm">Error rendering option</div>;
+    }
+  });
+  
+  SafeCommandItem.displayName = "SafeCommandItem";
 
   return (
     <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
@@ -99,7 +130,7 @@ export function SearchableSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
         align="start"
         avoidCollisions
         side="bottom"
@@ -118,7 +149,7 @@ export function SearchableSelect({
             ) : (
               <CommandGroup>
                 {filteredOptions.map((option) => (
-                  <CommandItem
+                  <SafeCommandItem
                     key={option.value}
                     value={option.value}
                     onSelect={(currentValue) => {
@@ -134,7 +165,7 @@ export function SearchableSelect({
                       )}
                     />
                     {option.label}
-                  </CommandItem>
+                  </SafeCommandItem>
                 ))}
               </CommandGroup>
             )}
