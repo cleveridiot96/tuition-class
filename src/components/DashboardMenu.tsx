@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   BarChart3, 
@@ -18,6 +18,8 @@ import { exportDataBackup } from "@/services/storageService";
 import { toast } from "@/hooks/use-toast";
 
 const DashboardMenu = () => {
+  const navigate = useNavigate();
+  
   const menuItems = [
     {
       title: "Purchases",
@@ -56,7 +58,7 @@ const DashboardMenu = () => {
       description: "Manage incoming payments",
     },
     {
-      title: "Ledger",
+      title: "Master Data",
       icon: <Users2 className="w-6 h-6 mb-2 text-indigo-600" />,
       link: "/master",
       description: "Manage people & companies",
@@ -68,7 +70,7 @@ const DashboardMenu = () => {
       description: "Track cash transactions",
     },
     {
-      title: "Ledger",
+      title: "Party Ledger",
       icon: <ClipboardList className="w-6 h-6 mb-2 text-gray-600" />,
       link: "/ledger",
       description: "View party balances",
@@ -132,26 +134,14 @@ const DashboardMenu = () => {
         {menuItems && menuItems.map((item) => (
           <Card 
             key={item.title + item.link}
-            className="hover:border-primary hover:shadow-md transition-all duration-200"
+            className="hover:border-primary hover:shadow-md transition-all duration-200 cursor-pointer"
+            onClick={() => item.onClick ? item.onClick() : navigate(item.link)}
           >
-            {item.onClick ? (
-              <CardContent 
-                className="p-4 flex flex-col items-center text-center cursor-pointer" 
-                onClick={item.onClick}
-              >
-                {item.icon}
-                <h3 className="font-bold">{item.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-              </CardContent>
-            ) : (
-              <Link to={item.link}>
-                <CardContent className="p-4 flex flex-col items-center text-center">
-                  {item.icon}
-                  <h3 className="font-bold">{item.title}</h3>
-                  <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                </CardContent>
-              </Link>
-            )}
+            <CardContent className="p-4 flex flex-col items-center text-center">
+              {item.icon}
+              <h3 className="font-bold">{item.title}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+            </CardContent>
           </Card>
         ))}
       </div>

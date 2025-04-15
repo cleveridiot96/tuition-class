@@ -37,9 +37,8 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
         // Save backup to localStorage
         localStorage.setItem('preFormatBackup', backupData);
         
-        // Clear all existing data
-        clearAllData();
-        clearAllMasterData();
+        // Clear all localStorage completely
+        localStorage.clear();
         
         // Small delay to ensure clearing is complete
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -56,7 +55,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
         // Show success message
         toast({
           title: "Data Formatted Successfully",
-          description: "All data has been reset to initial state. A backup was created automatically.",
+          description: "All data has been completely reset. A backup was created automatically.",
         });
         
         // Trigger the completion callback

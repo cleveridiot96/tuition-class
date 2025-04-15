@@ -45,32 +45,7 @@ import { useReactToPrint } from "react-to-print";
 import SalesReceipt from "@/components/SalesReceipt";
 import { getSaleIdFromUrl } from "@/utils/helpers";
 import { normalizeSale, normalizeSales } from "@/utils/typeNormalizers";
-
-interface Sale {
-  id: string;
-  date: string;
-  lotNumber: string;
-  billNumber?: string;
-  billAmount?: number;
-  customer: string;
-  customerId: string;
-  quantity: number;
-  netWeight: number;
-  rate: number;
-  broker?: string;
-  brokerId?: string;
-  transporter?: string;
-  transporterId?: string;
-  transportRate?: number;
-  location?: string;
-  notes?: string;
-  totalAmount: number;
-  transportCost: number;
-  netAmount: number;
-  isDeleted?: boolean;
-  brokerageAmount?: number;
-  amount: number;
-}
+import { Sale } from "@/services/types";
 
 const Sales = () => {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -103,7 +78,7 @@ const Sales = () => {
       const allSales = getSales() || [];
       const targetSale = allSales.find(s => s.id === saleId && !s.isDeleted);
       if (targetSale) {
-        handleEdit(targetSale);
+        handleEdit(normalizeSale(targetSale));
         window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
@@ -114,8 +89,8 @@ const Sales = () => {
     
     try {
       const allSales = getSales() || [];
-      const activeSales = normalizeSales(allSales.filter(s => !s.isDeleted)) || [];
-      const deletedSalesData = normalizeSales(allSales.filter(s => s.isDeleted)) || [];
+      const activeSales = normalizeSales(allSales.filter(s => !s.isDeleted));
+      const deletedSalesData = normalizeSales(allSales.filter(s => s.isDeleted));
       
       setSales(activeSales);
       setDeletedSales(deletedSalesData);
@@ -159,18 +134,18 @@ const Sales = () => {
     if (!editingSale) return;
     
     try {
-      const saleWithLocation = {
+      const normalizedSale = normalizeSale({
         ...updatedSale,
         amount: updatedSale.totalAmount,
         transportCost: updatedSale.transportCost || 0,
-      };
+      });
       
       if (updatedSale.quantity !== editingSale.quantity || updatedSale.lotNumber !== editingSale.lotNumber) {
         updateInventoryAfterSale(editingSale.lotNumber, -editingSale.quantity);
         updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
       }
       
-      updateSale(saleWithLocation);
+      updateSale(normalizedSale);
       
       loadData();
       

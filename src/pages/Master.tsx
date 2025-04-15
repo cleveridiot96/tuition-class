@@ -24,9 +24,11 @@ import {
   getBrokers, addBroker, deleteBroker, updateBroker,
   getTransporters, addTransporter, deleteTransporter, updateTransporter,
   getSuppliers, addSupplier, deleteSupplier, updateSupplier,
-  seedInitialData 
+  seedInitialData,
+  clearAllData,
+  importDataBackup
 } from '@/services/storageService';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2, Plus, Search } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +37,8 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Label } from '@/components/ui/label';
 
 const Master = () => {
   const [activeTab, setActiveTab] = useState('agents');
@@ -43,6 +47,7 @@ const Master = () => {
   const [customers, setCustomers] = useState([]);
   const [brokers, setBrokers] = useState([]);
   const [transporters, setTransporters] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [entityToDelete, setEntityToDelete] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [currentEntityType, setCurrentEntityType] = useState('');
@@ -85,6 +90,14 @@ const Master = () => {
       window.removeEventListener('focus', handleFocus);
     };
   }, [loadData]);
+
+  const filterEntities = (entities) => {
+    if (!searchTerm) return entities;
+    return entities.filter(entity => 
+      entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (entity.address && entity.address.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  };
 
   const handleTabChange = (value) => {
     setActiveTab(value);
@@ -258,12 +271,29 @@ const Master = () => {
     return commonFields;
   };
 
+  const getFilteredEntities = () => {
+    switch (activeTab) {
+      case 'agents':
+        return filterEntities(agents);
+      case 'suppliers':
+        return filterEntities(suppliers);
+      case 'customers':
+        return filterEntities(customers);
+      case 'brokers':
+        return filterEntities(brokers);
+      case 'transporters':
+        return filterEntities(transporters);
+      default:
+        return [];
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Navigation title="Master Data" showBackButton={true} />
       
       <div className="container mx-auto py-8 px-4">
-        <Tabs defaultValue="agents" value={activeTab} onValueChange={handleTabChange}>
+        <Tabs defaultValue="agents" value={activeTab} onValueChange={setActiveTab}>
           <div className="flex justify-between items-center mb-6">
             <TabsList>
               <TabsTrigger value="agents">Agents</TabsTrigger>
@@ -291,11 +321,23 @@ const Master = () => {
             </Dialog>
           </div>
           
+          <div className="mb-4 flex">
+            <div className="relative w-full max-w-sm">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={`Search ${activeTab}...`}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+          </div>
+
           <TabsContent value="agents">
             <Card>
               <CardContent className="p-6">
                 <EntityTable 
-                  entities={agents} 
+                  entities={filterEntities(agents)} 
                   onDelete={(id) => confirmDelete(id, 'agent')}
                   onEdit={(entity) => openEditDialog(entity, 'agent')}
                   type="agent"
@@ -308,7 +350,7 @@ const Master = () => {
             <Card>
               <CardContent className="p-6">
                 <EntityTable 
-                  entities={suppliers} 
+                  entities={filterEntities(suppliers)} 
                   onDelete={(id) => confirmDelete(id, 'supplier')}
                   onEdit={(entity) => openEditDialog(entity, 'supplier')}
                   type="supplier"
@@ -321,7 +363,7 @@ const Master = () => {
             <Card>
               <CardContent className="p-6">
                 <EntityTable 
-                  entities={customers} 
+                  entities={filterEntities(customers)} 
                   onDelete={(id) => confirmDelete(id, 'customer')}
                   onEdit={(entity) => openEditDialog(entity, 'customer')}
                   type="customer"
@@ -334,7 +376,7 @@ const Master = () => {
             <Card>
               <CardContent className="p-6">
                 <EntityTable 
-                  entities={brokers} 
+                  entities={filterEntities(brokers)} 
                   onDelete={(id) => confirmDelete(id, 'broker')}
                   onEdit={(entity) => openEditDialog(entity, 'broker')}
                   type="broker"
@@ -348,7 +390,7 @@ const Master = () => {
             <Card>
               <CardContent className="p-6">
                 <EntityTable 
-                  entities={transporters} 
+                  entities={filterEntities(transporters)} 
                   onDelete={(id) => confirmDelete(id, 'transporter')}
                   onEdit={(entity) => openEditDialog(entity, 'transporter')}
                   type="transporter"

@@ -738,7 +738,7 @@ export const refreshAccountingData = throttle((): void => {
       createDoubleEntry(
         payment.date,
         partyAccountId, // Debit Party Account
-        payment.mode === 'cash' ? 'acc-cash' : 'acc-bank', // Credit Cash or Bank Account
+        payment.paymentMethod || payment.mode === 'cash' ? 'acc-cash' : 'acc-bank', // Credit Cash or Bank Account
         payment.amount,
         payment.reference || '',
         `Payment to ${payment.partyName || 'party'}`,
@@ -761,7 +761,7 @@ export const refreshAccountingData = throttle((): void => {
     if (customerAccountId && getAccountById(customerAccountId)) {
       createDoubleEntry(
         receipt.date,
-        receipt.mode === 'cash' ? 'acc-cash' : 'acc-bank', // Debit Cash or Bank Account
+        receipt.paymentMethod || receipt.mode === 'cash' ? 'acc-cash' : 'acc-bank', // Debit Cash or Bank Account
         customerAccountId, // Credit Customer Account
         receipt.amount,
         receipt.reference || '',
