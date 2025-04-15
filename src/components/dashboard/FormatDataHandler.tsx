@@ -6,7 +6,7 @@ import {
   clearAllData, 
   clearAllMasterData, 
   seedInitialData 
-} from "@/services/storageService";
+} from "@/services/storageUtils";
 import { toast } from "@/hooks/use-toast";
 import FormatEventConnector from './FormatEventConnector';
 

@@ -1,20 +1,14 @@
 
-import { v4 as uuidv4 } from 'uuid';
-import { getCurrentFinancialYear } from './financialYearService';
-import { BackupData } from './types';
+import { getActiveFinancialYear } from './financialYearService';
+import { format, parseISO, addDays } from 'date-fns';
 
-// Get financial year key prefix
-export const getFinancialYearKeyPrefix = (yearName: string): string => {
-  return `fy_${yearName}_`;
-};
-
-// Base storage functions
+// Helper functions for working with localStorage
 export function getStorageItem<T>(key: string, defaultValue: T): T {
   try {
     const item = localStorage.getItem(key);
     return item ? JSON.parse(item) : defaultValue;
   } catch (error) {
-    console.error(`Error getting item ${key} from localStorage:`, error);
+    console.error(`Error getting item ${key} from storage:`, error);
     return defaultValue;
   }
 }
@@ -23,36 +17,101 @@ export function saveStorageItem<T>(key: string, value: T): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch (error) {
-    console.error(`Error saving item ${key} to localStorage:`, error);
+    console.error(`Error saving item ${key} to storage:`, error);
   }
 }
 
-// Year-specific storage functions
-export function getYearSpecificStorageItem<T>(key: string, defaultValue: T, year?: string): T {
-  const currentYear = year || getCurrentFinancialYear();
-  const yearKey = getFinancialYearKeyPrefix(currentYear) + key;
-  return getStorageItem<T>(yearKey, defaultValue);
+// Financial year specific storage functions
+export function getFinancialYearKeyPrefix(): string {
+  const activeYear = getActiveFinancialYear();
+  return activeYear ? `fy_${activeYear.id}_` : '';
 }
 
-export function saveYearSpecificStorageItem<T>(key: string, value: T, year?: string, merge = false): void {
-  const currentYear = year || getCurrentFinancialYear();
-  const yearKey = getFinancialYearKeyPrefix(currentYear) + key;
+export function getYearSpecificKey(key: string): string {
+  const prefix = getFinancialYearKeyPrefix();
+  return prefix ? `${prefix}${key}` : key;
+}
+
+export function getYearSpecificStorageItem<T>(key: string, defaultValue: T): T {
+  const yearKey = getYearSpecificKey(key);
+  return getStorageItem(yearKey, defaultValue);
+}
+
+export function saveYearSpecificStorageItem<T>(key: string, value: T): void {
+  const yearKey = getYearSpecificKey(key);
+  saveStorageItem(yearKey, value);
+}
+
+// Location management functions
+export function getLocations(): string[] {
+  return getStorageItem('locations', []);
+}
+
+export function saveLocations(locations: string[]): void {
+  saveStorageItem('locations', locations);
+}
+
+export function addLocation(location: string): void {
+  const locations = getLocations();
+  if (!locations.includes(location)) {
+    locations.push(location);
+    saveLocations(locations);
+  }
+}
+
+// Lot number validation
+export function checkDuplicateLot(lotNumber: string): boolean {
+  const inventory = getYearSpecificStorageItem('inventory', []);
+  return inventory.some((item: any) => 
+    item.lotNumber === lotNumber && !item.isDeleted
+  );
+}
+
+// Storage statistics
+export function getStorageSize(): { 
+  totalSize: number;
+  keyCount: number;
+  items: {key: string, size: number}[] 
+} {
+  const result = {
+    totalSize: 0,
+    keyCount: 0,
+    items: [] as {key: string, size: number}[]
+  };
   
-  if (merge && Array.isArray(value)) {
-    const existingData = getStorageItem<T[]>(yearKey, [] as unknown as T[]);
-    const mergedData = [...existingData, ...value];
-    saveStorageItem(yearKey, mergedData);
-  } else {
-    saveStorageItem(yearKey, value);
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        const value = localStorage.getItem(key) || '';
+        const size = (key.length + value.length) * 2; // Approx bytes in UTF-16
+        
+        result.items.push({
+          key,
+          size
+        });
+        
+        result.totalSize += size;
+        result.keyCount++;
+      }
+    }
+    
+    // Sort by size, largest first
+    result.items.sort((a, b) => b.size - a.size);
+    
+  } catch (error) {
+    console.error("Error calculating storage size:", error);
   }
+  
+  return result;
 }
 
-// Data backup functions
-export function exportDataBackup(silent = false): string {
+// Backup and restore
+export function exportDataBackup(silent: boolean = false): string {
   try {
     const data: Record<string, any> = {};
     
-    // Collect all localStorage data
+    // Collect all data from localStorage
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key) {
@@ -61,65 +120,66 @@ export function exportDataBackup(silent = false): string {
           if (value) {
             data[key] = JSON.parse(value);
           }
-        } catch (e) {
-          // Skip items that can't be parsed as JSON
-          console.warn(`Skipping ${key} in backup (not valid JSON)`);
+        } catch (error) {
+          console.error(`Error parsing item ${key}:`, error);
         }
       }
     }
     
-    const backup: BackupData = {
+    // Create backup object
+    const backup = {
       data,
       timestamp: Date.now()
     };
     
-    const json = JSON.stringify(backup);
+    // Convert to JSON string
+    const backupJson = JSON.stringify(backup);
     
+    // If not silent mode, trigger download
     if (!silent) {
-      // Create and download file
-      const blob = new Blob([json], { type: 'application/json' });
+      const blob = new Blob([backupJson], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
+      
+      const date = format(new Date(), 'yyyy-MM-dd');
+      const filename = `kisan-khata-backup-${date}.json`;
+      
       const a = document.createElement('a');
       a.href = url;
-      a.download = `kisan-khata-backup-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
     
-    return json;
+    return backupJson;
   } catch (error) {
     console.error("Error creating backup:", error);
-    return "";
+    return '';
   }
 }
 
-export function importDataBackup(backupData: string): boolean {
+export function importDataBackup(backupJson: string): boolean {
   try {
-    const backup = JSON.parse(backupData) as BackupData;
+    const backup = JSON.parse(backupJson);
+    const { data } = backup;
     
-    // Validate backup format
-    if (!backup || !backup.data || !backup.timestamp) {
-      throw new Error("Invalid backup format");
+    if (!data) {
+      console.error("Invalid backup format: missing data property");
+      return false;
     }
     
-    // Create backup of current data before importing
-    exportDataBackup(true);
-    
-    // Clear current data (except for specific items if needed)
-    const keysToPreserve: string[] = []; // Add keys to preserve here if needed
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && !keysToPreserve.includes(key)) {
-        localStorage.removeItem(key);
+    // Restore all items to localStorage
+    Object.entries(data).forEach(([key, value]) => {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (error) {
+        console.error(`Error restoring item ${key}:`, error);
       }
-    }
+    });
     
-    // Import data from backup
-    for (const key in backup.data) {
-      saveStorageItem(key, backup.data[key]);
-    }
+    // Trigger storage event to notify other parts of the app
+    window.dispatchEvent(new Event('storage'));
     
     return true;
   } catch (error) {
@@ -128,66 +188,26 @@ export function importDataBackup(backupData: string): boolean {
   }
 }
 
-// Utility function to check for duplicate lot numbers
-export function checkDuplicateLot(lotNumber: string): boolean {
-  const currentYear = getCurrentFinancialYear();
-  const purchases = getYearSpecificStorageItem('purchases', [], currentYear);
+// Clear data functions
+export function clearAllData(): void {
+  localStorage.clear();
+}
+
+export function clearAllMasterData(): void {
+  const keysToKeep = new Set(['financialYears', 'activeFinancialYear']);
   
-  return purchases.some((p: any) => p.lotNumber === lotNumber && !p.isDeleted);
-}
-
-// Storage cleanup functions
-export function clearAllData(): boolean {
-  try {
-    localStorage.clear();
-    return true;
-  } catch (error) {
-    console.error("Error clearing all data:", error);
-    return false;
-  }
-}
-
-export function clearAllMasterData(): boolean {
-  try {
-    const keysToRemove = [
-      'suppliers', 'agents', 'brokers', 'customers', 'transporters',
-      'locations', 'financialYears', 'activeFinancialYear', 'openingBalances'
-    ];
-    
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    // Also remove year-specific data prefixed with fy_
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('fy_')) {
-        localStorage.removeItem(key);
-      }
+  for (let i = localStorage.length - 1; i >= 0; i--) {
+    const key = localStorage.key(i);
+    if (key && !keysToKeep.has(key)) {
+      localStorage.removeItem(key);
     }
-    
-    return true;
-  } catch (error) {
-    console.error("Error clearing master data:", error);
-    return false;
   }
 }
 
 // Initial data seeding
-export function seedInitialData(force = false): void {
-  // Set up default locations if not exist
-  const locations = getStorageItem<string[]>('locations', []);
-  if (locations.length === 0 || force) {
-    saveStorageItem('locations', [
-      'Warehouse A', 'Warehouse B', 'Godown 1', 'Godown 2', 
-      'Shop', 'Market Yard', 'Cold Storage'
-    ]);
+export function seedInitialData(): void {
+  // Add default locations if none exist
+  if (getLocations().length === 0) {
+    saveLocations(['Warehouse A', 'Warehouse B', 'Store Room']);
   }
-}
-
-// Get and save locations
-export function getLocations(): string[] {
-  return getStorageItem<string[]>('locations', []);
-}
-
-export function saveLocations(locations: string[]): void {
-  saveStorageItem('locations', locations);
 }

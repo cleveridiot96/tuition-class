@@ -1,385 +1,450 @@
 
 import { v4 as uuidv4 } from 'uuid';
-import { format, subDays, addDays } from 'date-fns';
 import { 
-  addPurchase, 
-  addSale, 
-  addPayment, 
-  addReceipt 
+  addBroker, addCustomer, addTransporter, addSupplier, 
+  addInventoryItem, updateInventoryAfterSale
 } from '@/services/storageService';
+import { addSale } from '@/services/saleService';
+import { addPayment } from '@/services/paymentService';
+import { addReceipt } from '@/services/receiptService';
+import { Broker, Customer, Transporter, Supplier, Sale, Payment, Receipt, InventoryItem } from '@/services/types';
 
-// Sample data arrays
-const parties = [
-  { name: 'Rajesh Kumar', address: 'Village Kanpur, District Lucknow' },
-  { name: 'Sunil Patel', address: 'Village Bhopal, District Indore' },
-  { name: 'Amit Singh', address: 'Village Jaipur, District Alwar' },
-  { name: 'Vikram Verma', address: 'Village Patna, District Gaya' },
-  { name: 'Sanjay Sharma', address: 'Village Delhi, District Gurugram' }
-];
-
-const brokers = [
-  { name: 'Dinesh Broker', address: 'Market Yard, Nagpur', commissionRate: 2.5 },
-  { name: 'Mahesh Agency', address: 'APMC Market, Mumbai', commissionRate: 2 },
-  { name: 'Singh Brothers', address: 'Main Market, Punjab', commissionRate: 1.5 }
-];
-
-const transporters = [
-  { name: 'Tata Transport', address: 'Highway Road, Delhi' },
-  { name: 'Singh Logistics', address: 'Transport Nagar, Jaipur' },
-  { name: 'Fast Movers', address: 'Truck Terminal, Chennai' }
-];
-
-const customers = [
-  { name: 'Reliance Fresh', address: 'Commercial Area, Mumbai' },
-  { name: 'Big Bazaar', address: 'Mall Road, Delhi' },
-  { name: 'Metro Cash & Carry', address: 'Industrial Area, Bangalore' },
-  { name: 'Local Kirana Store', address: 'Main Market, Pune' }
-];
-
-const locations = [
-  'Warehouse A', 'Cold Storage B', 'Market Yard', 'Factory Unit', 'Village Store'
-];
-
-const products = [
-  { name: 'Wheat', avgWeight: 50, priceRange: [1800, 2200] },
-  { name: 'Rice', avgWeight: 25, priceRange: [2500, 3000] },
-  { name: 'Cotton', avgWeight: 170, priceRange: [5500, 6500] },
-  { name: 'Soybean', avgWeight: 60, priceRange: [3700, 4200] },
-  { name: 'Pulses', avgWeight: 45, priceRange: [4500, 5500] }
-];
-
-// Helper functions
-const getRandomItem = <T>(array: T[]): T => {
-  return array[Math.floor(Math.random() * array.length)];
-};
-
-const getRandomNumber = (min: number, max: number): number => {
+// Helper function to generate random integer within range
+export const randomInt = (min: number, max: number): number => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-const getRandomDate = (startDate: Date, endDate: Date): string => {
-  const randomTime = startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime());
-  return format(new Date(randomTime), 'yyyy-MM-dd');
+// Helper function to get random element from array
+export const randomElement = <T>(array: T[]): T => {
+  return array[Math.floor(Math.random() * array.length)];
 };
 
-// Generate a purchase transaction
-const generatePurchase = (existingIds: Set<string> = new Set()) => {
-  const product = getRandomItem(products);
-  const quantity = getRandomNumber(10, 100);
-  const netWeight = quantity * product.avgWeight;
-  const rate = getRandomNumber(product.priceRange[0], product.priceRange[1]) / 100;
-  const totalAmount = netWeight * rate;
-  
-  // Generate unique lot number
-  let lotNumber;
-  do {
-    lotNumber = `LOT-${getRandomNumber(1000, 9999)}`;
-  } while (existingIds.has(lotNumber));
-  existingIds.add(lotNumber);
-  
-  const useBroker = Math.random() > 0.5;
-  const broker = useBroker ? getRandomItem(brokers) : null;
-  const brokerId = broker ? `broker-${Date.now()}-${getRandomNumber(1, 1000)}` : undefined;
-  const brokerageRate = broker ? broker.commissionRate : 0;
-  const brokerageAmount = broker ? (totalAmount * brokerageRate / 100) : 0;
-  
-  const transporterId = `transporter-${Date.now()}-${getRandomNumber(1, 1000)}`;
-  const transportRate = getRandomNumber(10, 50) / 100;
-  const transportCost = netWeight * transportRate;
-  
-  const expenses = getRandomNumber(500, 2000);
-  const totalAfterExpenses = totalAmount + transportCost + expenses;
-  const ratePerKgAfterExpenses = totalAfterExpenses / netWeight;
-  
-  return {
-    id: `purchase-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    date: getRandomDate(subDays(new Date(), 90), subDays(new Date(), 2)),
-    lotNumber,
-    quantity,
-    agentId: `agent-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    agent: getRandomItem(parties).name,
-    party: getRandomItem(parties).name,
-    partyId: `party-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    location: getRandomItem(locations),
-    netWeight,
-    rate,
-    transporter: getRandomItem(transporters).name,
-    transporterId,
-    transportRate,
-    transportCost,
-    totalAmount,
-    expenses,
-    broker: broker?.name,
-    brokerId,
-    brokerageRate,
-    brokerageAmount,
-    brokerageType: "percentage" as "percentage" | "fixed",
-    totalAfterExpenses,
-    ratePerKgAfterExpenses,
-    notes: `Purchase of ${product.name}`,
-    isDeleted: false
-  };
+// Helper function to get random date within range
+export const randomDate = (start: Date, end: Date): Date => {
+  return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
 };
 
-// Generate a sale transaction
-const generateSale = (existingIds: Set<string> = new Set()) => {
-  const product = getRandomItem(products);
-  const quantity = getRandomNumber(5, 50);
-  const netWeight = quantity * product.avgWeight;
-  const rate = getRandomNumber(product.priceRange[0] + 300, product.priceRange[1] + 700) / 100;
-  const amount = netWeight * rate;
-  
-  // Generate unique lot/bill number
-  let lotNumber, billNumber;
-  do {
-    lotNumber = `LOT-${getRandomNumber(1000, 9999)}`;
-    billNumber = `BILL-${getRandomNumber(10000, 99999)}`;
-  } while (existingIds.has(lotNumber) || existingIds.has(billNumber));
-  existingIds.add(lotNumber);
-  existingIds.add(billNumber);
-  
-  const useBroker = Math.random() > 0.6;
-  const broker = useBroker ? getRandomItem(brokers) : null;
-  const brokerId = broker ? `broker-${Date.now()}-${getRandomNumber(1, 1000)}` : undefined;
-  const brokerageRate = broker ? broker.commissionRate : 0;
-  const brokerageAmount = broker ? (amount * brokerageRate / 100) : 0;
-  
-  const useTransport = Math.random() > 0.3;
-  const transporterId = useTransport ? `transporter-${Date.now()}-${getRandomNumber(1, 1000)}` : undefined;
-  const transportRate = useTransport ? getRandomNumber(10, 50) / 100 : 0;
-  const transportCost = useTransport ? netWeight * transportRate : 0;
-  
-  const totalAmount = amount;
-  const netAmount = totalAmount - brokerageAmount;
-  
-  return {
-    id: `sale-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    date: getRandomDate(subDays(new Date(), 60), new Date()),
-    lotNumber,
-    billNumber: Math.random() > 0.7 ? billNumber : undefined,
-    billAmount: Math.random() > 0.7 ? totalAmount : undefined,
-    customer: getRandomItem(customers).name,
-    customerId: `customer-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    quantity,
-    netWeight,
-    rate,
-    broker: broker?.name,
-    brokerId,
-    brokerageRate,
-    brokerageAmount,
-    brokerageType: "percentage" as "percentage" | "fixed",
-    transporter: useTransport ? getRandomItem(transporters).name : undefined,
-    transporterId,
-    transportRate,
-    transportCost,
-    location: getRandomItem(locations),
-    notes: `Sale of ${product.name}`,
-    totalAmount,
-    netAmount,
-    amount,
-    isDeleted: false
-  };
+// Helper function to format date as ISO string (YYYY-MM-DD)
+export const formatDate = (date: Date): string => {
+  return date.toISOString().split('T')[0];
 };
 
-// Generate a payment
-const generatePayment = () => {
-  const amount = getRandomNumber(5000, 50000);
-  const partyTypes = ['agent', 'supplier', 'broker', 'transporter'];
-  const partyType = getRandomItem(partyTypes);
+// Generate demo inventory items
+export const generateInventoryItems = (count: number = 5): InventoryItem[] => {
+  const items: InventoryItem[] = [];
+  const locations = ['Warehouse A', 'Warehouse B', 'Store Room'];
   
-  let party;
-  switch(partyType) {
-    case 'broker': party = getRandomItem(brokers); break;
-    case 'transporter': party = getRandomItem(transporters); break;
-    default: party = getRandomItem(parties);
+  for (let i = 0; i < count; i++) {
+    const quantity = randomInt(50, 300);
+    const rate = randomInt(5000, 12000);
+    const netWeight = quantity * randomInt(48, 52);
+    
+    const item: InventoryItem = {
+      id: uuidv4(),
+      lotNumber: `LOT-${String(i+1).padStart(3, '0')}`,
+      quantity,
+      netWeight,
+      rate,
+      location: randomElement(locations),
+      isDeleted: false
+    };
+    
+    items.push(item);
+    addInventoryItem(item);
   }
   
-  const paymentModes = ['cash', 'cheque', 'bank', 'upi'];
-  const paymentMode = getRandomItem(paymentModes);
-  
-  const isAgainstTransaction = Math.random() > 0.6;
-  const isOnAccount = !isAgainstTransaction && Math.random() > 0.5;
-  
-  return {
-    id: `payment-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    date: getRandomDate(subDays(new Date(), 45), new Date()),
-    party: party.name,
-    partyId: `${partyType}-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    partyName: party.name,
-    partyType,
-    amount,
-    paymentMethod: paymentMode,
-    paymentMode,
-    reference: `REF-${getRandomNumber(100000, 999999)}`,
-    notes: `Payment to ${party.name}`,
-    billNumber: Math.random() > 0.6 ? `BILL-${getRandomNumber(10000, 99999)}` : undefined,
-    billAmount: Math.random() > 0.6 ? getRandomNumber(amount - 5000, amount + 5000) : undefined,
-    referenceNumber: Math.random() > 0.7 ? `TXN-${getRandomNumber(10000, 99999)}` : undefined,
-    isDeleted: false,
-    isOnAccount,
-    isAgainstTransaction,
-    transactionDetails: isAgainstTransaction ? {
-      type: Math.random() > 0.5 ? 'purchase' : 'sale',
-      id: `txn-${Date.now()}-${getRandomNumber(1, 1000)}`,
-      number: `TXN-${getRandomNumber(1000, 9999)}`
-    } : undefined
-  };
+  return items;
 };
 
-// Generate a receipt
-const generateReceipt = () => {
-  const amount = getRandomNumber(10000, 100000);
-  const customer = getRandomItem(customers);
+// Generate demo data for a complete cycle
+export const generateDemoCycle = (
+  count: number = 10,
+  startDate: Date = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+): void => {
+  // Generate master data first
+  const brokers = generateBrokers();
+  const customers = generateCustomers();
+  const transporters = generateTransporters();
+  const suppliers = generateSuppliers();
   
-  const paymentModes = ['cash', 'cheque', 'bank', 'upi'];
-  const paymentMode = getRandomItem(paymentModes);
+  // Generate inventory
+  const inventory = generateInventoryItems(Math.ceil(count / 2));
   
-  return {
-    id: `receipt-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    date: getRandomDate(subDays(new Date(), 30), new Date()),
-    customer: customer.name,
-    customerId: `customer-${Date.now()}-${getRandomNumber(1, 1000)}`,
-    customerName: customer.name,
-    amount,
-    paymentMethod: paymentMode,
-    paymentMode,
-    reference: `REF-${getRandomNumber(100000, 999999)}`,
-    notes: `Receipt from ${customer.name}`,
-    isDeleted: false
-  };
+  // Generate sales from inventory
+  const sales = generateSales(count, inventory, customers, brokers, transporters, startDate);
+  
+  // Generate payments and receipts based on sales
+  generateReceipts(sales, customers);
+  generatePayments(suppliers, transporters, brokers);
 };
 
-// Generate sample data set
-export const generateSampleData = async () => {
-  try {
-    console.log('Starting sample data generation...');
+// Generate demo brokers
+export const generateBrokers = (count: number = 5): Broker[] => {
+  const brokerNames = [
+    'DS Traders', 'Ashok Jain Brokerage', 'Rajesh Commodities', 'LB Trading Co.',
+    'SK Broker Services', 'Pradeep Singh', 'Mahesh Brokers', 'Rajan & Sons'
+  ];
+  
+  const brokers: Broker[] = [];
+  
+  for (let i = 0; i < Math.min(count, brokerNames.length); i++) {
+    const broker: Broker = {
+      id: uuidv4(),
+      name: brokerNames[i],
+      contactNumber: `98${randomInt(10000000, 99999999)}`,
+      commissionRate: randomInt(1, 5) / 10, // 0.1% to 0.5%
+      notes: 'Demo broker data',
+      isDeleted: false,
+      balance: 0
+    };
     
-    const existingIds = new Set<string>();
-    const purchases = [];
-    const sales = [];
-    const payments = [];
-    const receipts = [];
+    brokers.push(broker);
+    addBroker(broker);
+  }
+  
+  return brokers;
+};
+
+// Generate demo customers
+export const generateCustomers = (count: number = 8): Customer[] => {
+  const customerNames = [
+    'Anand Traders', 'Shree Ganesh Merchants', 'Sai Traders', 'Krishna Store',
+    'Mahalaxmi Enterprises', 'Patel Trading Co.', 'Gupta Brothers', 'Sharma & Sons',
+    'Royal Merchants', 'Agarwal Traders', 'Mittal Store', 'Jain Brothers'
+  ];
+  
+  const customers: Customer[] = [];
+  
+  for (let i = 0; i < Math.min(count, customerNames.length); i++) {
+    const customer: Customer = {
+      id: uuidv4(),
+      name: customerNames[i],
+      contactNumber: `98${randomInt(10000000, 99999999)}`,
+      address: `Shop No. ${randomInt(1, 50)}, Market Road, City`,
+      gstNumber: `27AAAAA${randomInt(1000, 9999)}A1Z${randomInt(0, 9)}`,
+      creditLimit: randomInt(100000, 500000),
+      payableByCustomer: Math.random() > 0.5,
+      notes: 'Demo customer data',
+      isDeleted: false,
+      balance: 0
+    };
     
-    // Generate purchases (80)
-    for (let i = 0; i < 80; i++) {
-      purchases.push(generatePurchase(existingIds));
+    customers.push(customer);
+    addCustomer(customer);
+  }
+  
+  return customers;
+};
+
+// Generate demo transporters
+export const generateTransporters = (count: number = 4): Transporter[] => {
+  const transporterNames = [
+    'Express Logistics', 'Fast Cargo Services', 'Highway Transporters', 
+    'Roadways Freight', 'Speed Transport Co.', 'Reliable Logistics'
+  ];
+  
+  const transporters: Transporter[] = [];
+  
+  for (let i = 0; i < Math.min(count, transporterNames.length); i++) {
+    const transporter: Transporter = {
+      id: uuidv4(),
+      name: transporterNames[i],
+      contactNumber: `98${randomInt(10000000, 99999999)}`,
+      address: `Plot No. ${randomInt(1, 100)}, Industrial Area, City`,
+      gstNumber: `27BBBBB${randomInt(1000, 9999)}B1Z${randomInt(0, 9)}`,
+      notes: 'Demo transporter data',
+      isDeleted: false,
+      balance: 0
+    };
+    
+    transporters.push(transporter);
+    addTransporter(transporter);
+  }
+  
+  return transporters;
+};
+
+// Generate demo suppliers
+export const generateSuppliers = (count: number = 6): Supplier[] => {
+  const supplierNames = [
+    'AR Products', 'Dalvi Supply Co.', 'Ravi Enterprises', 'Karunesh Trading',
+    'Nashik Farmers Cooperative', 'Vidarbha Agro Supplies', 'Marathwada Producers',
+    'Western Zone Suppliers'
+  ];
+  
+  const suppliers: Supplier[] = [];
+  
+  for (let i = 0; i < Math.min(count, supplierNames.length); i++) {
+    const supplier: Supplier = {
+      id: uuidv4(),
+      name: supplierNames[i],
+      contactNumber: `98${randomInt(10000000, 99999999)}`,
+      address: `${randomInt(100, 999)}, Industrial Estate, City`,
+      gstNumber: `27CCCCC${randomInt(1000, 9999)}C1Z${randomInt(0, 9)}`,
+      notes: 'Demo supplier data',
+      isDeleted: false,
+      balance: 0
+    };
+    
+    suppliers.push(supplier);
+    addSupplier(supplier);
+  }
+  
+  return suppliers;
+};
+
+// Generate demo sales
+export const generateSales = (
+  count: number,
+  inventory: InventoryItem[],
+  customers: Customer[],
+  brokers: Broker[],
+  transporters: Transporter[],
+  startDate: Date
+): Sale[] => {
+  const endDate = new Date();
+  const sales: Sale[] = [];
+  
+  for (let i = 0; i < count && i < inventory.length; i++) {
+    const item = inventory[i];
+    const customer = randomElement(customers);
+    const broker = Math.random() > 0.3 ? randomElement(brokers) : undefined;
+    const transporter = randomElement(transporters);
+    const date = formatDate(randomDate(startDate, endDate));
+    
+    // Generate a vakkal number (two letters / two numerics)
+    const letters = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const letter1 = letters.charAt(randomInt(0, letters.length - 1));
+    const letter2 = letters.charAt(randomInt(0, letters.length - 1));
+    const num1 = randomInt(1, 9);
+    const num2 = randomInt(0, 9);
+    const vakkal = `${letter1}${letter2}/${num1}${num2}`;
+    
+    // Determine a partial quantity to sell (not the entire inventory)
+    const saleQuantity = Math.max(1, Math.floor(item.quantity * (randomInt(50, 90) / 100)));
+    const saleWeight = Math.floor(item.netWeight * (saleQuantity / item.quantity));
+    
+    // Calculate brokerage if applicable
+    const brokerageAmount = broker 
+      ? Math.round(item.rate * saleQuantity * (broker.commissionRate || 0.005)) 
+      : 0;
+    
+    // Generate sale price with some variation from inventory rate
+    const saleRate = item.rate * (1 + (randomInt(-5, 15) / 100)); // -5% to +15%
+    const totalAmount = Math.round(saleRate * saleQuantity);
+    
+    // Generate transport rate and cost
+    const transportRate = randomInt(50, 200);
+    const transportCost = transportRate * saleQuantity;
+    
+    // Calculate final bill amount with some rounding
+    const roundedTotal = Math.ceil(totalAmount / 100) * 100;
+    const billAmount = roundedTotal + (customer.payableByCustomer ? 0 : transportCost);
+    
+    const sale: Sale = {
+      id: uuidv4(),
+      date,
+      lotNumber: item.lotNumber,
+      billNumber: `BILL-${String(i+1).padStart(3, '0')}`,
+      billAmount,
+      customer: customer.name,
+      customerId: customer.id,
+      quantity: saleQuantity,
+      netWeight: saleWeight,
+      rate: saleRate,
+      broker: broker?.name,
+      brokerId: broker?.id,
+      transporter: transporter.name,
+      transporterId: transporter.id,
+      transportRate,
+      location: item.location,
+      notes: `Vakkal: ${vakkal}`,
+      totalAmount,
+      transportCost,
+      netAmount: totalAmount - brokerageAmount,
+      brokerageAmount,
+      amount: totalAmount
+    };
+    
+    sales.push(sale);
+    addSale(sale);
+    
+    // Update inventory
+    updateInventoryAfterSale(item.lotNumber, saleQuantity);
+  }
+  
+  return sales;
+};
+
+// Generate receipts based on sales
+export const generateReceipts = (sales: Sale[], customers: Customer[]): Receipt[] => {
+  const receipts: Receipt[] = [];
+  
+  // Group sales by customer
+  const salesByCustomer = new Map<string, Sale[]>();
+  sales.forEach(sale => {
+    if (!salesByCustomer.has(sale.customerId)) {
+      salesByCustomer.set(sale.customerId, []);
     }
+    salesByCustomer.get(sale.customerId)!.push(sale);
+  });
+  
+  // For each customer, generate receipts for their sales
+  salesByCustomer.forEach((customerSales, customerId) => {
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) return;
     
-    // Generate sales (60)
-    for (let i = 0; i < 60; i++) {
-      sales.push(generateSale(existingIds));
-    }
+    // Calculate total amount for this customer
+    const totalAmount = customerSales.reduce((sum, sale) => sum + (sale.billAmount || 0), 0);
     
-    // Generate payments (40)
-    for (let i = 0; i < 40; i++) {
-      payments.push(generatePayment());
-    }
+    // Determine if we'll create partial or full payment
+    const isPartialPayment = Math.random() > 0.6;
     
-    // Generate receipts (20)
-    for (let i = 0; i < 20; i++) {
-      receipts.push(generateReceipt());
-    }
-    
-    // Add all transactions
-    let count = 0;
-    for (const purchase of purchases) {
-      addPurchase(purchase);
-      count++;
-      // Add delay every 10 items to prevent browser freeze
-      if (count % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+    if (isPartialPayment) {
+      // Create 2-3 partial payments
+      const numPayments = randomInt(2, 3);
+      let remainingAmount = totalAmount;
+      
+      for (let i = 0; i < numPayments; i++) {
+        const isLastPayment = i === numPayments - 1;
+        const paymentAmount = isLastPayment 
+          ? remainingAmount 
+          : Math.floor(remainingAmount * (randomInt(20, 70) / 100));
+        
+        remainingAmount -= paymentAmount;
+        
+        if (paymentAmount <= 0) continue;
+        
+        const paymentMethods = ['cash', 'bank', 'cheque', 'upi'];
+        const receipt: Receipt = {
+          id: uuidv4(),
+          date: formatDate(new Date(Date.now() - randomInt(0, 15) * 24 * 60 * 60 * 1000)),
+          partyName: customer.name,
+          partyId: customer.id,
+          partyType: 'customer',
+          amount: paymentAmount,
+          paymentMethod: randomElement(paymentMethods),
+          referenceNumber: randomElement(paymentMethods) === 'cheque' ? `CHQ-${randomInt(100000, 999999)}` : undefined,
+          notes: `Payment for bill${customerSales.length > 1 ? 's' : ''} ${customerSales.map(s => s.billNumber).join(', ')}`,
+          isDeleted: false
+        };
+        
+        receipts.push(receipt);
+        addReceipt(receipt);
       }
-    }
-    
-    for (const sale of sales) {
-      addSale(sale);
-      count++;
-      if (count % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-    
-    for (const payment of payments) {
-      addPayment(payment);
-      count++;
-      if (count % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-    
-    for (const receipt of receipts) {
+    } else {
+      // Create full payment
+      const paymentMethods = ['cash', 'bank', 'cheque', 'upi'];
+      const receipt: Receipt = {
+        id: uuidv4(),
+        date: formatDate(new Date(Date.now() - randomInt(0, 10) * 24 * 60 * 60 * 1000)),
+        partyName: customer.name,
+        partyId: customer.id,
+        partyType: 'customer',
+        amount: totalAmount,
+        paymentMethod: randomElement(paymentMethods),
+        referenceNumber: randomElement(paymentMethods) === 'cheque' ? `CHQ-${randomInt(100000, 999999)}` : undefined,
+        notes: `Full payment for bill${customerSales.length > 1 ? 's' : ''} ${customerSales.map(s => s.billNumber).join(', ')}`,
+        isDeleted: false
+      };
+      
+      receipts.push(receipt);
       addReceipt(receipt);
-      count++;
-      if (count % 10 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
     }
-    
-    // Create an Excel-compatible CSV export
-    const createCSVData = () => {
-      const headers = [
-        'Type', 'ID', 'Date', 'Party/Customer', 'Description', 'Amount', 'Payment Method',
-        'Location', 'Quantity', 'Weight', 'Rate', 'Total', 'Transaction ID'
-      ].join(',');
-      
-      const rows = [
-        ...purchases.map(p => [
-          'Purchase', p.id, p.date, p.party, `Lot ${p.lotNumber}`, p.totalAmount.toFixed(2),
-          'N/A', p.location, p.quantity, p.netWeight.toFixed(2), p.rate.toFixed(2), 
-          p.totalAfterExpenses.toFixed(2), p.lotNumber
-        ].join(',')),
-        
-        ...sales.map(s => [
-          'Sale', s.id, s.date, s.customer, `${s.billNumber || s.lotNumber}`, s.totalAmount.toFixed(2),
-          'N/A', s.location || 'N/A', s.quantity, s.netWeight.toFixed(2), s.rate.toFixed(2),
-          s.netAmount.toFixed(2), s.billNumber || s.lotNumber
-        ].join(',')),
-        
-        ...payments.map(p => [
-          'Payment', p.id, p.date, p.partyName, p.notes || 'Payment', p.amount.toFixed(2),
-          p.paymentMode, 'N/A', 'N/A', 'N/A', 'N/A', p.amount.toFixed(2), p.reference
-        ].join(',')),
-        
-        ...receipts.map(r => [
-          'Receipt', r.id, r.date, r.customerName, r.notes || 'Receipt', r.amount.toFixed(2),
-          r.paymentMode, 'N/A', 'N/A', 'N/A', 'N/A', r.amount.toFixed(2), r.reference
-        ].join(','))
-      ];
-      
-      return [headers, ...rows].join('\n');
-    };
-    
-    const csvData = createCSVData();
-    
-    // Create CSV blob and save
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    // Create temporary link and click it
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'kisan_khata_sample_data.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log('Sample data generation complete!');
-    return {
-      purchaseCount: purchases.length,
-      saleCount: sales.length,
-      paymentCount: payments.length,
-      receiptCount: receipts.length,
-      totalCount: purchases.length + sales.length + payments.length + receipts.length,
-      csvUrl: url
-    };
-  } catch (error) {
-    console.error('Error generating sample data:', error);
-    throw error;
-  }
+  });
+  
+  return receipts;
 };
 
-// Add a utility function to download the transaction data as Excel-compatible CSV
-export const exportTransactionsToCSV = async () => {
-  // Implementation will be similar to the CSV part in generateSampleData
-  // This can be extended as needed
+// Generate payments to suppliers and others
+export const generatePayments = (
+  suppliers: Supplier[],
+  transporters: Transporter[],
+  brokers: Broker[]
+): Payment[] => {
+  const payments: Payment[] = [];
+  
+  // Payments to suppliers
+  suppliers.forEach(supplier => {
+    const amount = randomInt(50000, 200000);
+    const paymentMethods = ['cash', 'bank', 'cheque'];
+    
+    const payment: Payment = {
+      id: uuidv4(),
+      date: formatDate(new Date(Date.now() - randomInt(5, 30) * 24 * 60 * 60 * 1000)),
+      partyName: supplier.name,
+      partyId: supplier.id,
+      partyType: 'supplier',
+      amount,
+      paymentMethod: randomElement(paymentMethods),
+      referenceNumber: randomElement(paymentMethods) === 'cheque' ? `CHQ-${randomInt(100000, 999999)}` : undefined,
+      notes: 'Payment for supplies',
+      isDeleted: false
+    };
+    
+    payments.push(payment);
+    addPayment(payment);
+  });
+  
+  // Payments to transporters
+  transporters.forEach(transporter => {
+    if (Math.random() > 0.3) {
+      const amount = randomInt(10000, 50000);
+      const paymentMethods = ['cash', 'bank', 'cheque'];
+      
+      const payment: Payment = {
+        id: uuidv4(),
+        date: formatDate(new Date(Date.now() - randomInt(3, 20) * 24 * 60 * 60 * 1000)),
+        partyName: transporter.name,
+        partyId: transporter.id,
+        partyType: 'transporter',
+        amount,
+        paymentMethod: randomElement(paymentMethods),
+        referenceNumber: randomElement(paymentMethods) === 'cheque' ? `CHQ-${randomInt(100000, 999999)}` : undefined,
+        notes: 'Payment for transportation services',
+        isDeleted: false
+      };
+      
+      payments.push(payment);
+      addPayment(payment);
+    }
+  });
+  
+  // Payments to brokers
+  brokers.forEach(broker => {
+    if (Math.random() > 0.5) {
+      const amount = randomInt(5000, 30000);
+      const paymentMethods = ['cash', 'bank', 'cheque'];
+      
+      const payment: Payment = {
+        id: uuidv4(),
+        date: formatDate(new Date(Date.now() - randomInt(1, 15) * 24 * 60 * 60 * 1000)),
+        partyName: broker.name,
+        partyId: broker.id,
+        partyType: 'broker',
+        amount,
+        paymentMethod: randomElement(paymentMethods),
+        referenceNumber: randomElement(paymentMethods) === 'cheque' ? `CHQ-${randomInt(100000, 999999)}` : undefined,
+        notes: 'Commission payment',
+        isDeleted: false
+      };
+      
+      payments.push(payment);
+      addPayment(payment);
+    }
+  });
+  
+  return payments;
+};
+
+export default {
+  generateDemoCycle,
+  generateBrokers,
+  generateCustomers,
+  generateTransporters,
+  generateSuppliers,
+  generateInventoryItems,
+  generateSales,
+  generateReceipts,
+  generatePayments
 };

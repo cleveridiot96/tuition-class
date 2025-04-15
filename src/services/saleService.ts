@@ -1,57 +1,38 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
+import { Sale } from './types';
 
-export function getSales() {
+export function getSales(): Sale[] {
   return getYearSpecificStorageItem('sales', []);
 }
 
-export function saveSale(sale: any, year?: string): boolean {
-  try {
-    const sales = getSales();
-    sale.id = sale.id || uuidv4();
-    sales.push(sale);
-    saveYearSpecificStorageItem('sales', sales, year, true);
-    return true;
-  } catch (error) {
-    console.error("Error saving sale:", error);
-    return false;
+export function saveSales(sales: Sale[]): void {
+  saveYearSpecificStorageItem('sales', sales);
+}
+
+export function addSale(sale: Sale): void {
+  const sales = getSales();
+  sales.push(sale);
+  saveSales(sales);
+}
+
+export function updateSale(updatedSale: Sale): void {
+  const sales = getSales();
+  const index = sales.findIndex(sale => sale.id === updatedSale.id);
+  
+  if (index !== -1) {
+    sales[index] = updatedSale;
+    saveSales(sales);
   }
 }
 
-export function updateSale(updatedSale: any, year?: string): boolean {
-  try {
-    const sales = getSales();
-    const index = sales.findIndex((sale: any) => sale.id === updatedSale.id);
-    
-    if (index === -1) {
-      console.error("Sale not found for update:", updatedSale.id);
-      return false;
-    }
-    
-    sales[index] = { ...sales[index], ...updatedSale };
-    saveYearSpecificStorageItem('sales', sales, year);
-    return true;
-  } catch (error) {
-    console.error("Error updating sale:", error);
-    return false;
-  }
-}
-
-export function deleteSale(saleId: string, year?: string): boolean {
-  try {
-    const sales = getSales();
-    const index = sales.findIndex((sale: any) => sale.id === saleId);
-    
-    if (index === -1) {
-      console.error("Sale not found for deletion:", saleId);
-      return false;
-    }
-    
-    sales.splice(index, 1);
-    saveYearSpecificStorageItem('sales', sales, year);
-    return true;
-  } catch (error) {
-    console.error("Error deleting sale:", error);
-    return false;
+export function deleteSale(id: string): void {
+  const sales = getSales();
+  const index = sales.findIndex(sale => sale.id === id);
+  
+  if (index !== -1) {
+    sales[index] = { ...sales[index], isDeleted: true };
+    saveSales(sales);
   }
 }

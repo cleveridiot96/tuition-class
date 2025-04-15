@@ -12,6 +12,7 @@ export interface Agent extends BaseEntity {
   address?: string;
   commissionRate?: number;
   notes?: string;
+  balance?: number; // Added balance property
 }
 
 export interface Broker extends BaseEntity {
@@ -19,6 +20,7 @@ export interface Broker extends BaseEntity {
   address?: string;
   commissionRate?: number;
   notes?: string;
+  balance?: number; // Added balance property
 }
 
 export interface Customer extends BaseEntity {
@@ -28,6 +30,7 @@ export interface Customer extends BaseEntity {
   creditLimit?: number;
   notes?: string;
   payableByCustomer?: boolean;
+  balance?: number; // Added balance property
 }
 
 export interface Supplier extends BaseEntity {
@@ -35,6 +38,7 @@ export interface Supplier extends BaseEntity {
   address?: string;
   gstNumber?: string;
   notes?: string;
+  balance?: number; // Added balance property
 }
 
 export interface Transporter extends BaseEntity {
@@ -42,6 +46,7 @@ export interface Transporter extends BaseEntity {
   address?: string;
   gstNumber?: string;
   notes?: string;
+  balance?: number; // Added balance property
 }
 
 export interface FinancialYear {
@@ -58,9 +63,9 @@ export interface PartyOpeningBalance {
   id: string;
   name: string;
   type: 'agent' | 'broker' | 'customer' | 'supplier' | 'transporter';
-  partyId?: string;
-  partyName?: string;
-  partyType?: string;
+  partyId?: string; // Made optional for backward compatibility
+  partyName?: string; // Made optional for backward compatibility
+  partyType?: string; // Made optional for backward compatibility
   amount: number;
   balanceType: 'debit' | 'credit';
 }
@@ -68,22 +73,116 @@ export interface PartyOpeningBalance {
 export interface StockOpeningBalance {
   id: string;
   name: string;
-  lotNumber?: string;
+  lotNumber?: string; // Made this optional but must be included
   quantity: number;
   location: string;
   rate: number;
-  netWeight: number;
+  netWeight?: number; // Made optional
   amount: number;
   balanceType: 'debit' | 'credit';
 }
 
 export interface OpeningBalance {
   id: string;
-  yearId?: string;
+  yearId?: string; // Made optional
   cash: number;
   bank: number;
   stock: StockOpeningBalance[];
   parties: PartyOpeningBalance[];
+}
+
+// Transaction types
+export interface Purchase {
+  id: string;
+  date: string;
+  lotNumber: string;
+  quantity: number;
+  netWeight: number;
+  rate: number;
+  party: string;
+  brokerId?: string;
+  broker?: string;
+  location: string;
+  transporterId: string;
+  transporter?: string;
+  transportRate: number;
+  expenses: number;
+  totalAmount: number;
+  brokerageType?: "percentage" | "fixed";
+  brokerageValue?: number;
+  brokerageAmount?: number;
+  transportCost?: number;
+  notes?: string;
+  isDeleted?: boolean;
+}
+
+export interface Sale {
+  id: string;
+  date: string;
+  lotNumber: string;
+  billNumber?: string;
+  billAmount?: number;
+  customer: string;
+  customerId: string;
+  quantity: number;
+  netWeight: number;
+  rate: number;
+  broker?: string;
+  brokerId?: string;
+  transporter?: string;
+  transporterId?: string;
+  transportRate?: number;
+  location?: string;
+  notes?: string;
+  totalAmount: number;
+  transportCost?: number;
+  netAmount?: number;
+  isDeleted?: boolean;
+  brokerageAmount?: number;
+  amount?: number;
+}
+
+export interface Payment {
+  id: string;
+  date: string;
+  partyName: string;
+  partyId: string;
+  partyType: string;
+  amount: number;
+  paymentMethod: string;
+  referenceNumber?: string;
+  notes?: string;
+  isDeleted?: boolean;
+}
+
+export interface Receipt {
+  id: string;
+  date: string;
+  partyName: string;
+  partyId: string;
+  partyType: string;
+  amount: number;
+  paymentMethod: string;
+  referenceNumber?: string;
+  notes?: string;
+  isDeleted?: boolean;
+}
+
+export interface InventoryItem {
+  id: string;
+  lotNumber: string;
+  quantity: number;
+  netWeight: number;
+  rate: number;
+  location: string;
+  productName?: string;
+  isDeleted?: boolean;
+}
+
+export interface EnhancedInventoryItem extends InventoryItem {
+  totalValue: number;
+  averageRate: number;
+  locationInfo: string;
 }
 
 // For backwards compatibility - exportDataBackup functions

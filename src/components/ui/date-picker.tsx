@@ -1,71 +1,62 @@
 
-import * as React from "react";
-import { format } from "date-fns";
-import { Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
+import * as React from "react"
+import { format } from "date-fns"
+import { Calendar as CalendarIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/components/ui/popover"
 
-interface DatePickerProps {
-  date?: Date;
-  setDate?: (date: Date | undefined) => void;
-  selected?: Date | null;
-  onSelect?: (date: Date | null) => void;
-  className?: string;
-  id?: string;
+export interface DatePickerProps {
+  date?: Date
+  setDate: (date: Date | undefined) => void
+  className?: string
+  placeholder?: string
+  onDateChange?: (date: Date | undefined) => void
 }
 
-export function DatePicker({
-  date,
-  setDate,
-  selected,
-  onSelect,
-  className,
-  id
+export function DatePicker({ 
+  date, 
+  setDate, 
+  className, 
+  placeholder = "Select date",
+  onDateChange 
 }: DatePickerProps) {
-  // Memoize the selected date to prevent unnecessary re-renders
-  const selectedDate = React.useMemo(() => date || selected, [date, selected]);
-  const handleDateChange = React.useCallback(
-    (newDate: Date | null) => {
-      if (setDate) {
-        setDate(newDate || undefined);
-      } else if (onSelect) {
-        onSelect(newDate);
-      }
-    }, 
-    [setDate, onSelect]
-  );
-
+  
+  const handleSelect = (selected: Date | undefined) => {
+    setDate(selected);
+    if (onDateChange) {
+      onDateChange(selected);
+    }
+  };
+  
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button
-          id={id}
-          variant={"outline"}
+          variant="outline"
           className={cn(
-            "w-full justify-start text-left font-normal",
-            !selectedDate && "text-muted-foreground",
-            className
+            "w-full justify-start text-left font-normal md:text-sm",
+            className,
+            !date && "text-muted-foreground"
           )}
-          type="button"
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+          {date ? format(date, "PPP") : placeholder}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0 z-50" align="start">
+      <PopoverContent className="w-auto p-0">
         <Calendar
           mode="single"
-          selected={selectedDate || undefined}
-          onSelect={handleDateChange}
+          selected={date}
+          onSelect={handleSelect}
           initialFocus
         />
       </PopoverContent>
     </Popover>
-  );
+  )
 }

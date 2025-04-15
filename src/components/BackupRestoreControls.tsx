@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw, Download, Upload } from "lucide-react";
-import { exportDataBackup, importDataBackup } from "@/services/storageService";
+import { exportDataBackup, importDataBackup } from "@/services/storageUtils";
 import PortableAppButton from "./dashboard/PortableAppButton";
 import { toast } from "@/hooks/use-toast";
 

@@ -14,7 +14,7 @@ import {
   Users2, 
   Warehouse
 } from "lucide-react";
-import { exportDataBackup } from "@/services/storageService";
+import { exportDataBackup } from "@/services/storageUtils";
 import { toast } from "@/hooks/use-toast"; 
 
 const DashboardMenu = () => {
