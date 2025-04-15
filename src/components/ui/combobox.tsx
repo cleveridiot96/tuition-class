@@ -28,7 +28,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options = [],
+  options = [], // Default to empty array
   value = "",
   onSelect,
   onChange,
@@ -41,27 +41,36 @@ export function Combobox({
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
   
-  // Sync with external value changes
+  // IMPROVED: Sync with external value changes
   React.useEffect(() => {
     setSelectedValue(value || "");
   }, [value]);
 
-  // Guarantee options is always a valid array of objects with value and label
+  // IMPORTANT FIX: Guarantee options is always a valid array of objects with value and label
   const safeOptions = React.useMemo(() => {
     // First ensure options is an array
-    if (!Array.isArray(options)) return [];
+    if (!Array.isArray(options)) {
+      console.log("Combobox: options is not an array, defaulting to []");
+      return [];
+    }
     
     // Then filter out invalid options
-    return options.filter(option => 
+    const validOptions = options.filter(option => 
       option !== null &&
       option !== undefined &&
       typeof option === 'object' && 
       'value' in option && 
       'label' in option
     );
+    
+    if (validOptions.length < options.length) {
+      console.log("Combobox: Some options were invalid and filtered out");
+    }
+    
+    return validOptions;
   }, [options]);
 
-  // Filter options based on input with proper null checking
+  // IMPROVED: Filter options based on input with proper null checking
   const filteredOptions = React.useMemo(() => {
     if (!inputValue) return safeOptions;
     
@@ -74,23 +83,25 @@ export function Combobox({
     });
   }, [safeOptions, inputValue]);
 
-  // Select handler with null checking
+  // IMPROVED: Select handler with null checking
   const handleSelect = (currentValue: string) => {
-    setSelectedValue(currentValue || "");
+    const validValue = currentValue || "";
+    setSelectedValue(validValue);
     setOpen(false);
     
-    // Only call handlers if they exist and currentValue is valid
-    if (currentValue && onSelect) onSelect(currentValue);
-    if (currentValue && onChange) onChange(currentValue);
+    // Only call handlers if they exist
+    if (validValue && onSelect) onSelect(validValue);
+    if (validValue && onChange) onChange(validValue);
   };
 
-  // Input change handler with null checking
+  // IMPROVED: Input change handler with null checking
   const handleInputChange = (newValue: string) => {
-    setInputValue(newValue || "");
-    if (onInputChange && newValue !== undefined) onInputChange(newValue);
+    const validValue = newValue || "";
+    setInputValue(validValue);
+    if (onInputChange && validValue !== undefined) onInputChange(validValue);
   };
 
-  // Get display text for selected value with null checking
+  // IMPROVED: Get display text for selected value with null checking
   const displayText = React.useMemo(() => {
     if (!selectedValue) return placeholder;
     

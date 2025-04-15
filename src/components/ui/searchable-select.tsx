@@ -34,7 +34,7 @@ interface SearchableSelectProps {
 }
 
 export function SearchableSelect({
-  options = [],
+  options = [], // Default to empty array
   value,
   onValueChange,
   placeholder = "Select an option",
@@ -46,27 +46,36 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // Guarantee options is always a valid array of objects with value and label
+  // IMPORTANT FIX: Guarantee options is always a valid array of objects with value and label
   const safeOptions = React.useMemo(() => {
     // First ensure options is an array
-    if (!Array.isArray(options)) return [];
+    if (!Array.isArray(options)) {
+      console.log("SearchableSelect: options is not an array, defaulting to []");
+      return [];
+    }
     
     // Then filter out invalid options
-    return options.filter(option => 
+    const validOptions = options.filter(option => 
       option !== null && 
       option !== undefined && 
       typeof option === 'object' && 
       'value' in option && 
       'label' in option
     );
+    
+    if (validOptions.length < options.length) {
+      console.log("SearchableSelect: Some options were invalid and filtered out");
+    }
+    
+    return validOptions;
   }, [options]);
   
-  // Filter options based on search term with proper null checking
+  // IMPROVED: Filter options based on search term with proper null checking
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      if (!option || !option.label) return false;
+      if (!option.label) return false;
       
       const label = String(option.label).toLowerCase();
       const search = searchTerm.toLowerCase();
@@ -74,7 +83,11 @@ export function SearchableSelect({
     });
   }, [safeOptions, searchTerm]);
   
-  const selectedOption = safeOptions.find((option) => option.value === value);
+  // IMPROVED: Safely find selected option
+  const selectedOption = React.useMemo(() => {
+    if (!value) return null;
+    return safeOptions.find((option) => option.value === value) || null;
+  }, [safeOptions, value]);
 
   return (
     <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
