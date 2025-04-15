@@ -46,59 +46,73 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
   }, [summaryData.stock]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 overflow-visible">
-      <PurchaseSummaryCard {...summaryData.purchases} />
-      <SalesSummaryCard {...summaryData.sales} />
-      <StockSummaryCard {...summaryData.stock} />
-      <CashSummaryCard
-        cashBalance={cashBalance}
-        todayCashIn={todayCash.cashIn}
-        todayCashOut={todayCash.cashOut}
-      />
-      <DashboardCard 
-        className="md:col-span-2" 
-        title="Receivables & Payables"
-        onClick={() => navigate('/ledger')}
-      >
-        <div className="grid grid-cols-2 gap-8 mt-4">
-          <div>
-            <div className="text-sm text-gray-500">Total Receivables</div>
-            <div className="text-2xl font-bold text-blue-600">₹{receivables.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 mt-1">From customers</div>
-          </div>
-          <div>
-            <div className="text-sm text-gray-500">Total Payables</div>
-            <div className="text-2xl font-bold text-red-600">₹{payables.toLocaleString()}</div>
-            <div className="text-xs text-gray-500 mt-1">To agents, brokers & transporters</div>
-          </div>
-        </div>
-      </DashboardCard>
-      <DashboardCard 
-        className="md:col-span-2" 
-        title="Stock Summary"
-        onClick={() => navigate('/stock')}
-      >
-        <div className="grid grid-cols-3 gap-4 mt-4">
-          <div>
-            <div className="text-sm text-gray-500">Mumbai</div>
-            <div className="text-xl font-bold text-amber-600">
-              {summaryData.stock.mumbai} bags
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 max-w-full">
+      <div className="w-full h-full">
+        <PurchaseSummaryCard {...summaryData.purchases} />
+      </div>
+      <div className="w-full h-full">
+        <SalesSummaryCard {...summaryData.sales} />
+      </div>
+      <div className="w-full h-full">
+        <StockSummaryCard {...summaryData.stock} />
+      </div>
+      <div className="w-full h-full">
+        <CashSummaryCard
+          cashBalance={cashBalance}
+          todayCashIn={todayCash.cashIn}
+          todayCashOut={todayCash.cashOut}
+        />
+      </div>
+      
+      <div className="md:col-span-2 w-full h-full">
+        <DashboardCard 
+          title="Receivables & Payables"
+          onClick={() => navigate('/ledger')}
+          className="h-full"
+        >
+          <div className="grid grid-cols-2 gap-6">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="text-sm text-gray-500">Total Receivables</div>
+              <div className="text-2xl font-bold text-blue-600">₹{receivables.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 mt-1">From customers</div>
+            </div>
+            <div className="bg-red-50 p-4 rounded-lg">
+              <div className="text-sm text-gray-500">Total Payables</div>
+              <div className="text-2xl font-bold text-red-600">₹{payables.toLocaleString()}</div>
+              <div className="text-xs text-gray-500 mt-1">To agents, brokers & transporters</div>
             </div>
           </div>
-          <div>
-            <div className="text-sm text-gray-500">Chiplun</div>
-            <div className="text-xl font-bold text-amber-600">
-              {summaryData.stock.chiplun} bags
+        </DashboardCard>
+      </div>
+      
+      <div className="md:col-span-2 w-full h-full">
+        <DashboardCard 
+          title="Stock Summary"
+          onClick={() => navigate('/stock')}
+          className="h-full"
+        >
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-amber-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-500">Mumbai</div>
+              <div className="text-xl font-bold text-amber-600">
+                {summaryData.stock.mumbai} bags
+              </div>
+            </div>
+            <div className="bg-amber-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-500">Chiplun</div>
+              <div className="text-xl font-bold text-amber-600">
+                {summaryData.stock.chiplun} bags
+              </div>
+            </div>
+            <div className="bg-amber-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-500">Sawantwadi</div>
+              <div className="text-xl font-bold text-amber-600">
+                {summaryData.stock.sawantwadi} bags
+              </div>
             </div>
           </div>
-          <div>
-            <div className="text-sm text-gray-500">Sawantwadi</div>
-            <div className="text-xl font-bold text-amber-600">
-              {summaryData.stock.sawantwadi} bags
-            </div>
-          </div>
-        </div>
-      </DashboardCard>
+        </DashboardCard>
+      </div>
     </div>
   );
 };

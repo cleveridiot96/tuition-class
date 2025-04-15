@@ -12,16 +12,16 @@ interface DashboardCardProps {
 
 const DashboardCard = ({ title, onClick, className = "", children }: DashboardCardProps) => {
   return (
-    <Button
-      variant="card"
+    <div 
+      className={`bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full ${className}`}
       onClick={onClick}
-      className={`group ${className}`}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
-      <CardContent className="p-4 relative w-full">
-        <h3 className="text-lg font-medium group-hover:text-[#9b87f5]">{title}</h3>
-        <div className="mt-2">{children}</div>
+      <CardContent className="p-5 relative w-full h-full">
+        <h3 className="text-lg font-medium mb-3 text-gray-800">{title}</h3>
+        <div>{children}</div>
       </CardContent>
-    </Button>
+    </div>
   );
 };
 

@@ -14,17 +14,17 @@ const StockSummaryCard = ({ mumbai, chiplun, sawantwadi }: StockSummaryProps) =>
 
   return (
     <DashboardCard title="Current Stock" onClick={() => navigate('/inventory')}>
-      <div className="text-sm text-gray-500">Stock Value</div>
-      <div className="grid grid-cols-3 gap-1 mt-2">
-        <div>
+      <div className="text-sm text-gray-500 mb-2">Stock Value</div>
+      <div className="grid grid-cols-3 gap-2 mt-2">
+        <div className="bg-amber-50 p-2 rounded-lg">
           <div className="text-xs text-gray-500">Mumbai</div>
           <div className="text-sm font-semibold">{mumbai.toLocaleString()}</div>
         </div>
-        <div>
+        <div className="bg-amber-50 p-2 rounded-lg">
           <div className="text-xs text-gray-500">Chiplun</div>
           <div className="text-sm font-semibold">{chiplun.toLocaleString()}</div>
         </div>
-        <div>
+        <div className="bg-amber-50 p-2 rounded-lg">
           <div className="text-xs text-gray-500">Sawantwadi</div>
           <div className="text-sm font-semibold">{sawantwadi.toLocaleString()}</div>
         </div>
