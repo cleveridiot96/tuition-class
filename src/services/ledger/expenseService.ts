@@ -1,35 +1,36 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { LedgerEntry, ManualExpense } from './types';
-import { getItem, setItem } from '../storageService';
+import { getStorageItem, saveStorageItem } from '../storageUtils';
 import { addLedgerEntry } from './ledgerService';
 
 const EXPENSES_STORAGE_KEY = 'expenses';
 
 export const expenseService = {
   getExpenses: (): ManualExpense[] => {
-    const expenses = getItem(EXPENSES_STORAGE_KEY);
+    const expenses = getStorageItem(EXPENSES_STORAGE_KEY);
     if (!expenses) {
-      setItem(EXPENSES_STORAGE_KEY, []);
+      saveStorageItem(EXPENSES_STORAGE_KEY, []);
       return [];
     }
     return expenses;
   },
 
-  addManualExpense: (expense: ManualExpense): void => {
+  addManualExpense: (expense: ManualExpense): ManualExpense => {
     // Add expense to expenses storage
     const expenses = expenseService.getExpenses() || [];
-    expenses.push({
+    const newExpense = {
       ...expense,
       id: expense.id || uuidv4()
-    });
-    setItem(EXPENSES_STORAGE_KEY, expenses);
+    };
+    expenses.push(newExpense);
+    saveStorageItem(EXPENSES_STORAGE_KEY, expenses);
 
     // Add corresponding entries to the ledger
     const ledgerEntry: LedgerEntry = {
       id: uuidv4(),
       date: expense.date,
-      accountId: 'cash',  // Assuming expenses are paid from cash by default
+      accountId: expense.paymentMode === 'bank' ? 'bank' : 'cash',  // Use payment mode to determine account
       reference: expense.reference || 'Expense',
       referenceId: expense.id,
       narration: expense.description,
@@ -56,6 +57,7 @@ export const expenseService = {
     };
 
     addLedgerEntry(expenseLedgerEntry);
+    return newExpense;
   }
 };
 

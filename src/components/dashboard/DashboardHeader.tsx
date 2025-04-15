@@ -18,7 +18,7 @@ const DashboardHeader = ({ onOpeningBalancesClick }: DashboardHeaderProps) => {
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
           <h1 className="text-3xl font-bold text-ag-green">Kisan Khata Sahayak</h1>
-          <p className="text-gray-600">Financial Year: {financialYear}</p>
+          <p className="text-gray-600">Financial Year: {financialYear?.toString()}</p>
         </div>
         
         <div className="flex flex-col sm:flex-row gap-2">

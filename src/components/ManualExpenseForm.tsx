@@ -83,7 +83,7 @@ const ManualExpenseForm: React.FC<ManualExpenseFormProps> = ({
   React.useEffect(() => {
     // Load non-system accounts for optional party selection
     const partyAccounts = getAccounts().filter(
-      account => !account.isSystemAccount && !account.isDeleted
+      account => !account.isSystemAccount && account.isDeleted !== true
     );
     setAccounts(partyAccounts);
   }, []);
@@ -137,7 +137,7 @@ const ManualExpenseForm: React.FC<ManualExpenseFormProps> = ({
       });
 
       // Call parent onSubmit if provided
-      if (onSubmit) {
+      if (onSubmit && savedExpense) {
         onSubmit(savedExpense);
       }
     } catch (error) {

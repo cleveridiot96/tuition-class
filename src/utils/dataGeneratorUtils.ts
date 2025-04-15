@@ -1,3 +1,4 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { addPurchase } from '@/services/purchaseService';
 import { addSale } from '@/services/saleService';
@@ -17,7 +18,8 @@ import {
   Agent,
   Customer,
   Supplier,
-  Transporter
+  Transporter,
+  Receipt
 } from '@/services/types';
 import { subDays, format } from 'date-fns';
 
@@ -364,18 +366,17 @@ export function generateSampleData() {
       const receiptMethods = ['Cash', 'Bank Transfer', 'Check', 'UPI', 'NEFT', 'IMPS'];
       const paymentMethod = receiptMethods[Math.floor(Math.random() * receiptMethods.length)];
       
-      // Create receipt object
-      const receipt = {
+      // Create receipt object with the right properties
+      const receipt: Receipt = {
         id: uuidv4(),
         date: format(receiptDate, 'yyyy-MM-dd'),
-        partyName: sale.customer,
-        partyId: sale.customerId,
-        partyType: 'customer',
         amount: receiptAmount,
+        customerId: sale.customerId,
+        customerName: sale.customer,
         paymentMethod,
         reference: `BILL-${sale.billNumber}`,
-        referenceNumber: Math.random() > 0.5 ? `RCPT${Math.floor(Math.random() * 10000)}` : undefined,
-        notes: Math.random() > 0.8 ? `Receipt against bill ${sale.billNumber}` : undefined
+        notes: Math.random() > 0.8 ? `Receipt against bill ${sale.billNumber}` : undefined,
+        paymentMode: paymentMethod // Added this to match the Receipt type
       };
       
       // Add receipt

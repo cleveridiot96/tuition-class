@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { CurrencyRupee, TrendingUp, TrendingDown } from "lucide-react";
+import { IndianRupee, TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency } from '@/utils/helpers';
 
 interface CashBookSummaryProps {
@@ -26,7 +26,7 @@ const CashBookSummary: React.FC<CashBookSummaryProps> = ({
             <div>
               <p className="text-sm text-muted-foreground">Current Balance</p>
               <h3 className="text-2xl font-bold flex items-center">
-                <CurrencyRupee className="h-5 w-5 mr-1" />
+                <IndianRupee className="h-5 w-5 mr-1" />
                 {formatCurrency(closingBalance)} 
                 <span className="text-sm ml-2 font-normal text-muted-foreground">
                   {lastBalanceType === 'credit' ? 'CR' : 'DR'}

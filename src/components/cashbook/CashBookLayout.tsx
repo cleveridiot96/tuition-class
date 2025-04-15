@@ -1,10 +1,11 @@
-
 import React from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import CashBookHeader from "./CashBookHeader";
 import CashBookContent from "./CashBookContent";
+import CashBookSummary from "./CashBookSummary";
 import PrintStyles from "./PrintStyles";
+import useCashBook from "@/hooks/useCashBook";
 
 // Define props for the components
 interface CashBookLayoutProps {
@@ -12,6 +13,17 @@ interface CashBookLayoutProps {
 }
 
 const CashBookLayout: React.FC<CashBookLayoutProps> = () => {
+  const {
+    entries,
+    todaySummary,
+    isLoading,
+    // ... other hooks and functions from useCashBook
+  } = useCashBook();
+
+  // Calculate closing balance from the entries
+  const closingBalance = entries.length > 0 ? entries[entries.length - 1]?.balance || 0 : 0;
+  const lastBalanceType = entries.length > 0 ? entries[entries.length - 1]?.balanceType || 'credit' : 'credit';
+
   return (
     <div className="min-h-screen bg-ag-beige">
       <Navigation title="Cash Book" showBackButton />
@@ -21,7 +33,14 @@ const CashBookLayout: React.FC<CashBookLayoutProps> = () => {
             <CashBookHeader />
           </CardHeader>
           <CardContent className="p-6">
-            <CashBookContent />
+            <div className="space-y-6">
+              <CashBookSummary 
+                todaySummary={todaySummary}
+                closingBalance={closingBalance}
+                lastBalanceType={lastBalanceType}
+              />
+              <CashBookContent />
+            </div>
           </CardContent>
         </Card>
       </div>

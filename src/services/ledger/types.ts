@@ -6,6 +6,7 @@ export interface Account {
   openingBalance: number;
   openingBalanceType: 'debit' | 'credit';
   isSystemAccount?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface LedgerEntry {
@@ -29,6 +30,9 @@ export interface ManualExpense {
   category?: string;
   expenseAccount?: string;
   reference?: string;
+  partyId?: string;
+  partyName?: string;
+  paymentMode?: 'cash' | 'bank';
 }
 
 export type AccountType = 'customer' | 'supplier' | 'agent' | 'broker' | 'transporter' | 'bank' | 'cash' | 'expense' | 'income' | 'asset' | 'liability' | 'equity' | 'other';
