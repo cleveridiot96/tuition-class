@@ -3,7 +3,24 @@ import { InventoryItem } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
 export const getInventory = (): InventoryItem[] => {
-  return getYearSpecificStorageItem<InventoryItem>('inventory');
+  const items = getYearSpecificStorageItem<InventoryItem>('inventory') || [];
+  
+  // Normalize inventory items to ensure they have all required properties
+  return items.map(item => ({
+    id: item.id,
+    lotNumber: item.lotNumber,
+    quantity: item.quantity || 0,
+    location: item.location || '',
+    dateAdded: item.dateAdded || new Date().toISOString(),
+    netWeight: item.netWeight || 0,
+    remainingQuantity: item.remainingQuantity !== undefined ? item.remainingQuantity : item.quantity,
+    purchaseRate: item.purchaseRate || 0,
+    finalCost: item.finalCost || 0,
+    agentId: item.agentId || '',
+    agentName: item.agentName || '',
+    date: item.date || item.dateAdded || new Date().toISOString(),
+    isDeleted: item.isDeleted || false
+  }));
 };
 
 export const saveInventory = (inventory: InventoryItem[]): void => {

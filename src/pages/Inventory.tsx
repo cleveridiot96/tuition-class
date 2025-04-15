@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, PackageOpen, Edit, Trash2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Package, PackageOpen, Edit, Trash2, RefreshCw } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -26,17 +25,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { getInventory, saveInventory, getPurchases, savePurchases } from "@/services/storageService";
-
-interface InventoryItem {
-  id: string;
-  lotNumber: string;
-  quantity: number;
-  location: string;
-  dateAdded: string;
-  netWeight?: number;
-  isDeleted?: boolean;
-}
+import { InventoryItem } from "@/services/types";
+import { getInventory, saveInventory } from "@/services/inventoryService";
+import { getPurchases, savePurchases } from "@/services/storageService";
 
 const Inventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -72,10 +63,8 @@ const Inventory = () => {
         item.id === editItem.id ? editItem : item
       );
       
-      // Save the updated inventory including both active and deleted items
       saveInventory(updatedInventory);
       
-      // Update the UI state
       setInventory(updatedInventory.filter(item => !item.isDeleted));
       setDeletedItems(updatedInventory.filter(item => item.isDeleted));
       
@@ -100,18 +89,15 @@ const Inventory = () => {
     const itemToRemove = inventory.find(item => item.id === id);
     if (itemToRemove) {
       if (itemToRemove.quantity <= 0) {
-        // If quantity is zero, ask if they want to keep or delete
         setItemToDelete(id);
         setShowDeleteConfirm(true);
       } else {
-        // If quantity is not zero, directly mark as deleted
         confirmDeleteOperation(itemToRemove);
       }
     }
   };
 
   const confirmDeleteOperation = (item: InventoryItem) => {
-    // Mark the item as deleted instead of removing it
     const deletedItem = { ...item, isDeleted: true };
     const newDeletedItems = [...deletedItems, deletedItem];
     setDeletedItems(newDeletedItems);
@@ -119,10 +105,8 @@ const Inventory = () => {
     const newInventory = inventory.filter(i => i.id !== item.id);
     setInventory(newInventory);
     
-    // Update related purchases to mark this lot as deleted
     updatePurchasesForDeletedItem(item.lotNumber);
     
-    // Update storage with all items (active and deleted)
     const allItems = [...newInventory, ...newDeletedItems];
     saveInventory(allItems);
     
@@ -150,15 +134,12 @@ const Inventory = () => {
   };
 
   const handleRestore = (item: InventoryItem) => {
-    // Restore the item by removing the deleted flag
     const restoredItem = { ...item, isDeleted: false };
     const updatedInventory = [...inventory, restoredItem];
     const updatedDeletedItems = deletedItems.filter(i => i.id !== item.id);
     
-    // Update related purchases to unmark this lot as deleted
     restorePurchasesForItem(item.lotNumber);
     
-    // Update storage and state
     setInventory(updatedInventory);
     setDeletedItems(updatedDeletedItems);
     saveInventory([...updatedInventory, ...updatedDeletedItems]);
@@ -200,7 +181,6 @@ const Inventory = () => {
     });
   };
 
-  // Calculate total stock by location correctly
   const chiplunStock = inventory
     .filter(item => item.location === "Chiplun")
     .reduce((total, item) => total + (item.quantity || 0), 0);
@@ -312,7 +292,6 @@ const Inventory = () => {
         </div>
       </div>
       
-      {/* Edit Dialog */}
       <Dialog open={isEditing} onOpenChange={(open) => !open && setIsEditing(false)}>
         <DialogContent>
           <DialogHeader>
@@ -366,7 +345,6 @@ const Inventory = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
@@ -396,7 +374,6 @@ const Inventory = () => {
         </DialogContent>
       </Dialog>
       
-      {/* General Delete Confirmation */}
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -428,7 +405,6 @@ const Inventory = () => {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Restore Dialog */}
       <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -489,9 +465,7 @@ const InventoryCard = ({ item, onEdit, onDelete }: InventoryCardProps) => {
         <p className="text-ag-brown text-sm mt-1">
           Added on: {new Date(item.dateAdded).toLocaleDateString()}
         </p>
-        {item.netWeight && (
-          <p className="text-ag-brown text-sm">Net Weight: {item.netWeight} Kg</p>
-        )}
+        <p className="text-ag-brown text-sm">Net Weight: {item.netWeight} Kg</p>
       </div>
       <div className="mt-4 flex space-x-2">
         <Button 
