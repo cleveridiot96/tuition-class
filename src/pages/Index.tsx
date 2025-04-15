@@ -7,7 +7,7 @@ import DashboardHeader from "@/components/dashboard/DashboardHeader";
 import DashboardMenu from "@/components/DashboardMenu";
 import { seedInitialData } from '@/services/storageUtils';
 import { initializeFinancialYears } from "@/services/financialYearService";
-import { getDashboardSummary } from "@/utils/accountingUtils";
+import { getDashboardSummary } from "@/services/calculationServices";
 import StockReport from "@/components/StockReport";
 import ProfitLossStatement from "@/components/ProfitLossStatement";
 import { useDashboardData } from "@/hooks/useDashboardData";
