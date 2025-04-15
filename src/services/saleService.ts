@@ -8,7 +8,12 @@ export const getSales = (): Sale[] => {
 
 export const addSale = (sale: Sale): void => {
   const sales = getSales();
-  sales.push(sale);
+  // Ensure transportCost is set if missing
+  const saleWithDefaults = {
+    ...sale,
+    transportCost: sale.transportCost ?? 0
+  };
+  sales.push(saleWithDefaults);
   saveYearSpecificStorageItem('sales', sales);
 };
 
@@ -16,7 +21,12 @@ export const updateSale = (updatedSale: Sale): void => {
   const sales = getSales();
   const index = sales.findIndex(sale => sale.id === updatedSale.id);
   if (index !== -1) {
-    sales[index] = updatedSale;
+    // Ensure transportCost is set if missing
+    const saleWithDefaults = {
+      ...updatedSale,
+      transportCost: updatedSale.transportCost ?? 0
+    };
+    sales[index] = saleWithDefaults;
     saveYearSpecificStorageItem('sales', sales);
   }
 };
@@ -31,5 +41,10 @@ export const deleteSale = (id: string): void => {
 };
 
 export const saveSales = (sales: Sale[]): void => {
-  saveYearSpecificStorageItem('sales', sales);
+  // Ensure all sales have transportCost
+  const normalizedSales = sales.map(sale => ({
+    ...sale,
+    transportCost: sale.transportCost ?? 0
+  }));
+  saveYearSpecificStorageItem('sales', normalizedSales);
 };

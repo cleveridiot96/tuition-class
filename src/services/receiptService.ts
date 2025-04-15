@@ -7,8 +7,16 @@ export const getReceipts = (): Receipt[] => {
 };
 
 export const addReceipt = (receipt: Receipt): void => {
+  // Ensure backward compatibility fields
+  const receiptWithCompat = {
+    ...receipt,
+    reference: receipt.referenceNumber,
+    paymentMethod: receipt.mode,
+    customer: receipt.customerName // For backward compatibility
+  };
+  
   const receipts = getReceipts();
-  receipts.push(receipt);
+  receipts.push(receiptWithCompat);
   saveYearSpecificStorageItem('receipts', receipts);
 };
 
@@ -16,7 +24,15 @@ export const updateReceipt = (updatedReceipt: Receipt): void => {
   const receipts = getReceipts();
   const index = receipts.findIndex(receipt => receipt.id === updatedReceipt.id);
   if (index !== -1) {
-    receipts[index] = updatedReceipt;
+    // Ensure backward compatibility fields
+    const receiptWithCompat = {
+      ...updatedReceipt,
+      reference: updatedReceipt.referenceNumber,
+      paymentMethod: updatedReceipt.mode,
+      customer: updatedReceipt.customerName // For backward compatibility
+    };
+    
+    receipts[index] = receiptWithCompat;
     saveYearSpecificStorageItem('receipts', receipts);
   }
 };

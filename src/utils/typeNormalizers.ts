@@ -6,6 +6,7 @@ export const normalizeSale = (sale: any): Sale => {
   return {
     ...sale,
     netAmount: sale.netAmount ?? sale.totalAmount ?? 0,
+    transportCost: sale.transportCost ?? 0,
   };
 };
 

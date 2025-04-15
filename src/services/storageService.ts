@@ -2,7 +2,9 @@
 // Re-export all entity services for backward compatibility
 export * from './types';
 export * from './storageUtils';
-export * from './agentService';
+
+// Specific services
+export { getAgents, addAgent, updateAgent, deleteAgent } from './agentService';
 export * from './supplierService';
 export * from './customerService';
 export * from './brokerService';

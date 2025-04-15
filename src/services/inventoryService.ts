@@ -43,3 +43,8 @@ export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number
     saveYearSpecificStorageItem('inventory', inventory);
   }
 };
+
+// Add the saveInventory function
+export const saveInventory = (inventory: InventoryItem[]): void => {
+  saveYearSpecificStorageItem('inventory', inventory);
+};

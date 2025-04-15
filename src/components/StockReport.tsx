@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import * as XLSX from 'xlsx';
@@ -30,7 +31,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Printer, FileSpreadsheet } from "lucide-react";
 
 import { getInventory } from '@/services/inventoryService';
-import { getSales } from '@/services/salesService';
+import { getSales } from '@/services/saleService';
 import { getAgents } from '@/services/agentService';
 import { getLocations } from '@/services/storageUtils';
 import { formatCurrency } from '@/utils/helpers';
