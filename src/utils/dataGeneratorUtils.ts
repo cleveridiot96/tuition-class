@@ -236,9 +236,12 @@ export function generateSampleData() {
     const customer = selectedCustomer.name;
     
     // Determine if bill amount should include GST
-    const includeGST = (selectedCustomer.payableByCustomer !== undefined 
-      ? selectedCustomer.payableByCustomer !== false 
-      : true) && Math.random() > 0.5;
+    const isPayableByCustomer = typeof selectedCustomer === 'object' && 
+      'payableByCustomer' in selectedCustomer ? 
+      selectedCustomer.payableByCustomer !== false : 
+      true;
+    
+    const includeGST = isPayableByCustomer && Math.random() > 0.5;
     const billAmount = includeGST ? totalAmount * 1.18 : totalAmount; // 18% GST
     
     // Random transport details

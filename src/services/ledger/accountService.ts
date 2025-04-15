@@ -7,13 +7,13 @@ const ACCOUNTS_STORAGE_KEY = 'accounts';
 export const accountService = {
   initializeAccounts: () => {
     // Initialize accounts if they don't exist in storage
-    if (!getStorageItem(ACCOUNTS_STORAGE_KEY)) {
+    if (!getStorageItem(ACCOUNTS_STORAGE_KEY, [])) {
       saveStorageItem(ACCOUNTS_STORAGE_KEY, []);
     }
   },
 
   getAccounts: (): Account[] => {
-    return getStorageItem(ACCOUNTS_STORAGE_KEY) || [];
+    return getStorageItem(ACCOUNTS_STORAGE_KEY, []);
   },
 
   getAccountById: (id: string): Account | null => {

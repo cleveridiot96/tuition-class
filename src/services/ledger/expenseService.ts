@@ -8,7 +8,7 @@ const EXPENSES_STORAGE_KEY = 'expenses';
 
 export const expenseService = {
   getExpenses: (): ManualExpense[] => {
-    const expenses = getStorageItem(EXPENSES_STORAGE_KEY);
+    const expenses = getStorageItem(EXPENSES_STORAGE_KEY, []);
     if (!expenses) {
       saveStorageItem(EXPENSES_STORAGE_KEY, []);
       return [];
@@ -18,7 +18,7 @@ export const expenseService = {
 
   addManualExpense: (expense: ManualExpense): ManualExpense => {
     // Add expense to expenses storage
-    const expenses = expenseService.getExpenses() || [];
+    const expenses = expenseService.getExpenses();
     const newExpense = {
       ...expense,
       id: expense.id || uuidv4()

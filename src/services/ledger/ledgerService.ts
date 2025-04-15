@@ -6,13 +6,13 @@ const LEDGER_STORAGE_KEY = 'ledger';
 
 export const ledgerService = {
   initializeLedger: () => {
-    if (!getStorageItem(LEDGER_STORAGE_KEY)) {
+    if (!getStorageItem(LEDGER_STORAGE_KEY, [])) {
       saveStorageItem(LEDGER_STORAGE_KEY, []);
     }
   },
 
   getLedger: (): LedgerEntry[] => {
-    return getStorageItem(LEDGER_STORAGE_KEY) || [];
+    return getStorageItem(LEDGER_STORAGE_KEY, []);
   },
 
   getAccountLedger: (accountId: string): LedgerEntry[] => {
