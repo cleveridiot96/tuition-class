@@ -23,7 +23,7 @@ export interface SelectOption {
 }
 
 interface SearchableSelectProps {
-  options: SelectOption[];
+  options?: SelectOption[]; // Make options optional
   value?: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
@@ -34,7 +34,7 @@ interface SearchableSelectProps {
 }
 
 export function SearchableSelect({
-  options,
+  options = [], // Default to empty array
   value,
   onValueChange,
   placeholder = "Select an option",
@@ -43,34 +43,42 @@ export function SearchableSelect({
   disabled = false,
   className,
 }: SearchableSelectProps) {
-  // CRITICAL FIX: Ensure options is always a valid array
-  const safeOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) {
-      console.warn("SearchableSelect: options is not an array, defaulting to []");
-      return [];
-    }
-    return options;
-  }, [options]);
-  
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   
-  // Filter options based on search term - safely
-  const filteredOptions = React.useMemo(() => {
-    if (!searchTerm) return safeOptions;
-    
-    return safeOptions.filter(option => {
-      const label = String(option?.label || "").toLowerCase();
-      const search = searchTerm.toLowerCase();
-      return label.includes(search);
-    });
-  }, [safeOptions, searchTerm]);
+  // Validate and normalize options
+  const normalizedOptions = React.useMemo(() => {
+    if (!Array.isArray(options)) {
+      console.warn("SearchableSelect: options must be an array");
+      return [];
+    }
+
+    return options.map(option => {
+      if (!option || typeof option !== 'object') {
+        console.warn("SearchableSelect: invalid option format");
+        return { value: '', label: 'Invalid option' };
+      }
+      return {
+        value: String(option.value || ''),
+        label: String(option.label || '')
+      };
+    }).filter(option => option.value); // Filter out empty values
+  }, [options]);
   
-  // Safely find selected option
-  const selectedOption = React.useMemo(() => {
-    if (!value) return null;
-    return safeOptions.find(option => option.value === value) || null;
-  }, [safeOptions, value]);
+  // Filter options based on search term
+  const filteredOptions = React.useMemo(() => {
+    if (!searchTerm) return normalizedOptions;
+    
+    return normalizedOptions.filter(option => 
+      option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [normalizedOptions, searchTerm]);
+  
+  // Find selected option
+  const selectedOption = React.useMemo(() => 
+    normalizedOptions.find(option => option.value === value) || null,
+    [normalizedOptions, value]
+  );
 
   return (
     <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>

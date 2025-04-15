@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/popover";
 
 interface ComboboxProps {
-  options: { value: string; label: string }[];
+  options?: { value: string; label: string }[];
   value?: string;
   onSelect?: (value: string) => void;
   onChange?: (value: string) => void;
@@ -28,7 +28,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options,
+  options = [], // Default to empty array
   value = "",
   onSelect,
   onChange,
@@ -46,36 +46,33 @@ export function Combobox({
     setSelectedValue(value || "");
   }, [value]);
 
-  // CRITICAL FIX: Ensure options is always an array
-  const safeOptions = React.useMemo(() => {
-    // Return empty array if options is falsy
-    if (!options) return [];
-    
-    // Ensure options is an array
+  // Validate and normalize options
+  const normalizedOptions = React.useMemo(() => {
     if (!Array.isArray(options)) {
-      console.warn("Combobox: options is not an array, defaulting to []");
+      console.warn("Combobox: options must be an array");
       return [];
     }
-    
-    // Filter out invalid options
-    return options.filter(option => 
-      option &&
-      typeof option === 'object' && 
-      'value' in option && 
-      'label' in option
-    );
+
+    return options.map(option => {
+      if (!option || typeof option !== 'object') {
+        console.warn("Combobox: invalid option format");
+        return { value: '', label: 'Invalid option' };
+      }
+      return {
+        value: String(option.value || ''),
+        label: String(option.label || '')
+      };
+    }).filter(option => option.value); // Filter out empty values
   }, [options]);
 
   // Filter options based on input
   const filteredOptions = React.useMemo(() => {
-    if (!inputValue) return safeOptions;
+    if (!inputValue) return normalizedOptions;
     
-    return safeOptions.filter(option => {
-      const label = String(option.label || "").toLowerCase();
-      const search = inputValue.toLowerCase();
-      return label.includes(search);
-    });
-  }, [safeOptions, inputValue]);
+    return normalizedOptions.filter(option => 
+      option.label.toLowerCase().includes(inputValue.toLowerCase())
+    );
+  }, [normalizedOptions, inputValue]);
 
   // Handle selection
   const handleSelect = (currentValue: string) => {
@@ -99,9 +96,9 @@ export function Combobox({
   const displayText = React.useMemo(() => {
     if (!selectedValue) return placeholder;
     
-    const foundOption = safeOptions.find(option => option.value === selectedValue);
+    const foundOption = normalizedOptions.find(option => option.value === selectedValue);
     return foundOption ? foundOption.label : selectedValue;
-  }, [selectedValue, safeOptions, placeholder]);
+  }, [selectedValue, normalizedOptions, placeholder]);
 
   return (
     <Popover 
