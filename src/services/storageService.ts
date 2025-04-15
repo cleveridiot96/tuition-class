@@ -39,9 +39,6 @@ export {
   seedInitialData,
   getYearSpecificStorageItem,
   saveYearSpecificStorageItem,
-  // Import necessary functions from storageUtils but avoid re-exporting getFinancialYearKeyPrefix
   getStorageItem,
   saveStorageItem,
-  // NOTE: Deliberately not re-exporting getFinancialYearKeyPrefix from storageUtils
-  // to avoid the ambiguity with the function from financialYearService
 } from './storageUtils';
