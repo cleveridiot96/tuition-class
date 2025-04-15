@@ -10,10 +10,9 @@ import DashboardSummary from "@/components/DashboardSummary";
 import { seedInitialData } from "@/services/storageService";
 import { initializeFinancialYears } from "@/services/financialYearService";
 import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
-import { toast } from "@/hooks/use-toast"; // Use direct import for toast function
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
-  // Remove the useToast() call that's causing the error
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   
   const {
@@ -95,14 +94,14 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige">
+    <div className="min-h-screen bg-ag-beige overflow-x-hidden">
       <Navigation 
         title="Dashboard" 
         showFormatButton={true}
         onFormatClick={() => document.dispatchEvent(new Event('format-click'))}
       />
       
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 overflow-x-hidden">
         <DashboardHeader onOpeningBalancesClick={handleOpeningBalances} />
         
         <p className="text-lg text-ag-brown mt-2 mb-4 text-center">
