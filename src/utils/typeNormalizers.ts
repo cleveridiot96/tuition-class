@@ -7,6 +7,7 @@ export const normalizeSale = (sale: any): Sale => {
     ...sale,
     netAmount: sale.netAmount ?? sale.totalAmount ?? 0,
     transportCost: sale.transportCost ?? 0,
+    amount: sale.amount ?? sale.totalAmount ?? 0, // Ensure amount is always set
   };
 };
 

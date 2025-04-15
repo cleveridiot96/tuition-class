@@ -1,4 +1,3 @@
-
 // Base entity types
 export interface BaseEntity {
   id: string;
@@ -86,7 +85,7 @@ export interface Sale extends BaseEntity {
   transporterId?: string;
   transporter?: string;
   transportRate?: number;
-  transportCost: number; // Changed from optional to required
+  transportCost: number;
   brokerId?: string;
   broker?: string;
   brokerageType?: string;
@@ -94,9 +93,9 @@ export interface Sale extends BaseEntity {
   brokerageAmount?: number;
   billNumber?: string;
   billAmount?: number;
-  amount?: number;
+  amount: number; // Made this a required property
   notes?: string;
-  netAmount: number; // Added as required by component
+  netAmount: number;
 }
 
 export interface Payment extends BaseEntity {
