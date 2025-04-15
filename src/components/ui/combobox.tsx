@@ -28,7 +28,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options = [], // Always ensure options has a default
+  options = [], // Always ensure options has a default value
   value = "",
   onSelect,
   onChange,
@@ -40,27 +40,7 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
-  const popoverRef = React.useRef<HTMLDivElement>(null);
-
-  // Handle clicks outside
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        popoverRef.current && 
-        !popoverRef.current.contains(event.target as Node) && 
-        open
-      ) {
-        setOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside, true);
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
-    };
-  }, [open]);
-
+  
   // Sync with external value changes
   React.useEffect(() => {
     setSelectedValue(value || "");
@@ -108,71 +88,63 @@ export function Combobox({
   const displayText = React.useMemo(() => {
     if (!selectedValue) return placeholder;
     
-    const foundOption = options.find(option => option && option.value === selectedValue);
+    // Ensure options is an array
+    const safeOptions = Array.isArray(options) ? options : [];
+    const foundOption = safeOptions.find(option => option && option.value === selectedValue);
     return foundOption ? foundOption.label : selectedValue;
   }, [selectedValue, options, placeholder]);
 
   return (
-    <div ref={popoverRef}>
-      <Popover 
-        open={disabled ? false : open} 
-        onOpenChange={disabled ? undefined : setOpen}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn("w-full justify-between", className)}
-            disabled={disabled}
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (!disabled) setOpen(!open);
-            }}
-          >
-            <span className="truncate">{selectedValue ? displayText : placeholder}</span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0 z-[9999] bg-white shadow-lg" 
-          align="start"
-          side="bottom"
-          avoidCollisions
+    <Popover 
+      open={disabled ? false : open} 
+      onOpenChange={disabled ? undefined : setOpen}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn("w-full justify-between", className)}
+          disabled={disabled}
         >
-          <Command shouldFilter={false}>
-            <CommandInput 
-              placeholder={`Search ${placeholder.toLowerCase()}...`} 
-              value={inputValue}
-              onValueChange={handleInputChange}
-              className="h-9"
-            />
-            <CommandGroup>
-              {filteredOptions.length === 0 ? (
-                <CommandEmpty>No results found.</CommandEmpty>
-              ) : (
-                filteredOptions.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={handleSelect}
-                    className="cursor-pointer"
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        selectedValue === option.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
-                ))
-              )}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+          <span className="truncate">{displayText}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
+        align="start"
+        avoidCollisions
+      >
+        <Command shouldFilter={false}>
+          <CommandInput 
+            placeholder={`Search ${placeholder.toLowerCase()}...`} 
+            value={inputValue}
+            onValueChange={handleInputChange}
+          />
+          <CommandGroup>
+            {filteredOptions.length === 0 ? (
+              <CommandEmpty>No results found.</CommandEmpty>
+            ) : (
+              filteredOptions.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.value}
+                  onSelect={handleSelect}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      selectedValue === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {option.label}
+                </CommandItem>
+              ))
+            )}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

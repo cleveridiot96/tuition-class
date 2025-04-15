@@ -44,10 +44,28 @@ export function SearchableSelect({
   className,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
 
   // Ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : [];
+  
+  // Filter options based on search term
+  const filteredOptions = React.useMemo(() => {
+    if (!searchTerm) return safeOptions;
+    
+    return safeOptions.filter(option => {
+      const label = option.label.toLowerCase();
+      const search = searchTerm.toLowerCase();
+      return label.includes(search);
+    });
+  }, [safeOptions, searchTerm]);
+  
   const selectedOption = safeOptions.find((option) => option.value === value);
+
+  // Handle search input change
+  const handleSearchChange = (search: string) => {
+    setSearchTerm(search);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -67,32 +85,41 @@ export function SearchableSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full min-w-[200px] p-0 bg-white">
+      <PopoverContent className="w-full min-w-[200px] p-0 bg-white shadow-lg">
         <Command>
-          <CommandInput placeholder={`Search ${placeholder.toLowerCase()}...`} className="h-9" />
-          <CommandEmpty>{emptyMessage}</CommandEmpty>
-          <ScrollArea className="max-h-60">
-            <CommandGroup>
-              {safeOptions.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onValueChange(currentValue);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  {option.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </ScrollArea>
+          <CommandInput 
+            placeholder={`Search ${placeholder.toLowerCase()}...`} 
+            className="h-9"
+            value={searchTerm}
+            onValueChange={handleSearchChange}
+          />
+          {filteredOptions.length === 0 ? (
+            <CommandEmpty>{emptyMessage}</CommandEmpty>
+          ) : (
+            <ScrollArea className="max-h-60">
+              <CommandGroup>
+                {filteredOptions.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={(currentValue) => {
+                      onValueChange(currentValue);
+                      setOpen(false);
+                      setSearchTerm("");
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </ScrollArea>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
