@@ -1,183 +1,93 @@
-// Common interfaces for all entities
 
-export interface Agent {
+// Basic entity types
+export interface BaseEntity {
   id: string;
   name: string;
-  address: string;
-  balance: number;
-}
-
-export interface Supplier {
-  id: string;
-  name: string;
-  address: string;
-  balance: number;
-}
-
-export interface Customer {
-  id: string;
-  name: string;
-  address: string;
-  balance: number;
-}
-
-export interface Broker {
-  id: string;
-  name: string;
-  address: string;
-  commissionRate: number;
-  balance: number;
-}
-
-export interface Transporter {
-  id: string;
-  name: string;
-  address: string;
-  balance: number;
-}
-
-export interface Purchase {
-  id: string;
-  date: string;
-  lotNumber: string;
-  quantity: number;
-  agent: string;
-  agentId?: string; 
-  party: string;
-  partyId?: string;
-  location: string;
-  netWeight: number;
-  rate: number;
-  transporter: string;
-  transporterId?: string;
-  transportRate?: number;
-  transportCost: number;
-  totalAmount: number;
-  expenses: number;
-  broker?: string;
-  brokerId?: string;
-  brokerageRate?: number;
-  brokerageAmount?: number;
-  brokerageType?: "percentage" | "fixed";
-  totalAfterExpenses: number;
-  ratePerKgAfterExpenses: number;
-  notes: string;
   isDeleted?: boolean;
+  createdAt?: string;
 }
 
-export interface Sale {
-  id: string;
-  date: string;
-  lotNumber: string;
-  billNumber?: string;
-  billAmount?: number;
-  customer: string;
-  customerId: string;
-  quantity: number;
-  netWeight: number;
-  rate: number;
-  broker?: string;
-  brokerId?: string;
-  brokerageRate?: number;
-  brokerageAmount?: number;
-  brokerageType?: "percentage" | "fixed";
-  transporter?: string;
-  transporterId?: string;
-  transportRate?: number;
-  transportCost: number;
-  location?: string;
+export interface Agent extends BaseEntity {
+  contactNumber?: string;
+  address?: string;
+  commissionRate?: number;
   notes?: string;
-  totalAmount: number;
-  netAmount: number;
-  amount: number;
-  isDeleted?: boolean;
 }
 
-export interface Payment {
+export interface Broker extends BaseEntity {
+  contactNumber?: string;
+  address?: string;
+  commissionRate?: number;
+  notes?: string;
+}
+
+export interface Customer extends BaseEntity {
+  contactNumber?: string;
+  address?: string;
+  gstNumber?: string;
+  creditLimit?: number;
+  notes?: string;
+  payableByCustomer?: boolean;
+}
+
+export interface Supplier extends BaseEntity {
+  contactNumber?: string;
+  address?: string;
+  gstNumber?: string;
+  notes?: string;
+}
+
+export interface Transporter extends BaseEntity {
+  contactNumber?: string;
+  address?: string;
+  gstNumber?: string;
+  notes?: string;
+}
+
+export interface FinancialYear {
   id: string;
-  date: string;
-  party: string;
-  partyId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  isSetup: boolean;
+}
+
+// Opening balance types
+export interface PartyOpeningBalance {
+  id: string;
+  name: string;
+  type: 'agent' | 'broker' | 'customer' | 'supplier' | 'transporter';
+  partyId?: string;
   partyName?: string;
   partyType?: string;
   amount: number;
-  paymentMethod: string;
-  paymentMode?: string;
-  reference: string;
-  notes: string;
-  billNumber?: string;
-  billAmount?: number;
-  referenceNumber?: string;
-  isDeleted?: boolean;
-  isOnAccount?: boolean;
-  isAgainstTransaction?: boolean;
-  transactionDetails?: {
-    type: 'purchase' | 'sale';
-    id: string;
-    number: string;
-  }
+  balanceType: 'debit' | 'credit';
 }
 
-export interface Receipt {
+export interface StockOpeningBalance {
   id: string;
-  date: string;
-  customer: string;
-  customerId: string;
-  customerName?: string;
-  amount: number;
-  paymentMethod: string;
-  paymentMode?: string;
-  reference: string;
-  notes: string;
-  isDeleted?: boolean;
-}
-
-export interface InventoryItem {
-  id: string;
-  lotNumber: string;
+  name: string;
+  lotNumber?: string;
   quantity: number;
   location: string;
-  dateAdded: string;
+  rate: number;
   netWeight: number;
-  remainingQuantity?: number;
-  purchaseRate?: number;
-  finalCost?: number;
-  agentId?: string;
-  agentName?: string;
-  date?: string;
-  isDeleted?: boolean;
-}
-
-export interface EnhancedInventoryItem extends Omit<InventoryItem, 'remainingQuantity' | 'purchaseRate' | 'finalCost' | 'agentId' | 'date' | 'agentName'> {
-  remainingQuantity: number;
-  purchaseRate: number;
-  finalCost: number;
-  agentId: string;
-  date: string;
-  agentName: string;
-  soldQuantity: number;
-  soldWeight: number;
-  remainingWeight: number;
-  totalValue: number;
-}
-
-export interface LedgerEntry {
-  id: string;
-  date: string;
-  partyName: string;
-  partyType: string;
-  description: string;
-  debit: number;
-  credit: number;
-  balance: number;
-  referenceId?: string;
-  referenceType?: string;
-}
-
-export interface CashBookEntry {
-  id: string;
-  date: string;
-  description: string;
-  type: "debit" | "credit";
   amount: number;
+  balanceType: 'debit' | 'credit';
+}
+
+export interface OpeningBalance {
+  id: string;
+  yearId?: string;
+  cash: number;
+  bank: number;
+  stock: StockOpeningBalance[];
+  parties: PartyOpeningBalance[];
+}
+
+// For backwards compatibility - exportDataBackup functions
+export interface BackupData {
+  data: Record<string, any>;
+  timestamp: number;
 }

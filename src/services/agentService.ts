@@ -1,10 +1,10 @@
-
-import { Agent } from './types';
+import { v4 as uuidv4 } from 'uuid';
 import { getStorageItem, saveStorageItem } from './storageUtils';
+import { Agent } from './types';
 
-export const getAgents = (): Agent[] => {
-  return getStorageItem<Agent>('agents');
-};
+export function getAgents(): Agent[] {
+  return getStorageItem('agents', []);
+}
 
 export const addAgent = (agent: Agent): void => {
   const agents = getAgents();

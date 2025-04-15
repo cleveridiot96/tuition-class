@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw, Download, Upload } from "lucide-react";
 import { exportDataBackup, importDataBackup } from "@/services/storageService";
 import PortableAppButton from "./dashboard/PortableAppButton";
+import { toast } from "@/hooks/use-toast";
 
 interface BackupRestoreControlsProps {
   onRefresh: () => void;
@@ -14,8 +15,13 @@ interface BackupRestoreControlsProps {
 const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControlsProps) => {
   const handleBackup = () => {
     try {
-      const success = exportDataBackup();
-      window.dispatchEvent(new CustomEvent('backup-created', { detail: { success } }));
+      const jsonData = exportDataBackup();
+      if (jsonData) {
+        const success = jsonData.length > 0;
+        window.dispatchEvent(new CustomEvent('backup-created', { detail: { success } }));
+      } else {
+        window.dispatchEvent(new CustomEvent('backup-created', { detail: { success: false } }));
+      }
     } catch (error) {
       console.error("Error during backup:", error);
       window.dispatchEvent(new CustomEvent('backup-created', { detail: { success: false } }));
@@ -37,9 +43,18 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
             const success = importDataBackup(content);
             if (success) {
               onRefresh();
+              toast({
+                title: "Data Restored",
+                description: "Your backup has been successfully restored."
+              });
             }
           } catch (error) {
             console.error("Import error:", error);
+            toast({
+              title: "Restore Failed",
+              description: "There was a problem importing your backup data.",
+              variant: "destructive"
+            });
           }
         };
         reader.readAsText(file);

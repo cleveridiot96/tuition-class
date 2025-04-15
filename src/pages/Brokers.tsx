@@ -1,11 +1,10 @@
-
 import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Save, ArrowLeft, HandCoin } from "lucide-react";
+import { PlusCircle, Save, ArrowLeft, HandCoins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getBrokers, addBroker } from "@/services/storageService";
 
@@ -20,7 +19,6 @@ const Brokers = () => {
     commissionRate: 1
   });
 
-  // Load brokers on component mount
   useEffect(() => {
     setBrokers(getBrokers());
   }, []);
@@ -42,10 +40,8 @@ const Brokers = () => {
       balance: 0
     };
     
-    // Add to storage
     addBroker(newBroker);
     
-    // Update UI
     setBrokers((prev) => [...prev, newBroker]);
     
     toast({
@@ -84,7 +80,7 @@ const Brokers = () => {
                 <Card key={broker.id} className="p-4">
                   <div className="flex items-center border-b pb-3 mb-3">
                     <div className="bg-ag-purple-light p-2 rounded-full mr-3">
-                      <HandCoin size={32} className="text-ag-purple" />
+                      <HandCoins size={32} className="text-ag-purple" />
                     </div>
                     <h3 className="text-2xl font-bold">{broker.name}</h3>
                   </div>

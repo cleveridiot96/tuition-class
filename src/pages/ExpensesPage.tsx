@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,6 @@ import { PlusCircle, Filter, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-// Mock data for demonstration - in real app, this would come from storage service
 const mockExpenses = [
   {
     id: "exp-1",
@@ -58,26 +56,25 @@ const mockExpenses = [
 const ExpensesPage = () => {
   const { toast } = useToast();
   const [expenses, setExpenses] = useState(mockExpenses);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
   const [categoryFilter, setCategoryFilter] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    // In real app, would fetch from storage service
     console.log("Expenses loaded");
   }, []);
 
   const filterExpenses = () => {
     let filtered = [...mockExpenses];
     
-    if (startDate) {
-      filtered = filtered.filter(exp => new Date(exp.date) >= startDate);
+    if (fromDate) {
+      filtered = filtered.filter(exp => new Date(exp.date) >= fromDate);
     }
     
-    if (endDate) {
-      filtered = filtered.filter(exp => new Date(exp.date) <= endDate);
+    if (toDate) {
+      filtered = filtered.filter(exp => new Date(exp.date) <= toDate);
     }
     
     if (categoryFilter) {
@@ -101,8 +98,8 @@ const ExpensesPage = () => {
   };
 
   const resetFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
+    setFromDate(null);
+    setToDate(null);
     setCategoryFilter("");
     setSearchTerm("");
     setExpenses(mockExpenses);
@@ -144,16 +141,16 @@ const ExpensesPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
               <div className="lg:col-span-2">
                 <DatePicker
-                  placeholder="Start Date"
-                  date={startDate}
-                  onDateChange={setStartDate}
+                  date={fromDate}
+                  setDate={setFromDate}
+                  className="w-full"
                 />
               </div>
               <div className="lg:col-span-2">
                 <DatePicker
-                  placeholder="End Date"
-                  date={endDate}
-                  onDateChange={setEndDate}
+                  date={toDate}
+                  setDate={setToDate}
+                  className="w-full"
                 />
               </div>
               <div className="lg:col-span-1">

@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import DashboardSummary from "@/components/DashboardSummary";
@@ -7,12 +7,45 @@ import DashboardMenu from "@/components/DashboardMenu";
 import SampleDataGenerator from '@/components/SampleDataGenerator';
 import { seedInitialData } from '@/services/storageUtils';
 import { initializeFinancialYears } from "@/services/financialYearService";
+import { getSales, getPurchases, getPayments, getReceipts } from "@/services/storageService";
 
 const Index = () => {
+  const [summaryData, setSummaryData] = useState({
+    totalSales: 0,
+    totalPurchases: 0,
+    totalPayments: 0,
+    totalReceipts: 0
+  });
+
   useEffect(() => {
     // Initialize data on first load if needed
     seedInitialData();
     initializeFinancialYears();
+
+    // Load summary data
+    const loadSummaryData = () => {
+      try {
+        const sales = getSales();
+        const purchases = getPurchases();
+        const payments = getPayments();
+        const receipts = getReceipts();
+        
+        const totalSales = sales.reduce((sum, sale) => sum + (sale.totalAmount || 0), 0);
+        const totalPurchases = purchases.reduce((sum, purchase) => sum + (purchase.totalAmount || 0), 0);
+        const totalPayments = payments.reduce((sum, payment) => sum + payment.amount, 0);
+        const totalReceipts = receipts.reduce((sum, receipt) => sum + receipt.amount, 0);
+
+        setSummaryData({ totalSales, totalPurchases, totalPayments, totalReceipts });
+      } catch (error) {
+        console.error("Error loading summary data:", error);
+      }
+    };
+
+    loadSummaryData();
+    
+    // Listen for storage events
+    window.addEventListener('storage', loadSummaryData);
+    return () => window.removeEventListener('storage', loadSummaryData);
   }, []);
 
   return (
@@ -20,7 +53,7 @@ const Index = () => {
       <Navigation title="Dashboard" />
       <div className="container mx-auto p-4 md:p-6">
         <SampleDataGenerator />
-        <DashboardSummary />
+        <DashboardSummary summaryData={summaryData} />
         <DashboardMenu />
         
         {/* Additional info section at the bottom */}

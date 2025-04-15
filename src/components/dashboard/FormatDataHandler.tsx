@@ -7,7 +7,7 @@ import {
   clearAllMasterData, 
   seedInitialData 
 } from "@/services/storageService";
-import { toast } from "@/hooks/use-toast"; // Changed to direct import
+import { toast } from "@/hooks/use-toast";
 import FormatEventConnector from './FormatEventConnector';
 
 interface FormatDataHandlerProps {
@@ -15,7 +15,6 @@ interface FormatDataHandlerProps {
 }
 
 const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
-  // Removed useToast hook
   const [isFormatDialogOpen, setIsFormatDialogOpen] = useState(false);
 
   const handleFormatClick = () => {
@@ -30,18 +29,18 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
         description: "Creating backup and resetting data...",
       });
       
-      const backupData = exportDataBackup(true);
-      console.log("Backup created:", backupData ? "Success" : "Failed");
+      const backupJson = exportDataBackup(true);
+      console.log("Backup created:", backupJson ? "Success" : "Failed");
       
-      if (backupData) {
-        localStorage.setItem('preFormatBackup', backupData);
+      if (backupJson) {
+        localStorage.setItem('preFormatBackup', backupJson);
         
         clearAllData();
         clearAllMasterData();
         
         await new Promise(resolve => setTimeout(resolve, 300));
         
-        seedInitialData(true);
+        seedInitialData();
         
         await new Promise(resolve => setTimeout(resolve, 300));
         

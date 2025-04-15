@@ -20,6 +20,7 @@ import {
 } from '@/services/storageUtils';
 
 import { getCurrentFinancialYear } from '@/services/financialYearService';
+import { Agent, Broker, Customer, Supplier, Transporter } from '@/services/types';
 
 // Sample products for trading
 const products = [
@@ -92,6 +93,7 @@ function generateParties() {
     address: `${getRandomItem(['Shop No.', 'Plot No.', 'Store'])} ${Math.floor(Math.random() * 100 + 1)}, ${getRandomItem(['Market Road', 'Main Street', 'Trading Hub'])}, ${getRandomItem(['Mumbai', 'Pune', 'Nagpur', 'Delhi', 'Indore', 'Ahmedabad'])}`,
     gstNumber: Math.random() > 0.6 ? `27${Math.random().toString().substring(2, 14)}` : undefined,
     creditLimit: Math.random() > 0.5 ? Math.floor(Math.random() * 1000000 + 100000) : undefined,
+    payableByCustomer: Math.random() > 0.5,
     notes: Math.random() > 0.7 ? `${Math.random() > 0.5 ? 'Regular' : 'Occasional'} customer.` : '',
     createdAt: new Date().toISOString(),
     isDeleted: false
@@ -129,7 +131,14 @@ function generateParties() {
 
 // Generate a purchase transaction
 function generatePurchase(
-  parties: any, 
+  parties: {
+    suppliers: Supplier[];
+    agents: Agent[];
+    brokers: Broker[];
+    customers: Customer[];
+    transporters: Transporter[];
+    locations: string[];
+  },
   existingIds: Set<string> = new Set(), 
   index: number = 0, 
   financialYear: string = getCurrentFinancialYear()
@@ -226,7 +235,14 @@ function generatePurchase(
 
 // Generate a sale transaction
 function generateSale(
-  parties: any, 
+  parties: {
+    suppliers: Supplier[];
+    agents: Agent[];
+    brokers: Broker[];
+    customers: Customer[];
+    transporters: Transporter[];
+    locations: string[];
+  },
   existingIds: Set<string> = new Set(), 
   index: number = 0,
   financialYear: string = getCurrentFinancialYear()
@@ -317,7 +333,14 @@ function generateSale(
 
 // Generate a payment
 function generatePayment(
-  parties: any, 
+  parties: {
+    suppliers: Supplier[];
+    agents: Agent[];
+    brokers: Broker[];
+    customers: Customer[];
+    transporters: Transporter[];
+    locations: string[];
+  },
   purchases: any[] = [], 
   index: number = 0,
   financialYear: string = getCurrentFinancialYear()
@@ -435,7 +458,14 @@ function generatePayment(
 
 // Generate a receipt
 function generateReceipt(
-  parties: any, 
+  parties: {
+    suppliers: Supplier[];
+    agents: Agent[];
+    brokers: Broker[];
+    customers: Customer[];
+    transporters: Transporter[];
+    locations: string[];
+  }, 
   sales: any[] = [], 
   index: number = 0,
   financialYear: string = getCurrentFinancialYear()

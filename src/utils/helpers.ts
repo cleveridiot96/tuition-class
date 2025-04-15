@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 
 /**
@@ -155,4 +154,15 @@ export function titleCase(str: string): string {
   return str.toLowerCase().split(' ')
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
+}
+
+/**
+ * Extract sale ID from URL search params
+ * @returns Sale ID if present in URL
+ */
+export function getSaleIdFromUrl(): string | null {
+  if (typeof window === 'undefined') return null;
+  
+  const searchParams = new URLSearchParams(window.location.search);
+  return searchParams.get('edit');
 }

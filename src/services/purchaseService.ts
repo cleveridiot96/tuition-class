@@ -1,10 +1,10 @@
-
 import { Purchase } from './types';
-import { getYearSpecificKey } from '@/services/financialYearService';
+import { v4 as uuidv4 } from 'uuid';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
+import { getCurrentFinancialYear, getYearSpecificKey } from './financialYearService';
 
 export const getPurchases = (): Purchase[] => {
-  return getYearSpecificStorageItem<Purchase>('purchases');
+  return getYearSpecificStorageItem('purchases', []);
 };
 
 export const addPurchase = (purchase: Purchase): void => {

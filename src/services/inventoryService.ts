@@ -1,51 +1,27 @@
-
-import { InventoryItem } from './types';
+import { v4 as uuidv4 } from 'uuid';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 
-export const getInventory = (): InventoryItem[] => {
-  return getYearSpecificStorageItem<InventoryItem>('inventory') || [];
-};
+export function getInventory() {
+  return getYearSpecificStorageItem('inventory', []);
+}
 
-export const saveInventory = (inventory: InventoryItem[]): void => {
+export function saveInventory(inventory: any) {
   saveYearSpecificStorageItem('inventory', inventory);
-};
+}
 
-export const addInventoryItem = (item: InventoryItem): void => {
+export function addInventoryItem(item: any) {
   const inventory = getInventory();
   inventory.push(item);
   saveInventory(inventory);
-};
+}
 
-export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number): void => {
+export function updateInventoryAfterSale(sale: any) {
   const inventory = getInventory();
-  const index = inventory.findIndex(item => item.lotNumber === lotNumber && !item.isDeleted);
-  
-  if (index !== -1) {
-    const item = inventory[index];
-    // Calculate remaining quantity, using the remainingQuantity field if it exists, otherwise use the quantity
-    const currentRemaining = item.remainingQuantity !== undefined ? item.remainingQuantity : item.quantity;
-    const remainingQuantity = Math.max(0, currentRemaining - quantitySold);
-    
-    inventory[index] = {
-      ...item,
-      remainingQuantity: remainingQuantity,
-      isDeleted: remainingQuantity === 0
-    };
-    
+  const itemIndex = inventory.findIndex((item: any) => item.productName === sale.productName && item.location === sale.location);
+
+  if (itemIndex !== -1) {
+    inventory[itemIndex].quantity -= sale.quantity;
+    inventory[itemIndex].netWeight -= sale.netWeight;
     saveInventory(inventory);
   }
-};
-
-// Helper function to get all locations from inventory
-export const getLocations = (): string[] => {
-  const inventory = getInventory();
-  const locations = new Set<string>();
-  
-  inventory.forEach(item => {
-    if (item.location) {
-      locations.add(item.location);
-    }
-  });
-  
-  return Array.from(locations);
-};
+}

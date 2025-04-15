@@ -1,10 +1,10 @@
-
-import { Transporter } from './types';
+import { v4 as uuidv4 } from 'uuid';
 import { getStorageItem, saveStorageItem } from './storageUtils';
+import { Transporter } from './types';
 
-export const getTransporters = (): Transporter[] => {
-  return getStorageItem<Transporter>('transporters');
-};
+export function getTransporters(): Transporter[] {
+  return getStorageItem('transporters', []);
+}
 
 export const addTransporter = (transporter: Transporter): void => {
   const transporters = getTransporters();
