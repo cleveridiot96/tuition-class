@@ -1,10 +1,8 @@
-
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import DashboardSummary from "@/components/DashboardSummary";
 import DashboardMenu from "@/components/DashboardMenu";
-import SampleDataGenerator from '@/components/SampleDataGenerator';
 import { seedInitialData } from '@/services/storageUtils';
 import { initializeFinancialYears } from "@/services/financialYearService";
 import { getSales, getPurchases, getPayments, getReceipts } from "@/services/storageService";
@@ -52,7 +50,6 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navigation title="Dashboard" />
       <div className="container mx-auto p-4 md:p-6">
-        <SampleDataGenerator />
         <DashboardSummary summaryData={summaryData} />
         <DashboardMenu />
         
@@ -62,7 +59,7 @@ const Index = () => {
           <ul className="space-y-1 text-sm">
             <li>• Go to <Link to="/ledger" className="text-primary underline">Ledger</Link> to view party balances and transaction history</li>
             <li>• Visit <Link to="/cashbook" className="text-primary underline">Cash Book</Link> to track cash flow</li>
-            <li>• Create sample data using the generator above to see the app in action</li>
+            <li>• Create sample data using the generator in Dashboard Header</li>
           </ul>
         </div>
       </div>
