@@ -20,7 +20,12 @@ export function AutoClearInput({
 
   React.useEffect(() => {
     if (props.value !== undefined) {
-      setValue(props.value);
+      // Ensure only string or number is set
+      setValue(
+        typeof props.value === 'string' || typeof props.value === 'number' 
+          ? props.value 
+          : defaultValue
+      );
       isInitialValue.current = String(props.value) === String(defaultValue);
     }
   }, [props.value, defaultValue]);
@@ -44,7 +49,8 @@ export function AutoClearInput({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value); // This is now correctly typed
+    // Ensure only string is set for value
+    setValue(String(e.target.value)); 
     isInitialValue.current = false;
     
     if (props.onChange) {
