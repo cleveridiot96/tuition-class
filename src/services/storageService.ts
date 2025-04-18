@@ -1,4 +1,3 @@
-
 // Re-export all entity services for backward compatibility
 export * from './types';
 export * from './storageUtils';
@@ -18,7 +17,7 @@ export * from './receiptService';
 // Export updateAgentBalance separately to avoid conflicts
 export { updateAgentBalance } from './agentService';
 
-// Explicitly re-export the debugStorage and other utility functions from storageUtils
+// Explicitly re-export the debugStorage function
 export { 
   debugStorage, 
   clearAllData, 
