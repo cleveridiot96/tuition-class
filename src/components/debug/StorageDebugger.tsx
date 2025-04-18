@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Database, Trash2 } from "lucide-react";
@@ -11,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { debugStorage, clearAllData } from '@/services/storageUtils';
+import { debugStorage, clearAllData } from '@/services/storageService';
 
 export function StorageDebugger() {
   const [storageData, setStorageData] = React.useState<string>('');
