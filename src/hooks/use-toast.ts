@@ -1,10 +1,9 @@
 
 import { Toast, ToasterToast } from './toast/types';
 import { toast, dismissToast } from './toast/toast-utils';
-
-export const useToast = () => {
-  const { memoryState } = require('./toast/reducer');
+import { memoryState } from './toast/reducer';
   
+export const useToast = () => {
   return {
     toast,
     dismiss: dismissToast,

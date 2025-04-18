@@ -1,35 +1,33 @@
+import { Toast, UpdateToast, ToasterToast } from './types';
+import React from 'react';
 
-import { Action, State, TOAST_REMOVE_DELAY, TOAST_LIMIT } from "./types";
+// Define the state structure
+export interface State {
+  toasts: ToasterToast[];
+}
 
-// Map for handling toast timeouts
-const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+// Define action types
+type ActionType =
+  | { type: "ADD_TOAST"; toast: ToasterToast }
+  | { type: "UPDATE_TOAST"; toast: UpdateToast }
+  | { type: "DISMISS_TOAST"; toastId?: string };
 
-// Helper to add toast to removal queue
-const addToRemoveQueue = (toastId: string, dispatch: (action: Action) => void) => {
-  if (toastTimeouts.has(toastId)) {
-    return;
-  }
-
-  const timeout = setTimeout(() => {
-    toastTimeouts.delete(toastId);
-    dispatch({
-      type: "REMOVE_TOAST",
-      toastId: toastId,
-    });
-  }, TOAST_REMOVE_DELAY);
-
-  toastTimeouts.set(toastId, timeout);
+// Create a memory state that will be updated by dispatch
+export const memoryState: State = {
+  toasts: [],
 };
 
-// Toast reducer function
-export const reducer = (state: State, action: Action): State => {
+// Array of setState functions to update
+export const listeners: Array<React.Dispatch<React.SetStateAction<State>>> = [];
+
+// Reducer function to manage state updates
+export function reducer(state: State, action: ActionType): State {
   switch (action.type) {
     case "ADD_TOAST":
       return {
         ...state,
-        toasts: [action.toast, ...state.toasts].slice(0, TOAST_LIMIT),
+        toasts: [...state.toasts, action.toast],
       };
-
     case "UPDATE_TOAST":
       return {
         ...state,
@@ -37,53 +35,16 @@ export const reducer = (state: State, action: Action): State => {
           t.id === action.toast.id ? { ...t, ...action.toast } : t
         ),
       };
-
-    case "DISMISS_TOAST": {
-      const { toastId } = action;
-
-      if (toastId) {
-        addToRemoveQueue(toastId, dispatch);
-      } else {
-        state.toasts.forEach((toast) => {
-          addToRemoveQueue(toast.id, dispatch);
-        });
-      }
-
-      return {
-        ...state,
-        toasts: state.toasts.map((t) =>
-          t.id === toastId || toastId === undefined
-            ? {
-                ...t,
-                open: false,
-              }
-            : t
-        ),
-      };
-    }
-    
-    case "REMOVE_TOAST":
-      if (action.toastId === undefined) {
-        return {
-          ...state,
-          toasts: [],
-        };
-      }
+    case "DISMISS_TOAST":
       return {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
       };
   }
-};
+}
 
-// Listeners and state management
-export const listeners: Array<(state: State) => void> = [];
-export let memoryState: State = { toasts: [] };
-
-// Dispatch function
-export function dispatch(action: Action) {
-  memoryState = reducer(memoryState, action);
-  listeners.forEach((listener) => {
-    listener(memoryState);
-  });
+// Dispatch function to update the state and notify listeners
+export function dispatch(action: ActionType) {
+  memoryState.toasts = reducer(memoryState, action).toasts;
+  listeners.forEach((listener) => listener(memoryState));
 }
