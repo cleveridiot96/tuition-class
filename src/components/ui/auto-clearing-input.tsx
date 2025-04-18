@@ -15,14 +15,16 @@ export function AutoClearingInput({
   ...props
 }: AutoClearingInputProps) {
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (value === '0' || value === 0) {
+    if (e.target.value === '0') {
+      e.target.value = '';
       onValueChange?.('');
     }
     onFocus?.(e);
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (!value && value !== 0) {
+    if (e.target.value === '') {
+      e.target.value = '0';
       onValueChange?.('0');
     }
     onBlur?.(e);
@@ -35,6 +37,7 @@ export function AutoClearingInput({
       onChange={(e) => onValueChange?.(e.target.value)}
       onFocus={handleFocus}
       onBlur={handleBlur}
+      className="auto-clear-zero"
     />
   );
 }

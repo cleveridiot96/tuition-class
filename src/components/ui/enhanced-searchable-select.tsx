@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,21 +45,45 @@ export function EnhancedSearchableSelect({
 }: EnhancedSearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
+  const [suggestedMatch, setSuggestedMatch] = React.useState<string | null>(null);
   
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
 
   React.useEffect(() => {
     if (!open) {
       setSearchTerm("");
+      setSuggestedMatch(null);
     }
   }, [open]);
 
+  // Enhanced filtering with fuzzy matching
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return options;
     
-    return options.filter(option => 
-      fuzzyMatch(searchTerm, option.label)
+    // Find exact and fuzzy matches
+    const matches = options.filter(option => 
+      fuzzyMatch(searchTerm, option.label) || 
+      fuzzyMatch(searchTerm, option.value)
     );
+    
+    // Look for best fuzzy match for suggestion
+    if (matches.length === 0 && searchTerm.length >= 2) {
+      const bestMatch = options.find(option => {
+        const cleanInput = searchTerm.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+        const cleanOption = option.label.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+        return cleanOption.startsWith(cleanInput.charAt(0)) && 
+               (cleanOption.includes(cleanInput) || 
+                cleanInput.length >= 2 && cleanOption.substring(0, 2) === cleanInput.substring(0, 2));
+      });
+      
+      if (bestMatch) {
+        setSuggestedMatch(bestMatch.label);
+      }
+    } else {
+      setSuggestedMatch(null);
+    }
+    
+    return matches;
   }, [options, searchTerm]);
 
   const inputMatchesOption = React.useMemo(() => {
@@ -76,6 +101,7 @@ export function EnhancedSearchableSelect({
     onValueChange(currentValue);
     setOpen(false);
     setSearchTerm("");
+    setSuggestedMatch(null);
   };
 
   const handleAddNewItem = () => {
@@ -84,6 +110,15 @@ export function EnhancedSearchableSelect({
         onAddNew(confirmedValue);
         onValueChange(confirmedValue);
       });
+    }
+  };
+
+  const useSuggestedMatch = () => {
+    if (suggestedMatch) {
+      const matchingOption = options.find(option => option.label === suggestedMatch);
+      if (matchingOption) {
+        handleSelect(matchingOption.value);
+      }
     }
   };
 
@@ -144,7 +179,20 @@ export function EnhancedSearchableSelect({
               <div className="py-6 text-center text-sm">
                 {searchTerm.trim() ? (
                   <div className="space-y-2 px-4">
-                    <p>"{searchTerm}" not found</p>
+                    {suggestedMatch ? (
+                      <div className="space-y-2">
+                        <p>Did you mean?</p>
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={useSuggestedMatch}
+                        >
+                          {suggestedMatch}
+                        </Button>
+                      </div>
+                    ) : (
+                      <p>"{searchTerm}" not found</p>
+                    )}
                     <Button 
                       variant="outline" 
                       className="w-full flex items-center justify-center gap-2"

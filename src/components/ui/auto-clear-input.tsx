@@ -30,7 +30,7 @@ export function AutoClearInput({
 
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     if (String(value) === String(defaultValue)) {
-      setValue(clearValue);
+      setValue(String(clearValue));
     }
     if (props.onFocus) {
       props.onFocus(e);
@@ -49,7 +49,7 @@ export function AutoClearInput({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setValue(newValue === '' ? clearValue : newValue);
+    setValue(newValue === '' ? String(clearValue) : newValue);
     isInitialValue.current = false;
     
     if (props.onChange) {

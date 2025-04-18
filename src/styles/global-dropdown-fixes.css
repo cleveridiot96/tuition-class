@@ -28,6 +28,21 @@ input[type="number"]:focus {
 }
 
 /* Auto-clear zero values when focused */
-input[type="number"].auto-clear-zero:focus {
-  outline: none;
+input[type="number"].auto-clear-zero:focus,
+input.auto-clear-zero:focus {
+  color: inherit;
+}
+
+/* Zero-value auto-clearing for all numeric inputs */
+input[type="number"][value="0"]:focus,
+input[value="0"].auto-clear-zero:focus {
+  color: transparent;
+}
+
+/* Enhance dropdowns to ensure they're visible and interactive */
+.select-content,
+.popover-content,
+.dropdown-menu {
+  background-color: white !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
 }
