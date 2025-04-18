@@ -92,3 +92,12 @@ export const daysBetween = (startDate: Date, endDate: Date): number => {
   const difference = endDate.getTime() - startDate.getTime();
   return Math.ceil(difference / (1000 * 60 * 60 * 24));
 };
+
+// Extract sale ID from URL query parameters
+export const getSaleIdFromUrl = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  
+  const urlParams = new URLSearchParams(window.location.search);
+  const saleId = urlParams.get('saleId');
+  return saleId;
+};

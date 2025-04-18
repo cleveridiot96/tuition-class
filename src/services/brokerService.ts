@@ -2,18 +2,19 @@
 import { Broker } from './types';
 import { getStorageItem, saveStorageItem } from './storageUtils';
 
-export const getBrokers = (): Broker[] => {
+// Renamed from getBrokers to getSalesBrokers for clarity
+export const getSalesBrokers = (): Broker[] => {
   return getStorageItem<Broker[]>('brokers') || [];
 };
 
 export const addBroker = (broker: Broker): void => {
-  const brokers = getBrokers();
+  const brokers = getSalesBrokers();
   brokers.push(broker);
   saveStorageItem('brokers', brokers);
 };
 
 export const updateBroker = (updatedBroker: Broker): void => {
-  const brokers = getBrokers();
+  const brokers = getSalesBrokers();
   const index = brokers.findIndex(broker => broker.id === updatedBroker.id);
   if (index !== -1) {
     brokers[index] = updatedBroker;
@@ -22,7 +23,7 @@ export const updateBroker = (updatedBroker: Broker): void => {
 };
 
 export const deleteBroker = (id: string): void => {
-  const brokers = getBrokers();
+  const brokers = getSalesBrokers();
   const index = brokers.findIndex(broker => broker.id === id);
   if (index !== -1) {
     brokers[index] = { ...brokers[index], isDeleted: true };
@@ -31,7 +32,7 @@ export const deleteBroker = (id: string): void => {
 };
 
 export const updateBrokerBalance = (brokerId: string, changeAmount: number): void => {
-  const brokers = getBrokers();
+  const brokers = getSalesBrokers();
   const brokerIndex = brokers.findIndex(broker => broker.id === brokerId);
   
   if (brokerIndex !== -1) {
@@ -39,3 +40,6 @@ export const updateBrokerBalance = (brokerId: string, changeAmount: number): voi
     saveStorageItem('brokers', brokers);
   }
 };
+
+// For backward compatibility
+export const getBrokers = getSalesBrokers;

@@ -1,3 +1,4 @@
+
 import { Purchase } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,9 +14,10 @@ export const addPurchase = (purchase: Purchase): void => {
   const newPurchase: Purchase = {
     ...purchase,
     id: purchase.id || uuidv4(),
-    // Make sure agent information is properly set 
+    // Make sure agent information is properly set - renamed to purchaseAgent
     agentId: purchase.agentId || null,
-    agent: purchase.agent || null
+    agent: purchase.agent || null,
+    purchaseAgent: purchase.purchaseAgent || purchase.agent || null
   };
   
   purchases.push(newPurchase);
@@ -27,12 +29,13 @@ export const updatePurchase = (updatedPurchase: Purchase): void => {
   const index = purchases.findIndex(purchase => purchase.id === updatedPurchase.id);
   
   if (index !== -1) {
-    // Ensure we maintain agent information properly
+    // Ensure we maintain agent information properly - renamed to purchaseAgent
     purchases[index] = {
       ...updatedPurchase,
       // Keep agent relationship consistent
       agentId: updatedPurchase.agentId || purchases[index].agentId,
-      agent: updatedPurchase.agent || purchases[index].agent
+      agent: updatedPurchase.agent || purchases[index].agent,
+      purchaseAgent: updatedPurchase.purchaseAgent || updatedPurchase.agent || purchases[index].agent
     };
     saveYearSpecificStorageItem('purchases', purchases);
   }

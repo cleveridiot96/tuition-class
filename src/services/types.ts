@@ -71,6 +71,7 @@ export interface Purchase extends BaseEntity {
   agentId?: string;
   transporter?: string;
   partyId?: string;
+  purchaseAgent?: string; // Added for clarity
 }
 
 export interface Sale extends BaseEntity {
@@ -96,6 +97,7 @@ export interface Sale extends BaseEntity {
   amount: number;
   notes?: string;
   netAmount: number;
+  salesBroker?: string; // Added for clarity
 }
 
 export interface Payment extends BaseEntity {

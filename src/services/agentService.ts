@@ -2,18 +2,19 @@
 import { Agent } from './types';
 import { getStorageItem, saveStorageItem } from './storageUtils';
 
-export const getAgents = (): Agent[] => {
+// Renamed from getAgents to getPurchaseAgents for clarity
+export const getPurchaseAgents = (): Agent[] => {
   return getStorageItem<Agent[]>('agents') || [];
 };
 
 export const addAgent = (agent: Agent): void => {
-  const agents = getAgents();
+  const agents = getPurchaseAgents();
   agents.push(agent);
   saveStorageItem('agents', agents);
 };
 
 export const updateAgent = (updatedAgent: Agent): void => {
-  const agents = getAgents();
+  const agents = getPurchaseAgents();
   const index = agents.findIndex(agent => agent.id === updatedAgent.id);
   if (index !== -1) {
     agents[index] = updatedAgent;
@@ -22,7 +23,7 @@ export const updateAgent = (updatedAgent: Agent): void => {
 };
 
 export const deleteAgent = (id: string): void => {
-  const agents = getAgents();
+  const agents = getPurchaseAgents();
   const index = agents.findIndex(agent => agent.id === id);
   if (index !== -1) {
     agents[index] = { ...agents[index], isDeleted: true };
@@ -31,7 +32,7 @@ export const deleteAgent = (id: string): void => {
 };
 
 export const updateAgentBalance = (agentId: string, changeAmount: number): void => {
-  const agents = getAgents();
+  const agents = getPurchaseAgents();
   const agentIndex = agents.findIndex(agent => agent.id === agentId);
   
   if (agentIndex !== -1) {
@@ -39,3 +40,6 @@ export const updateAgentBalance = (agentId: string, changeAmount: number): void 
     saveStorageItem('agents', agents);
   }
 };
+
+// For backward compatibility
+export const getAgents = getPurchaseAgents;

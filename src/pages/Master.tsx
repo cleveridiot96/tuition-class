@@ -19,9 +19,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
 import NewEntityForm from '@/components/NewEntityForm';
 import { 
-  getAgents, addAgent, deleteAgent, updateAgent,
+  getPurchaseAgents, addAgent, deleteAgent, updateAgent,
   getCustomers, addCustomer, deleteCustomer, updateCustomer,
-  getBrokers, addBroker, deleteBroker, updateBroker,
+  getSalesBrokers, addBroker, deleteBroker, updateBroker,
   getTransporters, addTransporter, deleteTransporter, updateTransporter,
   getSuppliers, addSupplier, deleteSupplier, updateSupplier,
   seedInitialData,
@@ -56,10 +56,10 @@ const Master = () => {
   const [entityToEdit, setEntityToEdit] = useState(null);
 
   const loadData = useCallback(() => {
-    setAgents(getAgents() || []);
+    setAgents(getPurchaseAgents() || []);
     setSuppliers(getSuppliers() || []);
     setCustomers(getCustomers() || []);
-    setBrokers(getBrokers() || []);
+    setBrokers(getSalesBrokers() || []);
     setTransporters(getTransporters() || []);
   }, []);
 
@@ -296,22 +296,28 @@ const Master = () => {
         <Tabs defaultValue="agents" value={activeTab} onValueChange={setActiveTab}>
           <div className="flex justify-between items-center mb-6">
             <TabsList>
-              <TabsTrigger value="agents">Agents</TabsTrigger>
+              <TabsTrigger value="agents">Purchase Agents</TabsTrigger>
               <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
               <TabsTrigger value="customers">Customers</TabsTrigger>
-              <TabsTrigger value="brokers">Brokers</TabsTrigger>
+              <TabsTrigger value="brokers">Sales Brokers</TabsTrigger>
               <TabsTrigger value="transporters">Transporters</TabsTrigger>
             </TabsList>
             
             <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
               <DialogTrigger asChild>
                 <Button>
-                  <Plus size={18} className="mr-1" /> Add {activeTab.slice(0, -1)}
+                  <Plus size={18} className="mr-1" /> Add {activeTab === 'agents' ? 'Purchase Agent' : 
+                     activeTab === 'brokers' ? 'Sales Broker' :
+                     activeTab.slice(0, -1)}
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Add New {activeTab.slice(0, -1).charAt(0).toUpperCase() + activeTab.slice(0, -1).slice(1)}</DialogTitle>
+                  <DialogTitle>
+                    Add New {activeTab === 'agents' ? 'Purchase Agent' : 
+                      activeTab === 'brokers' ? 'Sales Broker' :
+                      activeTab.slice(0, -1).charAt(0).toUpperCase() + activeTab.slice(0, -1).slice(1)}
+                  </DialogTitle>
                 </DialogHeader>
                 <NewEntityForm 
                   onSubmit={handleAdd} 
@@ -341,6 +347,7 @@ const Master = () => {
                   onDelete={(id) => confirmDelete(id, 'agent')}
                   onEdit={(entity) => openEditDialog(entity, 'agent')}
                   type="agent"
+                  title="Purchase Agent"
                 />
               </CardContent>
             </Card>
@@ -380,6 +387,7 @@ const Master = () => {
                   onDelete={(id) => confirmDelete(id, 'broker')}
                   onEdit={(entity) => openEditDialog(entity, 'broker')}
                   type="broker"
+                  title="Sales Broker"
                   showCommissionRate
                 />
               </CardContent>
@@ -436,7 +444,7 @@ const Master = () => {
   );
 };
 
-const EntityTable = ({ entities, onDelete, onEdit, type, showCommissionRate = false }) => {
+const EntityTable = ({ entities, onDelete, onEdit, type, title, showCommissionRate = false }) => {
   if (!entities || entities.length === 0) {
     return <p className="text-center py-8 text-gray-500">No entries found.</p>;
   }
