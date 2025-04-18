@@ -17,8 +17,8 @@ import {
 } from "@/components/ui/popover";
 
 interface ComboboxProps {
-  options?: { value: string; label: string }[] | null | any;
-  value?: string | null;
+  options: { value: string; label: string }[];
+  value?: string;
   onSelect?: (value: string) => void;
   onChange?: (value: string) => void;
   onInputChange?: (value: string) => void;
@@ -28,7 +28,7 @@ interface ComboboxProps {
 }
 
 export function Combobox({
-  options = [], // Default to empty array
+  options = [],
   value = "",
   onSelect,
   onChange,
@@ -46,104 +46,52 @@ export function Combobox({
     setSelectedValue(value || "");
   }, [value]);
 
-  // Validate and normalize options
-  const normalizedOptions = React.useMemo(() => {
-    // For debugging
-    console.log("Combobox OPTIONS DEBUG:", {
-      type: typeof options,
-      isArray: Array.isArray(options),
-      raw: options,
-      sample: options?.[0],
-      value: value
-    });
+  // Ensure options is always an array of valid objects
+  const safeOptions = React.useMemo(() => {
+    if (!Array.isArray(options)) return [];
     
-    if (!options) return [];
-    if (Array.isArray(options)) {
-      return options
-        .filter(option => option !== null && option !== undefined)
-        .map(option => {
-          if (!option || typeof option !== 'object') {
-            return { value: '', label: 'Invalid option' };
-          }
-          return {
-            value: String(option.value || ''),
-            label: String(option.label || '')
-          };
-        })
-        .filter(option => option.value); // Filter out empty values
-    }
-    console.error("OPTIONS IS NOT ARRAY:", options);
-    return [];
+    return options.filter(option => 
+      option && 
+      typeof option === 'object' && 
+      'value' in option && 
+      'label' in option
+    );
   }, [options]);
 
   // Filter options based on input
   const filteredOptions = React.useMemo(() => {
-    try {
-      if (!inputValue) return normalizedOptions;
+    if (!inputValue) return safeOptions;
+    
+    return safeOptions.filter(option => {
+      const label = String(option.label).toLowerCase();
+      const optionValue = String(option.value).toLowerCase();
+      const search = inputValue.toLowerCase();
       
-      const term = inputValue.toLowerCase();
-      return normalizedOptions.filter(option => 
-        String(option.label).toLowerCase().includes(term)
-      );
-    } catch (error) {
-      console.error("Error filtering combobox options:", error);
-      return normalizedOptions;
-    }
-  }, [normalizedOptions, inputValue]);
+      return label.includes(search) || optionValue.includes(search);
+    });
+  }, [safeOptions, inputValue]);
 
-  // Handle selection
+  // Select handler
   const handleSelect = (currentValue: string) => {
-    try {
-      const validValue = currentValue || "";
-      setSelectedValue(validValue);
-      setOpen(false);
-      
-      // Only call handlers if they exist
-      if (onSelect) onSelect(validValue);
-      if (onChange) onChange(validValue);
-    } catch (error) {
-      console.error("Error in combobox selection:", error);
-    }
+    setSelectedValue(currentValue);
+    setOpen(false);
+    if (onSelect) onSelect(currentValue);
+    if (onChange) onChange(currentValue);
   };
 
-  // Handle input change
+  // Input change handler
   const handleInputChange = (newValue: string) => {
-    try {
-      const validValue = newValue || "";
-      setInputValue(validValue);
-      if (onInputChange) onInputChange(validValue);
-    } catch (error) {
-      console.error("Error in combobox input change:", error);
-    }
+    setInputValue(newValue);
+    if (onInputChange) onInputChange(newValue);
   };
 
-  // Get display text
+  // Get display text for selected value
   const displayText = React.useMemo(() => {
-    try {
-      if (!selectedValue) return placeholder;
-      
-      const foundOption = normalizedOptions.find(option => option.value === selectedValue);
-      return foundOption ? foundOption.label : selectedValue;
-    } catch (error) {
-      console.error("Error getting display text:", error);
-      return placeholder;
-    }
-  }, [selectedValue, normalizedOptions, placeholder]);
-
-  // Create a safe command item wrapper to catch any errors
-  const SafeCommandItem = React.forwardRef<
-    HTMLDivElement, 
-    React.ComponentPropsWithoutRef<typeof CommandItem>
-  >((props, ref) => {
-    try {
-      return <CommandItem ref={ref} {...props} />;
-    } catch (error) {
-      console.error("CommandItem crashed in Combobox:", error);
-      return <div className="p-2 text-sm">Error rendering option</div>;
-    }
-  });
-  
-  SafeCommandItem.displayName = "SafeCommandItem";
+    if (!selectedValue) return placeholder;
+    
+    const foundOption = safeOptions.find(option => option.value === selectedValue);
+    return foundOption ? foundOption.label : selectedValue;
+  }, [selectedValue, safeOptions, placeholder]);
 
   return (
     <Popover 
@@ -163,7 +111,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
         align="start"
         avoidCollisions
         side="bottom"
@@ -180,7 +128,7 @@ export function Combobox({
           ) : (
             <CommandGroup>
               {filteredOptions.map((option) => (
-                <SafeCommandItem
+                <CommandItem
                   key={option.value}
                   value={option.value}
                   onSelect={handleSelect}
@@ -192,7 +140,7 @@ export function Combobox({
                     )}
                   />
                   {option.label}
-                </SafeCommandItem>
+                </CommandItem>
               ))}
             </CommandGroup>
           )}

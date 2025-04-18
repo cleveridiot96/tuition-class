@@ -85,20 +85,12 @@ const CommandGroup = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Group>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>
 >(({ className, children, ...props }, ref) => {
-  // CRITICAL FIX: Handle children properly to prevent undefined is not iterable errors
-  // Use React.Children API to safely handle children
+  // Ensure children is always iterable - this is the key fix
   const safeChildren = React.useMemo(() => {
-    try {
-      if (children === undefined || children === null) {
-        return [];
-      }
-      return Array.isArray(children) ? children : [children];
-    } catch (error) {
-      console.error("Error processing CommandGroup children:", error);
-      return [];
-    }
+    if (children === undefined || children === null) return [];
+    return Array.isArray(children) ? children : [children];
   }, [children]);
-
+  
   return (
     <CommandPrimitive.Group
       ref={ref}
@@ -131,23 +123,16 @@ CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
 const CommandItem = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item>
->(({ className, ...props }, ref) => {
-  try {
-    return (
-      <CommandPrimitive.Item
-        ref={ref}
-        className={cn(
-          "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled='true']:pointer-events-none data-[selected='true']:bg-accent data-[selected='true']:text-accent-foreground data-[disabled='true']:opacity-50",
-          className
-        )}
-        {...props}
-      />
-    );
-  } catch (error) {
-    console.error("CommandItem render error:", error);
-    return <div className="p-2 text-sm">Error rendering option</div>;
-  }
-});
+>(({ className, ...props }, ref) => (
+  <CommandPrimitive.Item
+    ref={ref}
+    className={cn(
+      "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none data-[disabled='true']:pointer-events-none data-[selected='true']:bg-accent data-[selected='true']:text-accent-foreground data-[disabled='true']:opacity-50",
+      className
+    )}
+    {...props}
+  />
+));
 
 CommandItem.displayName = CommandPrimitive.Item.displayName;
 

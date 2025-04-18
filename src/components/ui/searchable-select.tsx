@@ -4,109 +4,72 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface SelectOption {
+export interface SelectOption {
   value: string;
   label: string;
 }
 
 interface SearchableSelectProps {
-  options?: SelectOption[] | null | undefined;
-  value?: string | null;
+  options: SelectOption[];
+  value?: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
+  label?: string;
   disabled?: boolean;
   className?: string;
 }
 
 export function SearchableSelect({
-  options = [], // Default to empty array
+  options = [],
   value,
   onValueChange,
   placeholder = "Select an option",
   emptyMessage = "No results found.",
+  label,
   disabled = false,
   className,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // 1. Nuclear-proof options normalization
+  // Always ensure options is an array of valid objects
   const safeOptions = React.useMemo(() => {
-    try {
-      // For debugging
-      console.log("SearchableSelect OPTIONS DEBUG:", {
-        type: typeof options,
-        isArray: Array.isArray(options),
-        raw: options,
-        sample: options?.[0],
-        value: value
-      });
-      
-      // If options is null/undefined, return empty array
-      if (!options) return [];
-      
-      // If it's not an array, try to convert it
-      if (!Array.isArray(options)) {
-        // Handle single option case - fix the TypeScript error by adding proper type assertions
-        if (options && typeof options === 'object') {
-          // Type assertion to give TypeScript more information about the shape
-          const optionObj = options as Record<string, any>;
-          if ('value' in optionObj) {
-            return [{
-              value: String(optionObj.value ?? ''),
-              label: String(optionObj.label ?? optionObj.value ?? '')
-            }];
-          }
-        }
-        console.warn('Options is not an array:', options);
-        return [];
-      }
-
-      // Process array options
-      return options
-        .filter(Boolean) // Remove null/undefined
-        .map(option => ({
-          value: String(option?.value ?? ''),
-          label: String(option?.label ?? option?.value ?? '')
-        }))
-        .filter(option => option.value); // Remove empty values
-    } catch (error) {
-      console.error('Error normalizing options:', error);
-      return [];
-    }
-  }, [options, value]);
-
-  // 2. Safe filtered options
+    if (!Array.isArray(options)) return [];
+    
+    return options.filter(option => 
+      option && 
+      typeof option === 'object' &&
+      'value' in option &&
+      'label' in option
+    );
+  }, [options]);
+  
+  // Filter options based on search term
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return safeOptions;
     
-    try {
-      const term = searchTerm.toLowerCase();
-      return safeOptions.filter(option => 
-        option.label.toLowerCase().includes(term)
-      );
-    } catch (error) {
-      console.error('Error filtering options:', error);
-      return safeOptions;
-    }
+    return safeOptions.filter(option => {
+      const label = option.label.toLowerCase();
+      const search = searchTerm.toLowerCase();
+      return label.includes(search);
+    });
   }, [safeOptions, searchTerm]);
-
-  // 3. Safe selected option
-  const selectedOption = React.useMemo(() => {
-    try {
-      return safeOptions.find(option => option.value === value) || null;
-    } catch (error) {
-      console.error('Error finding selected option:', error);
-      return null;
-    }
-  }, [safeOptions, value]);
+  
+  const selectedOption = safeOptions.find((option) => option.value === value);
 
   return (
     <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
@@ -122,57 +85,52 @@ export function SearchableSelect({
           )}
           disabled={disabled}
         >
-          <span className="truncate">
-            {selectedOption ? selectedOption.label : placeholder}
-          </span>
+          {selectedOption ? selectedOption.label : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
         align="start"
+        avoidCollisions
         side="bottom"
         sideOffset={4}
       >
-        <div className="flex items-center border-b px-3">
-          <input
-            type="text"
+        <Command shouldFilter={false}>
+          <CommandInput 
+            placeholder={`Search ${placeholder.toLowerCase()}...`} 
+            className="h-9"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder={`Search ${placeholder.toLowerCase()}...`}
-            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            onValueChange={setSearchTerm}
           />
-        </div>
-        <ScrollArea className="max-h-60">
-          {filteredOptions.length === 0 ? (
-            <div className="py-6 text-center text-sm">{emptyMessage}</div>
-          ) : (
-            <div>
-              {filteredOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className={cn(
-                    "relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
-                    value === option.value && "bg-accent text-accent-foreground"
-                  )}
-                  onClick={() => {
-                    onValueChange(option.value);
-                    setOpen(false);
-                    setSearchTerm("");
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span className="truncate">{option.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
+          <ScrollArea className="max-h-60">
+            {filteredOptions.length === 0 ? (
+              <CommandEmpty>{emptyMessage}</CommandEmpty>
+            ) : (
+              <CommandGroup>
+                {filteredOptions.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={(currentValue) => {
+                      onValueChange(currentValue);
+                      setOpen(false);
+                      setSearchTerm("");
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </ScrollArea>
+        </Command>
       </PopoverContent>
     </Popover>
   );
