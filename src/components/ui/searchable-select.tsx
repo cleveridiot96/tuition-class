@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -61,22 +60,23 @@ export function SearchableSelect({
       return [];
     }
   }, [options]);
-  
-  // Filter options based on search term
+
+  // Reset search term when closed
+  React.useEffect(() => {
+    if (!open) {
+      setSearchTerm("");
+    }
+  }, [open]);
+
+  // Ensure options is always an array
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return safeOptions;
     
-    return safeOptions.filter(option => {
-      try {
-        const label = String(option.label || '').toLowerCase();
-        const search = searchTerm.toLowerCase();
-        return label.includes(search);
-      } catch (e) {
-        return false;
-      }
-    });
+    return safeOptions.filter(option => 
+      option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }, [safeOptions, searchTerm]);
-  
+
   // Find the selected option safely
   const selectedOption = React.useMemo(() => {
     try {
@@ -87,7 +87,7 @@ export function SearchableSelect({
   }, [safeOptions, value]);
 
   // Handle selection with error protection
-  const handleSelect = (currentValue: string) => {
+  const handleSelect = React.useCallback((currentValue: string) => {
     try {
       onValueChange(currentValue);
       setOpen(false);
@@ -95,10 +95,13 @@ export function SearchableSelect({
     } catch (e) {
       console.error("Error in select handler:", e);
     }
-  };
+  }, [onValueChange]);
 
   return (
-    <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
+    <Popover 
+      open={disabled ? false : open} 
+      onOpenChange={disabled ? undefined : setOpen}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -130,30 +133,28 @@ export function SearchableSelect({
             className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-        <ScrollArea className="max-h-60 overflow-auto">
+        <ScrollArea className="max-h-60">
           {filteredOptions.length === 0 ? (
             <div className="py-6 text-center text-sm">{emptyMessage}</div>
           ) : (
-            <div>
-              {filteredOptions.map((option) => (
-                <div
-                  key={option.value}
+            filteredOptions.map((option) => (
+              <div
+                key={option.value}
+                className={cn(
+                  "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                  value === option.value ? "bg-accent text-accent-foreground" : ""
+                )}
+                onClick={() => handleSelect(option.value)}
+              >
+                <Check
                   className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                    value === option.value ? "bg-accent text-accent-foreground" : ""
+                    "mr-2 h-4 w-4",
+                    value === option.value ? "opacity-100" : "opacity-0"
                   )}
-                  onClick={() => handleSelect(option.value)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span>{option.label}</span>
-                </div>
-              ))}
-            </div>
+                />
+                {option.label}
+              </div>
+            ))
           )}
         </ScrollArea>
       </PopoverContent>
