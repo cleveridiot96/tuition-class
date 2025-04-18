@@ -14,7 +14,6 @@ import {
   FormLabel, 
   FormMessage 
 } from "@/components/ui/form";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   getAgents,
@@ -134,13 +133,13 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     }
     
     if (data.party && !suppliers.some(s => s.name === data.party)) {
-      const newCustomer = {
+      const newSupplier = {
         id: Date.now().toString(),
         name: data.party,
         address: "",
         balance: 0
       };
-      addCustomer(newCustomer);
+      addSupplier(newSupplier);
     }
     
     submitFormData(data);
@@ -150,7 +149,7 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     const submitData = {
       ...data,
       broker: data.brokerId ? brokers.find(b => b.id === data.brokerId)?.name || "" : "",
-      transporter: transporters.find(t => t.id === data.transporterId)?.name || "",
+      transporter: data.transporterId ? transporters.find(t => t.id === data.transporterId)?.name || "" : "",
       totalAmount,
       transportCost,
       expenses: data.expenses,
@@ -212,7 +211,8 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       id: Date.now().toString(),
       name: name.trim(),
       address: "",
-      commissionRate: 1
+      commissionRate: 1,
+      balance: 0
     };
     
     addBroker(newBroker);
@@ -226,7 +226,8 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     const newTransporter = {
       id: Date.now().toString(),
       name: name.trim(),
-      address: ""
+      address: "",
+      balance: 0
     };
     
     addTransporter(newTransporter);

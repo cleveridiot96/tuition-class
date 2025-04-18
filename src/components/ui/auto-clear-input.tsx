@@ -44,7 +44,7 @@ export function AutoClearInput({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setValue(e.target.value);
+    setValue(e.target.value); // This is now correctly typed
     isInitialValue.current = false;
     
     if (props.onChange) {
