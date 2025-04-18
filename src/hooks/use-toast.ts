@@ -12,5 +12,6 @@ export const useToast = () => {
   };
 };
 
-export { toast, dismiss as dismissToast } from './toast/toast-utils';
+export { toast } from './toast/toast-utils';
+export { dismissToast as dismiss } from './toast/toast-utils';
 export { ToastProvider } from './toast/toast-context';

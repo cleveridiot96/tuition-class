@@ -42,10 +42,13 @@ export function toast({ ...props }: Toast) {
   };
 }
 
-// Helper to dismiss toasts
+// Helper to dismiss toasts - renamed to be consistent
 export function dismissToast(toastId?: string) {
   dispatch({ type: "DISMISS_TOAST", toastId });
 }
+
+// Export dismiss as an alias for dismissToast for backward compatibility
+export const dismiss = dismissToast;
 
 // Add variant toast methods
 toast.success = (title: string, description?: string) => {

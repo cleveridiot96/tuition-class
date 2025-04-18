@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Package, Download } from "lucide-react";
 import { exportDataBackup } from "@/services/storageService";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
-const PortableAppButton = () => {
+const PortableAppButton = ({}) => {
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreatePortable = async () => {
@@ -15,15 +15,22 @@ const PortableAppButton = () => {
       const result = await exportDataBackup();
       
       if (result) {
-        toast.success("Portable App Created", {
+        toast({
+          title: "Portable App Created",
           description: "Just unzip and open index.html to use your app anywhere!"
         });
       } else {
-        toast.error("Failed to create portable version");
+        toast({
+          title: "Failed to create portable version",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Error creating portable version:", error);
-      toast.error("An unexpected error occurred");
+      toast({
+        title: "An unexpected error occurred",
+        variant: "destructive"
+      });
     } finally {
       setIsCreating(false);
     }
@@ -35,7 +42,7 @@ const PortableAppButton = () => {
       disabled={isCreating}
       className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
     >
-      {isCreating ? <Package size={16} className="animate-spin" /> : <Download size={16} />}
+      {isCreating ? <Package size={16} className="animate-spin mr-2" /> : <Download size={16} />}
       {isCreating ? "Creating..." : "Export Portable Version"}
     </Button>
   );
