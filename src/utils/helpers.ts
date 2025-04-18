@@ -1,3 +1,4 @@
+
 import { format } from 'date-fns';
 
 export const formatDate = (dateString: string): string => {
@@ -41,4 +42,16 @@ export const getPurchaseIdFromUrl = (): string | null => {
 export const getSaleIdFromUrl = (): string | null => {
   const urlParams = new URLSearchParams(window.location.search);
   return urlParams.get('id');
+};
+
+/**
+ * Helper to determine balance type display
+ * @param balance Balance amount
+ * @param balanceType Balance type (DR/CR)
+ * @returns Formatted balance string
+ */
+export const formatBalance = (balance: number, balanceType: string): string => {
+  // Ensure balanceType is either "DR" or "CR"
+  const validBalanceType = balanceType === "DR" || balanceType === "CR" ? balanceType : "DR";
+  return `${formatCurrency(balance)} ${validBalanceType}`;
 };
