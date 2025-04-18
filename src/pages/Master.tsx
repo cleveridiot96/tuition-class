@@ -361,6 +361,7 @@ const Master = () => {
                   onDelete={(id) => confirmDelete(id, 'supplier')}
                   onEdit={(entity) => openEditDialog(entity, 'supplier')}
                   type="supplier"
+                  title="Supplier"
                 />
               </CardContent>
             </Card>
@@ -374,6 +375,7 @@ const Master = () => {
                   onDelete={(id) => confirmDelete(id, 'customer')}
                   onEdit={(entity) => openEditDialog(entity, 'customer')}
                   type="customer"
+                  title="Customer"
                 />
               </CardContent>
             </Card>
@@ -402,6 +404,7 @@ const Master = () => {
                   onDelete={(id) => confirmDelete(id, 'transporter')}
                   onEdit={(entity) => openEditDialog(entity, 'transporter')}
                   type="transporter"
+                  title="Transporter"
                 />
               </CardContent>
             </Card>
