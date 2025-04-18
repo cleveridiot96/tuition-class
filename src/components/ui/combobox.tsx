@@ -48,14 +48,24 @@ export function Combobox({
 
   // Ensure options is always an array of valid objects
   const safeOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) return [];
-    
-    return options.filter(option => 
-      option && 
-      typeof option === 'object' && 
-      'value' in option && 
-      'label' in option
-    );
+    try {
+      if (!options) return [];
+      
+      if (!Array.isArray(options)) {
+        console.warn('Combobox: options is not an array:', options);
+        return [];
+      }
+      
+      return options.filter(option => 
+        option && 
+        typeof option === 'object' && 
+        'value' in option && 
+        'label' in option
+      );
+    } catch (error) {
+      console.error('Error in Combobox:', error);
+      return [];
+    }
   }, [options]);
 
   // Filter options based on input
@@ -111,7 +121,7 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[100]" 
         align="start"
         avoidCollisions
         side="bottom"

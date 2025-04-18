@@ -78,17 +78,42 @@ export const importDataBackup = (jsonData: string): boolean => {
   try {
     const data = JSON.parse(jsonData);
     
+    // Validate the data format before proceeding
+    if (typeof data !== 'object' || data === null) {
+      console.error("Invalid backup format: Data is not an object");
+      return false;
+    }
+
+    // Check for required keys to ensure this is a valid backup
+    const requiredKeys = ['locations', 'currentFinancialYear'];
+    const missingKeys = requiredKeys.filter(key => !(key in data));
+    
+    if (missingKeys.length > 0) {
+      console.error(`Backup is missing required keys: ${missingKeys.join(', ')}`);
+      return false;
+    }
+    
     // Clear existing data first
     localStorage.clear();
     
     // Import all data
+    let importedKeyCount = 0;
     for (const key in data) {
       if (Object.prototype.hasOwnProperty.call(data, key)) {
-        localStorage.setItem(key, JSON.stringify(data[key]));
+        try {
+          localStorage.setItem(key, JSON.stringify(data[key]));
+          importedKeyCount++;
+        } catch (e) {
+          console.error(`Error importing key ${key}:`, e);
+        }
       }
     }
     
-    console.log("Data imported successfully");
+    console.log(`Data imported successfully: ${importedKeyCount} keys restored`);
+    
+    // Trigger storage event so all components can refresh
+    window.dispatchEvent(new Event('storage'));
+    
     return true;
   } catch (error) {
     console.error("Error importing data:", error);
@@ -114,6 +139,9 @@ export const clearAllData = (): void => {
     }
     
     console.log("All transaction data cleared");
+    
+    // Trigger storage event so all components can refresh
+    window.dispatchEvent(new Event('storage'));
   } catch (error) {
     console.error("Error clearing data:", error);
   }
@@ -127,6 +155,9 @@ export const clearAllMasterData = (): void => {
     localStorage.removeItem('brokers');
     localStorage.removeItem('transporters');
     console.log("All master data cleared");
+    
+    // Trigger storage event so all components can refresh
+    window.dispatchEvent(new Event('storage'));
   } catch (error) {
     console.error("Error clearing master data:", error);
   }
@@ -194,5 +225,34 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
 
 // Add getAgents function that was missing from storageUtils
 export const getAgents = () => {
-  return getStorageItem<any[]>('agents') || [];
+  const agents = getStorageItem<any[]>('agents');
+  if (!agents) {
+    console.warn("No agents found in storage, returning empty array");
+    return [];
+  }
+  return agents;
+};
+
+// Add debugging function to help identify storage issues
+export const debugStorage = (key: string = ''): void => {
+  try {
+    if (key) {
+      const value = localStorage.getItem(key);
+      console.log(`Storage Debug - Key: ${key}`, value ? JSON.parse(value) : null);
+    } else {
+      console.log('Storage Debug - All Keys:');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          try {
+            console.log(`- ${key}:`, JSON.parse(localStorage.getItem(key) || "null"));
+          } catch (e) {
+            console.log(`- ${key} (raw):`, localStorage.getItem(key));
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error("Error debugging storage:", error);
+  }
 };

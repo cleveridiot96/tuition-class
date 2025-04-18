@@ -48,14 +48,24 @@ export function SearchableSelect({
 
   // Always ensure options is an array of valid objects
   const safeOptions = React.useMemo(() => {
-    if (!Array.isArray(options)) return [];
-    
-    return options.filter(option => 
-      option && 
-      typeof option === 'object' &&
-      'value' in option &&
-      'label' in option
-    );
+    try {
+      if (!options) return [];
+      
+      if (!Array.isArray(options)) {
+        console.warn('SearchableSelect: options is not an array:', options);
+        return [];
+      }
+      
+      return options.filter(option => 
+        option && 
+        typeof option === 'object' &&
+        'value' in option &&
+        'label' in option
+      );
+    } catch (error) {
+      console.error('Error in SearchableSelect:', error);
+      return [];
+    }
   }, [options]);
   
   // Filter options based on search term
@@ -63,7 +73,7 @@ export function SearchableSelect({
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      const label = option.label.toLowerCase();
+      const label = String(option.label).toLowerCase();
       const search = searchTerm.toLowerCase();
       return label.includes(search);
     });
@@ -90,7 +100,7 @@ export function SearchableSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[100]" 
         align="start"
         avoidCollisions
         side="bottom"
