@@ -1,7 +1,7 @@
-
 import * as React from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fuzzyMatch } from "@/lib/fuzzy-match";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -47,23 +47,20 @@ export function EnhancedSearchableSelect({
   
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
 
-  // Reset search term when closed
   React.useEffect(() => {
     if (!open) {
       setSearchTerm("");
     }
   }, [open]);
 
-  // Ensure options is always an array
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return options;
     
     return options.filter(option => 
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
+      fuzzyMatch(searchTerm, option.label)
     );
   }, [options, searchTerm]);
 
-  // Check if current input matches any existing option
   const inputMatchesOption = React.useMemo(() => {
     if (!searchTerm) return false;
     
@@ -73,32 +70,26 @@ export function EnhancedSearchableSelect({
     );
   }, [options, searchTerm]);
 
-  // Find the selected option
   const selectedOption = options.find(option => option.value === value);
 
-  // Handle selection
   const handleSelect = (currentValue: string) => {
     onValueChange(currentValue);
     setOpen(false);
     setSearchTerm("");
   };
 
-  // Handle adding new item
   const handleAddNewItem = () => {
     if (searchTerm.trim() && !inputMatchesOption && onAddNew) {
       confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
         onAddNew(confirmedValue);
-        // Auto-select the newly added item
         onValueChange(confirmedValue);
       });
     }
   };
 
-  // Handle input blur to show confirmation dialog
   const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const relatedTarget = e.relatedTarget as HTMLElement | null;
     
-    // If clicking outside the dropdown and not on an option
     if (searchTerm && !inputMatchesOption && onAddNew && 
        (!relatedTarget || !relatedTarget.closest('[role="listbox"]'))) {
       setTimeout(() => {
@@ -188,7 +179,6 @@ export function EnhancedSearchableSelect({
                   </div>
                 ))}
 
-                {/* Show add option if there's input and no exact match */}
                 {searchTerm.trim() && !inputMatchesOption && (
                   <div
                     className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground border-t"
@@ -204,7 +194,6 @@ export function EnhancedSearchableSelect({
         </PopoverContent>
       </Popover>
 
-      {/* Add to Master Confirmation Dialog */}
       <AddToMasterDialog />
     </>
   );

@@ -20,12 +20,10 @@ export function AutoClearInput({
 
   React.useEffect(() => {
     if (props.value !== undefined) {
-      // Ensure only string or number is set
-      setValue(
-        typeof props.value === 'string' || typeof props.value === 'number' 
-          ? props.value 
-          : defaultValue
-      );
+      const newValue = typeof props.value === 'string' || typeof props.value === 'number'
+        ? props.value
+        : defaultValue;
+      setValue(newValue);
       isInitialValue.current = String(props.value) === String(defaultValue);
     }
   }, [props.value, defaultValue]);
@@ -40,7 +38,8 @@ export function AutoClearInput({
   };
 
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (e.target.value === '' || String(e.target.value) === String(clearValue)) {
+    const targetValue = e.target.value;
+    if (targetValue === '' || String(targetValue) === String(clearValue)) {
       setValue(defaultValue);
     }
     if (props.onBlur) {
@@ -49,8 +48,8 @@ export function AutoClearInput({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Ensure only string is set for value
-    setValue(String(e.target.value)); 
+    const newValue = e.target.value;
+    setValue(newValue === '' ? clearValue : newValue);
     isInitialValue.current = false;
     
     if (props.onChange) {
