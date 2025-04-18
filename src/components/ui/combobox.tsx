@@ -4,13 +4,6 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -68,39 +61,55 @@ export function Combobox({
     }
   }, [options]);
 
-  // Filter options based on input
+  // Filter options based on input safely
   const filteredOptions = React.useMemo(() => {
     if (!inputValue) return safeOptions;
     
-    return safeOptions.filter(option => {
-      const label = String(option.label).toLowerCase();
-      const optionValue = String(option.value).toLowerCase();
-      const search = inputValue.toLowerCase();
-      
-      return label.includes(search) || optionValue.includes(search);
-    });
+    try {
+      return safeOptions.filter(option => {
+        const label = String(option.label || '').toLowerCase();
+        const optionValue = String(option.value || '').toLowerCase();
+        const search = inputValue.toLowerCase();
+        
+        return label.includes(search) || optionValue.includes(search);
+      });
+    } catch (e) {
+      return safeOptions;
+    }
   }, [safeOptions, inputValue]);
 
-  // Select handler
+  // Select handler with error protection
   const handleSelect = (currentValue: string) => {
-    setSelectedValue(currentValue);
-    setOpen(false);
-    if (onSelect) onSelect(currentValue);
-    if (onChange) onChange(currentValue);
+    try {
+      setSelectedValue(currentValue);
+      setOpen(false);
+      if (onSelect) onSelect(currentValue);
+      if (onChange) onChange(currentValue);
+    } catch (e) {
+      console.error("Error in select handler:", e);
+    }
   };
 
-  // Input change handler
+  // Input change handler with error protection
   const handleInputChange = (newValue: string) => {
-    setInputValue(newValue);
-    if (onInputChange) onInputChange(newValue);
+    try {
+      setInputValue(newValue);
+      if (onInputChange) onInputChange(newValue);
+    } catch (e) {
+      console.error("Error in input change handler:", e);
+    }
   };
 
-  // Get display text for selected value
+  // Get display text for selected value safely
   const displayText = React.useMemo(() => {
     if (!selectedValue) return placeholder;
     
-    const foundOption = safeOptions.find(option => option.value === selectedValue);
-    return foundOption ? foundOption.label : selectedValue;
+    try {
+      const foundOption = safeOptions.find(option => option.value === selectedValue);
+      return foundOption ? foundOption.label : selectedValue;
+    } catch (e) {
+      return selectedValue || placeholder;
+    }
   }, [selectedValue, safeOptions, placeholder]);
 
   return (
@@ -121,27 +130,33 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[100]" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
         align="start"
-        avoidCollisions
         side="bottom"
         sideOffset={4}
       >
-        <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder={`Search ${placeholder.toLowerCase()}...`} 
+        <div className="flex items-center border-b px-3">
+          <input
+            type="text"
             value={inputValue}
-            onValueChange={handleInputChange}
+            onChange={(e) => handleInputChange(e.target.value)}
+            placeholder={`Search ${placeholder.toLowerCase()}...`}
+            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
+        </div>
+        <div className="max-h-60 overflow-auto">
           {filteredOptions.length === 0 ? (
-            <CommandEmpty>No results found.</CommandEmpty>
+            <div className="py-6 text-center text-sm">No results found.</div>
           ) : (
-            <CommandGroup>
+            <div>
               {filteredOptions.map((option) => (
-                <CommandItem
+                <div
                   key={option.value}
-                  value={option.value}
-                  onSelect={handleSelect}
+                  className={cn(
+                    "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                    selectedValue === option.value ? "bg-accent text-accent-foreground" : ""
+                  )}
+                  onClick={() => handleSelect(option.value)}
                 >
                   <Check
                     className={cn(
@@ -150,11 +165,11 @@ export function Combobox({
                     )}
                   />
                   {option.label}
-                </CommandItem>
+                </div>
               ))}
-            </CommandGroup>
+            </div>
           )}
-        </Command>
+        </div>
       </PopoverContent>
     </Popover>
   );

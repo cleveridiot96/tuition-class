@@ -4,13 +4,6 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -46,7 +39,7 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // Always ensure options is an array of valid objects
+  // Ensure options is always an array of valid objects
   const safeOptions = React.useMemo(() => {
     try {
       if (!options) return [];
@@ -56,6 +49,7 @@ export function SearchableSelect({
         return [];
       }
       
+      // Filter out any invalid options
       return options.filter(option => 
         option && 
         typeof option === 'object' &&
@@ -73,13 +67,35 @@ export function SearchableSelect({
     if (!searchTerm) return safeOptions;
     
     return safeOptions.filter(option => {
-      const label = String(option.label).toLowerCase();
-      const search = searchTerm.toLowerCase();
-      return label.includes(search);
+      try {
+        const label = String(option.label || '').toLowerCase();
+        const search = searchTerm.toLowerCase();
+        return label.includes(search);
+      } catch (e) {
+        return false;
+      }
     });
   }, [safeOptions, searchTerm]);
   
-  const selectedOption = safeOptions.find((option) => option.value === value);
+  // Find the selected option safely
+  const selectedOption = React.useMemo(() => {
+    try {
+      return safeOptions.find(option => option.value === value);
+    } catch (e) {
+      return undefined;
+    }
+  }, [safeOptions, value]);
+
+  // Handle selection with error protection
+  const handleSelect = (currentValue: string) => {
+    try {
+      onValueChange(currentValue);
+      setOpen(false);
+      setSearchTerm("");
+    } catch (e) {
+      console.error("Error in select handler:", e);
+    }
+  };
 
   return (
     <Popover open={open} onOpenChange={disabled ? undefined : setOpen}>
@@ -100,47 +116,46 @@ export function SearchableSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[100]" 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
         align="start"
-        avoidCollisions
         side="bottom"
         sideOffset={4}
       >
-        <Command shouldFilter={false}>
-          <CommandInput 
-            placeholder={`Search ${placeholder.toLowerCase()}...`} 
-            className="h-9"
+        <div className="flex items-center border-b px-3">
+          <input
+            type="text"
             value={searchTerm}
-            onValueChange={setSearchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={`Search ${placeholder.toLowerCase()}...`}
+            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
           />
-          <ScrollArea className="max-h-60">
-            {filteredOptions.length === 0 ? (
-              <CommandEmpty>{emptyMessage}</CommandEmpty>
-            ) : (
-              <CommandGroup>
-                {filteredOptions.map((option) => (
-                  <CommandItem
-                    key={option.value}
-                    value={option.value}
-                    onSelect={(currentValue) => {
-                      onValueChange(currentValue);
-                      setOpen(false);
-                      setSearchTerm("");
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === option.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            )}
-          </ScrollArea>
-        </Command>
+        </div>
+        <ScrollArea className="max-h-60 overflow-auto">
+          {filteredOptions.length === 0 ? (
+            <div className="py-6 text-center text-sm">{emptyMessage}</div>
+          ) : (
+            <div>
+              {filteredOptions.map((option) => (
+                <div
+                  key={option.value}
+                  className={cn(
+                    "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                    value === option.value ? "bg-accent text-accent-foreground" : ""
+                  )}
+                  onClick={() => handleSelect(option.value)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span>{option.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
       </PopoverContent>
     </Popover>
   );
