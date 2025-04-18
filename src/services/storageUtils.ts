@@ -1,4 +1,3 @@
-
 import { getYearSpecificKey } from '@/services/financialYearService';
 
 // LocalStorage Operations
@@ -206,7 +205,7 @@ export const getAgents = () => {
   return agents;
 };
 
-// Debug function - THIS WAS MISSING EXPORT
+// Debug function - Adding export keyword to make it available for import
 export const debugStorage = (key: string = ''): void => {
   try {
     if (key) {
