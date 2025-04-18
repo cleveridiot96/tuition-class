@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,18 +15,19 @@ import {
   FormMessage 
 } from "@/components/ui/form";
 import { Plus } from "lucide-react";
-import { Combobox } from "@/components/ui/combobox";
 import { toast } from "sonner";
 import {
   getAgents,
   getSuppliers,
   getTransporters,
   getBrokers,
-  addCustomer,
+  addSupplier,
+  addBroker,
+  addTransporter,
   checkDuplicateLot,
   getPurchases,
   getLocations,
-} from "@/services/storageService";
+} from '@/services/storageService';
 
 // Import our new components
 import AddPartyDialog from "@/components/purchases/AddPartyDialog";
@@ -40,6 +40,7 @@ import PurchaseSummary from "@/components/purchases/PurchaseSummary";
 import { purchaseFormSchema, PurchaseFormData } from "@/components/purchases/PurchaseFormSchema";
 import { useFormCalculations } from "@/components/purchases/useFormCalculations";
 import { usePartyManagement } from "@/components/purchases/usePartyManagement";
+import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 
 interface PurchaseFormProps {
   onSubmit: (data: any) => void;
@@ -111,7 +112,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     setLocations(getLocations());
   };
 
-  // Use our custom hooks
   const { 
     totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, 
     transportCost, brokerageAmount 
@@ -122,7 +122,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
   const partyManagement = usePartyManagement({ form, loadData });
 
   const handleFormSubmit = (data: PurchaseFormData) => {
-    // Check for duplicate lot number
     const isDuplicateLot = checkDuplicateLot(data.lotNumber);
 
     if (isDuplicateLot && !initialData) {
@@ -134,7 +133,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
       }
     }
     
-    // If we're adding a new party
     if (data.party && !suppliers.some(s => s.name === data.party)) {
       const newCustomer = {
         id: Date.now().toString(),
@@ -172,7 +170,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     submitFormData(data);
   };
 
-  // Transform data for combobox
   const supplierOptions = suppliers.map(supplier => ({
     value: supplier.name,
     label: supplier.name
@@ -192,6 +189,62 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
     value: location,
     label: location
   }));
+
+  const handleAddSupplier = (name: string) => {
+    if (!name.trim()) return;
+    
+    const newSupplier = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      address: "",
+      balance: 0
+    };
+    
+    addSupplier(newSupplier);
+    loadData();
+    toast.success(`Supplier "${name}" added to master list`);
+  };
+
+  const handleAddBroker = (name: string) => {
+    if (!name.trim()) return;
+    
+    const newBroker = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      address: "",
+      commissionRate: 1
+    };
+    
+    addBroker(newBroker);
+    loadData();
+    toast.success(`Broker "${name}" added to master list`);
+  };
+
+  const handleAddTransporter = (name: string) => {
+    if (!name.trim()) return;
+    
+    const newTransporter = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      address: ""
+    };
+    
+    addTransporter(newTransporter);
+    loadData();
+    toast.success(`Transporter "${name}" added to master list`);
+  };
+
+  const extractBagsFromLotNumber = (lotNumber: string) => {
+    const match = lotNumber.match(/\/(\d+)/);
+    if (match && match[1]) {
+      const bags = parseInt(match[1], 10);
+      if (!isNaN(bags)) {
+        form.setValue('quantity', bags);
+        return true;
+      }
+    }
+    return false;
+  };
 
   return (
     <Card className="p-6">
@@ -218,29 +271,16 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Party</FormLabel>
-                  <div className="flex gap-2 items-center">
-                    <FormControl className="flex-1">
-                      <Combobox 
-                        options={supplierOptions}
-                        {...field}
-                        onInputChange={(value) => {
-                          field.onChange(value);
-                          partyManagement.checkSimilarPartyNames(value);
-                        }}
-                        placeholder="Select or type party name"
-                        className="flex-1"
-                      />
-                    </FormControl>
-                    <Button 
-                      type="button" 
-                      size="icon" 
-                      variant="outline"
-                      onClick={() => partyManagement.setShowAddPartyDialog(true)}
-                      title="Add new party"
-                    >
-                      <Plus size={16} />
-                    </Button>
-                  </div>
+                  <FormControl>
+                    <EnhancedSearchableSelect 
+                      options={supplierOptions}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onAddNew={handleAddSupplier}
+                      placeholder="Select or type party name"
+                      masterType="supplier"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -252,29 +292,19 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Broker (Optional)</FormLabel>
-                  <div className="flex gap-2 items-center">
-                    <FormControl className="flex-1">
-                      <Combobox 
-                        options={brokerOptions}
-                        {...field}
-                        onSelect={(value) => {
-                          field.onChange(value);
-                          setShowBrokerage(!!value);
-                        }}
-                        placeholder="Select broker (optional)"
-                        className="flex-1"
-                      />
-                    </FormControl>
-                    <Button 
-                      type="button" 
-                      size="icon" 
-                      variant="outline"
-                      onClick={() => partyManagement.setShowAddBrokerDialog(true)}
-                      title="Add new broker"
-                    >
-                      <Plus size={16} />
-                    </Button>
-                  </div>
+                  <FormControl>
+                    <EnhancedSearchableSelect 
+                      options={brokerOptions}
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setShowBrokerage(!!value);
+                      }}
+                      onAddNew={handleAddBroker}
+                      placeholder="Select broker (optional)"
+                      masterType="broker"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -287,7 +317,14 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
                 <FormItem>
                   <FormLabel>Lot Number (Vakkal)</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Enter lot number" />
+                    <Input 
+                      {...field} 
+                      placeholder="Enter lot number"
+                      onChange={(e) => {
+                        field.onChange(e);
+                        extractBagsFromLotNumber(e.target.value);
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -343,10 +380,12 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
                 <FormItem>
                   <FormLabel>Location</FormLabel>
                   <FormControl>
-                    <Combobox 
+                    <EnhancedSearchableSelect 
                       options={locationOptions}
-                      {...field}
+                      value={field.value}
+                      onValueChange={field.onChange}
                       placeholder="Select location"
+                      masterType="location"
                     />
                   </FormControl>
                   <FormMessage />
@@ -360,25 +399,16 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Transporter</FormLabel>
-                  <div className="flex gap-2 items-center">
-                    <FormControl className="flex-1">
-                      <Combobox 
-                        options={transporterOptions}
-                        {...field}
-                        placeholder="Select transporter"
-                        className="flex-1"
-                      />
-                    </FormControl>
-                    <Button 
-                      type="button" 
-                      size="icon" 
-                      variant="outline"
-                      onClick={() => partyManagement.setShowAddTransporterDialog(true)}
-                      title="Add new transporter"
-                    >
-                      <Plus size={16} />
-                    </Button>
-                  </div>
+                  <FormControl>
+                    <EnhancedSearchableSelect 
+                      options={transporterOptions}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      onAddNew={handleAddTransporter}
+                      placeholder="Select transporter"
+                      masterType="transporter"
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -466,7 +496,6 @@ const PurchaseForm = ({ onSubmit, initialData }: PurchaseFormProps) => {
         </form>
       </Form>
 
-      {/* Dialogs - moved to separate components */}
       <AddPartyDialog
         open={partyManagement.showAddPartyDialog}
         onOpenChange={partyManagement.setShowAddPartyDialog}

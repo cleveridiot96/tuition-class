@@ -1,36 +1,33 @@
 
-/* Dropdown and Select Element Fixes */
-.select-wrapper,
-.dropdown-wrapper {
-  position: relative;
-  z-index: 50;
-}
-
-select,
-.select-element,
-.dropdown-element {
-  z-index: 50;
-  pointer-events: auto !important;
-}
-
-/* Make sure popover content is always on top and clickable */
-[data-radix-popper-content-wrapper] {
+/* Dropdown z-index and background fixes */
+.radix-popover, 
+[data-radix-popper-content-wrapper], 
+.radix-dropdown-menu, 
+[role="dialog"] {
   z-index: 9999 !important;
   pointer-events: auto !important;
 }
 
-/* Force background color on dropdowns */
-.bg-popover,
-[role="combobox"],
-[role="listbox"] {
-  background-color: white !important;
-}
-
-/* Fix for specific dropdown components */
+[data-state="open"] > div,
 .popover-content,
-.select-content,
-.combobox-content,
-.dialog-content {
-  z-index: 9999 !important;
+.dropdown-content,
+.select-content {
+  background-color: white !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
   pointer-events: auto !important;
+  z-index: 9999 !important;
+}
+
+/* Fix input focus behavior */
+input[type="number"]:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Auto-clear zero values when focused */
+input[type="number"].auto-clear-zero:focus {
+  outline: none;
 }

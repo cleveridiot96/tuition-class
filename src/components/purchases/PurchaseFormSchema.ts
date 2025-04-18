@@ -1,20 +1,20 @@
 
-import * as z from "zod";
+import { z } from "zod";
 
 export const purchaseFormSchema = z.object({
-  date: z.string().min(1, "Date is required"),
-  lotNumber: z.string().min(1, "Lot number is required"),
-  quantity: z.coerce.number().min(1, "Quantity is required"),
+  date: z.string().nonempty("Date is required"),
+  lotNumber: z.string().nonempty("Lot number is required"),
+  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
+  party: z.string().nonempty("Party is required"),
   brokerId: z.string().optional(),
-  party: z.string().min(1, "Party is required"),
-  location: z.string().min(1, "Location is required"),
-  netWeight: z.coerce.number().min(1, "Net weight is required"),
-  rate: z.coerce.number().min(1, "Rate is required"),
-  transporterId: z.string().min(1, "Transporter is required"),
-  transportRate: z.coerce.number().min(0, "Transport rate must be valid"),
-  expenses: z.coerce.number().min(0, "Expenses must be valid"),
-  brokerageType: z.enum(["percentage", "fixed"]).optional(),
-  brokerageValue: z.coerce.number().min(0, "Brokerage value must be valid").optional(),
+  location: z.string().nonempty("Location is required"),
+  netWeight: z.coerce.number().min(0.01, "Net weight must be greater than 0"),
+  rate: z.coerce.number().min(0.01, "Rate must be greater than 0"),
+  transporterId: z.string().optional(),
+  transportRate: z.coerce.number().min(0, "Transport rate cannot be negative").default(0),
+  expenses: z.coerce.number().min(0, "Expenses cannot be negative").default(0),
+  brokerageType: z.enum(["percentage", "fixed"]).default("percentage"),
+  brokerageValue: z.coerce.number().min(0, "Brokerage value cannot be negative").default(0),
   notes: z.string().optional(),
 });
 
