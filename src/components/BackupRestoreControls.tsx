@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw, Download, Upload, AlertTriangle } from "lucide-react";
 import { exportDataBackup, importDataBackup } from "@/services/storageService";
-import { debugStorage } from "@/services/storageUtils"; // Direct import from storageUtils
+import { debugStorage } from "@/services/storageUtils"; 
+import { toast } from '@/hooks/use-toast';
 import PortableAppButton from "./dashboard/PortableAppButton";
 
 interface BackupRestoreControlsProps {
@@ -21,7 +21,10 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
       const jsonData = exportDataBackup();
       
       if (!jsonData) {
-        toast.error("Failed to create backup");
+        toast({
+          title: "Failed to create backup",
+          variant: "destructive"
+        });
         return;
       }
       
@@ -38,12 +41,17 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
       a.click();
       
       URL.revokeObjectURL(url);
-      toast.success("Backup created and downloaded successfully");
+      toast({
+        title: "Backup created and downloaded successfully"
+      });
       
       window.dispatchEvent(new CustomEvent('backup-created', { detail: { success: true } }));
     } catch (error) {
       console.error("Error during backup:", error);
-      toast.error("Error creating backup");
+      toast({
+        title: "Error creating backup",
+        variant: "destructive"
+      });
       window.dispatchEvent(new CustomEvent('backup-created', { detail: { success: false } }));
     }
   };
