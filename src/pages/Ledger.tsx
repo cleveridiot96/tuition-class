@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useReactToPrint } from 'react-to-print';
@@ -58,7 +57,6 @@ const Ledger = () => {
   });
   const [financialYear, setFinancialYear] = useState(getFinancialYearString());
 
-  // Handle printing
   const handlePrint = useReactToPrint({
     content: () => printRef.current,
     documentTitle: `Ledger - ${selectedParty?.name || activeTab}`,
@@ -67,7 +65,6 @@ const Ledger = () => {
     },
   });
 
-  // Handle export as CSV
   const handleExportCSV = () => {
     if (!selectedParty && filteredData.length === 0) {
       toast.error("No data to export");
@@ -79,10 +76,8 @@ const Ledger = () => {
       
       let csvContent = "data:text/csv;charset=utf-8,";
       
-      // Header row
       csvContent += "Name,Address,Balance\n";
       
-      // Data rows
       dataToExport.forEach(party => {
         const row = [
           party.name,
@@ -92,7 +87,6 @@ const Ledger = () => {
         
         csvContent += row + "\n";
         
-        // Add transactions if party is expanded
         if (selectedParty && party.transactions && party.transactions.length > 0) {
           csvContent += "Date,Description,Debit,Credit,Balance\n";
           
@@ -114,7 +108,6 @@ const Ledger = () => {
         }
       });
       
-      // Create download link
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
@@ -131,12 +124,10 @@ const Ledger = () => {
   };
 
   useEffect(() => {
-    // Fetch all data
     loadLedgerData();
   }, []);
 
   const loadLedgerData = () => {
-    // Fetch all data
     const agents = getPurchaseAgents();
     const brokers = getSalesBrokers();
     const customers = getCustomers();
@@ -150,9 +141,7 @@ const Ledger = () => {
     console.log("Loaded purchases:", purchases.length);
     console.log("Loaded sales:", sales.length);
     
-    // Process agent transactions - Using updated field name purchaseAgent
     const agentTransactions = agents.map(agent => {
-      // Only use agentId property for matching
       const relatedPurchases = purchases.filter(p => p.agentId === agent.id);
       const relatedPayments = payments.filter(p => p.partyId === agent.id);
       
@@ -182,9 +171,7 @@ const Ledger = () => {
       };
     }).filter(agent => agent.transactions.length > 0);
     
-    // Process broker transactions - Using updated field name salesBroker
     const brokerTransactions = brokers.map(broker => {
-      // Only use brokerId property for matching
       const relatedSales = sales.filter(s => s.brokerId === broker.id);
       const relatedPayments = payments.filter(p => p.partyId === broker.id);
       const relatedReceipts = receipts.filter(r => r.customerId === broker.id);
@@ -224,7 +211,6 @@ const Ledger = () => {
       };
     }).filter(broker => broker.transactions.length > 0);
     
-    // Process customer transactions
     const customerTransactions = customers.map(customer => {
       const relatedSales = sales.filter(s => s.customerId === customer.id);
       const relatedReceipts = receipts.filter(r => r.customerId === customer.id);
@@ -255,7 +241,6 @@ const Ledger = () => {
       };
     }).filter(customer => customer.transactions.length > 0);
     
-    // Process transporter transactions
     const transporterTransactions = transporters.map(transporter => {
       const relatedPurchases = purchases.filter(p => p.transporterId === transporter.id);
       const relatedSales = sales.filter(s => s.transporterId === transporter.id);
@@ -295,7 +280,6 @@ const Ledger = () => {
       };
     }).filter(transporter => transporter.transactions.length > 0);
     
-    // Update state
     setPartiesWithTransactions({
       purchaseAgents: agentTransactions,
       salesBrokers: brokerTransactions,
@@ -303,21 +287,18 @@ const Ledger = () => {
       transporters: transporterTransactions
     });
     
-    // Set initial ledger data based on active tab
     setLedgerData(agentTransactions);
     setFilteredData(agentTransactions);
   };
-  
-  // Update ledger data when tab changes
+
   useEffect(() => {
     const newData = partiesWithTransactions[activeTab as keyof typeof partiesWithTransactions];
     setLedgerData(newData);
     filterData(newData, searchTerm);
-    setExpandedParty(null); // Reset expanded party when changing tabs
+    setExpandedParty(null);
     setSelectedParty(null);
   }, [activeTab, partiesWithTransactions]);
-  
-  // Filter data when search term changes
+
   const filterData = (data: any[], term: string) => {
     if (!term.trim()) {
       setFilteredData(data);
@@ -332,11 +313,11 @@ const Ledger = () => {
     
     setFilteredData(filtered);
   };
-  
+
   useEffect(() => {
     filterData(ledgerData, searchTerm);
   }, [searchTerm, ledgerData]);
-  
+
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
@@ -369,7 +350,7 @@ const Ledger = () => {
       default: return 'Ledger';
     }
   };
-  
+
   const getPartyTypeBadgeColor = () => {
     switch (activeTab) {
       case 'purchaseAgents': return 'bg-blue-100 text-blue-800';
@@ -474,7 +455,6 @@ const Ledger = () => {
   );
 };
 
-// Separated component for clarity
 const PartyLedger = ({ 
   filteredData, 
   expandedParty, 
@@ -490,24 +470,20 @@ const PartyLedger = ({
 }) => {
   
   const getBalanceStyling = (balance: number) => {
-    // Print version should be black
     if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('print').matches) {
       return "font-bold";
     }
     
-    // Screen version should use color
     return `font-bold ${balance > 0 ? 'text-red-600' : balance < 0 ? 'text-green-600' : 'text-gray-600'}`;
   };
   
   const getBalanceText = (balance: number) => {
     const formatted = formatCurrency(Math.abs(balance));
     
-    // Print version should not show DR/CR
     if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('print').matches) {
       return formatted;
     }
     
-    // Screen version should show DR/CR
     return `${formatted} ${balance > 0 ? 'DR' : balance < 0 ? 'CR' : ''}`;
   };
   
@@ -576,14 +552,12 @@ const PartyLedger = ({
                     </TableCell>
                   </TableRow>
                   
-                  {/* Transaction details in tally-like T-account format */}
                   {expandedParty === party.id && (
                     <TableRow>
                       <TableCell colSpan={4} className="p-0 border-t-0">
                         <div className="border-t border-gray-100 bg-gray-50 p-4">
                           <div className="mb-3 flex justify-between items-center">
                             <h3 className="text-sm font-semibold text-gray-700">Transaction History</h3>
-                            {/* Summary badges */}
                             <div className="flex gap-2">
                               <Badge variant="outline" className="bg-blue-50">
                                 <CircleDollarSign className="h-3 w-3 mr-1" />

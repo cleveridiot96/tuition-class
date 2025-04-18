@@ -1,3 +1,4 @@
+
 // Base entity types
 export interface BaseEntity {
   id: string;

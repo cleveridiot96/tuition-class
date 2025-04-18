@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Package } from "lucide-react";
-import { createPortableVersion } from "@/utils/portableAppUtils";
-import { toast } from "@/hooks/use-toast";
+import { Package, Download } from "lucide-react";
+import { exportDataBackup } from "@/services/storageService";
+import { toast } from "sonner";
 
 const PortableAppButton = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -11,25 +11,19 @@ const PortableAppButton = () => {
   const handleCreatePortable = async () => {
     setIsCreating(true);
     try {
-      const result = await createPortableVersion();
+      // Use the exportDataBackup function which properly creates a downloadable file
+      const result = await exportDataBackup();
+      
       if (result) {
-        toast({
-          title: "Portable App Created",
-          description: "Just unzip and open index.html to use your app anywhere!",
+        toast.success("Portable App Created", {
+          description: "Just unzip and open index.html to use your app anywhere!"
         });
       } else {
-        toast({
-          title: "Error",
-          description: "Failed to create portable version",
-          variant: "destructive"
-        });
+        toast.error("Failed to create portable version");
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
+      console.error("Error creating portable version:", error);
+      toast.error("An unexpected error occurred");
     } finally {
       setIsCreating(false);
     }
@@ -41,8 +35,8 @@ const PortableAppButton = () => {
       disabled={isCreating}
       className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
     >
-      <Package size={16} />
-      {isCreating ? "Creating..." : "Create Portable Version"}
+      {isCreating ? <Package size={16} className="animate-spin" /> : <Download size={16} />}
+      {isCreating ? "Creating..." : "Export Portable Version"}
     </Button>
   );
 };
