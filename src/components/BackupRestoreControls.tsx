@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RefreshCw, Download, Upload, AlertTriangle } from "lucide-react";
-import { exportDataBackup, importDataBackup, debugStorage } from "@/services/storageService";
+import { exportDataBackup, importDataBackup } from "@/services/storageService";
+import { debugStorage } from "@/services/storageUtils"; // Direct import from storageUtils
 import PortableAppButton from "./dashboard/PortableAppButton";
 
 interface BackupRestoreControlsProps {
