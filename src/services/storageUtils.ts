@@ -222,7 +222,7 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
   }
 };
 
-// Add getAgents function that was missing from storageUtils
+// Explicitly export getAgents function
 export const getAgents = () => {
   const agents = getStorageItem<any[]>('agents');
   if (!agents) {
@@ -232,7 +232,7 @@ export const getAgents = () => {
   return agents;
 };
 
-// Add debugging function to help identify storage issues
+// Make sure the debugStorage function is properly exported
 export const debugStorage = (key: string = ''): void => {
   try {
     if (key) {
