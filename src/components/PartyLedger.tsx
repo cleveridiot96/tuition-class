@@ -81,8 +81,7 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
         Narration: entry.narration,
         Debit: entry.debit > 0 ? entry.debit : '',
         Credit: entry.credit > 0 ? entry.credit : '',
-        Balance: entry.balance,
-        'Balance Type': entry.balanceType
+        Balance: entry.balance
       }));
       
       // Create workbook and worksheet
@@ -92,7 +91,7 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
       // Add worksheet to workbook
       XLSX.utils.book_append_sheet(wb, ws, `${account.name} Ledger`);
       
-      // Generate file name with date
+      // Generate filename with date
       const fileName = `Ledger_${account.name}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
       
       // Save workbook
@@ -161,9 +160,10 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
             <div className="print-header text-center mb-4 hidden">
               <h2 className="text-2xl font-bold">{account?.name} Ledger</h2>
               <p className="text-gray-600">Account Type: {account?.type}</p>
+              <p className="text-gray-600">Financial Year: {new Date().getFullYear()}-{new Date().getFullYear() + 1}</p>
             </div>
             
-            <div className="flex justify-between mb-4">
+            <div className="flex justify-between mb-4 print:hidden">
               <div className="flex gap-2">
                 <Button 
                   size="sm"
@@ -187,12 +187,12 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
             </div>
             
             {openingBalance && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-md border">
-                <strong>Opening Balance:</strong> {formatBalance(openingBalance.balance, openingBalance.balanceType)}
+              <div className="mb-4 p-3 bg-gray-50 rounded-md border print:bg-white print:border-0">
+                <strong>Opening Balance:</strong> {formatCurrency(openingBalance.balance)}
               </div>
             )}
             
-            <ScrollArea className="h-[calc(90vh-240px)]">
+            <ScrollArea className="h-[calc(90vh-240px)] print:h-auto">
               <div className="border rounded-md overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -215,7 +215,7 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
                     ) : (
                       transactionEntries.map((entry, index) => (
                         <TableRow key={index} className={
-                          entry.debit > 0 ? 'bg-green-50' : 'bg-red-50'
+                          entry.debit > 0 ? 'bg-green-50 print:bg-white' : 'bg-red-50 print:bg-white'
                         }>
                           <TableCell className="font-medium">{formatDate(entry.date)}</TableCell>
                           <TableCell>{entry.reference}</TableCell>
@@ -227,7 +227,7 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
                             {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
                           </TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatBalance(entry.balance, entry.balanceType)}
+                            {formatCurrency(entry.balance)}
                           </TableCell>
                         </TableRow>
                       ))
@@ -238,13 +238,13 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
             </ScrollArea>
             
             {closingBalance && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-md border">
-                <strong>Closing Balance:</strong> {formatBalance(closingBalance.balance, closingBalance.balanceType)}
+              <div className="mt-4 p-3 bg-gray-50 rounded-md border print:bg-white print:border-0">
+                <strong>Closing Balance:</strong> {formatCurrency(closingBalance.balance)}
               </div>
             )}
           </div>
           
-          <DrawerFooter className="border-t">
+          <DrawerFooter className="border-t print:hidden">
             <div className="flex justify-between w-full">
               <div className="flex gap-2">
                 <Button 
@@ -303,6 +303,9 @@ const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
             left: 0;
             top: 0;
             width: 100%;
+          }
+          .text-red-600, .text-green-600 {
+            color: black !important;
           }
         }
       `}</style>

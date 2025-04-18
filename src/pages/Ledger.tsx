@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { useReactToPrint } from 'react-to-print';
@@ -74,18 +75,16 @@ const Ledger = () => {
     const payments = getPayments();
     const receipts = getReceipts();
     
-    console.log("Loaded purchases:", purchases);
-    console.log("Loaded sales:", sales);
+    console.log("Loaded purchases:", purchases.length);
+    console.log("Loaded sales:", sales.length);
     
-    // Process agent transactions
+    // Process agent transactions - Fixing agent identification
     const agentTransactions = agents.map(agent => {
-      // Use agentId property if available, otherwise check if agent name matches
-      const relatedPurchases = purchases.filter(p => 
-        (p.agentId === agent.id) || (p.agent === agent.name)
-      );
+      // Only use agentId property for matching
+      const relatedPurchases = purchases.filter(p => p.agentId === agent.id);
       const relatedPayments = payments.filter(p => p.partyId === agent.id);
       
-      const totalPurchases = relatedPurchases.reduce((sum, p) => sum + p.totalAfterExpenses, 0);
+      const totalPurchases = relatedPurchases.reduce((sum, p) => sum + (p.totalAfterExpenses || p.totalAmount || 0), 0);
       const totalPayments = relatedPayments.reduce((sum, p) => sum + p.amount, 0);
       const balance = totalPurchases - totalPayments;
       
@@ -98,7 +97,7 @@ const Ledger = () => {
           ...relatedPurchases.map(p => ({
             date: p.date,
             description: `Purchase: ${p.lotNumber}`,
-            amount: p.totalAfterExpenses,
+            amount: p.totalAfterExpenses || p.totalAmount || 0,
             type: 'debit'
           })),
           ...relatedPayments.map(p => ({
@@ -111,13 +110,15 @@ const Ledger = () => {
       };
     }).filter(agent => agent.transactions.length > 0);
     
-    // Process broker transactions
+    // Process broker transactions - Fixing broker identification
     const brokerTransactions = brokers.map(broker => {
+      // Only use brokerId property for matching
       const relatedSales = sales.filter(s => s.brokerId === broker.id);
       const relatedPayments = payments.filter(p => p.partyId === broker.id);
       const relatedReceipts = receipts.filter(r => r.customerId === broker.id);
       
-      const totalSales = relatedSales.reduce((sum, s) => sum + s.totalAmount * (broker.commissionRate / 100), 0);
+      const commissionRate = broker.commissionRate || 1;
+      const totalSales = relatedSales.reduce((sum, s) => sum + s.totalAmount * (commissionRate / 100), 0);
       const totalPayments = relatedPayments.reduce((sum, p) => sum + p.amount, 0);
       const totalReceipts = relatedReceipts.reduce((sum, r) => sum + r.amount, 0);
       const balance = totalSales - totalPayments + totalReceipts;
@@ -132,7 +133,7 @@ const Ledger = () => {
           ...relatedSales.map(s => ({
             date: s.date,
             description: `Sale Commission: ${s.lotNumber}`,
-            amount: s.totalAmount * (broker.commissionRate / 100),
+            amount: s.totalAmount * (commissionRate / 100),
             type: 'debit'
           })),
           ...relatedPayments.map(p => ({
@@ -188,7 +189,7 @@ const Ledger = () => {
       const relatedSales = sales.filter(s => s.transporterId === transporter.id);
       const relatedPayments = payments.filter(p => p.partyId === transporter.id);
       
-      const totalPurchaseTransport = relatedPurchases.reduce((sum, p) => sum + p.transportCost, 0);
+      const totalPurchaseTransport = relatedPurchases.reduce((sum, p) => sum + (p.transportCost || 0), 0);
       const totalSaleTransport = relatedSales.reduce((sum, s) => sum + (s.transportCost || 0), 0);
       const totalTransport = totalPurchaseTransport + totalSaleTransport;
       const totalPayments = relatedPayments.reduce((sum, p) => sum + p.amount, 0);
@@ -203,7 +204,7 @@ const Ledger = () => {
           ...relatedPurchases.map(p => ({
             date: p.date,
             description: `Transport: ${p.lotNumber}`,
-            amount: p.transportCost,
+            amount: p.transportCost || 0,
             type: 'debit'
           })),
           ...relatedSales.map(s => ({
@@ -348,7 +349,10 @@ const Ledger = () => {
                 <TabsContent key={tabValue} value={tabValue}>
                   <div className="space-y-8">
                     <div ref={printRef} className="print-container">
-                      <h2 className="text-2xl font-bold mb-4 print-only">{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Ledger</h2>
+                      <div className="print-header mb-4">
+                        <h2 className="text-2xl font-bold text-center">{selectedParty?.name || activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Ledger</h2>
+                        <p className="text-center text-gray-600">Financial Year: {new Date().getFullYear()}-{new Date().getFullYear() + 1}</p>
+                      </div>
                       
                       <Table className="excel-style">
                         <TableHeader>
@@ -376,9 +380,11 @@ const Ledger = () => {
                                   <TableCell className="font-medium border-r">{party.name}</TableCell>
                                   <TableCell className="border-r">{party.contactNumber}</TableCell>
                                   <TableCell className="border-r">{party.address}</TableCell>
-                                  <TableCell className={`text-right font-bold border-r ${party.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                  <TableCell className={`text-right font-bold border-r ${party.balance > 0 ? 'text-red-600 print:text-black' : 'text-green-600 print:text-black'}`}>
                                     ₹{Math.abs(party.balance).toLocaleString()}
-                                    {party.balance > 0 ? ' DR' : party.balance < 0 ? ' CR' : ''}
+                                    <span className="print:hidden">
+                                      {party.balance > 0 ? ' DR' : party.balance < 0 ? ' CR' : ''}
+                                    </span>
                                   </TableCell>
                                 </TableRow>
                                 
@@ -388,14 +394,14 @@ const Ledger = () => {
                                     <TableCell colSpan={4} className="p-0 border-b-0">
                                       <div className="border rounded-md my-2 overflow-hidden">
                                         <div className="grid grid-cols-2 border-b">
-                                          <div className="p-2 font-medium bg-gray-50 border-r text-center">Debit</div>
-                                          <div className="p-2 font-medium bg-gray-50 text-center">Credit</div>
+                                          <div className="p-2 font-medium bg-gray-50 border-r text-center print:bg-white">Debit</div>
+                                          <div className="p-2 font-medium bg-gray-50 text-center print:bg-white">Credit</div>
                                         </div>
                                         
                                         <div className="grid grid-cols-2 min-h-[100px]">
                                           {/* Debit side */}
                                           <div className="border-r">
-                                            <div className="grid grid-cols-3 border-b bg-gray-50 p-2 font-medium">
+                                            <div className="grid grid-cols-3 border-b bg-gray-50 p-2 font-medium print:bg-white">
                                               <div>Date</div>
                                               <div>Description</div>
                                               <div className="text-right">Amount</div>
@@ -411,17 +417,17 @@ const Ledger = () => {
                                               ))}
                                             {/* Total debit */}
                                             {party.balance > 0 && (
-                                              <div className="grid grid-cols-3 p-2 bg-gray-50 font-medium">
+                                              <div className="grid grid-cols-3 p-2 bg-gray-50 font-medium print:bg-white">
                                                 <div></div>
                                                 <div>Balance</div>
-                                                <div className="text-right text-red-600">₹{party.balance.toLocaleString()}</div>
+                                                <div className="text-right text-red-600 print:text-black">₹{party.balance.toLocaleString()}</div>
                                               </div>
                                             )}
                                           </div>
                                           
                                           {/* Credit side */}
                                           <div>
-                                            <div className="grid grid-cols-3 border-b bg-gray-50 p-2 font-medium">
+                                            <div className="grid grid-cols-3 border-b bg-gray-50 p-2 font-medium print:bg-white">
                                               <div>Date</div>
                                               <div>Description</div>
                                               <div className="text-right">Amount</div>
@@ -437,10 +443,10 @@ const Ledger = () => {
                                               ))}
                                             {/* Total credit */}
                                             {party.balance < 0 && (
-                                              <div className="grid grid-cols-3 p-2 bg-gray-50 font-medium">
+                                              <div className="grid grid-cols-3 p-2 bg-gray-50 font-medium print:bg-white">
                                                 <div></div>
                                                 <div>Balance</div>
-                                                <div className="text-right text-green-600">₹{Math.abs(party.balance).toLocaleString()}</div>
+                                                <div className="text-right text-green-600 print:text-black">₹{Math.abs(party.balance).toLocaleString()}</div>
                                               </div>
                                             )}
                                           </div>
@@ -468,7 +474,7 @@ const Ledger = () => {
         </Card>
       </div>
       
-      {/* Print-only styles - Fix the style element here by removing jsx and global props */}
+      {/* Print-only styles */}
       <style>
         {`
         @media print {
@@ -484,7 +490,7 @@ const Ledger = () => {
             top: 0;
             width: 100%;
           }
-          .print-only {
+          .print-header {
             display: block !important;
           }
           button, .hide-on-print {
@@ -496,9 +502,16 @@ const Ledger = () => {
           }
           .excel-style th, .excel-style td {
             border: 1px solid #ddd;
+            color: black !important;
+          }
+          .text-red-600, .text-green-600 {
+            color: black !important;
+          }
+          .bg-gray-50, .bg-red-50, .bg-green-50, .bg-muted, .bg-muted\\/50 {
+            background-color: white !important;
           }
         }
-        .print-only {
+        .print-header {
           display: none;
         }
         .excel-style {
