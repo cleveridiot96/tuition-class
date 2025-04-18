@@ -17,6 +17,9 @@ export type ToastActionElement = React.ReactElement;
 
 export type Toast = Omit<ToasterToast, "id">;
 
+// Add the UpdateToast type that was missing
+export type UpdateToast = Partial<ToasterToast> & { id: string };
+
 // Extend the toast function type to include variant methods
 export interface ToastFunction {
   (props: Toast): { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
