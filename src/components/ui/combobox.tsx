@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -8,6 +8,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface ComboboxProps {
   options: { value: string; label: string }[];
@@ -15,9 +25,11 @@ interface ComboboxProps {
   onSelect?: (value: string) => void;
   onChange?: (value: string) => void;
   onInputChange?: (value: string) => void;
+  onAddNew?: (value: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
+  allowAddNew?: boolean;
 }
 
 export function Combobox({
@@ -26,13 +38,17 @@ export function Combobox({
   onSelect,
   onChange,
   onInputChange,
+  onAddNew,
   placeholder = "Select an option",
   className,
-  disabled = false
+  disabled = false,
+  allowAddNew = false
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
+  const [showAddDialog, setShowAddDialog] = React.useState(false);
+  const [newItemName, setNewItemName] = React.useState("");
   
   // Log options for debugging
   React.useEffect(() => {
@@ -83,6 +99,16 @@ export function Combobox({
     }
   }, [safeOptions, inputValue]);
 
+  // Check if current input matches any existing option
+  const inputMatchesOption = React.useMemo(() => {
+    if (!inputValue) return false;
+    
+    return safeOptions.some(option => 
+      option.label.toLowerCase() === inputValue.toLowerCase() ||
+      option.value.toLowerCase() === inputValue.toLowerCase()
+    );
+  }, [safeOptions, inputValue]);
+
   // Select handler with error protection
   const handleSelect = (currentValue: string) => {
     try {
@@ -105,6 +131,26 @@ export function Combobox({
     }
   };
 
+  // Handle adding a new item
+  const handleAddNewItem = () => {
+    try {
+      if (newItemName.trim() && onAddNew) {
+        onAddNew(newItemName.trim());
+        setShowAddDialog(false);
+        setNewItemName("");
+      }
+    } catch (e) {
+      console.error("Error adding new item:", e);
+    }
+  };
+
+  // Open add dialog with current input value
+  const openAddDialog = () => {
+    setNewItemName(inputValue);
+    setShowAddDialog(true);
+    setOpen(false);
+  };
+
   // Get display text for selected value safely
   const displayText = React.useMemo(() => {
     if (!selectedValue) return placeholder;
@@ -118,73 +164,136 @@ export function Combobox({
   }, [selectedValue, safeOptions, placeholder]);
 
   return (
-    <Popover 
-      open={disabled ? false : open} 
-      onOpenChange={disabled ? undefined : setOpen}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-full justify-between bg-white", className)}
-          disabled={disabled}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (!disabled) setOpen(!open);
-          }}
-        >
-          <span className="truncate">{displayText}</span>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent 
-        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
-        align="start"
-        side="bottom"
-        sideOffset={4}
-        style={{ pointerEvents: 'auto' }}
+    <>
+      <Popover 
+        open={disabled ? false : open} 
+        onOpenChange={disabled ? undefined : setOpen}
       >
-        <div className="flex items-center border-b px-3">
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => handleInputChange(e.target.value)}
-            placeholder={`Search ${placeholder.toLowerCase()}...`}
-            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-        <div className="max-h-60 overflow-auto">
-          {filteredOptions.length === 0 ? (
-            <div className="py-6 text-center text-sm">No results found.</div>
-          ) : (
-            <div>
-              {filteredOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className={cn(
-                    "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                    selectedValue === option.value ? "bg-accent text-accent-foreground" : ""
-                  )}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSelect(option.value);
-                  }}
-                >
-                  <Check
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn("w-full justify-between bg-white", className)}
+            disabled={disabled}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!disabled) setOpen(!open);
+            }}
+          >
+            <span className="truncate">{displayText}</span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent 
+          className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
+          align="start"
+          side="bottom"
+          sideOffset={4}
+          style={{ pointerEvents: 'auto' }}
+        >
+          <div className="flex items-center border-b px-3">
+            <input
+              type="text"
+              value={inputValue}
+              onChange={(e) => handleInputChange(e.target.value)}
+              placeholder={`Search ${placeholder.toLowerCase()}...`}
+              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="max-h-60 overflow-auto">
+            {filteredOptions.length === 0 ? (
+              <div className="py-6 text-center text-sm">
+                {allowAddNew && inputValue.trim() ? (
+                  <div className="space-y-2 px-4">
+                    <p>No results found</p>
+                    <Button 
+                      variant="outline" 
+                      className="w-full flex items-center justify-center gap-2"
+                      onClick={openAddDialog}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Add "{inputValue}"
+                    </Button>
+                  </div>
+                ) : (
+                  "No results found."
+                )}
+              </div>
+            ) : (
+              <div>
+                {filteredOptions.map((option) => (
+                  <div
+                    key={option.value}
                     className={cn(
-                      "mr-2 h-4 w-4",
-                      selectedValue === option.value ? "opacity-100" : "opacity-0"
+                      "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
+                      selectedValue === option.value ? "bg-accent text-accent-foreground" : ""
                     )}
-                  />
-                  {option.label}
-                </div>
-              ))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSelect(option.value);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        selectedValue === option.value ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    {option.label}
+                  </div>
+                ))}
+                
+                {/* Show add option if there's input and no exact match */}
+                {allowAddNew && inputValue.trim() && !inputMatchesOption && (
+                  <div
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground border-t"
+                    onClick={openAddDialog}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add "{inputValue}"
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {/* Dialog to add new item */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Item</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col space-y-4 py-4">
+            <div className="flex flex-col space-y-2">
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                placeholder="Enter name"
+              />
             </div>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowAddDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAddNewItem}
+              disabled={!newItemName.trim()}
+            >
+              Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
