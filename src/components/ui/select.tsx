@@ -1,4 +1,3 @@
-
 import * as React from "react"
 import * as SelectPrimitive from "@radix-ui/react-select"
 import { Check, ChevronDown, ChevronUp, Search } from "lucide-react"
@@ -24,7 +23,6 @@ const SelectTrigger = React.forwardRef<
     )}
     {...props}
     onClick={(e) => {
-      // Prevent bubbling
       e.stopPropagation();
       if (props.onClick) {
         props.onClick(e);
@@ -84,6 +82,8 @@ const SelectContent = React.forwardRef<
   SelectContentProps
 >(({ className, children, position = "popper", searchable = false, ...props }, ref) => {
   const [searchQuery, setSearchQuery] = React.useState("");
+  
+  console.log("SelectContent rendering with children:", children);
   
   // Additional safety check for children
   const safeChildren = React.useMemo(() => {
@@ -151,24 +151,33 @@ const SelectContent = React.forwardRef<
       <SelectPrimitive.Content
         ref={ref}
         className={cn(
-          "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+          "relative z-[9999] max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           className
         )}
         position={position}
+        style={{ 
+          backgroundColor: "white", 
+          pointerEvents: "auto",
+          zIndex: 9999
+        }}
         onCloseAutoFocus={(e) => {
-          // Prevent focus issues that might cause re-renders
           e.preventDefault();
           if (props.onCloseAutoFocus) {
             props.onCloseAutoFocus(e);
           }
         }}
         onEscapeKeyDown={(e) => {
-          // Prevent issues with escape key
           e.stopPropagation();
           if (props.onEscapeKeyDown) {
             props.onEscapeKeyDown(e);
+          }
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (props.onClick) {
+            props.onClick(e);
           }
         }}
         {...props}
@@ -190,7 +199,6 @@ const SelectContent = React.forwardRef<
                 placeholder="Search..."
                 className="h-8 p-0 border-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                 onClick={(e) => {
-                  // Prevent event bubbling
                   e.stopPropagation();
                 }}
               />
@@ -233,7 +241,6 @@ const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
 >(({ className, children, ...props }, ref) => {
-  // Ensure value is never undefined or null which can cause rendering issues
   const safeValue = props.value || "placeholder-value";
   
   return (
@@ -246,7 +253,6 @@ const SelectItem = React.forwardRef<
       {...props}
       value={safeValue}
       onSelect={(event) => {
-        // Prevent any potential bubbling issues
         event.stopPropagation();
         if (props.onSelect) props.onSelect(event);
       }}

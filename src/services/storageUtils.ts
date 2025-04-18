@@ -45,7 +45,6 @@ export const removeYearSpecificStorageItem = (key: string): void => {
   removeStorageItem(yearSpecificKey);
 };
 
-// Data backup and restore functions
 export const exportDataBackup = (silent: boolean = false): string | null => {
   try {
     const data: Record<string, any> = {};
@@ -120,7 +119,6 @@ export const importDataBackup = (jsonData: string): boolean => {
   }
 };
 
-// Data management functions
 export const clearAllData = (): void => {
   try {
     const currentYear = localStorage.getItem('currentFinancialYear');
@@ -222,7 +220,6 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
   }
 };
 
-// Explicitly export getAgents function
 export const getAgents = () => {
   const agents = getStorageItem<any[]>('agents');
   if (!agents) {
@@ -232,7 +229,6 @@ export const getAgents = () => {
   return agents;
 };
 
-// Make sure the debugStorage function is properly exported
 export const debugStorage = (key: string = ''): void => {
   try {
     if (key) {

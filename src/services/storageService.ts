@@ -18,7 +18,7 @@ export * from './receiptService';
 // Export updateAgentBalance separately to avoid conflicts
 export { updateAgentBalance } from './agentService';
 
-// Explicitly export the debugStorage and other utility functions to ensure they're available
+// Explicitly re-export the debugStorage and other utility functions from storageUtils
 export { 
   debugStorage, 
   clearAllData, 

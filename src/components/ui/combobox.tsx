@@ -34,6 +34,11 @@ export function Combobox({
   const [inputValue, setInputValue] = React.useState("");
   const [selectedValue, setSelectedValue] = React.useState(value || "");
   
+  // Log options for debugging
+  React.useEffect(() => {
+    console.log("Combobox options:", options);
+  }, [options]);
+  
   // Sync with external value changes
   React.useEffect(() => {
     setSelectedValue(value || "");
@@ -124,6 +129,10 @@ export function Combobox({
           aria-expanded={open}
           className={cn("w-full justify-between bg-white", className)}
           disabled={disabled}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) setOpen(!open);
+          }}
         >
           <span className="truncate">{displayText}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -134,6 +143,7 @@ export function Combobox({
         align="start"
         side="bottom"
         sideOffset={4}
+        style={{ pointerEvents: 'auto' }}
       >
         <div className="flex items-center border-b px-3">
           <input
@@ -142,6 +152,7 @@ export function Combobox({
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder={`Search ${placeholder.toLowerCase()}...`}
             className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
         <div className="max-h-60 overflow-auto">
@@ -156,7 +167,10 @@ export function Combobox({
                     "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
                     selectedValue === option.value ? "bg-accent text-accent-foreground" : ""
                   )}
-                  onClick={() => handleSelect(option.value)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSelect(option.value);
+                  }}
                 >
                   <Check
                     className={cn(

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Database, Trash2 } from "lucide-react";
@@ -17,7 +18,9 @@ export function StorageDebugger() {
 
   const handleDebugClick = () => {
     try {
+      console.log("Debugging storage...");
       debugStorage();
+      
       const allData: Record<string, any> = {};
       
       for (let i = 0; i < localStorage.length; i++) {
@@ -31,6 +34,7 @@ export function StorageDebugger() {
         }
       }
       
+      console.log("Storage data:", allData);
       setStorageData(JSON.stringify(allData, null, 2));
     } catch (error) {
       console.error('Error debugging storage:', error);

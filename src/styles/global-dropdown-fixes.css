@@ -1,0 +1,36 @@
+
+/* Dropdown and Select Element Fixes */
+.select-wrapper,
+.dropdown-wrapper {
+  position: relative;
+  z-index: 50;
+}
+
+select,
+.select-element,
+.dropdown-element {
+  z-index: 50;
+  pointer-events: auto !important;
+}
+
+/* Make sure popover content is always on top and clickable */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}
+
+/* Force background color on dropdowns */
+.bg-popover,
+[role="combobox"],
+[role="listbox"] {
+  background-color: white !important;
+}
+
+/* Fix for specific dropdown components */
+.popover-content,
+.select-content,
+.combobox-content,
+.dialog-content {
+  z-index: 9999 !important;
+  pointer-events: auto !important;
+}

@@ -39,9 +39,11 @@ export function SearchableSelect({
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
 
-  // Ensure options is always an array of valid objects
+  // Ensure options is always an array of valid objects and log for debugging
   const safeOptions = React.useMemo(() => {
     try {
+      console.log("SearchableSelect options:", options);
+      
       if (!options) return [];
       
       if (!Array.isArray(options)) {
@@ -114,6 +116,10 @@ export function SearchableSelect({
             className
           )}
           disabled={disabled}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!disabled) setOpen(!open);
+          }}
         >
           {selectedOption ? selectedOption.label : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -124,6 +130,7 @@ export function SearchableSelect({
         align="start"
         side="bottom"
         sideOffset={4}
+        style={{ pointerEvents: 'auto' }}
       >
         <div className="flex items-center border-b px-3">
           <input
@@ -132,6 +139,7 @@ export function SearchableSelect({
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={`Search ${placeholder.toLowerCase()}...`}
             className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={(e) => e.stopPropagation()}
           />
         </div>
         <ScrollArea className="max-h-60">
@@ -145,7 +153,10 @@ export function SearchableSelect({
                   "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
                   value === option.value ? "bg-accent text-accent-foreground" : ""
                 )}
-                onClick={() => handleSelect(option.value)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSelect(option.value);
+                }}
               >
                 <Check
                   className={cn(
