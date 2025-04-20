@@ -27,21 +27,36 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    // Optimize bundle size
+    // Optimize bundle size heavily
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: true,
-        drop_debugger: true
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'],
+        passes: 2,
+        unsafe: true
       },
+      mangle: {
+        safari10: true,
+      },
+      format: {
+        comments: false,
+      }
     },
+    // Set target size limit to 5MB
+    chunkSizeWarningLimit: 5000, // 5MB
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: [
             'react', 
-            'react-dom', 
-            'react-router-dom', 
+            'react-dom'
+          ],
+          router: [
+            'react-router-dom'
+          ],
+          utils: [
             'date-fns',
             'uuid'
           ],
@@ -56,13 +71,30 @@ export default defineConfig(({ mode }) => ({
         chunkFileNames: 'assets/[name].[hash:8].js',
         entryFileNames: 'assets/[name].[hash:8].js',
       }
-    }
+    },
+    // Enable brotli and gzip compression for smaller output files
+    reportCompressedSize: true,
+    // Reduce sourcemap size in production
+    sourcemap: mode !== 'production' ? true : 'hidden',
   },
-  // Disable source maps in production
-  sourcemap: mode !== 'production',
   // Improve build performance
   esbuild: {
     legalComments: 'none',
-    target: ['es2020', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-  }
+    target: ['es2019', 'edge89', 'firefox78', 'chrome87', 'safari13'],
+    treeShaking: true,
+    minifyIdentifiers: true,
+    minifySyntax: true,
+    minifyWhitespace: true,
+  },
+  // Optimize dep pre-bundling
+  optimizeDeps: {
+    include: [
+      'react', 
+      'react-dom', 
+      'react-router-dom',
+      'date-fns',
+      'uuid'
+    ],
+    exclude: ['fsevents']
+  },
 }));

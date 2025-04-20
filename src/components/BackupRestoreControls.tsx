@@ -121,6 +121,26 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
     input.click();
   };
   
+  const handleDebugStorage = () => {
+    try {
+      // Call the debugStorage function
+      debugStorage();
+      
+      // Show notification to user
+      toast({
+        title: "Storage Debug Information",
+        description: "Database details logged to console. Press F12 to view.",
+      });
+    } catch (error) {
+      console.error("Debug error:", error);
+      toast({
+        title: "Debug Error",
+        description: "Failed to log storage information",
+        variant: "destructive"
+      });
+    }
+  };
+  
   return (
     <Card className="mb-6 border border-gray-200 bg-white">
       <CardContent className="p-4 flex flex-wrap justify-between items-center gap-3">
@@ -161,7 +181,7 @@ const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControl
           <Button
             variant="ghost"
             className="flex items-center gap-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-            onClick={() => debugStorage()}
+            onClick={handleDebugStorage}
             title="Log storage info to console for debugging"
           >
             <AlertTriangle size={16} />

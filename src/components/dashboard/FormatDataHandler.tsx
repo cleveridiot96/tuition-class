@@ -2,10 +2,8 @@
 import React, { useState } from 'react';
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { 
-  exportDataBackup, 
-  clearAllData, 
-  clearAllMasterData, 
-  seedInitialData 
+  completeFormatAllData,
+  exportDataBackup
 } from "@/services/storageService";
 import { toast } from "@/hooks/use-toast";
 import FormatEventConnector from './FormatEventConnector';
@@ -29,29 +27,10 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
         description: "Creating backup and resetting data...",
       });
       
-      // Create backup before formatting
-      const backupData = exportDataBackup(true);
-      console.log("Backup created:", backupData ? "Success" : "Failed");
+      // Use our improved format function that properly clears all data
+      const formatSuccess = await completeFormatAllData();
       
-      if (backupData) {
-        // Save backup to localStorage
-        localStorage.setItem('preFormatBackup', backupData);
-        
-        // Clear all localStorage completely
-        localStorage.clear();
-        
-        // Small delay to ensure clearing is complete
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Seed with fresh initial data
-        seedInitialData(true);
-        
-        // Another small delay before notifying the system
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Notify other components about the data change
-        window.dispatchEvent(new Event('storage'));
-        
+      if (formatSuccess) {
         // Show success message
         toast({
           title: "Data Formatted Successfully",
@@ -63,7 +42,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
           onFormatComplete();
         }, 500);
       } else {
-        throw new Error("Failed to create backup data");
+        throw new Error("Format operation failed");
       }
     } catch (error) {
       console.error("Error during formatting:", error);

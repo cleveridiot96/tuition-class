@@ -18,12 +18,25 @@ import OpeningBalanceSetup from '@/components/OpeningBalanceSetup';
 import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } from '@/services/financialYearService';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { toast } from '@/hooks/use-toast';
+import { performAutoSave, checkAndRestoreAutoSave } from '@/services/storageService';
+import { checkDataIntegrity, performSystemHealthCheck } from '@/utils/crashRecovery';
 
 import '@/App.css';
 
 const App = () => {
   const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
+  const [recoveryTimestamp, setRecoveryTimestamp] = useState<Date | null>(null);
+
+  // Check for auto-save recovery
+  useEffect(() => {
+    const autoSaveData = checkAndRestoreAutoSave();
+    if (autoSaveData.available) {
+      setShowRecoveryPrompt(true);
+      setRecoveryTimestamp(autoSaveData.timestamp);
+    }
+  }, []);
 
   // Check online/offline status
   useEffect(() => {
@@ -57,6 +70,49 @@ const App = () => {
     return () => {
       window.removeEventListener('online', handleOnlineStatus);
       window.removeEventListener('offline', handleOnlineStatus);
+    };
+  }, []);
+  
+  // Set up auto-save functionality
+  useEffect(() => {
+    // Perform auto-save when tab becomes hidden (user switches away)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        performAutoSave();
+      }
+    };
+    
+    // Listen for visibility change events
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Set up interval for periodic auto-saves
+    const autoSaveInterval = setInterval(() => {
+      performAutoSave();
+    }, 5 * 60 * 1000); // Auto-save every 5 minutes
+    
+    // Detect USB device changes if available
+    const setupUsbEvent = () => {
+      if ('usb' in navigator) {
+        navigator.usb.addEventListener('disconnect', () => {
+          console.log("USB device disconnected - running auto-save");
+          performAutoSave();
+          toast({
+            title: "USB Device Disconnected",
+            description: "Your data has been automatically backed up",
+          });
+        });
+      }
+    };
+    
+    try {
+      setupUsbEvent();
+    } catch (e) {
+      console.log("USB event setup not supported");
+    }
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(autoSaveInterval);
     };
   }, []);
   
@@ -100,6 +156,22 @@ const App = () => {
               initializeFinancialYears();
               console.log('Auto-maintenance: Fixed missing active year');
             }
+            
+            // Check system health
+            const healthCheck = performSystemHealthCheck();
+            if (healthCheck && !healthCheck.dataIntegrity) {
+              console.warn('Data integrity issues detected, creating backup');
+              performAutoSave();
+            }
+            
+            // Check storage usage
+            if (healthCheck && healthCheck.storageUsage > 0.8 * healthCheck.storageLimit) {
+              toast({
+                title: "Storage Warning",
+                description: "App data is reaching storage limits. Consider exporting old data.",
+                variant: "destructive",
+              });
+            }
           } catch (error) {
             console.error('Error in data consistency check:', error);
           }
@@ -116,8 +188,57 @@ const App = () => {
     };
   }, []);
 
+  // Handle recovery from auto-save
+  const handleRecoveryRestore = () => {
+    const autoSaveData = checkAndRestoreAutoSave();
+    if (autoSaveData.available && autoSaveData.restore) {
+      const success = autoSaveData.restore();
+      if (success) {
+        toast({
+          title: "Data Restored Successfully",
+          description: "Your data has been restored from auto-save backup",
+        });
+        
+        // Reload the page to reflect the restored data
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        toast({
+          title: "Restore Failed",
+          description: "Failed to restore data from auto-save",
+          variant: "destructive",
+        });
+      }
+    }
+    setShowRecoveryPrompt(false);
+  };
+
   return (
     <ErrorBoundary>
+      {showRecoveryPrompt && recoveryTimestamp && (
+        <div className="fixed top-0 left-0 w-full bg-yellow-50 border-b border-yellow-200 p-4 z-50 flex justify-between items-center">
+          <div>
+            <h3 className="font-medium">Unsaved Data Detected</h3>
+            <p className="text-sm text-gray-600">
+              Would you like to restore data from {recoveryTimestamp.toLocaleString()}?
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button 
+              className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
+              onClick={() => setShowRecoveryPrompt(false)}
+            >
+              Dismiss
+            </button>
+            <button 
+              className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+              onClick={handleRecoveryRestore}
+            >
+              Restore
+            </button>
+          </div>
+        </div>
+      )}
+      
       <Router>
         <ErrorBoundary>
           <Routes>
@@ -160,7 +281,7 @@ const App = () => {
         />
 
         {!isOnline && (
-          <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000]">
+          <div className="fixed bottom-4 right-4 bg-red-600 text-white px-3 py-2 rounded shadow-lg z-[1000] ripple">
             You are offline
           </div>
         )}
