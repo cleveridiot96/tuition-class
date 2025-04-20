@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Purchase } from "@/services/types";
+import { Button } from "@/components/ui/button";
 import FormHeader from './components/FormHeader';
 import AgentSection from './components/AgentSection';
 import TransportSection from './components/TransportSection';

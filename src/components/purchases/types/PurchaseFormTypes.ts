@@ -24,4 +24,3 @@ export interface FormUtils {
   handleBrokerageTypeChange: (type: string) => void;
   handleBrokerageRateChange: (value: number) => void;
 }
-

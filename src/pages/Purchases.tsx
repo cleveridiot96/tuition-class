@@ -37,6 +37,8 @@ const Purchases = () => {
     isEditDialogOpen,
     setIsEditDialogOpen,
     entityToEdit,
+    setEntityToEdit,
+    setEntityToDelete,
     handleDelete,
     handleAdd,
     handleUpdate,
