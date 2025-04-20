@@ -1,6 +1,6 @@
 
 import { toast } from "sonner";
-import { exportDataBackup } from "@/services/storageUtils";
+import { exportDataBackup } from "@/services/backup/exportBackup";
 
 // Helper function to check if we're running in portable mode
 export const isPortableMode = (): boolean => {

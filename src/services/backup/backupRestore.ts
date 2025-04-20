@@ -1,7 +1,9 @@
+
 import { Purchase, Sale, InventoryItem, Payment, Receipt } from '../types';
 import { getStorageItem, saveStorageItem } from '../storageUtils';
 import { getPayments, getReceipts } from '../paymentService';
-import { exportDataBackup as exportData, importDataBackup as importData } from './exportBackup';
+import { exportDataBackup as exportData } from './exportBackup';
+import { importDataBackup as importData } from './importBackup';
 
 // Function to clear all data
 export const clearAllData = () => {

@@ -591,8 +591,8 @@ const BulkAddToInventoryButton = ({ purchases, onAddToInventory, disabled }) => 
     });
   };
 
-  const isPurchaseSelected = (purchase: Purchase) => {
-    return selectedPurchases.find((p) => p.id === purchase.id);
+  const isPurchaseSelected = (purchase: Purchase): boolean => {
+    return !!selectedPurchases.find((p) => p.id === purchase.id);
   };
 
   const handleBulkAdd = () => {

@@ -12,3 +12,6 @@ export {
 
 // Re-export debug functionality
 export * from './debug/storageDebug';
+
+// Re-export backup functionality
+export { exportDataBackup } from './backup/exportBackup';
