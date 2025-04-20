@@ -1,36 +1,26 @@
-import { Payment } from './types';
-import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
+import { Payment, Receipt } from './types';
+import { getStorageItem, saveStorageItem } from './storageUtils';
 
 export const getPayments = (): Payment[] => {
-  return getYearSpecificStorageItem<Payment[]>('payments') || [];
+  return getStorageItem<Payment[]>('payments') || [];
+};
+
+export const getReceipts = (): Receipt[] => {
+  return getStorageItem<Receipt[]>('receipts') || [];
 };
 
 export const addPayment = (payment: Payment): void => {
   const payments = getPayments();
-  
-  // Ensure payment.date is not null
-  const paymentWithDefaults = {
-    ...payment,
-    date: payment.date || new Date().toISOString().split('T')[0],
-  };
-  
-  payments.push(paymentWithDefaults);
-  saveYearSpecificStorageItem('payments', payments);
+  payments.push(payment);
+  saveStorageItem('payments', payments);
 };
 
 export const updatePayment = (updatedPayment: Payment): void => {
   const payments = getPayments();
   const index = payments.findIndex(payment => payment.id === updatedPayment.id);
-  
   if (index !== -1) {
-    // Ensure updatedPayment.date is not null
-    const paymentWithDefaults = {
-      ...updatedPayment,
-      date: updatedPayment.date || payments[index].date || new Date().toISOString().split('T')[0],
-    };
-    
-    payments[index] = paymentWithDefaults;
-    saveYearSpecificStorageItem('payments', payments);
+    payments[index] = updatedPayment;
+    saveStorageItem('payments', payments);
   }
 };
 
@@ -39,10 +29,30 @@ export const deletePayment = (id: string): void => {
   const index = payments.findIndex(payment => payment.id === id);
   if (index !== -1) {
     payments[index] = { ...payments[index], isDeleted: true };
-    saveYearSpecificStorageItem('payments', payments);
+    saveStorageItem('payments', payments);
   }
 };
 
-export const savePayments = (payments: Payment[]): void => {
-  saveYearSpecificStorageItem('payments', payments);
+export const addReceipt = (receipt: Receipt): void => {
+  const receipts = getReceipts();
+  receipts.push(receipt);
+  saveStorageItem('receipts', receipts);
+};
+
+export const updateReceipt = (updatedReceipt: Receipt): void => {
+  const receipts = getReceipts();
+  const index = receipts.findIndex(receipt => receipt.id === updatedReceipt.id);
+  if (index !== -1) {
+    receipts[index] = updatedReceipt;
+    saveStorageItem('receipts', receipts);
+  }
+};
+
+export const deleteReceipt = (id: string): void => {
+  const receipts = getReceipts();
+  const index = receipts.findIndex(receipt => receipt.id === id);
+  if (index !== -1) {
+    receipts[index] = { ...receipts[index], isDeleted: true };
+    saveStorageItem('receipts', receipts);
+  }
 };

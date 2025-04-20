@@ -29,17 +29,44 @@ export {
 // Re-export debug functionality
 export { debugStorage } from './debug/debugService';
 
-// Re-export all agent-related functionality
-export * from './agentService';
+// Re-export all entity-related functionality
+export {
+  getAgents,
+  addAgent,
+  updateAgent,
+  deleteAgent,
+  updateAgentBalance,
+  getPurchaseAgents
+} from './entities/agentService';
 
-// Re-export all inventory-related functionality
-export * from './inventoryService';
+export {
+  getSuppliers,
+  addSupplier,
+  updateSupplier,
+  deleteSupplier
+} from './entities/supplierService';
 
-// Re-export all purchase-related functionality
-export * from './purchaseService';
+export {
+  getCustomers,
+  addCustomer,
+  updateCustomer,
+  deleteCustomer
+} from './entities/customerService';
 
-// Re-export all sales-related functionality
-export * from './salesService';
+export {
+  getBrokers,
+  addBroker,
+  updateBroker,
+  deleteBroker,
+  getSalesBrokers
+} from './entities/brokerService';
+
+export {
+  getTransporters,
+  addTransporter,
+  updateTransporter,
+  deleteTransporter
+} from './entities/transporterService';
 
 // Re-export all types
 export * from './types';
@@ -51,7 +78,5 @@ export {
   clearAllData, 
   clearAllMasterData, 
   seedInitialData
-} from './core/dataManagement';
+} from './backup/backupRestore';
 
-// For backward compatibility
-export { default as getPurchaseAgents } from './agentService';
