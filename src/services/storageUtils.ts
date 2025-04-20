@@ -1,6 +1,14 @@
-// Re-export all storage-related functionality
+
+// Re-export core storage functionality
 export * from './core/storageCore';
 export * from './core/yearSpecificStorage';
-export * from './core/dataManagement';
-export * from './backup/backupRestore';
+
+// Re-export data management functions
+export {
+  clearAllData,
+  clearAllMasterData,
+  seedInitialData
+} from './core/dataManagement';
+
+// Re-export debug functionality
 export * from './debug/storageDebug';
