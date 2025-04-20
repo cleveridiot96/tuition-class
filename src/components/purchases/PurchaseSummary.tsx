@@ -5,7 +5,6 @@ interface PurchaseSummaryProps {
   totalAmount: number;
   transportCost: number;
   brokerageAmount: number;
-  showBrokerage: boolean;
   expenses: number;
   totalAfterExpenses: number;
   ratePerKgAfterExpenses: number;
@@ -15,7 +14,6 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
   totalAmount,
   transportCost,
   brokerageAmount,
-  showBrokerage,
   expenses,
   totalAfterExpenses,
   ratePerKgAfterExpenses,
@@ -31,7 +29,7 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
           <p className="text-sm text-gray-500">Transport Cost</p>
           <p className="font-bold">₹{transportCost.toFixed(2)}</p>
         </div>
-        {showBrokerage && (
+        {brokerageAmount > 0 && (
           <div>
             <p className="text-sm text-gray-500">Brokerage</p>
             <p className="font-bold">₹{brokerageAmount.toFixed(2)}</p>
@@ -39,7 +37,7 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
         )}
         <div>
           <p className="text-sm text-gray-500">Additional Expenses</p>
-          <p className="font-bold">₹{expenses || 0}</p>
+          <p className="font-bold">₹{expenses.toFixed(2)}</p>
         </div>
         <div>
           <p className="text-sm text-gray-500">Total After Expenses</p>

@@ -18,7 +18,6 @@ const BrokeragePercentage: React.FC<BrokeragePercentageProps> = ({ form, totalAm
               {...field} 
               step="0.01"
               placeholder="1.00"
-              defaultValue="1.00"
             />
           </FormControl>
           <FormMessage />

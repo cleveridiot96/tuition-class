@@ -1,8 +1,8 @@
+
 import { useState, useCallback, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
 import { Purchase } from "@/services/types";
-import { PurchaseFormState } from '../../shared/types/PurchaseFormTypes';
 import { addPurchase, updatePurchase } from "@/services/storageService";
 
 interface UsePurchaseFormProps {
@@ -17,7 +17,7 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
   const [brokerageType, setBrokerageType] = useState('percentage');
   const [brokerageRate, setBrokerageRate] = useState(1); // Default 1%
 
-  const [formState, setFormState] = useState<PurchaseFormState>({
+  const [formState, setFormState] = useState({
     lotNumber: initialValues?.lotNumber || '',
     date: initialValues?.date || new Date().toISOString().split('T')[0],
     location: initialValues?.location || '',
@@ -163,7 +163,7 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
     } finally {
       setIsSubmitting(false);
     }
-  }, [formState, initialValues, calculateTotal, onSubmit, toast, brokerageAmount, brokerageType]);
+  }, [formState, initialValues, calculateTotal, onSubmit, toast, brokerageAmount, brokerageType, brokerageRate]);
 
   const updateBrokerageSettings = useCallback((type: string, value: number) => {
     setBrokerageType(type);
@@ -179,6 +179,7 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
 
   return {
     formState,
+    setFormState,
     isSubmitting,
     brokerageAmount,
     brokerageType,

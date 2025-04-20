@@ -1,6 +1,14 @@
 
 import React from 'react';
-import { FormSummaryProps } from './types/ItemFormTypes';
+
+export interface FormSummaryProps {
+  subtotal: number;
+  transportCost: number;
+  brokerageAmount?: number;
+  showBrokerage?: boolean;
+  expenses?: number;
+  total: number;
+}
 
 const FormSummary: React.FC<FormSummaryProps> = ({
   subtotal,
@@ -16,22 +24,28 @@ const FormSummary: React.FC<FormSummaryProps> = ({
         <span>Subtotal:</span>
         <span className="font-medium">₹{subtotal.toFixed(2)}</span>
       </div>
-      <div className="flex justify-between">
-        <span>Transport:</span>
-        <span>₹{transportCost.toFixed(2)}</span>
-      </div>
-      {showBrokerage && (
+      
+      {transportCost > 0 && (
+        <div className="flex justify-between">
+          <span>Transport:</span>
+          <span>₹{transportCost.toFixed(2)}</span>
+        </div>
+      )}
+      
+      {showBrokerage && brokerageAmount > 0 && (
         <div className="flex justify-between">
           <span>Brokerage:</span>
           <span>₹{brokerageAmount.toFixed(2)}</span>
         </div>
       )}
+      
       {expenses > 0 && (
         <div className="flex justify-between">
           <span>Expenses:</span>
           <span>₹{expenses.toFixed(2)}</span>
         </div>
       )}
+      
       <div className="flex justify-between border-t pt-2">
         <span className="font-bold">Total:</span>
         <span className="font-bold">₹{total.toFixed(2)}</span>

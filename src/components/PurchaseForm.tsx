@@ -132,7 +132,6 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
           )}
           
           <PurchaseSummary 
-            form={form}
             totalAmount={calculations.totalAmount}
             transportCost={calculations.transportCost}
             brokerageAmount={calculations.brokerageAmount}
