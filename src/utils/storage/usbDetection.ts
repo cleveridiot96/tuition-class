@@ -7,9 +7,9 @@ export const setupUSBDetection = () => {
   try {
     if ('storage' in navigator && 'ondevicechange' in navigator.storage) {
       // Use type assertion for navigator.storage
-      const storageWithDeviceChange = navigator.storage as { ondevicechange: () => void };
+      const storage = navigator.storage as { ondevicechange: (event: Event) => void };
       
-      storageWithDeviceChange.ondevicechange = () => {
+      storage.ondevicechange = () => {
         console.log('Storage device change detected (USB insertion/removal)');
         emergencyBackup();
         toast({

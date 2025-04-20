@@ -56,6 +56,7 @@ export interface Purchase {
   transporter?: string;
   transportRate?: number;
   transportAmount?: number;
+  transportCost?: number;
   brokerId?: string;
   broker?: string;
   brokerageType?: string;
@@ -66,6 +67,7 @@ export interface Purchase {
   location: string;
   notes?: string;
   isDeleted?: boolean;
+  reference?: string;
 }
 
 export interface Sale {
@@ -81,6 +83,14 @@ export interface Sale {
   totalAmount: number;
   notes?: string;
   isDeleted?: boolean;
+  brokerId?: string;
+  broker?: string;
+  salesBroker?: string;
+  transportCost?: number;
+  transporterId?: string;
+  transporter?: string;
+  billAmount?: number;
+  reference?: string;
 }
 
 export interface InventoryItem {
@@ -92,6 +102,15 @@ export interface InventoryItem {
   location: string;
   dateAdded: string;
   isDeleted?: boolean;
+  // Extended properties from legacy code
+  agentId?: string;
+  agentName?: string;
+  purchaseRate?: number;
+  finalCost?: number;
+  date?: string;
+  remainingQuantity?: number;
+  soldQuantity?: number;
+  remainingWeight?: number;
 }
 
 export interface EnhancedInventoryItem extends InventoryItem {
@@ -99,19 +118,29 @@ export interface EnhancedInventoryItem extends InventoryItem {
   buyingRate?: number;
   currentValue?: number;
   ageInDays?: number;
+  totalValue?: number;
+  agentName?: string;
+  remainingQuantity?: number;
+  soldQuantity?: number;
+  remainingWeight?: number;
+  finalCost?: number;
+  purchaseRate?: number;
 }
 
 export interface Payment {
   id: string;
-  date: string;
+  date: string | null;
   amount: number;
   partyType: string;
   partyId: string;
   partyName: string;
   paymentMode: string;
+  mode?: string; // Legacy support
+  paymentMethod?: string; // Legacy support
   billNumber?: string;
   billAmount?: number;
   referenceNumber?: string;
+  reference?: string; // Legacy support
   notes?: string;
   isAgainstTransaction?: boolean;
   transactionId?: string;
@@ -122,15 +151,20 @@ export interface Payment {
 
 export interface Receipt {
   id: string;
-  date: string;
+  date: string | null;
   amount: number;
   partyType: string;
   partyId: string;
   partyName: string;
+  customerName?: string; // Legacy support
+  customerId?: string; // Legacy support
   paymentMode: string;
+  mode?: string; // Legacy support
+  paymentMethod?: string; // Legacy support
   billNumber?: string;
   billAmount?: number;
   referenceNumber?: string;
+  reference?: string; // Legacy support
   notes?: string;
   isAgainstTransaction?: boolean;
   transactionId?: string;

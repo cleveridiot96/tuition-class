@@ -4,6 +4,16 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { getStorageItem, saveStorageItem, removeStorageItem, getLocations, checkDuplicateLot } from './core/storageCore';
 import { Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt } from './types';
+import { 
+  getAgents, addAgent, deleteAgent, updateAgent, updateAgentBalance,
+  getCustomers, addCustomer, deleteCustomer, updateCustomer,
+  getSuppliers, addSupplier, deleteSupplier, updateSupplier,
+  getBrokers, getSalesBrokers, addBroker, deleteBroker, updateBroker,
+  getTransporters, addTransporter, deleteTransporter, updateTransporter 
+} from './agentService';
+import { getPurchases, addPurchase, updatePurchase, deletePurchase, savePurchases } from './purchaseService';
+import { getSales, addSale, updateSale, deleteSale, saveSales } from './salesService';
+import { getInventory, saveInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateInventoryAfterSale } from './inventoryService';
 
 // Export all the functions that are imported in other files
 export {
@@ -22,26 +32,24 @@ export {
   seedInitialData,
   
   // Types
-  Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt
-};
+  Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt,
 
-// Re-export from agentService
-export { 
-  getPurchaseAgents, getAgents, addAgent, updateAgent, deleteAgent, updateAgentBalance,
+  // From agentService
+  getAgents, getPurchaseAgents, addAgent, updateAgent, deleteAgent, updateAgentBalance,
   getCustomers, addCustomer, updateCustomer, deleteCustomer,
   getSuppliers, addSupplier, updateSupplier, deleteSupplier,
   getBrokers, getSalesBrokers, addBroker, updateBroker, deleteBroker,
-  getTransporters, addTransporter, updateTransporter, deleteTransporter 
-} from './agentService';
-
-// Re-export from purchaseService
-export { getPurchases, addPurchase, updatePurchase, deletePurchase, savePurchases } from './purchaseService';
-
-// Re-export from salesService
-export { getSales, addSale, updateSale, deleteSale, saveSales } from './salesService';
-
-// Re-export from inventoryService
-export { getInventory, saveInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateInventoryAfterSale } from './inventoryService';
+  getTransporters, addTransporter, updateTransporter, deleteTransporter,
+  
+  // From purchaseService
+  getPurchases, addPurchase, updatePurchase, deletePurchase, savePurchases,
+  
+  // From salesService
+  getSales, addSale, updateSale, deleteSale, saveSales,
+  
+  // From inventoryService
+  getInventory, saveInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateInventoryAfterSale
+};
 
 // Re-export the core functions for backward compatibility
 export const getPayments = (): Payment[] => {

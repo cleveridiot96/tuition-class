@@ -47,8 +47,14 @@ const Inventory = () => {
 
   const loadInventory = () => {
     const inventoryData = getInventory();
-    setInventory(inventoryData.filter(item => !item.isDeleted)); // Only show non-deleted items
-    setDeletedItems(inventoryData.filter(item => item.isDeleted));
+    if (Array.isArray(inventoryData)) {
+      setInventory(inventoryData.filter(item => !item.isDeleted)); // Only show non-deleted items
+      setDeletedItems(inventoryData.filter(item => item.isDeleted));
+    } else {
+      console.error("Inventory data is not an array:", inventoryData);
+      setInventory([]);
+      setDeletedItems([]);
+    }
   };
 
   const handleEdit = (item: InventoryItem) => {

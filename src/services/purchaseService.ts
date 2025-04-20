@@ -8,7 +8,15 @@ export const getPurchases = (): Purchase[] => {
 
 export const addPurchase = (purchase: Purchase): void => {
   const purchases = getPurchases();
-  purchases.push(purchase);
+  
+  // Ensure all required fields are present
+  const purchaseWithDefaults = {
+    ...purchase,
+    transportCost: purchase.transportAmount ?? purchase.transportCost ?? 0,
+    totalAfterExpenses: purchase.totalAfterExpenses ?? purchase.totalAmount
+  };
+  
+  purchases.push(purchaseWithDefaults);
   saveStorageItem('purchases', purchases);
 };
 
@@ -17,7 +25,14 @@ export const updatePurchase = (updatedPurchase: Purchase): void => {
   const index = purchases.findIndex(purchase => purchase.id === updatedPurchase.id);
   
   if (index !== -1) {
-    purchases[index] = updatedPurchase;
+    // Ensure transportCost is set if missing
+    const purchaseWithDefaults = {
+      ...updatedPurchase,
+      transportCost: updatedPurchase.transportAmount ?? updatedPurchase.transportCost ?? purchases[index].transportCost ?? 0,
+      totalAfterExpenses: updatedPurchase.totalAfterExpenses ?? updatedPurchase.totalAmount
+    };
+    
+    purchases[index] = purchaseWithDefaults;
     saveStorageItem('purchases', purchases);
   }
 };
@@ -33,5 +48,12 @@ export const deletePurchase = (id: string): void => {
 };
 
 export const savePurchases = (purchases: Purchase[]): void => {
-  saveStorageItem('purchases', purchases);
+  // Ensure all purchases have transportCost and totalAfterExpenses
+  const normalizedPurchases = purchases.map(purchase => ({
+    ...purchase,
+    transportCost: purchase.transportAmount ?? purchase.transportCost ?? 0,
+    totalAfterExpenses: purchase.totalAfterExpenses ?? purchase.totalAmount
+  }));
+  
+  saveStorageItem('purchases', normalizedPurchases);
 };
