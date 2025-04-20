@@ -56,7 +56,7 @@ const Purchases = () => {
   const [purchases, setPurchases] = useState([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [transporters, setTransporters> = useState<Transporter[]>([]);
+  const [transporters, setTransporters] = useState<Transporter[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [entityToDelete, setEntityToDelete] = useState(null);
@@ -66,7 +66,7 @@ const Purchases = () => {
   const [entityToEdit, setEntityToEdit] = useState(null);
   const [filterLocation, setFilterLocation] = useState('');
   const [filterAgent, setFilterAgent] = useState('');
-	const [dateRange, setDateRange] = useState<any>({
+  const [dateRange, setDateRange] = useState<any>({
     from: null,
     to: null,
   });

@@ -41,6 +41,9 @@ export const updateAgentBalance = (agentId: string, changeAmount: number): void 
   }
 };
 
+// For backward compatibility
+export const getPurchaseAgents = getAgents;
+
 // Suppliers
 export const getSuppliers = (): Supplier[] => {
   return getStorageItem<Supplier[]>('suppliers') || [];
@@ -159,6 +162,3 @@ export const deleteTransporter = (id: string): void => {
 
 // For backward compatibility
 export const getSalesBrokers = getBrokers;
-
-// Note: getPurchaseAgents was missing - adding it as an alias for getAgents
-export const getPurchaseAgents = getAgents;
