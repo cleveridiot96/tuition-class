@@ -1,17 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2 } from "lucide-react";
 import { v4 as uuidv4 } from 'uuid';
 import {
   getAgents,
@@ -21,14 +10,14 @@ import {
   updatePurchase,
   Agent,
   Transporter,
-  Purchase,
-  savePurchases
+  Purchase
 } from "@/services/storageService";
-import AgentForm from "@/components/agents/AgentForm";
-import TransporterForm from "@/components/transporters/TransporterForm";
 import ItemsTable from '../shared/ItemsTable';
 import FormSummary from '../shared/FormSummary';
-import { ItemFormState } from '../shared/types/ItemFormTypes';
+import FormHeader from './components/FormHeader';
+import AgentSection from './components/AgentSection';
+import TransportSection from './components/TransportSection';
+import { PurchaseFormState } from '../shared/types/PurchaseFormTypes';
 
 interface MultiItemPurchaseFormProps {
   onCancel: () => void;
@@ -49,7 +38,7 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
   const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
 
-  const [formState, setFormState] = useState<ItemFormState>({
+  const [formState, setFormState] = useState<PurchaseFormState>({
     lotNumber: initialValues?.lotNumber || '',
     date: initialValues?.date || new Date().toISOString().split('T')[0],
     location: initialValues?.location || '',
@@ -157,14 +146,12 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
       };
 
       if (initialValues) {
-        // Update existing purchase
         updatePurchase(purchaseData);
         toast({
           title: "Purchase Updated",
           description: `Purchase ${purchaseData.lotNumber} has been updated.`
         });
       } else {
-        // Add new purchase
         addPurchase(purchaseData);
         toast({
           title: "Purchase Added",
@@ -172,7 +159,6 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
         });
       }
 
-      // Refresh data and close form
       onSubmit(purchaseData);
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -215,121 +201,38 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
   return (
     <div className="w-full max-w-[1200px] mx-auto">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
-            <Label htmlFor="lotNumber">Lot Number</Label>
-            <Input
-              id="lotNumber"
-              name="lotNumber"
-              value={formState.lotNumber}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="date">Date</Label>
-            <Input
-              id="date"
-              name="date"
-              type="date"
-              value={formState.date}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="location">Location</Label>
-            <Select
-              name="location"
-              value={formState.location}
-              onValueChange={(value) => handleSelectChange('location', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select location" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map(location => (
-                  <SelectItem key={location} value={location}>
-                    {location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <FormHeader
+          lotNumber={formState.lotNumber}
+          date={formState.date}
+          location={formState.location}
+          locations={locations}
+          onInputChange={handleInputChange}
+          onSelectChange={handleSelectChange}
+        />
 
-          <div>
-            <div className="flex justify-between items-center">
-              <Label htmlFor="agentId">Agent</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleAddAgentClick}
-              >
-                Add New
-              </Button>
-            </div>
-            <Select
-              name="agentId"
-              value={formState.agentId}
-              onValueChange={(value) => handleSelectChange('agentId', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select agent" />
-              </SelectTrigger>
-              <SelectContent>
-                {agents.map(agent => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    {agent.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <div className="flex justify-between items-center">
-              <Label htmlFor="transporterId">Transporter</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleAddTransporterClick}
-              >
-                Add New
-              </Button>
-            </div>
-            <Select
-              name="transporterId"
-              value={formState.transporterId}
-              onValueChange={(value) => handleSelectChange('transporterId', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select transporter" />
-              </SelectTrigger>
-              <SelectContent>
-                {transporters.map(transporter => (
-                  <SelectItem key={transporter.id} value={transporter.id}>
-                    {transporter.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="transportCost">Transport Cost</Label>
-            <Input
-              id="transportCost"
-              name="transportCost"
-              type="number"
-              value={formState.transportCost}
-              onChange={handleInputChange}
-            />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <AgentSection
+            agents={agents}
+            agentId={formState.agentId}
+            onSelectChange={handleSelectChange}
+            onAddAgentClick={handleAddAgentClick}
+            showAddAgentDialog={showAddAgentDialog}
+            setShowAddAgentDialog={setShowAddAgentDialog}
+            onAgentAdded={handleAgentAdded}
+          />
         </div>
+
+        <TransportSection
+          transporters={transporters}
+          transporterId={formState.transporterId}
+          transportCost={formState.transportCost}
+          onSelectChange={handleSelectChange}
+          onInputChange={handleInputChange}
+          onAddTransporterClick={handleAddTransporterClick}
+          showAddTransporterDialog={showAddTransporterDialog}
+          setShowAddTransporterDialog={setShowAddTransporterDialog}
+          onTransporterAdded={handleTransporterAdded}
+        />
 
         <ItemsTable
           items={formState.items}
@@ -340,7 +243,6 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="notes">Notes</Label>
             <textarea
               id="notes"
               name="notes"
@@ -350,13 +252,14 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
               onChange={(e) => handleInputChange({
                 target: { name: 'notes', value: e.target.value }
               } as React.ChangeEvent<HTMLInputElement>)}
+              placeholder="Enter notes..."
             ></textarea>
           </div>
 
           <FormSummary
             subtotal={calculateSubtotal()}
             transportCost={parseFloat(formState.transportCost || '0')}
-            expenses={parseFloat(formState.expenses?.toString() || '0')}
+            expenses={formState.expenses}
             total={calculateTotal()}
           />
         </div>
@@ -370,25 +273,6 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
           </Button>
         </div>
       </form>
-
-      {/* Dialogs */}
-      <Dialog open={showAddAgentDialog} onOpenChange={setShowAddAgentDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Agent</DialogTitle>
-          </DialogHeader>
-          <AgentForm onAgentAdded={handleAgentAdded} onCancel={() => setShowAddAgentDialog(false)} />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAddTransporterDialog} onOpenChange={setShowAddTransporterDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Transporter</DialogTitle>
-          </DialogHeader>
-          <TransporterForm onTransporterAdded={handleTransporterAdded} onCancel={() => setShowAddTransporterDialog(false)} />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
