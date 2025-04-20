@@ -2,6 +2,7 @@
 import React from 'react';
 import { toast } from '@/hooks/use-toast';
 import { emergencyBackup, hasEmergencyBackup, restoreFromEmergencyBackup } from '@/utils/backup/emergencyBackup';
+import { debugStorage } from '@/services/storageUtils';
 
 // Set up automatic emergency backups and crash detection
 export const setupCrashRecovery = () => {
@@ -19,6 +20,9 @@ export const setupCrashRecovery = () => {
   window.addEventListener('error', (event) => {
     console.error('Global error caught:', event.error);
     emergencyBackup();
+    
+    // Log detailed info about the error
+    debugStorage();
   });
   
   // Handle unhandled promise rejections
@@ -40,7 +44,7 @@ export const setupCrashRecovery = () => {
           description: `A backup from ${formattedTime} was found. Would you like to restore it?`,
           action: (
             <button 
-              onClick={handleRestoreFromCrash} 
+              onClick={() => handleRestoreFromCrash()} 
               className="bg-green-600 text-white px-4 py-1 rounded"
             >
               Restore

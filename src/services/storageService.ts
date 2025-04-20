@@ -3,7 +3,7 @@ import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { getStorageItem, saveStorageItem, removeStorageItem, getLocations, checkDuplicateLot } from './core/storageCore';
-import { Agent } from './types';
+import { Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt } from './types';
 
 // Export all the functions that are imported in other files
 export {
@@ -22,85 +22,34 @@ export {
   seedInitialData,
   
   // Types
-  Agent
+  Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt
 };
 
 // Re-export from agentService
-export { getPurchaseAgents, getAgents, addAgent, updateAgent, deleteAgent, updateAgentBalance } from './agentService';
+export { 
+  getPurchaseAgents, getAgents, addAgent, updateAgent, deleteAgent, updateAgentBalance,
+  getCustomers, addCustomer, updateCustomer, deleteCustomer,
+  getSuppliers, addSupplier, updateSupplier, deleteSupplier,
+  getBrokers, getSalesBrokers, addBroker, updateBroker, deleteBroker,
+  getTransporters, addTransporter, updateTransporter, deleteTransporter 
+} from './agentService';
 
-// Re-export the core functions
-export const getSuppliers = () => {
-  return getStorageItem('suppliers') || [];
+// Re-export from purchaseService
+export { getPurchases, addPurchase, updatePurchase, deletePurchase, savePurchases } from './purchaseService';
+
+// Re-export from salesService
+export { getSales, addSale, updateSale, deleteSale, saveSales } from './salesService';
+
+// Re-export from inventoryService
+export { getInventory, saveInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateInventoryAfterSale } from './inventoryService';
+
+// Re-export the core functions for backward compatibility
+export const getPayments = (): Payment[] => {
+  return getStorageItem<Payment[]>('payments') || [];
 };
 
-export const getBrokers = () => {
-  return getStorageItem('brokers') || [];
-};
-
-export const getCustomers = () => {
-  return getStorageItem('customers') || [];
-};
-
-export const getTransporters = () => {
-  return getStorageItem('transporters') || [];
-};
-
-export const getSalesBrokers = () => {
-  return getStorageItem('brokers') || [];
-};
-
-export const getPurchases = () => {
-  return getStorageItem('purchases') || [];
-};
-
-export const getSales = () => {
-  return getStorageItem('sales') || [];
-};
-
-export const getPayments = () => {
-  return getStorageItem('payments') || [];
-};
-
-export const getReceipts = () => {
-  return getStorageItem('receipts') || [];
-};
-
-export const getInventory = () => {
-  return getStorageItem('inventory') || [];
-};
-
-export const addSupplier = (supplier: any) => {
-  const suppliers = getSuppliers();
-  suppliers.push(supplier);
-  saveStorageItem('suppliers', suppliers);
-};
-
-export const addCustomer = (customer: any) => {
-  const customers = getCustomers();
-  customers.push(customer);
-  saveStorageItem('customers', customers);
-};
-
-export const addBroker = (broker: any) => {
-  const brokers = getBrokers();
-  brokers.push(broker);
-  saveStorageItem('brokers', brokers);
-};
-
-export const addTransporter = (transporter: any) => {
-  const transporters = getTransporters();
-  transporters.push(transporter);
-  saveStorageItem('transporters', transporters);
-};
-
-export const addPurchase = (purchase: any) => {
-  const purchases = getPurchases();
-  purchases.push(purchase);
-  saveStorageItem('purchases', purchases);
-};
-
-export const savePurchases = (purchases: any[]) => {
-  saveStorageItem('purchases', purchases);
+export const getReceipts = (): Receipt[] => {
+  return getStorageItem<Receipt[]>('receipts') || [];
 };
 
 // Function to perform auto-save (for USB drive ejection scenarios)

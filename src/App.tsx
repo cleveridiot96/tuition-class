@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
@@ -81,7 +82,9 @@ const App = () => {
     
     const setupUsbEvent = () => {
       if ('usb' in navigator) {
-        navigator.usb.addEventListener('disconnect', () => {
+        // Use type assertion to tell TypeScript that navigator.usb exists
+        const usbNavigator = navigator as Navigator & { usb: { addEventListener: (event: string, callback: () => void) => void } };
+        usbNavigator.usb.addEventListener('disconnect', () => {
           console.log("USB device disconnected - running auto-save");
           performAutoSave();
           toast({

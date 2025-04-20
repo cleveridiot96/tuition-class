@@ -1,6 +1,8 @@
 
+// Function to check data integrity
 export const checkDataIntegrity = (): boolean => {
   try {
+    // Check essential data structures
     const essentialKeys = [
       'locations',
       'currentFinancialYear',
@@ -21,6 +23,7 @@ export const checkDataIntegrity = (): boolean => {
   }
 };
 
+// Function to perform system health check
 export const performSystemHealthCheck = () => {
   try {
     const results = {
@@ -31,10 +34,17 @@ export const performSystemHealthCheck = () => {
       storageLimit: 0
     };
     
+    // Check if localStorage is available
     results.storageAvailable = typeof localStorage !== 'undefined';
-    results.dataIntegrity = checkDataIntegrity();
-    results.recoveryAvailable = false;
     
+    // Check data integrity
+    results.dataIntegrity = checkDataIntegrity();
+    
+    // Check for recovery options
+    // Will need to adjust this if we want to check for backup availability
+    results.recoveryAvailable = false; 
+    
+    // Check storage usage
     if (results.storageAvailable) {
       let totalSize = 0;
       for (let i = 0; i < localStorage.length; i++) {
@@ -45,7 +55,7 @@ export const performSystemHealthCheck = () => {
       }
       
       results.storageUsage = totalSize;
-      results.storageLimit = 5 * 1024 * 1024;
+      results.storageLimit = 5 * 1024 * 1024; // 5MB limit in browsers
     }
     
     return results;
