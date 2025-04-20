@@ -56,11 +56,24 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     }
   });
 
-  const calculations = useFormCalculations({
-    form,
-    showBrokerage,
-    initialData
-  });
+  // Create a formState object compatible with our calculations hooks
+  const formState = {
+    lotNumber: form.watch("lotNumber") || "",
+    date: form.watch("date") || "",
+    location: form.watch("location") || "",
+    agentId: form.watch("agentId") || "",
+    transporterId: form.watch("transporterId") || "",
+    transportCost: form.watch("transportRate") ? (form.watch("transportRate") * form.watch("netWeight")).toString() : "0",
+    items: [{ id: "1", name: "", quantity: form.watch("netWeight") || 0, rate: form.watch("rate") || 0 }],
+    notes: form.watch("notes") || "",
+    expenses: form.watch("expenses") || 0,
+    totalAfterExpenses: 0,
+    brokerageType: form.watch("brokerageType") || "percentage",
+    brokerageRate: form.watch("brokerageValue") || 1,
+    bags: form.watch("bags") || 0,
+  };
+
+  const calculations = useFormCalculations(formState);
   
   // Use the bag extractor hook
   const { extractBagsFromLotNumber } = useBagExtractor({ form });

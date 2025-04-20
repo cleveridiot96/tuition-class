@@ -10,13 +10,17 @@ interface NavigationProps {
   showBackButton?: boolean;
   onBack?: () => void;
   rightContent?: React.ReactNode;
+  showFormatButton?: boolean;
+  onFormatClick?: () => void;
 }
 
 const Navigation: React.FC<NavigationProps> = ({
   title,
   showBackButton = false,
   onBack,
-  rightContent
+  rightContent,
+  showFormatButton = false,
+  onFormatClick
 }) => {
   const navigate = useNavigate();
   
@@ -42,6 +46,11 @@ const Navigation: React.FC<NavigationProps> = ({
         
         <div className="flex items-center space-x-4">
           <FontSizeAdjuster />
+          {showFormatButton && onFormatClick && (
+            <Button variant="ghost" size="sm" onClick={onFormatClick}>
+              Format
+            </Button>
+          )}
           {rightContent}
         </div>
       </div>

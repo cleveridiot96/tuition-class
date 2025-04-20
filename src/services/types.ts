@@ -1,3 +1,4 @@
+
 export interface Agent {
   id: string;
   name: string;
@@ -67,6 +68,7 @@ export interface Purchase {
   notes?: string;
   isDeleted?: boolean;
   reference?: string;
+  bags?: number;
   items?: {
     id: string;
     name: string;

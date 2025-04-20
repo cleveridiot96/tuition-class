@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
 import DashboardMenu from "@/components/DashboardMenu";
@@ -93,12 +94,17 @@ const Index = () => {
     setShowOpeningBalanceSetup(true);
   };
 
+  const handleFormatClick = () => {
+    document.dispatchEvent(new Event('format-click'));
+    return true;
+  };
+
   return (
     <div className="min-h-screen bg-ag-beige overflow-x-hidden">
       <Navigation 
         title="Dashboard" 
         showFormatButton={true}
-        onFormatClick={() => document.dispatchEvent(new Event('format-click'))}
+        onFormatClick={handleFormatClick}
       />
       
       <div className="container mx-auto px-4 py-6 overflow-x-hidden">
