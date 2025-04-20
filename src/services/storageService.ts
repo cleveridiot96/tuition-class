@@ -3,7 +3,7 @@ import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { getStorageItem, saveStorageItem, removeStorageItem, getLocations, checkDuplicateLot } from './core/storageCore';
-import { Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt } from './types';
+import type { Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt } from './types';
 import { 
   getAgents, addAgent, deleteAgent, updateAgent, updateAgentBalance,
   getCustomers, addCustomer, deleteCustomer, updateCustomer,
@@ -32,23 +32,62 @@ export {
   seedInitialData,
   
   // Types
-  Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt,
+  type Agent, 
+  type Supplier, 
+  type Customer, 
+  type Broker, 
+  type Transporter, 
+  type Purchase, 
+  type Sale, 
+  type InventoryItem, 
+  type Payment, 
+  type Receipt,
 
   // From agentService
-  getAgents, getPurchaseAgents, addAgent, updateAgent, deleteAgent, updateAgentBalance,
-  getCustomers, addCustomer, updateCustomer, deleteCustomer,
-  getSuppliers, addSupplier, updateSupplier, deleteSupplier,
-  getBrokers, getSalesBrokers, addBroker, updateBroker, deleteBroker,
-  getTransporters, addTransporter, updateTransporter, deleteTransporter,
+  getAgents, 
+  addAgent, 
+  updateAgent, 
+  deleteAgent, 
+  updateAgentBalance,
+  getCustomers, 
+  addCustomer, 
+  updateCustomer, 
+  deleteCustomer,
+  getSuppliers, 
+  addSupplier, 
+  updateSupplier, 
+  deleteSupplier,
+  getBrokers, 
+  getSalesBrokers, 
+  addBroker, 
+  updateBroker, 
+  deleteBroker,
+  getTransporters, 
+  addTransporter, 
+  updateTransporter, 
+  deleteTransporter,
   
   // From purchaseService
-  getPurchases, addPurchase, updatePurchase, deletePurchase, savePurchases,
+  getPurchases, 
+  addPurchase, 
+  updatePurchase, 
+  deletePurchase, 
+  savePurchases,
   
   // From salesService
-  getSales, addSale, updateSale, deleteSale, saveSales,
+  getSales, 
+  addSale, 
+  updateSale, 
+  deleteSale, 
+  saveSales,
   
   // From inventoryService
-  getInventory, saveInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateInventoryAfterSale
+  getInventory, 
+  saveInventory, 
+  addInventoryItem, 
+  updateInventoryItem, 
+  deleteInventoryItem, 
+  updateInventoryAfterSale
 };
 
 // Re-export the core functions for backward compatibility
