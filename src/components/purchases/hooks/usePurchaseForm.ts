@@ -132,12 +132,10 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
         expenses: expenses,
         brokerageAmount: brokerageAmount,
         brokerageType: brokerageType,
-        brokerageRate: brokerageRate,
         totalAfterExpenses: totalAmount,
-        // Required fields from Purchase type
         quantity: formState.items.reduce((sum, item) => sum + item.quantity, 0),
-        netWeight: formState.items.reduce((sum, item) => sum + item.quantity, 0), // Using quantity as netWeight
-        rate: firstItem.rate // Using first item's rate as the main rate
+        netWeight: formState.items.reduce((sum, item) => sum + item.quantity, 0),
+        rate: firstItem.rate
       };
 
       if (initialValues) {
@@ -165,7 +163,7 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
     } finally {
       setIsSubmitting(false);
     }
-  }, [formState, initialValues, calculateTotal, onSubmit, toast, brokerageAmount, brokerageType, brokerageRate]);
+  }, [formState, initialValues, calculateTotal, onSubmit, toast, brokerageAmount, brokerageType]);
 
   const updateBrokerageSettings = useCallback((type: string, value: number) => {
     setBrokerageType(type);

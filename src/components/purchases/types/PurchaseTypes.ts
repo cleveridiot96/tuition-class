@@ -1,11 +1,11 @@
+
 import { z } from "zod";
 import { purchaseFormSchema } from "../PurchaseFormSchema";
+import { UseFormReturn } from "react-hook-form";
 
-export type PurchaseFormData = z.infer<typeof purchaseFormSchema>;
-
-export interface PurchaseFormData extends z.infer<typeof purchaseFormSchema> {
+export type PurchaseFormData = z.infer<typeof purchaseFormSchema> & {
   bags?: number;
-}
+};
 
 export interface PurchaseFormProps {
   onSubmit: (data: any) => void;
