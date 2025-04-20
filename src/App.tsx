@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from '@/components/ui/toaster';
@@ -19,7 +18,7 @@ import { initializeFinancialYears, getActiveFinancialYear, getOpeningBalances } 
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { toast } from '@/hooks/use-toast';
 import { performAutoSave, checkAndRestoreAutoSave } from '@/services/storageService';
-import { checkDataIntegrity, performSystemHealthCheck } from '@/utils/crashRecovery';
+import { checkDataIntegrity, performSystemHealthCheck } from '@/utils/health/systemHealth';
 
 import '@/App.css';
 
@@ -29,7 +28,6 @@ const App = () => {
   const [showRecoveryPrompt, setShowRecoveryPrompt] = useState(false);
   const [recoveryTimestamp, setRecoveryTimestamp] = useState<Date | null>(null);
 
-  // Check for auto-save recovery
   useEffect(() => {
     const autoSaveData = checkAndRestoreAutoSave();
     if (autoSaveData.available) {
@@ -38,13 +36,11 @@ const App = () => {
     }
   }, []);
 
-  // Check online/offline status
   useEffect(() => {
     const handleOnlineStatus = () => {
       const online = navigator.onLine;
       setIsOnline(online);
       
-      // Show toast notification when connection status changes
       if (online) {
         toast({
           title: "You're back online",
@@ -59,38 +55,30 @@ const App = () => {
       }
     };
     
-    // Set initial state
     setIsOnline(navigator.onLine);
     
-    // Listen for online/offline events
     window.addEventListener('online', handleOnlineStatus);
     window.addEventListener('offline', handleOnlineStatus);
     
-    // Cleanup
     return () => {
       window.removeEventListener('online', handleOnlineStatus);
       window.removeEventListener('offline', handleOnlineStatus);
     };
   }, []);
   
-  // Set up auto-save functionality
   useEffect(() => {
-    // Perform auto-save when tab becomes hidden (user switches away)
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         performAutoSave();
       }
     };
     
-    // Listen for visibility change events
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // Set up interval for periodic auto-saves
     const autoSaveInterval = setInterval(() => {
       performAutoSave();
-    }, 5 * 60 * 1000); // Auto-save every 5 minutes
+    }, 5 * 60 * 1000);
     
-    // Detect USB device changes if available
     const setupUsbEvent = () => {
       if ('usb' in navigator) {
         navigator.usb.addEventListener('disconnect', () => {
@@ -117,54 +105,47 @@ const App = () => {
   }, []);
   
   useEffect(() => {
-    // Initialize financial years
     initializeFinancialYears();
     
-    // Check if opening balances need to be set up
     const activeYear = getActiveFinancialYear();
     if (activeYear && !activeYear.isSetup) {
       const openingBalances = getOpeningBalances(activeYear.id);
       if (!openingBalances) {
-        // Opening balances not set for this year
         setShowOpeningBalanceSetup(true);
       }
     }
     
-    // Auto-maintenance - run system checks periodically
     const autoMaintenanceInterval = setInterval(() => {
       try {
-        // Check if local storage is available
         if (typeof localStorage === 'undefined') {
           console.error('LocalStorage not available');
           return;
         }
         
-        // Verify essential data structures
         if (!localStorage.getItem('financialYears')) {
           initializeFinancialYears();
           console.log('Auto-maintenance: Re-initialized financial years');
         }
         
-        // Check for and repair data consistency issues
         const checkDataConsistency = () => {
           try {
-            // Add any data consistency checks here
+            if (!localStorage.getItem('financialYears')) {
+              initializeFinancialYears();
+              console.log('Auto-maintenance: Re-initialized financial years');
+            }
             
-            // Example: Verify the active year exists
             const activeYear = getActiveFinancialYear();
             if (!activeYear) {
               initializeFinancialYears();
               console.log('Auto-maintenance: Fixed missing active year');
             }
             
-            // Check system health
             const healthCheck = performSystemHealthCheck();
             if (healthCheck && !healthCheck.dataIntegrity) {
               console.warn('Data integrity issues detected, creating backup');
               performAutoSave();
             }
             
-            // Check storage usage
             if (healthCheck && healthCheck.storageUsage > 0.8 * healthCheck.storageLimit) {
               toast({
                 title: "Storage Warning",
@@ -181,14 +162,13 @@ const App = () => {
       } catch (error) {
         console.error('Error during auto-maintenance:', error);
       }
-    }, 60000); // Run every minute
+    }, 60000);
     
     return () => {
       clearInterval(autoMaintenanceInterval);
     };
   }, []);
 
-  // Handle recovery from auto-save
   const handleRecoveryRestore = () => {
     const autoSaveData = checkAndRestoreAutoSave();
     if (autoSaveData.available && autoSaveData.restore) {
@@ -199,7 +179,6 @@ const App = () => {
           description: "Your data has been restored from auto-save backup",
         });
         
-        // Reload the page to reflect the restored data
         setTimeout(() => window.location.reload(), 1000);
       } else {
         toast({

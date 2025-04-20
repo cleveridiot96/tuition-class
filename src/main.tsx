@@ -7,7 +7,8 @@ import './styles/global-dropdown-fixes.css'
 import './styles/form-fixes.css'
 import './styles/animations.css'
 import { ToastProvider } from '@/hooks/toast/toast-context'
-import { setupCrashRecovery, setupUSBDetection } from '@/utils/crashRecovery'
+import { setupCrashRecovery } from '@/utils/crash/crashDetection'
+import { setupUSBDetection } from '@/utils/storage/usbDetection'
 import RippleProvider from '@/components/RippleProvider'
 
 // Setup crash recovery system

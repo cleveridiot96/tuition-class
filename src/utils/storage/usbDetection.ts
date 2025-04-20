@@ -1,11 +1,15 @@
 
 import { toast } from '@/hooks/use-toast';
-import { emergencyBackup } from '../backup/emergencyBackup';
+import { emergencyBackup } from '@/utils/backup/emergencyBackup';
 
+// Helper functions for auto-save detection with USB drives
 export const setupUSBDetection = () => {
   try {
     if ('storage' in navigator && 'ondevicechange' in navigator.storage) {
-      navigator.storage.ondevicechange = () => {
+      // Use type assertion for navigator.storage
+      const storageWithDeviceChange = navigator.storage as any;
+      
+      storageWithDeviceChange.ondevicechange = () => {
         console.log('Storage device change detected (USB insertion/removal)');
         emergencyBackup();
         toast({
