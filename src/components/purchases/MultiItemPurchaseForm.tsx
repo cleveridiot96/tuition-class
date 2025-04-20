@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,8 @@ import AgentSection from './components/AgentSection';
 import TransportSection from './components/TransportSection';
 import BrokerageSection from './components/BrokerageSection';
 import { usePurchaseForm } from './hooks/usePurchaseForm';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface MultiItemPurchaseFormProps {
   onCancel: () => void;
@@ -43,14 +46,20 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
     calculateSubtotal,
     calculateTotal,
     handleSubmit,
-    updateBrokerageSettings
+    updateBrokerageSettings,
+    setFormState
   } = usePurchaseForm({ onSubmit, initialValues });
 
   useEffect(() => {
     loadInitialData();
+
+    // Auto-extract bags from lot number on initial load
+    if (formState.lotNumber) {
+      extractBagsFromLotNumber(formState.lotNumber);
+    }
   }, []);
 
-  const loadInitialData = async () => {
+  const loadInitialData = () => {
     try {
       const allAgents = getAgents();
       setAgents(allAgents);
@@ -58,8 +67,7 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
       const allTransporters = getTransporters();
       setTransporters(allTransporters);
 
-      // Get actual locations from storage or use default values
-      const allLocations = getLocations() || ['Location A', 'Location B', 'Location C'];
+      const allLocations = getLocations() || ['Chiplun', 'Mumbai', 'Sawantwadi'];
       setLocations(allLocations);
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -95,8 +103,39 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
     }));
   };
 
+  // Function to extract bags from lot number
+  const extractBagsFromLotNumber = (lotNumber: string) => {
+    const match = lotNumber.match(/[\/\\](\d+)/);
+    if (match && match[1]) {
+      const bags = parseInt(match[1], 10);
+      if (!isNaN(bags)) {
+        updateItemsWithBags(bags);
+      }
+    }
+  };
+
+  // Update first item quantity with bags count
+  const updateItemsWithBags = (bags: number) => {
+    if (formState.items.length > 0) {
+      const updatedItems = [...formState.items];
+      updatedItems[0] = { ...updatedItems[0], quantity: bags };
+      
+      setFormState(prev => ({
+        ...prev,
+        items: updatedItems
+      }));
+    }
+  };
+
+  // Watch for changes in lot number
+  useEffect(() => {
+    if (formState.lotNumber) {
+      extractBagsFromLotNumber(formState.lotNumber);
+    }
+  }, [formState.lotNumber]);
+
   return (
-    <div className="w-full max-w-full px-2 sm:px-4 md:px-6 mx-auto overflow-auto pb-8">
+    <div className="w-full max-h-[calc(100vh-100px)] px-2 sm:px-4 md:px-6 mx-auto overflow-y-auto pb-8">
       <div className="max-w-[1000px] mx-auto">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <FormHeader
@@ -142,9 +181,9 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
 
           <div className="grid grid-cols-1 gap-3 sm:gap-4">
             <div>
-              <label htmlFor="expenses" className="block text-sm font-medium text-gray-700">
+              <Label htmlFor="expenses" className="block text-sm font-medium text-gray-700">
                 Other Expenses (₹)
-              </label>
+              </Label>
               <Input
                 id="expenses"
                 name="expenses"

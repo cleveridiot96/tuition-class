@@ -19,7 +19,8 @@ const FormSummary: React.FC<FormSummaryProps> = ({
   total
 }) => {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 border p-4 rounded-md bg-gray-50">
+      <h3 className="font-medium text-gray-800">Summary</h3>
       <div className="flex justify-between">
         <span>Subtotal:</span>
         <span className="font-medium">₹{subtotal.toFixed(2)}</span>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +83,10 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
   };
 
   const calculateTotal = () => {
+    if (formState.billAmount && parseFloat(formState.billAmount) > 0) {
+      return parseFloat(formState.billAmount);
+    }
+    
     return calculateSubtotal() + parseFloat(formState.transportCost || '0') + calculateBrokerageAmount();
   };
 
@@ -139,6 +142,7 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     formState,
     selectedBroker,
     isSubmitting,
+    setFormState,
     setSelectedBroker,
     handleInputChange,
     handleSelectChange,

@@ -27,6 +27,12 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   onInputChange,
   onSelectChange
 }) => {
+  // Extract bags from lot number for display
+  const extractedBags = (() => {
+    const match = lotNumber.match(/[\/\\](\d+)/);
+    return match && match[1] ? parseInt(match[1], 10) : null;
+  })();
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
       <div>
@@ -39,7 +45,10 @@ const FormHeader: React.FC<FormHeaderProps> = ({
           placeholder="e.g. DD/12"
           className="mt-1"
         />
-        <p className="text-xs text-gray-500 mt-1">Format: Name/BagCount (e.g. DD/12 for 12 bags)</p>
+        <p className="text-xs text-gray-500 mt-1">
+          Format: Name/BagCount (e.g. DD/12 for 12 bags)
+          {extractedBags && <span className="font-medium text-blue-600"> → {extractedBags} bags</span>}
+        </p>
       </div>
       
       <div>

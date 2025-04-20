@@ -1,10 +1,22 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { BrokeragePercentageProps } from "../types/BrokerageTypes";
+import { BrokeragePercentageProps } from "../../shared/types/ItemFormTypes";
 
-const BrokeragePercentage: React.FC<BrokeragePercentageProps> = ({ form, totalAmount }) => {
+const BrokeragePercentage: React.FC<BrokeragePercentageProps> = ({ form, totalAmount, onChange }) => {
+  // Watch for changes in the brokerageValue field
+  const brokerageValue = form.watch("brokerageValue") || 1;
+  
+  // When brokerageValue or totalAmount changes, calculate and call onChange
+  useEffect(() => {
+    if (onChange) {
+      const percentage = parseFloat(brokerageValue.toString()) || 0;
+      const calculatedAmount = (totalAmount * percentage) / 100;
+      onChange(calculatedAmount);
+    }
+  }, [brokerageValue, totalAmount, onChange]);
+
   return (
     <FormField
       control={form.control}
@@ -18,6 +30,7 @@ const BrokeragePercentage: React.FC<BrokeragePercentageProps> = ({ form, totalAm
               {...field} 
               step="0.01"
               placeholder="1.00"
+              defaultValue="1.00"
             />
           </FormControl>
           <FormMessage />

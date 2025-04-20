@@ -2,7 +2,13 @@
 import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 interface SalesFormHeaderProps {
   lotNumber: string;
@@ -23,10 +29,10 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
   billAmount,
   locations,
   onInputChange,
-  onSelectChange,
+  onSelectChange
 }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
       <div>
         <Label htmlFor="lotNumber">Lot Number</Label>
         <Input
@@ -34,39 +40,43 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
           name="lotNumber"
           value={lotNumber}
           onChange={onInputChange}
-          required
+          placeholder="Enter lot number"
+          className="mt-1"
         />
       </div>
+      
       <div>
         <Label htmlFor="date">Date</Label>
-        <Input
+        <Input 
           id="date"
           name="date"
           type="date"
-          value={date}
+          value={date} 
           onChange={onInputChange}
-          required
+          className="mt-1"
         />
       </div>
+      
       <div>
         <Label htmlFor="location">Location</Label>
-        <Select
+        <Select 
           name="location"
           value={location}
           onValueChange={(value) => onSelectChange('location', value)}
         >
-          <SelectTrigger>
+          <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select location" />
           </SelectTrigger>
-          <SelectContent>
-            {locations.map(location => (
-              <SelectItem key={location} value={location}>
-                {location}
+          <SelectContent className="bg-white">
+            {locations.map((loc) => (
+              <SelectItem key={loc} value={loc}>
+                {loc}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
+      
       <div>
         <Label htmlFor="billNumber">Bill Number</Label>
         <Input
@@ -74,8 +84,11 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
           name="billNumber"
           value={billNumber}
           onChange={onInputChange}
+          placeholder="Enter bill number"
+          className="mt-1"
         />
       </div>
+      
       <div>
         <Label htmlFor="billAmount">Bill Amount</Label>
         <Input
@@ -84,7 +97,10 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
           type="number"
           value={billAmount}
           onChange={onInputChange}
+          placeholder="Enter bill amount"
+          className="mt-1"
         />
+        <p className="text-xs text-gray-500 mt-1">Enter if this is a cut bill</p>
       </div>
     </div>
   );

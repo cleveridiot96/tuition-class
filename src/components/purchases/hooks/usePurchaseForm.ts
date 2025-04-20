@@ -13,9 +13,9 @@ interface UsePurchaseFormProps {
 export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProps) => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [brokerageAmount, setBrokerageAmount] = useState(0);
-  const [brokerageType, setBrokerageType] = useState('percentage');
-  const [brokerageRate, setBrokerageRate] = useState(1); // Default 1%
+  const [brokerageAmount, setBrokerageAmount] = useState(initialValues?.brokerageAmount || 0);
+  const [brokerageType, setBrokerageType] = useState(initialValues?.brokerageType || 'percentage');
+  const [brokerageRate, setBrokerageRate] = useState(initialValues?.brokerageValue || 1); // Default 1%
 
   const [formState, setFormState] = useState({
     lotNumber: initialValues?.lotNumber || '',
@@ -33,31 +33,11 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     
-    if (name === 'lotNumber') {
-      // Auto-extract bags from lot number (e.g., DD/12 -> 12 bags)
-      const match = value.match(/\/(\d+)/);
-      if (match && match[1]) {
-        const bags = parseInt(match[1], 10);
-        if (!isNaN(bags)) {
-          // Update the bags (quantity) for items
-          const updatedItems = formState.items.map((item, index) => 
-            index === 0 ? { ...item, quantity: bags } : item
-          );
-          setFormState(prev => ({
-            ...prev,
-            [name]: value,
-            items: updatedItems
-          }));
-          return;
-        }
-      }
-    }
-    
-    setFormState(prevState => ({
-      ...prevState,
+    setFormState(prev => ({
+      ...prev,
       [name]: value
     }));
-  }, [formState.items]);
+  }, []);
 
   const handleSelectChange = useCallback((name: string, value: string) => {
     setFormState(prevState => ({
@@ -105,8 +85,33 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
     const subtotal = calculateSubtotal();
     if (brokerageType === 'percentage') {
       setBrokerageAmount(subtotal * (brokerageRate / 100));
+    } else {
+      setBrokerageAmount(brokerageRate);
     }
   }, [calculateSubtotal, brokerageRate, brokerageType]);
+
+  // Automatically extract bags from lot number
+  useEffect(() => {
+    const extractBagsFromLotNumber = (lotNumber: string) => {
+      const match = lotNumber.match(/[\/\\](\d+)/);
+      if (match && match[1]) {
+        const bags = parseInt(match[1], 10);
+        if (!isNaN(bags) && formState.items.length > 0) {
+          const updatedItems = [...formState.items];
+          updatedItems[0] = { ...updatedItems[0], quantity: bags };
+          
+          setFormState(prev => ({
+            ...prev,
+            items: updatedItems
+          }));
+        }
+      }
+    };
+
+    if (formState.lotNumber) {
+      extractBagsFromLotNumber(formState.lotNumber);
+    }
+  }, [formState.lotNumber]);
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
     event.preventDefault();
@@ -132,6 +137,7 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
         expenses: expenses,
         brokerageAmount: brokerageAmount,
         brokerageType: brokerageType,
+        brokerageValue: brokerageRate,
         totalAfterExpenses: totalAmount,
         quantity: formState.items.reduce((sum, item) => sum + item.quantity, 0),
         netWeight: formState.items.reduce((sum, item) => sum + item.quantity, 0),
