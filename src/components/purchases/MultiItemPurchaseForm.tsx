@@ -1,23 +1,14 @@
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { v4 as uuidv4 } from 'uuid';
-import {
-  getAgents,
-  getTransporters,
-  getLocations,
-  addPurchase,
-  updatePurchase,
-  Agent,
-  Transporter,
-  Purchase
-} from "@/services/storageService";
+import { Agent, Transporter, Purchase } from "@/services/types";
+import { getAgents, getTransporters, getLocations } from "@/services/storageService";
 import ItemsTable from '../shared/ItemsTable';
 import FormSummary from '../shared/FormSummary';
 import FormHeader from './components/FormHeader';
 import AgentSection from './components/AgentSection';
 import TransportSection from './components/TransportSection';
-import { PurchaseFormState } from '../shared/types/PurchaseFormTypes';
+import { usePurchaseForm } from './hooks/usePurchaseForm';
 
 interface MultiItemPurchaseFormProps {
   onCancel: () => void;
@@ -30,26 +21,24 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
   onSubmit,
   initialValues
 }) => {
-  const { toast } = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [transporters, setTransporters] = useState<Transporter[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
   const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
 
-  const [formState, setFormState] = useState<PurchaseFormState>({
-    lotNumber: initialValues?.lotNumber || '',
-    date: initialValues?.date || new Date().toISOString().split('T')[0],
-    location: initialValues?.location || '',
-    agentId: initialValues?.agentId || '',
-    transporterId: initialValues?.transporterId || '',
-    transportCost: initialValues?.transportCost?.toString() || '0',
-    items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
-    notes: initialValues?.notes || '',
-    expenses: initialValues?.expenses || 0,
-    totalAfterExpenses: initialValues?.totalAfterExpenses || 0
-  });
+  const {
+    formState,
+    isSubmitting,
+    handleInputChange,
+    handleSelectChange,
+    handleItemChange,
+    handleAddItem,
+    handleRemoveItem,
+    calculateSubtotal,
+    calculateTotal,
+    handleSubmit
+  } = usePurchaseForm({ onSubmit, initialValues });
 
   useEffect(() => {
     loadInitialData();
@@ -67,136 +56,20 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
       setLocations(allLocations);
     } catch (error) {
       console.error("Error loading initial data:", error);
-      toast({
-        title: "Error loading data",
-        description: "Failed to load agents, transporters, or locations.",
-        variant: "destructive",
-      });
     }
   };
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
-    setFormState(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
-  };
-
-  const handleSelectChange = (name: string, value: string) => {
-    setFormState(prevState => ({
-      ...prevState,
-      [name]: value
-    }));
-  };
-
-  const handleItemChange = (index: number, field: string, value: any) => {
-    const updatedItems = [...formState.items];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
-    setFormState(prev => ({ ...prev, items: updatedItems }));
-  };
-
-  const handleAddItem = () => {
-    setFormState(prev => ({
-      ...prev,
-      items: [...prev.items, { id: uuidv4(), name: '', quantity: 0, rate: 0 }]
-    }));
-  };
-
-  const handleRemoveItem = (index: number) => {
-    setFormState(prev => ({
-      ...prev,
-      items: prev.items.filter((_, i) => i !== index)
-    }));
-  };
-
-  const calculateSubtotal = () => {
-    return formState.items.reduce((total, item) => total + (item.quantity * item.rate), 0);
-  };
-
-  const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const transportCost = parseFloat(formState.transportCost || '0');
-    const expenses = parseFloat(formState.expenses?.toString() || '0');
-    return subtotal + transportCost + expenses;
-  };
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      const transportCost = parseFloat(formState.transportCost || '0');
-      const expenses = parseFloat(formState.expenses?.toString() || '0');
-      const totalAmount = calculateTotal();
-
-      const purchaseData: Purchase = {
-        id: initialValues?.id || uuidv4(),
-        lotNumber: formState.lotNumber,
-        date: formState.date,
-        location: formState.location,
-        agentId: formState.agentId,
-        transporterId: formState.transporterId,
-        transportCost: transportCost,
-        items: formState.items,
-        notes: formState.notes,
-        totalAmount: totalAmount,
-        expenses: expenses,
-        totalAfterExpenses: totalAmount
-      };
-
-      if (initialValues) {
-        updatePurchase(purchaseData);
-        toast({
-          title: "Purchase Updated",
-          description: `Purchase ${purchaseData.lotNumber} has been updated.`
-        });
-      } else {
-        addPurchase(purchaseData);
-        toast({
-          title: "Purchase Added",
-          description: `Purchase ${purchaseData.lotNumber} has been added.`
-        });
-      }
-
-      onSubmit(purchaseData);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save purchase. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleAddAgentClick = () => {
-    setShowAddAgentDialog(true);
-  };
-
-  const handleAddTransporterClick = () => {
-    setShowAddTransporterDialog(true);
-  };
-
-  const handleAgentAdded = useCallback((newAgent: Agent) => {
+  const handleAgentAdded = (newAgent: Agent) => {
     setAgents(prevAgents => [...prevAgents, newAgent]);
-    setFormState(prevState => ({
-      ...prevState,
-      agentId: newAgent.id
-    }));
+    handleSelectChange('agentId', newAgent.id);
     setShowAddAgentDialog(false);
-  }, []);
+  };
 
-  const handleTransporterAdded = useCallback((newTransporter: Transporter) => {
+  const handleTransporterAdded = (newTransporter: Transporter) => {
     setTransporters(prevTransporters => [...prevTransporters, newTransporter]);
-    setFormState(prevState => ({
-      ...prevState,
-      transporterId: newTransporter.id
-    }));
+    handleSelectChange('transporterId', newTransporter.id);
     setShowAddTransporterDialog(false);
-  }, []);
+  };
 
   return (
     <div className="w-full max-w-[1200px] mx-auto">
@@ -215,7 +88,7 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
             agents={agents}
             agentId={formState.agentId}
             onSelectChange={handleSelectChange}
-            onAddAgentClick={handleAddAgentClick}
+            onAddAgentClick={() => setShowAddAgentDialog(true)}
             showAddAgentDialog={showAddAgentDialog}
             setShowAddAgentDialog={setShowAddAgentDialog}
             onAgentAdded={handleAgentAdded}
@@ -228,7 +101,7 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
           transportCost={formState.transportCost}
           onSelectChange={handleSelectChange}
           onInputChange={handleInputChange}
-          onAddTransporterClick={handleAddTransporterClick}
+          onAddTransporterClick={() => setShowAddTransporterDialog(true)}
           showAddTransporterDialog={showAddTransporterDialog}
           setShowAddTransporterDialog={setShowAddTransporterDialog}
           onTransporterAdded={handleTransporterAdded}
@@ -253,7 +126,7 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
                 target: { name: 'notes', value: e.target.value }
               } as React.ChangeEvent<HTMLInputElement>)}
               placeholder="Enter notes..."
-            ></textarea>
+            />
           </div>
 
           <FormSummary
