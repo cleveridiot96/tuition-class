@@ -26,6 +26,9 @@ import {
 } from "@/services/storageService";
 import AgentForm from "@/components/agents/AgentForm";
 import TransporterForm from "@/components/transporters/TransporterForm";
+import ItemsTable from '../shared/ItemsTable';
+import FormSummary from '../shared/FormSummary';
+import { ItemFormState } from '../shared/types/ItemFormTypes';
 
 interface MultiItemPurchaseFormProps {
   onCancel: () => void;
@@ -33,14 +36,11 @@ interface MultiItemPurchaseFormProps {
   initialValues?: Purchase;
 }
 
-interface Item {
-  id: string;
-  name: string;
-  quantity: number;
-  rate: number;
-}
-
-const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
+const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
+  onCancel,
+  onSubmit,
+  initialValues
+}) => {
   const { toast } = useToast();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [transporters, setTransporters] = useState<Transporter[]>([]);
@@ -49,17 +49,17 @@ const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
   const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
 
-  const [formState, setFormState] = useState({
-    lotNumber: props.initialValues?.lotNumber || '',
-    date: props.initialValues?.date || new Date().toISOString().split('T')[0],
-    location: props.initialValues?.location || '',
-    agentId: props.initialValues?.agentId || '',
-    transporterId: props.initialValues?.transporterId || '',
-    transportCost: props.initialValues?.transportCost?.toString() || '0',
-    items: props.initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
-    notes: props.initialValues?.notes || '',
-    expenses: props.initialValues?.expenses || 0,
-    totalAfterExpenses: props.initialValues?.totalAfterExpenses || 0
+  const [formState, setFormState: any] = useState<ItemFormState>({
+    lotNumber: initialValues?.lotNumber || '',
+    date: initialValues?.date || new Date().toISOString().split('T')[0],
+    location: initialValues?.location || '',
+    agentId: initialValues?.agentId || '',
+    transporterId: initialValues?.transporterId || '',
+    transportCost: initialValues?.transportCost?.toString() || '0',
+    items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    notes: initialValues?.notes || '',
+    expenses: initialValues?.expenses || 0,
+    totalAfterExpenses: initialValues?.totalAfterExpenses || 0
   });
 
   useEffect(() => {
@@ -103,26 +103,21 @@ const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
 
   const handleItemChange = (index: number, field: string, value: any) => {
     const updatedItems = [...formState.items];
-    updatedItems[index][field] = value;
-    setFormState(prevState => ({
-      ...prevState,
-      items: updatedItems
-    }));
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
+    setFormState(prev => ({ ...prev, items: updatedItems }));
   };
 
   const handleAddItem = () => {
-    setFormState(prevState => ({
-      ...prevState,
-      items: [...prevState.items, { id: uuidv4(), name: '', quantity: 0, rate: 0 }]
+    setFormState(prev => ({
+      ...prev,
+      items: [...prev.items, { id: uuidv4(), name: '', quantity: 0, rate: 0 }]
     }));
   };
 
   const handleRemoveItem = (index: number) => {
-    const updatedItems = [...formState.items];
-    updatedItems.splice(index, 1);
-    setFormState(prevState => ({
-      ...prevState,
-      items: updatedItems
+    setFormState(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
     }));
   };
 
@@ -147,7 +142,7 @@ const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
       const totalAmount = calculateTotal();
 
       const purchaseData: Purchase = {
-        id: props.initialValues?.id || uuidv4(),
+        id: initialValues?.id || uuidv4(),
         lotNumber: formState.lotNumber,
         date: formState.date,
         location: formState.location,
@@ -161,7 +156,7 @@ const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
         totalAfterExpenses: totalAmount
       };
 
-      if (props.initialValues) {
+      if (initialValues) {
         // Update existing purchase
         updatePurchase(purchaseData);
         toast({
@@ -178,7 +173,7 @@ const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
       }
 
       // Refresh data and close form
-      props.onSubmit(purchaseData);
+      onSubmit(purchaseData);
     } catch (error) {
       console.error("Error submitting form:", error);
       toast({
@@ -336,80 +331,13 @@ const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
           </div>
         </div>
 
-        <div className="border rounded-md p-4 bg-white overflow-x-auto">
-          <div className="w-full min-w-[650px]">
-            <div className="grid grid-cols-12 gap-2 mb-2 font-medium">
-              <div className="col-span-4">Item</div>
-              <div className="col-span-2">Quantity</div>
-              <div className="col-span-2">Rate</div>
-              <div className="col-span-3">Amount</div>
-              <div className="col-span-1"></div>
-            </div>
+        <ItemsTable
+          items={formState.items}
+          onItemChange={handleItemChange}
+          onRemoveItem={handleRemoveItem}
+          onAddItem={handleAddItem}
+        />
 
-            {formState.items.map((item, index) => (
-              <div key={index} className="grid grid-cols-12 gap-2 mb-2 items-end">
-                <div className="col-span-4">
-                  <Input
-                    name="name"
-                    value={item.name}
-                    onChange={(e) => handleItemChange(index, 'name', e.target.value)}
-                    placeholder="Item name"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Input
-                    name="quantity"
-                    type="number"
-                    value={item.quantity}
-                    onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
-                    placeholder="Qty"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Input
-                    name="rate"
-                    type="number"
-                    value={item.rate}
-                    onChange={(e) => handleItemChange(index, 'rate', parseFloat(e.target.value))}
-                    placeholder="Rate"
-                  />
-                </div>
-                <div className="col-span-3">
-                  <Input
-                    name="amount"
-                    type="number"
-                    value={(item.quantity * item.rate).toFixed(2)}
-                    disabled
-                  />
-                </div>
-                <div className="col-span-1">
-                  {formState.items.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveItem(index)}
-                      className="h-8 w-8 p-0"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleAddItem}
-              className="mt-2"
-            >
-              Add Item
-            </Button>
-          </div>
-        </div>
-        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="notes">Notes</Label>
@@ -424,33 +352,21 @@ const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
               } as React.ChangeEvent<HTMLInputElement>)}
             ></textarea>
           </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Subtotal:</span>
-              <span className="font-medium">₹{calculateSubtotal().toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Transport:</span>
-              <span>₹{Number(formState.transportCost || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Expenses:</span>
-              <span>₹{Number(formState.expenses || 0).toFixed(2)}</span>
-            </div>
-            <div className="flex justify-between border-t pt-2">
-              <span className="font-bold">Total:</span>
-              <span className="font-bold">₹{calculateTotal().toFixed(2)}</span>
-            </div>
-          </div>
+
+          <FormSummary
+            subtotal={calculateSubtotal()}
+            transportCost={parseFloat(formState.transportCost || '0')}
+            expenses={parseFloat(formState.expenses?.toString() || '0')}
+            total={calculateTotal()}
+          />
         </div>
-        
+
         <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={props.onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save Purchase'}
+            {isSubmitting ? 'Saving...' : initialValues ? 'Update Purchase' : 'Save Purchase'}
           </Button>
         </div>
       </form>
