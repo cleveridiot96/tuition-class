@@ -8,6 +8,7 @@ import FormSummary from '../shared/FormSummary';
 import FormHeader from './components/FormHeader';
 import AgentSection from './components/AgentSection';
 import TransportSection from './components/TransportSection';
+import BrokerageSection from './components/BrokerageSection';
 import { usePurchaseForm } from './hooks/usePurchaseForm';
 
 interface MultiItemPurchaseFormProps {
@@ -26,10 +27,14 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
   const [locations, setLocations] = useState<string[]>([]);
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
   const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
+  const [expenses, setExpenses] = useState(initialValues?.expenses || 0);
 
   const {
     formState,
     isSubmitting,
+    brokerageAmount,
+    brokerageType,
+    brokerageRate,
     handleInputChange,
     handleSelectChange,
     handleItemChange,
@@ -37,7 +42,8 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
     handleRemoveItem,
     calculateSubtotal,
     calculateTotal,
-    handleSubmit
+    handleSubmit,
+    updateBrokerageSettings
   } = usePurchaseForm({ onSubmit, initialValues });
 
   useEffect(() => {
@@ -52,7 +58,8 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
       const allTransporters = getTransporters();
       setTransporters(allTransporters);
 
-      const allLocations = getLocations();
+      // Get actual locations from storage or use default values
+      const allLocations = getLocations() || ['Location A', 'Location B', 'Location C'];
       setLocations(allLocations);
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -71,9 +78,26 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
     setShowAddTransporterDialog(false);
   };
 
+  const handleBrokerageTypeChange = (type: string) => {
+    updateBrokerageSettings(type, brokerageRate);
+  };
+
+  const handleBrokerageRateChange = (value: number) => {
+    updateBrokerageSettings(brokerageType, value);
+  };
+
+  const handleExpensesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value) || 0;
+    setExpenses(value);
+    setFormState(prev => ({
+      ...prev,
+      expenses: value
+    }));
+  };
+
   return (
-    <div className="w-full max-w-full px-2 sm:px-4 md:px-6 mx-auto overflow-x-hidden">
-      <div className="max-w-[1200px] mx-auto">
+    <div className="w-full max-w-full px-2 sm:px-4 md:px-6 mx-auto overflow-auto pb-8">
+      <div className="max-w-[1000px] mx-auto">
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <FormHeader
             lotNumber={formState.lotNumber}
@@ -84,7 +108,7 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
             onSelectChange={handleSelectChange}
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-3 sm:gap-4">
             <AgentSection
               agents={agents}
               agentId={formState.agentId}
@@ -107,6 +131,30 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
             setShowAddTransporterDialog={setShowAddTransporterDialog}
             onTransporterAdded={handleTransporterAdded}
           />
+
+          <BrokerageSection
+            brokerageType={brokerageType}
+            brokerageRate={brokerageRate}
+            brokerageAmount={brokerageAmount}
+            onBrokerageTypeChange={handleBrokerageTypeChange}
+            onBrokerageRateChange={handleBrokerageRateChange}
+          />
+
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            <div>
+              <label htmlFor="expenses" className="block text-sm font-medium text-gray-700">
+                Other Expenses (₹)
+              </label>
+              <Input
+                id="expenses"
+                name="expenses"
+                type="number"
+                value={expenses}
+                onChange={handleExpensesChange}
+                className="mt-1"
+              />
+            </div>
+          </div>
 
           <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
             <ItemsTable
@@ -135,7 +183,9 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
             <FormSummary
               subtotal={calculateSubtotal()}
               transportCost={parseFloat(formState.transportCost || '0')}
-              expenses={formState.expenses}
+              brokerageAmount={brokerageAmount}
+              showBrokerage={true}
+              expenses={expenses}
               total={calculateTotal()}
             />
           </div>

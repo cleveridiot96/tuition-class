@@ -18,6 +18,8 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
   const [formState, setFormState] = useState<ItemFormState & {
     customerId: string;
     brokerId: string;
+    billNumber: string;
+    billAmount: string;
   }>({
     lotNumber: initialSale?.lotNumber || '',
     date: initialSale?.date || new Date().toISOString().split('T')[0],
@@ -26,6 +28,8 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     brokerId: initialSale?.brokerId || '',
     transporterId: initialSale?.transporterId || '',
     transportCost: initialSale?.transportCost?.toString() || '0',
+    billNumber: initialSale?.billNumber || '',
+    billAmount: initialSale?.billAmount?.toString() || '',
     items: initialSale?.items || [{ name: '', quantity: 0, rate: 0 }],
     notes: initialSale?.notes || '',
   });
@@ -88,6 +92,10 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     setIsSubmitting(true);
 
     try {
+      const billAmount = formState.billNumber && formState.billAmount 
+        ? parseFloat(formState.billAmount) 
+        : 0;
+
       const saleData: Sale = {
         id: initialSale?.id || uuidv4(),
         date: formState.date,
@@ -104,6 +112,8 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
         location: formState.location,
         totalAmount: calculateTotal(),
         transportCost: parseFloat(formState.transportCost),
+        billNumber: formState.billNumber,
+        billAmount: billAmount,
         items: formState.items,
         notes: formState.notes
       };

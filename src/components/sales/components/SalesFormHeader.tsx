@@ -8,6 +8,8 @@ interface SalesFormHeaderProps {
   lotNumber: string;
   date: string;
   location: string;
+  billNumber: string;
+  billAmount: string;
   locations: string[];
   onInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSelectChange: (name: string, value: string) => void;
@@ -17,6 +19,8 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
   lotNumber,
   date,
   location,
+  billNumber,
+  billAmount,
   locations,
   onInputChange,
   onSelectChange,
@@ -62,6 +66,25 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
             ))}
           </SelectContent>
         </Select>
+      </div>
+      <div>
+        <Label htmlFor="billNumber">Bill Number</Label>
+        <Input
+          id="billNumber"
+          name="billNumber"
+          value={billNumber}
+          onChange={onInputChange}
+        />
+      </div>
+      <div>
+        <Label htmlFor="billAmount">Bill Amount</Label>
+        <Input
+          id="billAmount"
+          name="billAmount"
+          type="number"
+          value={billAmount}
+          onChange={onInputChange}
+        />
       </div>
     </div>
   );

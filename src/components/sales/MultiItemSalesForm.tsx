@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Customer, Broker, Transporter, Sale } from '@/services/types';
+import { getCustomers, getBrokers, getTransporters, getLocations } from '@/services/storageService';
 import ItemsTable from '../shared/ItemsTable';
 import FormSummary from '../shared/FormSummary';
 import SalesFormHeader from './components/SalesFormHeader';
@@ -41,24 +42,24 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
   } = useSalesForm({ onSubmit, initialSale });
 
   useEffect(() => {
-    const mockGetLocations = () => ['Location A', 'Location B'];
-    const mockGetCustomers = () => [
-      { id: '1', name: 'Customer A', balance: 0 },
-      { id: '2', name: 'Customer B', balance: 0 }
-    ];
-    const mockGetBrokers = () => [
-      { id: '1', name: 'Broker A', commissionRate: 5, balance: 0 },
-      { id: '2', name: 'Broker B', commissionRate: 10, balance: 0 }
-    ];
-    const mockGetTransporters = () => [
-      { id: '1', name: 'Transporter A', balance: 0 },
-      { id: '2', name: 'Transporter B', balance: 0 }
-    ];
+    // Load actual data from storage
+    const loadData = () => {
+      try {
+        const loadedCustomers = getCustomers() || [];
+        const loadedBrokers = getBrokers() || [];
+        const loadedTransporters = getTransporters() || [];
+        const loadedLocations = getLocations() || ['Location A', 'Location B', 'Location C'];
+        
+        setCustomers(loadedCustomers);
+        setBrokers(loadedBrokers);
+        setTransporters(loadedTransporters);
+        setLocations(loadedLocations);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      }
+    };
 
-    setLocations(mockGetLocations());
-    setCustomers(mockGetCustomers());
-    setBrokers(mockGetBrokers());
-    setTransporters(mockGetTransporters());
+    loadData();
   }, []);
 
   useEffect(() => {
@@ -75,6 +76,8 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
           lotNumber={formState.lotNumber}
           date={formState.date}
           location={formState.location}
+          billNumber={formState.billNumber}
+          billAmount={formState.billAmount}
           locations={locations}
           onInputChange={handleInputChange}
           onSelectChange={handleSelectChange}
