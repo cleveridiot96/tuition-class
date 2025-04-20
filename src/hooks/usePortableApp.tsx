@@ -1,6 +1,6 @@
 
 import { useEffect } from 'react';
-import { initializePortableApp, isPortableMode } from '@/utils/portableDataHelpers';
+import { initializePortableApp, isPortableMode } from '@/utils/portableAppUtils';
 
 export function usePortableApp() {
   useEffect(() => {

@@ -2,35 +2,28 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Package, Download } from "lucide-react";
-import { exportDataBackup } from "@/services/storageService";
-import { toast } from "@/hooks/use-toast";
+import { createPortableVersion } from "@/utils/portableAppUtils";
+import { toast } from "sonner";
 
-const PortableAppButton = ({}) => {
+const PortableAppButton = () => {
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreatePortable = async () => {
     setIsCreating(true);
     try {
-      // Use the exportDataBackup function which properly creates a downloadable file
-      const result = await exportDataBackup();
+      // Use the createPortableVersion function from portableAppUtils
+      const result = await createPortableVersion();
       
       if (result) {
-        toast({
-          title: "Portable App Created",
-          description: "Just unzip and open index.html to use your app anywhere!"
+        toast.success("Portable App Created", {
+          description: "Just unzip and open launcher.html to use your app anywhere!"
         });
       } else {
-        toast({
-          title: "Failed to create portable version",
-          variant: "destructive"
-        });
+        toast.error("Failed to create portable version");
       }
     } catch (error) {
       console.error("Error creating portable version:", error);
-      toast({
-        title: "An unexpected error occurred",
-        variant: "destructive"
-      });
+      toast.error("An unexpected error occurred");
     } finally {
       setIsCreating(false);
     }

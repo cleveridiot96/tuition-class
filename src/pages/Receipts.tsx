@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,61 +28,54 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Edit, Trash2, Receipt } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Edit, Trash2, Receipt, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-interface ReceiptItem {
-  id: string;
-  date: string;
-  receiptNumber: string;
-  partyName: string;
-  amount: number;
-  notes: string;
-}
+import { getReceipts, addReceipt, updateReceipt, deleteReceipt } from "@/services/receiptService";
+import { useEffect as useEffectOnce } from 'react';
+import { getCustomers } from "@/services/storageService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Receipt as ReceiptType, Customer } from "@/services/types";
+import { v4 as uuidv4 } from 'uuid';
 
 const Receipts = () => {
-  const { toast } = useToast();
-  const [receipts, setReceipts] = useState<ReceiptItem[]>([
-    {
-      id: "1",
-      date: "2025-04-01",
-      receiptNumber: "REC-001",
-      partyName: "Arvind",
-      amount: 25000,
-      notes: "Payment received for invoice INV-2023-001"
-    },
-    {
-      id: "2",
-      date: "2025-04-02",
-      receiptNumber: "REC-002",
-      partyName: "ABC Trading",
-      amount: 15000,
-      notes: "Partial payment"
-    },
-    {
-      id: "3",
-      date: "2025-04-03",
-      receiptNumber: "REC-003",
-      partyName: "XYZ Enterprises",
-      amount: 30000,
-      notes: "Full payment for lot CD/5"
-    }
-  ]);
-  const [deletedReceipts, setDeletedReceipts] = useState<ReceiptItem[]>([]);
+  const [receipts, setReceipts] = useState<ReceiptType[]>([]);
+  const [deletedReceipts, setDeletedReceipts] = useState<ReceiptType[]>([]);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [receiptToDelete, setReceiptToDelete] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingReceipt, setEditingReceipt] = useState<ReceiptItem | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [editForm, setEditForm] = useState({
-    date: "",
-    receiptNumber: "",
-    partyName: "",
+    date: new Date().toISOString().split('T')[0],
+    receiptNumber: '',
+    customerName: '',
+    customerId: '',
     amount: 0,
-    notes: ""
+    notes: '',
+    paymentMethod: 'cash',
+    reference: ''
   });
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  
+  // Load receipts on component mount
+  useEffect(() => {
+    loadReceipts();
+    loadCustomers();
+  }, []);
+  
+  const loadReceipts = () => {
+    const allReceipts = getReceipts();
+    setReceipts(allReceipts.filter(r => !r.isDeleted));
+    setDeletedReceipts(allReceipts.filter(r => r.isDeleted));
+  };
+  
+  const loadCustomers = () => {
+    const allCustomers = getCustomers();
+    setCustomers(allCustomers);
+  };
   
   const handleDeleteConfirm = (id: string) => {
     setReceiptToDelete(id);
@@ -92,55 +85,98 @@ const Receipts = () => {
   const handleDelete = () => {
     if (!receiptToDelete) return;
     
-    const receiptToRemove = receipts.find(r => r.id === receiptToDelete);
-    if (receiptToRemove) {
-      setDeletedReceipts(prev => [...prev, receiptToRemove]);
-      setReceipts(prev => prev.filter(r => r.id !== receiptToDelete));
-      toast({
-        title: "Receipt Deleted",
-        description: `Receipt ${receiptToRemove.receiptNumber} has been deleted.`
-      });
-    }
+    deleteReceipt(receiptToDelete);
+    
+    // Refresh receipt lists
+    loadReceipts();
+    
+    toast.success("Receipt deleted successfully");
     
     setShowDeleteConfirm(false);
     setReceiptToDelete(null);
   };
   
-  const handleEdit = (receipt: ReceiptItem) => {
+  const handleEdit = (receipt: ReceiptType) => {
     setEditingReceipt(receipt);
     setEditForm({
-      date: receipt.date,
-      receiptNumber: receipt.receiptNumber,
-      partyName: receipt.partyName,
-      amount: receipt.amount,
-      notes: receipt.notes
+      date: receipt.date || new Date().toISOString().split('T')[0],
+      receiptNumber: receipt.receiptNumber || '',
+      customerName: receipt.customerName || '',
+      customerId: receipt.customerId || '',
+      amount: receipt.amount || 0,
+      notes: receipt.notes || '',
+      paymentMethod: receipt.paymentMethod || 'cash',
+      reference: receipt.reference || ''
     });
     setIsEditDialogOpen(true);
+  };
+  
+  const handleNewReceipt = () => {
+    const today = new Date().toISOString().split('T')[0];
+    // Generate a new receipt number
+    const receiptNumber = `R-${Date.now().toString().slice(-6)}`;
+    
+    setEditingReceipt(null);
+    setEditForm({
+      date: today,
+      receiptNumber: receiptNumber,
+      customerName: '',
+      customerId: '',
+      amount: 0,
+      notes: '',
+      paymentMethod: 'cash',
+      reference: ''
+    });
+    setIsAddDialogOpen(true);
   };
   
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!editingReceipt) return;
+    if (editingReceipt) {
+      // Update existing receipt
+      const updatedReceipt = {
+        ...editingReceipt,
+        date: editForm.date,
+        receiptNumber: editForm.receiptNumber,
+        customerName: editForm.customerName,
+        customerId: editForm.customerId,
+        amount: editForm.amount,
+        notes: editForm.notes,
+        paymentMethod: editForm.paymentMethod,
+        reference: editForm.reference
+      };
+      
+      updateReceipt(updatedReceipt);
+      
+      toast.success("Receipt updated successfully");
+      
+      setIsEditDialogOpen(false);
+      setEditingReceipt(null);
+    } else {
+      // Add new receipt
+      const selectedCustomer = customers.find(c => c.id === editForm.customerId);
+      
+      const newReceipt: ReceiptType = {
+        id: uuidv4(),
+        date: editForm.date,
+        receiptNumber: editForm.receiptNumber,
+        customerName: selectedCustomer?.name || editForm.customerName,
+        customerId: editForm.customerId,
+        amount: editForm.amount,
+        notes: editForm.notes,
+        paymentMethod: editForm.paymentMethod as 'cash' | 'bank',
+        reference: editForm.reference,
+        mode: editForm.paymentMethod as 'cash' | 'bank'
+      };
+      
+      addReceipt(newReceipt);
+      toast.success("Receipt added successfully");
+      setIsAddDialogOpen(false);
+    }
     
-    const updatedReceipt: ReceiptItem = {
-      ...editingReceipt,
-      date: editForm.date,
-      receiptNumber: editForm.receiptNumber,
-      partyName: editForm.partyName,
-      amount: editForm.amount,
-      notes: editForm.notes
-    };
-    
-    setReceipts(prev => prev.map(r => r.id === updatedReceipt.id ? updatedReceipt : r));
-    
-    toast({
-      title: "Receipt Updated",
-      description: `Receipt ${updatedReceipt.receiptNumber} has been updated.`
-    });
-    
-    setIsEditDialogOpen(false);
-    setEditingReceipt(null);
+    // Refresh receipts list
+    loadReceipts();
   };
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -151,13 +187,30 @@ const Receipts = () => {
     }));
   };
   
-  const handleRestore = (receipt: ReceiptItem) => {
-    setReceipts(prev => [...prev, receipt]);
-    setDeletedReceipts(prev => prev.filter(r => r.id !== receipt.id));
-    toast({
-      title: "Receipt Restored",
-      description: `Receipt ${receipt.receiptNumber} has been restored.`
-    });
+  const handleSelectChange = (name: string, value: string) => {
+    if (name === 'customerId') {
+      const selectedCustomer = customers.find(c => c.id === value);
+      setEditForm(prev => ({
+        ...prev,
+        customerId: value,
+        customerName: selectedCustomer?.name || prev.customerName
+      }));
+    } else {
+      setEditForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+  
+  const handleRestore = (receipt: ReceiptType) => {
+    const updatedReceipt = { ...receipt, isDeleted: false };
+    updateReceipt(updatedReceipt);
+    
+    // Refresh receipt lists
+    loadReceipts();
+    
+    toast.success(`Receipt ${receipt.receiptNumber} has been restored.`);
   };
   
   const formatCurrency = (amount: number) => {
@@ -169,16 +222,17 @@ const Receipts = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige">
+    <div className="min-h-screen bg-ag-beige pb-10">
       <Navigation title="Receipts" showBackButton />
       <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h2 className="text-2xl font-bold">Payment Receipts</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button 
               className="flex items-center gap-2"
+              onClick={handleNewReceipt}
             >
-              <Receipt size={18} /> New Receipt
+              <Plus size={18} /> New Receipt
             </Button>
             <Button 
               onClick={() => setShowRestoreDialog(true)}
@@ -199,48 +253,52 @@ const Receipts = () => {
             </p>
           </Card>
         ) : (
-          <Card className="p-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Receipt #</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Party</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Notes</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {receipts.map((receipt) => (
-                  <TableRow key={receipt.id}>
-                    <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
-                    <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
-                    <TableCell>{receipt.partyName}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(receipt.amount)}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{receipt.notes}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleEdit(receipt)}
-                        >
-                          <Edit size={16} />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon"
-                          onClick={() => handleDeleteConfirm(receipt.id)}
-                        >
-                          <Trash2 size={16} className="text-red-500" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <Card className="p-4 overflow-x-auto">
+            <div className="min-w-full">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Receipt #</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead>Mode</TableHead>
+                    <TableHead>Notes</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {receipts.map((receipt) => (
+                    <TableRow key={receipt.id}>
+                      <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
+                      <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
+                      <TableCell>{receipt.customerName}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(receipt.amount)}</TableCell>
+                      <TableCell>{receipt.paymentMethod || receipt.mode}</TableCell>
+                      <TableCell className="max-w-[200px] truncate">{receipt.notes}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleEdit(receipt)}
+                          >
+                            <Edit size={16} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => handleDeleteConfirm(receipt.id)}
+                          >
+                            <Trash2 size={16} className="text-red-500" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </Card>
         )}
       </div>
@@ -268,57 +326,104 @@ const Receipts = () => {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Edit Receipt Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+      {/* Edit/Add Receipt Dialog */}
+      <Dialog open={isEditDialogOpen || isAddDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsEditDialogOpen(false);
+            setIsAddDialogOpen(false);
+          }
+        }}>
+        <DialogContent className="sm:max-w-md md:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Receipt</DialogTitle>
+            <DialogTitle>{editingReceipt ? 'Edit Receipt' : 'Add New Receipt'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="date">Date</Label>
-              <Input 
-                type="date" 
-                id="date" 
-                name="date" 
-                value={editForm.date} 
-                onChange={handleInputChange} 
-                required 
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="date">Date</Label>
+                <Input 
+                  type="date" 
+                  id="date" 
+                  name="date" 
+                  value={editForm.date} 
+                  onChange={handleInputChange} 
+                  required 
+                />
+              </div>
+              <div>
+                <Label htmlFor="receiptNumber">Receipt Number</Label>
+                <Input 
+                  type="text" 
+                  id="receiptNumber" 
+                  name="receiptNumber" 
+                  value={editForm.receiptNumber} 
+                  onChange={handleInputChange} 
+                  required 
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="customerId">Customer</Label>
+                <Select 
+                  value={editForm.customerId} 
+                  onValueChange={(value) => handleSelectChange('customerId', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map(customer => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="amount">Amount (₹)</Label>
+                <Input 
+                  type="number" 
+                  id="amount" 
+                  name="amount" 
+                  value={editForm.amount} 
+                  onChange={handleInputChange} 
+                  required 
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <Select 
+                  value={editForm.paymentMethod} 
+                  onValueChange={(value) => handleSelectChange('paymentMethod', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="bank">Bank Transfer</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="reference">Reference / Cheque No.</Label>
+                <Input 
+                  type="text" 
+                  id="reference" 
+                  name="reference" 
+                  value={editForm.reference} 
+                  onChange={handleInputChange}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="receiptNumber">Receipt Number</Label>
-              <Input 
-                type="text" 
-                id="receiptNumber" 
-                name="receiptNumber" 
-                value={editForm.receiptNumber} 
-                onChange={handleInputChange} 
-                required 
-              />
-            </div>
-            <div>
-              <Label htmlFor="partyName">Party Name</Label>
-              <Input 
-                type="text" 
-                id="partyName" 
-                name="partyName" 
-                value={editForm.partyName} 
-                onChange={handleInputChange} 
-                required 
-              />
-            </div>
-            <div>
-              <Label htmlFor="amount">Amount (₹)</Label>
-              <Input 
-                type="number" 
-                id="amount" 
-                name="amount" 
-                value={editForm.amount} 
-                onChange={handleInputChange} 
-                required 
-              />
-            </div>
+            
             <div>
               <Label htmlFor="notes">Notes</Label>
               <textarea 
@@ -329,11 +434,17 @@ const Receipts = () => {
                 onChange={handleInputChange}
               />
             </div>
+            
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => {
+                setIsEditDialogOpen(false);
+                setIsAddDialogOpen(false);
+              }}>
                 Cancel
               </Button>
-              <Button type="submit">Update Receipt</Button>
+              <Button type="submit">
+                {editingReceipt ? 'Update Receipt' : 'Add Receipt'}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -352,7 +463,7 @@ const Receipts = () => {
                   <div>
                     <p className="font-medium">{receipt.receiptNumber}</p>
                     <p className="text-sm text-gray-500">
-                      {receipt.partyName} - {formatCurrency(receipt.amount)}
+                      {receipt.customerName} - {formatCurrency(receipt.amount)}
                     </p>
                   </div>
                   <Button 

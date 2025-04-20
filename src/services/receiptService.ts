@@ -1,6 +1,8 @@
+
 import { Receipt } from './types';
 import { getYearSpecificStorageItem, saveYearSpecificStorageItem } from './storageUtils';
 import { v4 as uuidv4 } from 'uuid';
+import { createDoubleEntry } from './accountingService';
 
 export const getReceipts = (): Receipt[] => {
   return getYearSpecificStorageItem<Receipt[]>('receipts') || [];
@@ -18,6 +20,25 @@ export const addReceipt = (receipt: Receipt): void => {
   
   receipts.push(receiptWithDefaults);
   saveYearSpecificStorageItem('receipts', receipts);
+  
+  // Create double entry for accounting system
+  if (receipt.customerId) {
+    // Create accounting entry for cash receipt
+    try {
+      createDoubleEntry(
+        receipt.date,
+        receipt.paymentMethod === 'bank' ? 'acc-bank' : 'acc-cash', // Debit Cash or Bank
+        `acc-customer-${receipt.customerId}`, // Credit Customer Account
+        receipt.amount,
+        receipt.reference || receipt.receiptNumber || '',
+        `Receipt from ${receipt.customerName || 'customer'}`,
+        'receipt',
+        receipt.id
+      );
+    } catch (err) {
+      console.error("Error creating accounting entry:", err);
+    }
+  }
 };
 
 export const updateReceipt = (updatedReceipt: Receipt): void => {

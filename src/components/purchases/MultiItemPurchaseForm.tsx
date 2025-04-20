@@ -1,212 +1,479 @@
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Card } from "@/components/ui/card";
-import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2 } from "lucide-react";
-import { Combobox } from "@/components/ui/combobox";
-import { getLocations } from "@/services/storageService";
-
-interface PurchaseItem {
-  lotNumber: string;
-  quantity: number;
-  netWeight: number;
-  rate: number;
-  location: string;
-  amount: number;
-}
+import { v4 as uuidv4 } from 'uuid';
+import {
+  getAgents,
+  getTransporters,
+  getLocations,
+  addPurchase,
+  updatePurchase,
+  Agent,
+  Transporter,
+  Purchase,
+  savePurchases
+} from "@/services/storageService";
+import AgentForm from "@/components/agents/AgentForm";
+import TransporterForm from "@/components/transporters/TransporterForm";
 
 interface MultiItemPurchaseFormProps {
-  onItemsChange: (items: PurchaseItem[]) => void;
-  initialItems?: PurchaseItem[];
+  onCancel: () => void;
+  onSubmit: (purchase: Purchase) => void;
+  initialValues?: Purchase;
 }
 
-const MultiItemPurchaseForm = ({ onItemsChange, initialItems = [] }: MultiItemPurchaseFormProps) => {
-  const [items, setItems] = useState<PurchaseItem[]>(initialItems.length > 0 ? initialItems : [getEmptyItem()]);
-  const [locations, setLocations] = useState<string[]>([]);
-  
-  useEffect(() => {
-    loadLocations();
-  }, []);
-  
-  useEffect(() => {
-    // Notify parent component when items change
-    onItemsChange(items);
-  }, [items, onItemsChange]);
-  
-  const loadLocations = () => {
-    const savedLocations = getLocations();
-    if (savedLocations && savedLocations.length > 0) {
-      setLocations(savedLocations);
-    } else {
-      // Default locations if none are saved
-      setLocations(["Mumbai", "Chiplun", "Sawantwadi"]);
-    }
-  };
-  
-  function getEmptyItem(): PurchaseItem {
-    return {
-      lotNumber: "",
-      quantity: 0,
-      netWeight: 0,
-      rate: 0,
-      location: "",
-      amount: 0
-    };
-  }
-  
-  const handleAddItem = () => {
-    setItems([...items, getEmptyItem()]);
-  };
-  
-  const handleRemoveItem = (index: number) => {
-    if (items.length === 1) {
-      toast.error("You must have at least one item");
-      return;
-    }
-    
-    const newItems = [...items];
-    newItems.splice(index, 1);
-    setItems(newItems);
-  };
-  
-  const handleItemChange = (index: number, field: keyof PurchaseItem, value: any) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    
-    // Update the amount field if quantity, netWeight or rate changes
-    if (field === 'quantity' || field === 'netWeight' || field === 'rate') {
-      const item = newItems[index];
-      newItems[index].amount = item.netWeight * item.rate;
-    }
-    
-    setItems(newItems);
-  };
-  
-  // Calculate the total amount
-  const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+interface Item {
+  id: string;
+  name: string;
+  quantity: number;
+  rate: number;
+}
 
-  // Generate a unique lot number suggestion
-  const generateLotNumberSuggestion = (index: number) => {
-    const now = new Date();
-    const prefix = now.getFullYear().toString().substring(2) + 
-                  (now.getMonth() + 1).toString().padStart(2, '0') + 
-                  now.getDate().toString().padStart(2, '0');
-    return `${prefix}-${index + 1}`;
-  };
-  
-  // Auto-fill empty lot numbers
+const MultiItemPurchaseForm = (props: MultiItemPurchaseFormProps) => {
+  const { toast } = useToast();
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [transporters, setTransporters] = useState<Transporter[]>([]);
+  const [locations, setLocations] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
+  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
+
+  const [formState, setFormState] = useState({
+    lotNumber: props.initialValues?.lotNumber || '',
+    date: props.initialValues?.date || new Date().toISOString().split('T')[0],
+    location: props.initialValues?.location || '',
+    agentId: props.initialValues?.agentId || '',
+    transporterId: props.initialValues?.transporterId || '',
+    transportCost: props.initialValues?.transportCost?.toString() || '0',
+    items: props.initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    notes: props.initialValues?.notes || '',
+    expenses: props.initialValues?.expenses || 0,
+    totalAfterExpenses: props.initialValues?.totalAfterExpenses || 0
+  });
+
   useEffect(() => {
-    const newItems = [...items];
-    let changed = false;
-    
-    newItems.forEach((item, index) => {
-      if (!item.lotNumber) {
-        newItems[index].lotNumber = generateLotNumberSuggestion(index);
-        changed = true;
-      }
-    });
-    
-    if (changed) {
-      setItems(newItems);
+    loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
+    try {
+      const allAgents = getAgents();
+      setAgents(allAgents);
+
+      const allTransporters = getTransporters();
+      setTransporters(allTransporters);
+
+      const allLocations = getLocations();
+      setLocations(allLocations);
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+      toast({
+        title: "Error loading data",
+        description: "Failed to load agents, transporters, or locations.",
+        variant: "destructive",
+      });
     }
-  }, [items.length]);
-  
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormState(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormState(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  };
+
+  const handleItemChange = (index: number, field: string, value: any) => {
+    const updatedItems = [...formState.items];
+    updatedItems[index][field] = value;
+    setFormState(prevState => ({
+      ...prevState,
+      items: updatedItems
+    }));
+  };
+
+  const handleAddItem = () => {
+    setFormState(prevState => ({
+      ...prevState,
+      items: [...prevState.items, { id: uuidv4(), name: '', quantity: 0, rate: 0 }]
+    }));
+  };
+
+  const handleRemoveItem = (index: number) => {
+    const updatedItems = [...formState.items];
+    updatedItems.splice(index, 1);
+    setFormState(prevState => ({
+      ...prevState,
+      items: updatedItems
+    }));
+  };
+
+  const calculateSubtotal = () => {
+    return formState.items.reduce((total, item) => total + (item.quantity * item.rate), 0);
+  };
+
+  const calculateTotal = () => {
+    const subtotal = calculateSubtotal();
+    const transportCost = parseFloat(formState.transportCost || '0');
+    const expenses = parseFloat(formState.expenses?.toString() || '0');
+    return subtotal + transportCost + expenses;
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const transportCost = parseFloat(formState.transportCost || '0');
+      const expenses = parseFloat(formState.expenses?.toString() || '0');
+      const totalAmount = calculateTotal();
+
+      const purchaseData: Purchase = {
+        id: props.initialValues?.id || uuidv4(),
+        lotNumber: formState.lotNumber,
+        date: formState.date,
+        location: formState.location,
+        agentId: formState.agentId,
+        transporterId: formState.transporterId,
+        transportCost: transportCost,
+        items: formState.items,
+        notes: formState.notes,
+        totalAmount: totalAmount,
+        expenses: expenses,
+        totalAfterExpenses: totalAmount
+      };
+
+      if (props.initialValues) {
+        // Update existing purchase
+        updatePurchase(purchaseData);
+        toast({
+          title: "Purchase Updated",
+          description: `Purchase ${purchaseData.lotNumber} has been updated.`
+        });
+      } else {
+        // Add new purchase
+        addPurchase(purchaseData);
+        toast({
+          title: "Purchase Added",
+          description: `Purchase ${purchaseData.lotNumber} has been added.`
+        });
+      }
+
+      // Refresh data and close form
+      props.onSubmit(purchaseData);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save purchase. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddAgentClick = () => {
+    setShowAddAgentDialog(true);
+  };
+
+  const handleAddTransporterClick = () => {
+    setShowAddTransporterDialog(true);
+  };
+
+  const handleAgentAdded = useCallback((newAgent: Agent) => {
+    setAgents(prevAgents => [...prevAgents, newAgent]);
+    setFormState(prevState => ({
+      ...prevState,
+      agentId: newAgent.id
+    }));
+    setShowAddAgentDialog(false);
+  }, []);
+
+  const handleTransporterAdded = useCallback((newTransporter: Transporter) => {
+    setTransporters(prevTransporters => [...prevTransporters, newTransporter]);
+    setFormState(prevState => ({
+      ...prevState,
+      transporterId: newTransporter.id
+    }));
+    setShowAddTransporterDialog(false);
+  }, []);
+
   return (
-    <Card className="p-4">
-      <div className="mb-4 flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Items</h3>
-        <Button onClick={handleAddItem} size="sm" className="flex items-center gap-1">
-          <Plus size={16} /> Add Item
-        </Button>
-      </div>
-      
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Lot Number</TableHead>
-              <TableHead>Quantity</TableHead>
-              <TableHead>Net Weight (kg)</TableHead>
-              <TableHead>Rate (₹)</TableHead>
-              <TableHead>Location</TableHead>
-              <TableHead>Amount (₹)</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell>
+    <div className="w-full max-w-[1200px] mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="lotNumber">Lot Number</Label>
+            <Input
+              id="lotNumber"
+              name="lotNumber"
+              value={formState.lotNumber}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              name="date"
+              type="date"
+              value={formState.date}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="location">Location</Label>
+            <Select
+              name="location"
+              value={formState.location}
+              onValueChange={(value) => handleSelectChange('location', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map(location => (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="agentId">Agent</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleAddAgentClick}
+              >
+                Add New
+              </Button>
+            </div>
+            <Select
+              name="agentId"
+              value={formState.agentId}
+              onValueChange={(value) => handleSelectChange('agentId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select agent" />
+              </SelectTrigger>
+              <SelectContent>
+                {agents.map(agent => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center">
+              <Label htmlFor="transporterId">Transporter</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleAddTransporterClick}
+              >
+                Add New
+              </Button>
+            </div>
+            <Select
+              name="transporterId"
+              value={formState.transporterId}
+              onValueChange={(value) => handleSelectChange('transporterId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select transporter" />
+              </SelectTrigger>
+              <SelectContent>
+                {transporters.map(transporter => (
+                  <SelectItem key={transporter.id} value={transporter.id}>
+                    {transporter.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="transportCost">Transport Cost</Label>
+            <Input
+              id="transportCost"
+              name="transportCost"
+              type="number"
+              value={formState.transportCost}
+              onChange={handleInputChange}
+            />
+          </div>
+        </div>
+
+        <div className="border rounded-md p-4 bg-white overflow-x-auto">
+          <div className="w-full min-w-[650px]">
+            <div className="grid grid-cols-12 gap-2 mb-2 font-medium">
+              <div className="col-span-4">Item</div>
+              <div className="col-span-2">Quantity</div>
+              <div className="col-span-2">Rate</div>
+              <div className="col-span-3">Amount</div>
+              <div className="col-span-1"></div>
+            </div>
+
+            {formState.items.map((item, index) => (
+              <div key={index} className="grid grid-cols-12 gap-2 mb-2 items-end">
+                <div className="col-span-4">
                   <Input
-                    value={item.lotNumber}
-                    onChange={(e) => handleItemChange(index, 'lotNumber', e.target.value)}
-                    placeholder="Enter lot number"
-                    className="max-w-[150px]"
+                    name="name"
+                    value={item.name}
+                    onChange={(e) => handleItemChange(index, 'name', e.target.value)}
+                    placeholder="Item name"
                   />
-                </TableCell>
-                <TableCell>
+                </div>
+                <div className="col-span-2">
                   <Input
+                    name="quantity"
                     type="number"
                     value={item.quantity}
-                    onChange={(e) => handleItemChange(index, 'quantity', Number(e.target.value))}
-                    className="w-20"
+                    onChange={(e) => handleItemChange(index, 'quantity', parseFloat(e.target.value))}
+                    placeholder="Qty"
                   />
-                </TableCell>
-                <TableCell>
+                </div>
+                <div className="col-span-2">
                   <Input
-                    type="number"
-                    value={item.netWeight}
-                    onChange={(e) => handleItemChange(index, 'netWeight', Number(e.target.value))}
-                    className="w-24"
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
+                    name="rate"
                     type="number"
                     value={item.rate}
-                    onChange={(e) => handleItemChange(index, 'rate', Number(e.target.value))}
-                    className="w-24"
+                    onChange={(e) => handleItemChange(index, 'rate', parseFloat(e.target.value))}
+                    placeholder="Rate"
                   />
-                </TableCell>
-                <TableCell>
-                  <Combobox
-                    options={locations.map(location => ({
-                      value: location,
-                      label: location
-                    }))}
-                    value={item.location}
-                    onSelect={(value) => handleItemChange(index, 'location', value)}
-                    placeholder="Select location"
-                    className="max-w-[150px]"
+                </div>
+                <div className="col-span-3">
+                  <Input
+                    name="amount"
+                    type="number"
+                    value={(item.quantity * item.rate).toFixed(2)}
+                    disabled
                   />
-                </TableCell>
-                <TableCell className="font-medium">₹{item.amount.toFixed(2)}</TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveItem(index)}
-                    disabled={items.length === 1}
-                  >
-                    <Trash2 size={16} className="text-red-500" />
-                  </Button>
-                </TableCell>
-              </TableRow>
+                </div>
+                <div className="col-span-1">
+                  {formState.items.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveItem(index)}
+                      className="h-8 w-8 p-0"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
+                  )}
+                </div>
+              </div>
             ))}
-            <TableRow>
-              <TableCell colSpan={5} className="text-right font-semibold">
-                Total Amount:
-              </TableCell>
-              <TableCell className="font-bold">₹{totalAmount.toFixed(2)}</TableCell>
-              <TableCell></TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
-      </div>
-    </Card>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddItem}
+              className="mt-2"
+            >
+              Add Item
+            </Button>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <textarea
+              id="notes"
+              name="notes"
+              className="w-full p-2 rounded-md border"
+              rows={3}
+              value={formState.notes}
+              onChange={(e) => handleInputChange({
+                target: { name: 'notes', value: e.target.value }
+              } as React.ChangeEvent<HTMLInputElement>)}
+            ></textarea>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span>Subtotal:</span>
+              <span className="font-medium">₹{calculateSubtotal().toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Transport:</span>
+              <span>₹{Number(formState.transportCost || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Expenses:</span>
+              <span>₹{Number(formState.expenses || 0).toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between border-t pt-2">
+              <span className="font-bold">Total:</span>
+              <span className="font-bold">₹{calculateTotal().toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-end space-x-2">
+          <Button type="button" variant="outline" onClick={props.onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Saving...' : 'Save Purchase'}
+          </Button>
+        </div>
+      </form>
+
+      {/* Dialogs */}
+      <Dialog open={showAddAgentDialog} onOpenChange={setShowAddAgentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Agent</DialogTitle>
+          </DialogHeader>
+          <AgentForm onAgentAdded={handleAgentAdded} onCancel={() => setShowAddAgentDialog(false)} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddTransporterDialog} onOpenChange={setShowAddTransporterDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Transporter</DialogTitle>
+          </DialogHeader>
+          <TransporterForm onTransporterAdded={handleTransporterAdded} onCancel={() => setShowAddTransporterDialog(false)} />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 };
 
