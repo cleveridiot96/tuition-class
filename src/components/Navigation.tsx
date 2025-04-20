@@ -8,9 +8,16 @@ import FontSizeAdjuster from '@/components/UI/FontSizeAdjuster';
 interface NavigationProps {
   title: string;
   showBackButton?: boolean;
+  showFormatButton?: boolean;
+  onFormatClick?: () => void;
 }
 
-const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false }) => {
+const Navigation: React.FC<NavigationProps> = ({ 
+  title, 
+  showBackButton = false, 
+  showFormatButton = false, 
+  onFormatClick 
+}) => {
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -29,6 +36,11 @@ const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false }
       </div>
       
       <div className="flex items-center gap-2">
+        {showFormatButton && (
+          <Button variant="outline" size="sm" onClick={onFormatClick}>
+            Format Data
+          </Button>
+        )}
         <FontSizeAdjuster />
       </div>
     </div>

@@ -30,7 +30,7 @@ export const useFormCalculations = ({ form, showBrokerage, initialData }: UseFor
     setTotalAmount(calculatedTotalAmount);
     
     let calculatedBrokerageAmount = 0;
-    if (showBrokerage && values.brokerId) {
+    if (showBrokerage && values.agentId) {
       const brokerageValue = values.brokerageValue || 0;
       if (values.brokerageType === "percentage") {
         calculatedBrokerageAmount = (calculatedTotalAmount * brokerageValue) / 100;
