@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,159 +185,163 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div>
-          <Label htmlFor="lotNumber">Lot Number</Label>
-          <Input
-            id="lotNumber"
-            name="lotNumber"
-            value={formState.lotNumber}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="date">Date</Label>
-          <Input
-            id="date"
-            name="date"
-            type="date"
-            value={formState.date}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="location">Location</Label>
-          <Select
-            name="location"
-            value={formState.location}
-            onValueChange={(value) => handleSelectChange('location', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select location" />
-            </SelectTrigger>
-            <SelectContent>
-              {locations.map(location => (
-                <SelectItem key={location} value={location}>
-                  {location}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+    <div className="w-full max-w-full px-2 sm:px-4 md:px-6 mx-auto overflow-x-hidden">
+      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div>
+            <Label htmlFor="lotNumber">Lot Number</Label>
+            <Input
+              id="lotNumber"
+              name="lotNumber"
+              value={formState.lotNumber}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              name="date"
+              type="date"
+              value={formState.date}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="location">Location</Label>
+            <Select
+              name="location"
+              value={formState.location}
+              onValueChange={(value) => handleSelectChange('location', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select location" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map(location => (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="customerId">Customer</Label>
+            <Select
+              name="customerId"
+              value={formState.customerId}
+              onValueChange={(value) => handleSelectChange('customerId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select customer" />
+              </SelectTrigger>
+              <SelectContent>
+                {customers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="brokerId">Broker</Label>
+            <Select
+              name="brokerId"
+              value={formState.brokerId}
+              onValueChange={(value) => handleSelectChange('brokerId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select broker (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {brokers.map(broker => (
+                  <SelectItem key={broker.id} value={broker.id}>
+                    {broker.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="transporterId">Transporter</Label>
+            <Select
+              name="transporterId"
+              value={formState.transporterId}
+              onValueChange={(value) => handleSelectChange('transporterId', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select transporter (optional)" />
+              </SelectTrigger>
+              <SelectContent>
+                {transporters.map(transporter => (
+                  <SelectItem key={transporter.id} value={transporter.id}>
+                    {transporter.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="transportCost">Transport Cost</Label>
+            <Input
+              id="transportCost"
+              name="transportCost"
+              type="number"
+              value={formState.transportCost}
+              onChange={handleInputChange}
+            />
+          </div>
         </div>
 
-        <div>
-          <Label htmlFor="customerId">Customer</Label>
-          <Select
-            name="customerId"
-            value={formState.customerId}
-            onValueChange={(value) => handleSelectChange('customerId', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select customer" />
-            </SelectTrigger>
-            <SelectContent>
-              {customers.map(customer => (
-                <SelectItem key={customer.id} value={customer.id}>
-                  {customer.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="brokerId">Broker</Label>
-          <Select
-            name="brokerId"
-            value={formState.brokerId}
-            onValueChange={(value) => handleSelectChange('brokerId', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select broker (optional)" />
-            </SelectTrigger>
-            <SelectContent>
-              {brokers.map(broker => (
-                <SelectItem key={broker.id} value={broker.id}>
-                  {broker.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="transporterId">Transporter</Label>
-          <Select
-            name="transporterId"
-            value={formState.transporterId}
-            onValueChange={(value) => handleSelectChange('transporterId', value)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select transporter (optional)" />
-            </SelectTrigger>
-            <SelectContent>
-              {transporters.map(transporter => (
-                <SelectItem key={transporter.id} value={transporter.id}>
-                  {transporter.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
-          <Label htmlFor="transportCost">Transport Cost</Label>
-          <Input
-            id="transportCost"
-            name="transportCost"
-            type="number"
-            value={formState.transportCost}
-            onChange={handleInputChange}
-          />
-        </div>
-      </div>
-
-      <ItemsTable
-        items={formState.items}
-        onItemChange={handleItemChange}
-        onRemoveItem={handleRemoveItem}
-        onAddItem={handleAddItem}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="notes">Notes</Label>
-          <textarea
-            id="notes"
-            name="notes"
-            className="w-full p-2 rounded-md border"
-            rows={3}
-            value={formState.notes}
-            onChange={(e) => setFormState(prev => ({ ...prev, notes: e.target.value }))}
+        <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
+          <ItemsTable
+            items={formState.items}
+            onItemChange={handleItemChange}
+            onRemoveItem={handleRemoveItem}
+            onAddItem={handleAddItem}
           />
         </div>
 
-        <FormSummary
-          subtotal={calculateSubtotal()}
-          transportCost={parseFloat(formState.transportCost || '0')}
-          brokerageAmount={calculateBrokerageAmount()}
-          showBrokerage={!!selectedBroker}
-          total={calculateTotal()}
-        />
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <textarea
+              id="notes"
+              name="notes"
+              className="w-full p-2 rounded-md border"
+              rows={3}
+              value={formState.notes}
+              onChange={(e) => setFormState(prev => ({ ...prev, notes: e.target.value }))}
+            />
+          </div>
 
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : initialSale ? 'Update Sale' : 'Save Sale'}
-        </Button>
-      </div>
-    </form>
+          <FormSummary
+            subtotal={calculateSubtotal()}
+            transportCost={parseFloat(formState.transportCost || '0')}
+            brokerageAmount={calculateBrokerageAmount()}
+            showBrokerage={!!selectedBroker}
+            total={calculateTotal()}
+          />
+        </div>
+
+        <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
+          <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+            {isSubmitting ? 'Saving...' : initialSale ? 'Update Sale' : 'Save Sale'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

@@ -72,80 +72,84 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
   };
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <FormHeader
-          lotNumber={formState.lotNumber}
-          date={formState.date}
-          location={formState.location}
-          locations={locations}
-          onInputChange={handleInputChange}
-          onSelectChange={handleSelectChange}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AgentSection
-            agents={agents}
-            agentId={formState.agentId}
+    <div className="w-full max-w-full px-2 sm:px-4 md:px-6 mx-auto overflow-x-hidden">
+      <div className="max-w-[1200px] mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <FormHeader
+            lotNumber={formState.lotNumber}
+            date={formState.date}
+            location={formState.location}
+            locations={locations}
+            onInputChange={handleInputChange}
             onSelectChange={handleSelectChange}
-            onAddAgentClick={() => setShowAddAgentDialog(true)}
-            showAddAgentDialog={showAddAgentDialog}
-            setShowAddAgentDialog={setShowAddAgentDialog}
-            onAgentAdded={handleAgentAdded}
           />
-        </div>
 
-        <TransportSection
-          transporters={transporters}
-          transporterId={formState.transporterId}
-          transportCost={formState.transportCost}
-          onSelectChange={handleSelectChange}
-          onInputChange={handleInputChange}
-          onAddTransporterClick={() => setShowAddTransporterDialog(true)}
-          showAddTransporterDialog={showAddTransporterDialog}
-          setShowAddTransporterDialog={setShowAddTransporterDialog}
-          onTransporterAdded={handleTransporterAdded}
-        />
-
-        <ItemsTable
-          items={formState.items}
-          onItemChange={handleItemChange}
-          onRemoveItem={handleRemoveItem}
-          onAddItem={handleAddItem}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <textarea
-              id="notes"
-              name="notes"
-              className="w-full p-2 rounded-md border"
-              rows={3}
-              value={formState.notes}
-              onChange={(e) => handleInputChange({
-                target: { name: 'notes', value: e.target.value }
-              } as React.ChangeEvent<HTMLInputElement>)}
-              placeholder="Enter notes..."
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <AgentSection
+              agents={agents}
+              agentId={formState.agentId}
+              onSelectChange={handleSelectChange}
+              onAddAgentClick={() => setShowAddAgentDialog(true)}
+              showAddAgentDialog={showAddAgentDialog}
+              setShowAddAgentDialog={setShowAddAgentDialog}
+              onAgentAdded={handleAgentAdded}
             />
           </div>
 
-          <FormSummary
-            subtotal={calculateSubtotal()}
-            transportCost={parseFloat(formState.transportCost || '0')}
-            expenses={formState.expenses}
-            total={calculateTotal()}
+          <TransportSection
+            transporters={transporters}
+            transporterId={formState.transporterId}
+            transportCost={formState.transportCost}
+            onSelectChange={handleSelectChange}
+            onInputChange={handleInputChange}
+            onAddTransporterClick={() => setShowAddTransporterDialog(true)}
+            showAddTransporterDialog={showAddTransporterDialog}
+            setShowAddTransporterDialog={setShowAddTransporterDialog}
+            onTransporterAdded={handleTransporterAdded}
           />
-        </div>
 
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : initialValues ? 'Update Purchase' : 'Save Purchase'}
-          </Button>
-        </div>
-      </form>
+          <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
+            <ItemsTable
+              items={formState.items}
+              onItemChange={handleItemChange}
+              onRemoveItem={handleRemoveItem}
+              onAddItem={handleAddItem}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <textarea
+                id="notes"
+                name="notes"
+                className="w-full p-2 rounded-md border"
+                rows={3}
+                value={formState.notes}
+                onChange={(e) => handleInputChange({
+                  target: { name: 'notes', value: e.target.value }
+                } as React.ChangeEvent<HTMLInputElement>)}
+                placeholder="Enter notes..."
+              />
+            </div>
+
+            <FormSummary
+              subtotal={calculateSubtotal()}
+              transportCost={parseFloat(formState.transportCost || '0')}
+              expenses={formState.expenses}
+              total={calculateTotal()}
+            />
+          </div>
+
+          <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
+            <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              {isSubmitting ? 'Saving...' : initialValues ? 'Update Purchase' : 'Save Purchase'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
