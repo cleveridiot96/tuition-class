@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { exportDataBackup, importDataBackup } from '@/services/storageService';
 import { toast } from '@/hooks/use-toast';
@@ -107,18 +106,21 @@ export const setupCrashRecovery = () => {
         const backupTime = localStorage.getItem('emergencyBackupTime');
         const formattedTime = backupTime ? new Date(backupTime).toLocaleString() : 'unknown time';
         
-        // Show recovery notification
+        // Use a function to create the button instead of direct JSX
+        const createRestoreButton = () => (
+          <button 
+            onClick={handleRestoreFromCrash} 
+            className="bg-green-600 text-white px-4 py-1 rounded"
+          >
+            Restore
+          </button>
+        );
+
+        // Use the function to create the action
         toast({
           title: "System Recovery Available",
           description: `A backup from ${formattedTime} was found. Would you like to restore it?`,
-          action: (
-            <button 
-              onClick={handleRestoreFromCrash} 
-              className="bg-green-600 text-white px-4 py-1 rounded"
-            >
-              Restore
-            </button>
-          ),
+          action: createRestoreButton(),
           duration: 10000 // Show for 10 seconds
         });
       }
@@ -243,4 +245,14 @@ export const performSystemHealthCheck = () => {
     console.error("Error performing system health check:", error);
     return null;
   }
+};
+
+// Export all existing functions
+export { 
+  emergencyBackup, 
+  hasEmergencyBackup, 
+  restoreFromEmergencyBackup, 
+  setupUSBDetection, 
+  checkDataIntegrity, 
+  performSystemHealthCheck 
 };
