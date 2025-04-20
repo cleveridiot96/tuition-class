@@ -1,6 +1,5 @@
-
 import { Agent } from '../types';
-import { getEntities, addEntity, updateEntity, deleteEntity } from '../utils/entityUtils';
+import { getEntities, addEntity, updateEntity, deleteEntity, saveEntities } from '../utils/entityUtils';
 
 const STORAGE_KEY = 'agents';
 
@@ -26,10 +25,9 @@ export const updateAgentBalance = (agentId: string, changeAmount: number): void 
   
   if (agentIndex !== -1) {
     agents[agentIndex].balance = (agents[agentIndex].balance || 0) + changeAmount;
-    saveStorageItem(STORAGE_KEY, agents);
+    saveEntities(STORAGE_KEY, agents);
   }
 };
 
 // For backward compatibility
 export const getPurchaseAgents = getAgents;
-

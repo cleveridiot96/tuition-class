@@ -5,10 +5,13 @@ export * from './core/yearSpecificStorage';
 export * from './core/dataManagement';
 
 // Re-export backup functionality
-export * from './backup/backupService';
-export * from './backup/backupRestore';
-export * from './backup/exportBackup';
-export * from './backup/importBackup';
+export {
+  exportDataBackup,
+  importDataBackup,
+  clearAllData,
+  clearAllMasterData,
+  seedInitialData
+} from './backup/backupRestore';
 
 // Re-export auto-save functionality
 export * from './autosave/autoSaveService';
@@ -20,11 +23,43 @@ export * from './system/systemOperations';
 export * from './debug/debugService';
 
 // Re-export all entity-related functionality
-export * from './entities/agentService';
-export * from './entities/supplierService';
-export * from './entities/customerService';
-export * from './entities/brokerService';
-export * from './entities/transporterService';
+export {
+  getAgents,
+  addAgent,
+  updateAgent,
+  deleteAgent,
+  updateAgentBalance,
+  getPurchaseAgents
+} from './entities/agentService';
+
+export {
+  getSuppliers,
+  addSupplier,
+  updateSupplier,
+  deleteSupplier
+} from './entities/supplierService';
+
+export {
+  getCustomers,
+  addCustomer,
+  updateCustomer,
+  deleteCustomer
+} from './entities/customerService';
+
+export {
+  getBrokers,
+  addBroker,
+  updateBroker,
+  deleteBroker,
+  getSalesBrokers
+} from './entities/brokerService';
+
+export {
+  getTransporters,
+  addTransporter,
+  updateTransporter,
+  deleteTransporter
+} from './entities/transporterService';
 
 // Re-export inventory functionality
 export * from './inventoryService';
@@ -32,24 +67,25 @@ export * from './inventoryService';
 // Re-export purchase functionality
 export * from './purchaseService';
 
-// Re-export sales functionality
-export * from './saleService';
-export * from './salesService';
+// Export sales functionality
+export {
+  getSales,
+  addSale,
+  updateSale,
+  deleteSale,
+  saveSales
+} from './salesService';
 
-// Re-export payment functionality
+// Export payment functionality
 export * from './paymentService';
 
-// Re-export receipt functionality
-export * from './receiptService';
-
-// Re-export all types
-export * from './types';
-
-// Re-export all data management functionality
+// Export receipt functionality
 export {
-  exportDataBackup,
-  importDataBackup,
-  clearAllData,
-  clearAllMasterData,
-  seedInitialData
-} from './backup/backupRestore';
+  getReceipts,
+  addReceipt,
+  updateReceipt,
+  deleteReceipt
+} from './receiptService';
+
+// Export all types
+export * from './types';
