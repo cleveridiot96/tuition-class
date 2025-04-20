@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Agent, Transporter, Purchase } from "@/services/types";
 import { getAgents, getTransporters, getLocations } from "@/services/storageService";
 import ItemsTable from '../shared/ItemsTable';

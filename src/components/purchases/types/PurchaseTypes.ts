@@ -1,8 +1,11 @@
-
 import { z } from "zod";
 import { purchaseFormSchema } from "../PurchaseFormSchema";
 
 export type PurchaseFormData = z.infer<typeof purchaseFormSchema>;
+
+export interface PurchaseFormData extends z.infer<typeof purchaseFormSchema> {
+  bags?: number;
+}
 
 export interface PurchaseFormProps {
   onSubmit: (data: any) => void;
@@ -22,7 +25,7 @@ export interface PurchasePartyDetailsProps {
 }
 
 export interface PurchaseDetailsProps {
-  form: any;
+  form: UseFormReturn<PurchaseFormData>;
   locations: string[];
 }
 
@@ -40,7 +43,6 @@ export interface PurchaseExpensesProps {
 }
 
 export interface PurchaseSummaryProps {
-  form: any;
   totalAmount: number;
   transportCost: number;
   brokerageAmount: number;
