@@ -1,67 +1,64 @@
 
 import React from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-const WeightDetails = ({ form }) => {
+interface WeightDetailsProps {
+  form: any;
+}
+
+const WeightDetails: React.FC<WeightDetailsProps> = ({ form }) => {
+  const netWeight = form.watch("netWeight") || 0;
+  const bags = form.watch("bags") || 0;
+  const avgBagWeight = bags > 0 ? (netWeight / bags).toFixed(2) : "0";
+
   return (
-    <div className="space-y-4 p-4 border rounded-md bg-blue-50">
-      <h3 className="font-bold text-blue-700">Weight Information</h3>
+    <>
       <FormField
         control={form.control}
         name="bags"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-bold">Bags (Count)</FormLabel>
+            <FormLabel>Bags</FormLabel>
             <FormControl>
               <Input 
-                type="number"
-                min="1"
-                {...field}
-                onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
-                className="border-2 border-blue-300"
+                type="number" 
+                {...field} 
+                onChange={(e) => {
+                  field.onChange(parseInt(e.target.value, 10) || 0);
+                  // Could calculate estimated weight if needed
+                }}
               />
             </FormControl>
-            <FormMessage />
           </FormItem>
         )}
       />
-      
+
       <FormField
         control={form.control}
         name="netWeight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="font-bold">Net Weight (KG)</FormLabel>
+            <FormLabel>Net Weight (kg)</FormLabel>
             <FormControl>
               <Input 
-                type="number"
-                min="0.01"
-                step="0.01"
+                type="number" 
+                step="0.01" 
                 {...field}
-                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                className="border-2 border-blue-300"
+                onChange={(e) => {
+                  field.onChange(parseFloat(e.target.value) || 0);
+                  // Trigger calculations when weight changes
+                  form.trigger();
+                }}
               />
             </FormControl>
-            <FormMessage />
+            <p className="text-xs text-muted-foreground">
+              Avg. Bag Weight: {avgBagWeight} kg
+            </p>
           </FormItem>
         )}
       />
-      
-      <FormField
-        control={form.control}
-        name="party"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel className="font-bold">Party</FormLabel>
-            <FormControl>
-              <Input {...field} className="border-2 border-blue-300" />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-    </div>
+    </>
   );
 };
 

@@ -17,7 +17,7 @@ import {
 } from '@/services/storageService';
 import { purchaseFormSchema } from "./purchases/PurchaseFormSchema";
 import { PurchaseFormProps, PurchaseFormData } from "./purchases/types/PurchaseTypes";
-import { useFormCalculations } from "./purchases/useFormCalculations";
+import { useFormCalculations } from "./purchases/hooks/useFormCalculations";
 import { useBagExtractor } from "./purchases/hooks/useBagExtractor";
 import PurchaseFormHeader from "./purchases/components/PurchaseFormHeader";
 import PurchaseDetails from "./purchases/components/PurchaseDetails";

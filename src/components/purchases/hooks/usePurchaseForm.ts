@@ -19,18 +19,42 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
   const { formState, setFormState, handleInputChange, handleSelectChange } = useFormState(initialValues);
   const { handleItemChange, handleAddItem, handleRemoveItem } = useItemManagement(setFormState);
   const { calculateSubtotal, calculateTotal } = useFormCalculations(formState);
-  const { updateBrokerageSettings } = useBrokerageSettings(setFormState);
+  const { updateBrokerageSettings, calculateBrokerageAmount } = useBrokerageSettings(setFormState);
+
+  // Calculate brokerage amount for UI display
+  const brokerageAmount = calculateBrokerageAmount(formState.brokerageType, formState.brokerageRate, calculateSubtotal());
+  
+  // Expose brokerage type and rate for component usage
+  const brokerageType = formState.brokerageType;
+  const brokerageRate = formState.brokerageRate;
 
   const handleSubmit = useCallback(async (event: React.FormEvent) => {
     event.preventDefault();
     setIsSubmitting(true);
 
     try {
+      // Calculate the final brokerage amount
+      const finalBrokerageAmount = calculateBrokerageAmount(
+        formState.brokerageType, 
+        formState.brokerageRate,
+        calculateSubtotal()
+      );
+      
       const purchaseData: Purchase = {
         id: initialValues?.id || Date.now().toString(),
         ...formState,
-        totalAmount: calculateTotal(),
-        totalAfterExpenses: calculateTotal()
+        // Add missing Purchase properties
+        quantity: formState.items.reduce((total, item) => total + item.quantity, 0),
+        netWeight: formState.items.reduce((total, item) => total + (item.quantity * item.rate), 0) / (formState.items[0]?.rate || 1),
+        rate: formState.items[0]?.rate || 0,
+        totalAmount: calculateSubtotal(),
+        totalAfterExpenses: calculateTotal(),
+        brokerageAmount: finalBrokerageAmount,
+        // Ensure these are included for type safety
+        bags: initialValues?.bags || 0,
+        transportAmount: parseFloat(formState.transportCost || '0'),
+        transportRate: initialValues?.transportRate || 0,
+        brokerageValue: formState.brokerageRate // Mapping brokerageRate to brokerageValue for API consistency
       };
 
       if (initialValues) {
@@ -58,12 +82,15 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
     } finally {
       setIsSubmitting(false);
     }
-  }, [formState, initialValues, calculateTotal, onSubmit, toast]);
+  }, [formState, initialValues, calculateSubtotal, calculateTotal, calculateBrokerageAmount, onSubmit, toast]);
 
   return {
     formState,
     setFormState,
     isSubmitting,
+    brokerageAmount,
+    brokerageType,
+    brokerageRate,
     handleInputChange,
     handleSelectChange,
     handleItemChange,
