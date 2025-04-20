@@ -1,4 +1,3 @@
-
 export interface Agent {
   id: string;
   name: string;
@@ -68,6 +67,12 @@ export interface Purchase {
   notes?: string;
   isDeleted?: boolean;
   reference?: string;
+  items?: {
+    id: string;
+    name: string;
+    quantity: number;
+    rate: number;
+  }[];
 }
 
 export interface Sale {
@@ -91,6 +96,12 @@ export interface Sale {
   transporter?: string;
   billAmount?: number;
   reference?: string;
+  location?: string;
+  items?: {
+    name: string;
+    quantity: number;
+    rate: number;
+  }[];
 }
 
 export interface InventoryItem {
@@ -171,4 +182,5 @@ export interface Receipt {
   transactionDetails?: any;
   isOnAccount?: boolean;
   isDeleted?: boolean;
+  receiptNumber?: string; // Add this missing property
 }

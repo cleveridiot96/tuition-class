@@ -16,6 +16,7 @@ export const addReceipt = (receipt: Receipt): void => {
     ...receipt,
     id: receipt.id || uuidv4(),
     date: receipt.date || new Date().toISOString().split('T')[0],
+    receiptNumber: receipt.receiptNumber || `R-${Date.now().toString().slice(-6)}`,
   };
   
   receipts.push(receiptWithDefaults);
@@ -50,6 +51,7 @@ export const updateReceipt = (updatedReceipt: Receipt): void => {
     const receiptWithDefaults = {
       ...updatedReceipt,
       date: updatedReceipt.date || receipts[index].date || new Date().toISOString().split('T')[0],
+      receiptNumber: updatedReceipt.receiptNumber || receipts[index].receiptNumber || `R-${Date.now().toString().slice(-6)}`,
     };
     
     receipts[index] = receiptWithDefaults;
