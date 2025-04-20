@@ -57,7 +57,7 @@ const Purchases = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [transporters, setTransporters> = useState<Transporter[]>([]);
-  const [brokers, setBrokers> = useState<Broker[]>([]);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [entityToDelete, setEntityToDelete] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -574,7 +574,6 @@ const BulkAddToInventoryButton = ({ purchases, onAddToInventory, disabled }) => 
   const [isBulkAddDialogOpen, setIsBulkAddDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Automatically select all purchases when the dialog is opened
     if (isBulkAddDialogOpen) {
       setSelectedPurchases(purchases);
     } else {

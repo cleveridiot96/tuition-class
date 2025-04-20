@@ -3,18 +3,18 @@ import { Agent, Supplier, Customer, Broker, Transporter } from './types';
 import { getStorageItem, saveStorageItem } from './storageUtils';
 
 // Agents
-export const getPurchaseAgents = (): Agent[] => {
+export const getAgents = (): Agent[] => {
   return getStorageItem<Agent[]>('agents') || [];
 };
 
 export const addAgent = (agent: Agent): void => {
-  const agents = getPurchaseAgents();
+  const agents = getAgents();
   agents.push(agent);
   saveStorageItem('agents', agents);
 };
 
 export const updateAgent = (updatedAgent: Agent): void => {
-  const agents = getPurchaseAgents();
+  const agents = getAgents();
   const index = agents.findIndex(agent => agent.id === updatedAgent.id);
   if (index !== -1) {
     agents[index] = updatedAgent;
@@ -23,7 +23,7 @@ export const updateAgent = (updatedAgent: Agent): void => {
 };
 
 export const deleteAgent = (id: string): void => {
-  const agents = getPurchaseAgents();
+  const agents = getAgents();
   const index = agents.findIndex(agent => agent.id === id);
   if (index !== -1) {
     agents[index] = { ...agents[index], isDeleted: true };
@@ -32,7 +32,7 @@ export const deleteAgent = (id: string): void => {
 };
 
 export const updateAgentBalance = (agentId: string, changeAmount: number): void => {
-  const agents = getPurchaseAgents();
+  const agents = getAgents();
   const agentIndex = agents.findIndex(agent => agent.id === agentId);
   
   if (agentIndex !== -1) {
@@ -158,5 +158,7 @@ export const deleteTransporter = (id: string): void => {
 };
 
 // For backward compatibility
-export const getAgents = getPurchaseAgents;
 export const getSalesBrokers = getBrokers;
+
+// Note: getPurchaseAgents was missing - adding it as an alias for getAgents
+export const getPurchaseAgents = getAgents;

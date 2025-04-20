@@ -1,9 +1,10 @@
+
 import { exportDataBackup, importDataBackup, clearAllData, clearAllMasterData, seedInitialData } from './storageUtils';
 import { toast } from '@/hooks/use-toast';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { getStorageItem, saveStorageItem, removeStorageItem, getLocations, checkDuplicateLot } from './core/storageCore';
-import type { Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt } from './types';
+import type { Agent, Supplier, Customer, Broker, Transporter, Purchase, Sale, InventoryItem, Payment, Receipt, EnhancedInventoryItem } from './types';
 import { 
   getAgents, addAgent, deleteAgent, updateAgent, updateAgentBalance,
   getCustomers, addCustomer, deleteCustomer, updateCustomer,
@@ -14,6 +15,8 @@ import {
 import { getPurchases, addPurchase, updatePurchase, deletePurchase, savePurchases } from './purchaseService';
 import { getSales, addSale, updateSale, deleteSale, saveSales } from './salesService';
 import { getInventory, saveInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem, updateInventoryAfterSale } from './inventoryService';
+import { getPayments, addPayment, updatePayment, deletePayment, savePayments } from './paymentService';
+import { getReceipts, addReceipt, updateReceipt, deleteReceipt, saveReceipts } from './receiptService';
 
 // Export all the functions that are imported in other files
 export {
@@ -39,7 +42,8 @@ export {
   type Transporter, 
   type Purchase, 
   type Sale, 
-  type InventoryItem, 
+  type InventoryItem,
+  type EnhancedInventoryItem,
   type Payment, 
   type Receipt,
 
@@ -87,17 +91,26 @@ export {
   addInventoryItem, 
   updateInventoryItem, 
   deleteInventoryItem, 
-  updateInventoryAfterSale
+  updateInventoryAfterSale,
+  
+  // From paymentService
+  getPayments,
+  addPayment,
+  updatePayment,
+  deletePayment,
+  savePayments,
+  
+  // From receiptService
+  getReceipts,
+  addReceipt,
+  updateReceipt,
+  deleteReceipt,
+  saveReceipts
 };
 
-// Re-export the core functions for backward compatibility
-export const getPayments = (): Payment[] => {
-  return getStorageItem<Payment[]>('payments') || [];
-};
-
-export const getReceipts = (): Receipt[] => {
-  return getStorageItem<Receipt[]>('receipts') || [];
-};
+// Now let's define the getPurchaseAgents alias function in case it's used elsewhere
+// This ensures backward compatibility
+export const getPurchaseAgents = getAgents;
 
 // Function to perform auto-save (for USB drive ejection scenarios)
 export const performAutoSave = () => {
