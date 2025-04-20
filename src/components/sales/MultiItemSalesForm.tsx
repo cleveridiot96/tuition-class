@@ -46,9 +46,18 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
 
   useEffect(() => {
     const mockGetLocations = () => ['Location A', 'Location B'];
-    const mockGetCustomers = () => [{ id: '1', name: 'Customer A' }, { id: '2', name: 'Customer B' }];
-    const mockGetBrokers = () => [{ id: '1', name: 'Broker A', commissionRate: 5 }, { id: '2', name: 'Broker B', commissionRate: 10 }];
-    const mockGetTransporters = () => [{ id: '1', name: 'Transporter A' }, { id: '2', name: 'Transporter B' }];
+    const mockGetCustomers = () => [
+      { id: '1', name: 'Customer A', balance: 0 },
+      { id: '2', name: 'Customer B', balance: 0 }
+    ];
+    const mockGetBrokers = () => [
+      { id: '1', name: 'Broker A', commissionRate: 5, balance: 0 },
+      { id: '2', name: 'Broker B', commissionRate: 10, balance: 0 }
+    ];
+    const mockGetTransporters = () => [
+      { id: '1', name: 'Transporter A', balance: 0 },
+      { id: '2', name: 'Transporter B', balance: 0 }
+    ];
 
     setLocations(mockGetLocations());
     setCustomers(mockGetCustomers());

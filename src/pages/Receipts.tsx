@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
@@ -60,7 +59,6 @@ const Receipts = () => {
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
   
-  // Load receipts on component mount
   useEffect(() => {
     loadReceipts();
     loadCustomers();
@@ -87,7 +85,6 @@ const Receipts = () => {
     
     deleteReceipt(receiptToDelete);
     
-    // Refresh receipt lists
     loadReceipts();
     
     toast.success("Receipt deleted successfully");
@@ -113,7 +110,6 @@ const Receipts = () => {
   
   const handleNewReceipt = () => {
     const today = new Date().toISOString().split('T')[0];
-    // Generate a new receipt number
     const receiptNumber = `R-${Date.now().toString().slice(-6)}`;
     
     setEditingReceipt(null);
@@ -134,7 +130,6 @@ const Receipts = () => {
     e.preventDefault();
     
     if (editingReceipt) {
-      // Update existing receipt
       const updatedReceipt = {
         ...editingReceipt,
         date: editForm.date,
@@ -154,20 +149,23 @@ const Receipts = () => {
       setIsEditDialogOpen(false);
       setEditingReceipt(null);
     } else {
-      // Add new receipt
       const selectedCustomer = customers.find(c => c.id === editForm.customerId);
       
       const newReceipt: ReceiptType = {
         id: uuidv4(),
         date: editForm.date,
         receiptNumber: editForm.receiptNumber,
-        customerName: selectedCustomer?.name || editForm.customerName,
         customerId: editForm.customerId,
+        customerName: selectedCustomer?.name || editForm.customerName,
         amount: editForm.amount,
         notes: editForm.notes,
         paymentMethod: editForm.paymentMethod as 'cash' | 'bank',
         reference: editForm.reference,
-        mode: editForm.paymentMethod as 'cash' | 'bank'
+        mode: editForm.paymentMethod as 'cash' | 'bank',
+        partyType: "customer",
+        partyId: editForm.customerId,
+        partyName: selectedCustomer?.name || editForm.customerName,
+        paymentMode: editForm.paymentMethod as 'cash' | 'bank'
       };
       
       addReceipt(newReceipt);
@@ -175,7 +173,6 @@ const Receipts = () => {
       setIsAddDialogOpen(false);
     }
     
-    // Refresh receipts list
     loadReceipts();
   };
   
@@ -207,7 +204,6 @@ const Receipts = () => {
     const updatedReceipt = { ...receipt, isDeleted: false };
     updateReceipt(updatedReceipt);
     
-    // Refresh receipt lists
     loadReceipts();
     
     toast.success(`Receipt ${receipt.receiptNumber} has been restored.`);
@@ -303,7 +299,6 @@ const Receipts = () => {
         )}
       </div>
       
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -326,7 +321,6 @@ const Receipts = () => {
         </AlertDialogContent>
       </AlertDialog>
       
-      {/* Edit/Add Receipt Dialog */}
       <Dialog open={isEditDialogOpen || isAddDialogOpen} 
         onOpenChange={(open) => {
           if (!open) {
@@ -450,7 +444,6 @@ const Receipts = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Restore Dialog */}
       <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
