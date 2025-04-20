@@ -12,12 +12,12 @@ const WeightDetails: React.FC<WeightDetailsProps> = ({ form }) => {
     <>
       <FormField
         control={form.control}
-        name="netWeight"
+        name="bags"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Net Weight (kg)</FormLabel>
+            <FormLabel>Bags</FormLabel>
             <FormControl>
-              <Input type="number" {...field} placeholder="0.00" />
+              <Input type="number" {...field} />
             </FormControl>
           </FormItem>
         )}
@@ -25,12 +25,12 @@ const WeightDetails: React.FC<WeightDetailsProps> = ({ form }) => {
       
       <FormField
         control={form.control}
-        name="bags"
+        name="netWeight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Bags</FormLabel>
+            <FormLabel>Net Weight (kg)</FormLabel>
             <FormControl>
-              <Input type="number" {...field} placeholder="0" />
+              <Input type="number" step="0.01" {...field} />
             </FormControl>
           </FormItem>
         )}

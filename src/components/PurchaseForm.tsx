@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import {
   getSuppliers,
   getTransporters,
-  getBrokers,
+  getAgents,
   checkDuplicateLot,
   getPurchases,
   getLocations,
@@ -27,9 +27,9 @@ import DuplicateLotDialog from "./purchases/DuplicateLotDialog";
 const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
-  const [brokers, setBrokers] = useState<any[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
-  const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
+  const [showBrokerage, setShowBrokerage] = useState<boolean>(true); // Always show brokerage now
   const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
   const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
 
@@ -38,7 +38,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     defaultValues: {
       date: initialData?.date || format(new Date(), 'yyyy-MM-dd'),
       lotNumber: initialData?.lotNumber || "",
-      quantity: initialData?.quantity || 0,
+      bags: initialData?.bags || 0,
       party: initialData?.party || "",
       location: initialData?.location || "",
       netWeight: initialData?.netWeight || 0,
@@ -47,8 +47,9 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
       transportRate: initialData?.transportRate || 0,
       expenses: initialData?.expenses || 0,
       brokerageType: initialData?.brokerageType || "percentage",
-      brokerageValue: initialData?.brokerageValue || 1,
+      brokerageValue: initialData?.brokerageValue || 1, // Default 1%
       notes: initialData?.notes || "",
+      agentId: initialData?.agentId || "",
     }
   });
 
@@ -60,7 +61,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
 
   useEffect(() => {
     loadInitialData();
-    if (initialData?.brokerId) {
+    if (initialData?.agentId) {
       setShowBrokerage(true);
     }
   }, [initialData]);
@@ -68,7 +69,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
   const loadInitialData = () => {
     setSuppliers(getSuppliers());
     setTransporters(getTransporters());
-    setBrokers(getBrokers());
+    setAgents(getAgents());
     setLocations(getLocations());
   };
 
@@ -96,12 +97,13 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     toast.success(initialData ? "Purchase updated successfully" : "Purchase added successfully");
   };
 
+  // Extract bags from lot number
   const extractBagsFromLotNumber = (lotNumber: string) => {
     const match = lotNumber.match(/[\/\\](\d+)/);
     if (match && match[1]) {
       const bags = parseInt(match[1], 10);
       if (!isNaN(bags)) {
-        form.setValue('quantity', bags);
+        form.setValue('bags', bags);
       }
     }
   };
@@ -123,13 +125,11 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
           <PurchaseFormHeader form={form} />
           <PurchaseDetails form={form} locations={locations} />
           
-          {showBrokerage && (
-            <BrokerageDetails 
-              form={form} 
-              brokerageAmount={calculations.brokerageAmount} 
-              totalAmount={calculations.totalAmount}
-            />
-          )}
+          <BrokerageDetails 
+            form={form} 
+            brokerageAmount={calculations.brokerageAmount} 
+            totalAmount={calculations.totalAmount}
+          />
           
           <PurchaseSummary 
             totalAmount={calculations.totalAmount}

@@ -48,7 +48,7 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
         const loadedCustomers = getCustomers() || [];
         const loadedBrokers = getBrokers() || [];
         const loadedTransporters = getTransporters() || [];
-        const loadedLocations = getLocations() || ['Location A', 'Location B', 'Location C'];
+        const loadedLocations = getLocations() || ['Mumbai', 'Chiplun', 'Sawantwadi'];
         
         setCustomers(loadedCustomers);
         setBrokers(loadedBrokers);

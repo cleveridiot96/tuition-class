@@ -57,3 +57,48 @@ export const getAgents = () => {
   }
   return agents;
 };
+
+export const getSuppliers = () => {
+  const suppliers = getStorageItem<any[]>('suppliers');
+  if (!suppliers) {
+    console.warn("No suppliers found in storage, returning empty array");
+    return [];
+  }
+  return suppliers;
+};
+
+export const getTransporters = () => {
+  const transporters = getStorageItem<any[]>('transporters');
+  if (!transporters) {
+    console.warn("No transporters found in storage, returning empty array");
+    return [];
+  }
+  return transporters;
+};
+
+export const getBrokers = () => {
+  const brokers = getStorageItem<any[]>('brokers');
+  if (!brokers) {
+    console.warn("No brokers found in storage, returning empty array");
+    return [];
+  }
+  return brokers;
+};
+
+export const getPurchases = () => {
+  const purchases = getStorageItem<any[]>('purchases');
+  if (!purchases) {
+    console.warn("No purchases found in storage, returning empty array");
+    return [];
+  }
+  return purchases;
+};
+
+export const getCustomers = () => {
+  const customers = getStorageItem<any[]>('customers');
+  if (!customers) {
+    console.warn("No customers found in storage, returning empty array");
+    return [];
+  }
+  return customers;
+};

@@ -43,4 +43,6 @@ export interface PurchaseItemState extends ItemFormState {
   agentId: string;
   brokerageType: 'percentage' | 'fixed';
   brokerageValue: number;
+  billAmount?: string; // Added for bill amount
+  billNumber?: string; // Added for bill number
 }

@@ -20,12 +20,50 @@ export const usePurchaseCalculations = ({
   const [transportCost, setTransportCost] = useState<number>(initialData?.transportCost || 0);
   const [brokerageAmount, setBrokerageAmount] = useState<number>(initialData?.brokerageAmount || 0);
 
+  // This effect runs whenever form fields change to recalculate all values
   useEffect(() => {
-    const values = form.getValues();
-    const netWeight = values.netWeight || 0;
-    const rate = values.rate || 0;
-    const expenses = values.expenses || 0;
-    const transportRate = values.transportRate || 0;
+    const subscription = form.watch((value, { name }) => {
+      const formValues = form.getValues();
+      const netWeight = formValues.netWeight || 0;
+      const rate = formValues.rate || 0;
+      const expenses = formValues.expenses || 0;
+      const transportRate = formValues.transportRate || 0;
+      
+      // Calculate transport cost
+      const calculatedTransportCost = netWeight * transportRate;
+      setTransportCost(calculatedTransportCost);
+      
+      // Calculate total amount
+      const calculatedTotalAmount = netWeight * rate;
+      setTotalAmount(calculatedTotalAmount);
+      
+      // Calculate brokerage
+      let calculatedBrokerageAmount = 0;
+      if (showBrokerage) {
+        const brokerageValue = formValues.brokerageValue || 1; // Default 1%
+        if (formValues.brokerageType === "percentage") {
+          calculatedBrokerageAmount = (calculatedTotalAmount * brokerageValue) / 100;
+        } else {
+          calculatedBrokerageAmount = brokerageValue;
+        }
+      }
+      setBrokerageAmount(calculatedBrokerageAmount);
+      
+      // Calculate total after expenses
+      const calculatedTotalAfterExpenses = calculatedTotalAmount + expenses + calculatedTransportCost + calculatedBrokerageAmount;
+      setTotalAfterExpenses(calculatedTotalAfterExpenses);
+      
+      // Calculate rate per kg after expenses
+      const calculatedRatePerKg = netWeight > 0 ? calculatedTotalAfterExpenses / netWeight : 0;
+      setRatePerKgAfterExpenses(calculatedRatePerKg);
+    });
+
+    // Immediate calculation on component mount
+    const formValues = form.getValues();
+    const netWeight = formValues.netWeight || 0;
+    const rate = formValues.rate || 0;
+    const expenses = formValues.expenses || 0;
+    const transportRate = formValues.transportRate || 0;
     
     const calculatedTransportCost = netWeight * transportRate;
     setTransportCost(calculatedTransportCost);
@@ -35,8 +73,8 @@ export const usePurchaseCalculations = ({
     
     let calculatedBrokerageAmount = 0;
     if (showBrokerage) {
-      const brokerageValue = values.brokerageValue || 0;
-      if (values.brokerageType === "percentage") {
+      const brokerageValue = formValues.brokerageValue || 1; // Default 1%
+      if (formValues.brokerageType === "percentage") {
         calculatedBrokerageAmount = (calculatedTotalAmount * brokerageValue) / 100;
       } else {
         calculatedBrokerageAmount = brokerageValue;
@@ -49,7 +87,9 @@ export const usePurchaseCalculations = ({
     
     const calculatedRatePerKg = netWeight > 0 ? calculatedTotalAfterExpenses / netWeight : 0;
     setRatePerKgAfterExpenses(calculatedRatePerKg);
-  }, [form.watch(), showBrokerage]);
+    
+    return () => subscription.unsubscribe();
+  }, [form, showBrokerage]);
 
   return {
     totalAmount,

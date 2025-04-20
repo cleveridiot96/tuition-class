@@ -9,6 +9,11 @@ interface LocationSelectorProps {
 }
 
 const LocationSelector: React.FC<LocationSelectorProps> = ({ form, locations }) => {
+  // Make sure we have the default locations if none are provided
+  const locationOptions = locations && locations.length > 0 ? 
+    locations : 
+    ['Mumbai', 'Chiplun', 'Sawantwadi'];
+
   return (
     <FormField
       control={form.control}
@@ -24,7 +29,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ form, locations }) 
               <SelectValue placeholder="Select location" />
             </SelectTrigger>
             <SelectContent>
-              {locations.map((location) => (
+              {locationOptions.map((location) => (
                 <SelectItem key={location} value={location}>
                   {location}
                 </SelectItem>

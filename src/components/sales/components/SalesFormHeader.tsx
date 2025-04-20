@@ -67,7 +67,7 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
           <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select location" />
           </SelectTrigger>
-          <SelectContent className="bg-white">
+          <SelectContent>
             {locations.map((loc) => (
               <SelectItem key={loc} value={loc}>
                 {loc}
@@ -76,7 +76,7 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
           </SelectContent>
         </Select>
       </div>
-      
+
       <div>
         <Label htmlFor="billNumber">Bill Number</Label>
         <Input
@@ -90,7 +90,7 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
       </div>
       
       <div>
-        <Label htmlFor="billAmount">Bill Amount</Label>
+        <Label htmlFor="billAmount">Bill Amount (₹)</Label>
         <Input
           id="billAmount"
           name="billAmount"
@@ -100,7 +100,6 @@ const SalesFormHeader: React.FC<SalesFormHeaderProps> = ({
           placeholder="Enter bill amount"
           className="mt-1"
         />
-        <p className="text-xs text-gray-500 mt-1">Enter if this is a cut bill</p>
       </div>
     </div>
   );

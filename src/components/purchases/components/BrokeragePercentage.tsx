@@ -8,10 +8,17 @@ const BrokeragePercentage: React.FC<BrokeragePercentageProps> = ({ form, totalAm
   // Watch for changes in the brokerageValue field
   const brokerageValue = form.watch("brokerageValue") || 1;
   
+  // Set default value to 1% when component mounts if no value is set
+  useEffect(() => {
+    if (!form.getValues("brokerageValue")) {
+      form.setValue("brokerageValue", 1);
+    }
+  }, []);
+  
   // When brokerageValue or totalAmount changes, calculate and call onChange
   useEffect(() => {
     if (onChange) {
-      const percentage = parseFloat(brokerageValue.toString()) || 0;
+      const percentage = parseFloat(brokerageValue.toString()) || 1;
       const calculatedAmount = (totalAmount * percentage) / 100;
       onChange(calculatedAmount);
     }
