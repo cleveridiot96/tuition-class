@@ -1,4 +1,5 @@
 
+import React from 'react';
 import { exportDataBackup, importDataBackup } from '@/services/storageService';
 import { toast } from '@/hooks/use-toast';
 import { debugStorage } from '@/services/storageUtils';
