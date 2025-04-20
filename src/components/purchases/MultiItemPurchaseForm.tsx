@@ -9,6 +9,7 @@ import BrokerageSection from './components/BrokerageSection';
 import ItemsSection from './components/ItemsSection';
 import NotesAndSummary from './components/NotesAndSummary';
 import { useMultiItemPurchaseForm } from './hooks/useMultiItemPurchaseForm';
+import { PurchaseFormState } from './types/PurchaseFormTypes';
 
 interface MultiItemPurchaseFormProps {
   onCancel: () => void;

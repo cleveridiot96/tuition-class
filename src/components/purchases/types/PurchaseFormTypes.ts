@@ -24,3 +24,18 @@ export interface FormUtils {
   handleBrokerageTypeChange: (type: string) => void;
   handleBrokerageRateChange: (value: number) => void;
 }
+
+export interface PurchaseFormState {
+  lotNumber: string;
+  date: string;
+  location: string;
+  agentId: string;
+  transporterId: string;
+  transportCost: string;
+  items: { id: any; name: string; quantity: number; rate: number; }[];
+  notes: string;
+  expenses: number;
+  totalAfterExpenses: number;
+  brokerageType: string;
+  brokerageRate: number;
+}

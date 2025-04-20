@@ -27,7 +27,9 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
     items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
     notes: initialValues?.notes || '',
     expenses: initialValues?.expenses || 0,
-    totalAfterExpenses: initialValues?.totalAfterExpenses || 0
+    totalAfterExpenses: initialValues?.totalAfterExpenses || 0,
+    brokerageType: initialValues?.brokerageType || 'percentage',
+    brokerageRate: initialValues?.brokerageValue || 1
   });
 
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {

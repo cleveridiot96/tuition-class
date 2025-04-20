@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Purchase } from "@/services/types";
 import { getAgents, getTransporters, getLocations } from "@/services/storageService";
 import { usePurchaseForm } from './usePurchaseForm';
+import { PurchaseFormState } from '../types/PurchaseFormTypes';
 
 interface UseMultiItemPurchaseFormProps {
   onSubmit: (purchase: Purchase) => void;
@@ -75,7 +76,7 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
   };
 
   return {
-    formState,
+    formState: formState as PurchaseFormState,
     isSubmitting,
     brokerageAmount,
     handleSubmit,
