@@ -17,7 +17,8 @@ import {
 } from '@/services/storageService';
 import { purchaseFormSchema } from "./purchases/PurchaseFormSchema";
 import { PurchaseFormProps, PurchaseFormData } from "./purchases/types/PurchaseTypes";
-import { usePurchaseCalculations } from "./purchases/hooks/usePurchaseCalculations";
+import { useFormCalculations } from "./purchases/useFormCalculations";
+import { useBagExtractor } from "./purchases/hooks/useBagExtractor";
 import PurchaseFormHeader from "./purchases/components/PurchaseFormHeader";
 import PurchaseDetails from "./purchases/components/PurchaseDetails";
 import BrokerageDetails from "./purchases/BrokerageDetails";
@@ -55,20 +56,17 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     }
   });
 
-  const calculations = usePurchaseCalculations({
+  const calculations = useFormCalculations({
     form,
     showBrokerage,
     initialData
   });
+  
+  // Use the bag extractor hook
+  const { extractBagsFromLotNumber } = useBagExtractor({ form });
 
   useEffect(() => {
     loadInitialData();
-    
-    // Extract bags from lot number on initial load if lotNumber exists
-    const lotNumber = form.getValues().lotNumber;
-    if (lotNumber) {
-      extractBagsFromLotNumber(lotNumber);
-    }
     
     if (initialData?.agentId) {
       setShowBrokerage(true);
@@ -105,27 +103,6 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     onSubmit(submitData);
     toast.success(initialData ? "Purchase updated successfully" : "Purchase added successfully");
   };
-
-  // Extract bags from lot number
-  const extractBagsFromLotNumber = (lotNumber: string) => {
-    const match = lotNumber.match(/[\/\\](\d+)/);
-    if (match && match[1]) {
-      const bags = parseInt(match[1], 10);
-      if (!isNaN(bags)) {
-        form.setValue('bags', bags);
-      }
-    }
-  };
-
-  // Watch lot number changes to auto-extract bags
-  React.useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'lotNumber') {
-        extractBagsFromLotNumber(value.lotNumber || '');
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form.watch]);
 
   return (
     <Card className="p-6">

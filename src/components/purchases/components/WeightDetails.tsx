@@ -1,37 +1,11 @@
 
-import React, { useEffect } from "react";
-import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import React from "react";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 
-interface WeightDetailsProps {
-  form: any;
-}
-
-const WeightDetails: React.FC<WeightDetailsProps> = ({ form }) => {
-  // Extract bags from lot number whenever lot number changes
-  useEffect(() => {
-    const subscription = form.watch((value: any, { name }: { name: string }) => {
-      if (name === 'lotNumber') {
-        extractBagsFromLotNumber(value.lotNumber || '');
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form]);
-  
-  // Function to extract bags from lot number
-  const extractBagsFromLotNumber = (lotNumber: string) => {
-    const match = lotNumber.match(/[\/\\](\d+)/);
-    if (match && match[1]) {
-      const bags = parseInt(match[1], 10);
-      if (!isNaN(bags)) {
-        form.setValue('bags', bags);
-      }
-    }
-  };
-
+const WeightDetails = ({ form }) => {
   return (
-    <>
+    <div className="space-y-4">
       <FormField
         control={form.control}
         name="bags"
@@ -40,15 +14,13 @@ const WeightDetails: React.FC<WeightDetailsProps> = ({ form }) => {
             <FormLabel>Bags</FormLabel>
             <FormControl>
               <Input 
-                type="number" 
-                {...field} 
-                onChange={(e) => {
-                  field.onChange(e);
-                  // Trigger net weight recalculation when bags change
-                  form.trigger('netWeight');
-                }}
+                type="number"
+                min="1"
+                {...field}
+                onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
               />
             </FormControl>
+            <FormMessage />
           </FormItem>
         )}
       />
@@ -58,23 +30,35 @@ const WeightDetails: React.FC<WeightDetailsProps> = ({ form }) => {
         name="netWeight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Net Weight (kg)</FormLabel>
+            <FormLabel>Net Weight (KG)</FormLabel>
             <FormControl>
               <Input 
-                type="number" 
-                step="0.01" 
-                {...field} 
-                onChange={(e) => {
-                  field.onChange(e);
-                  // Trigger calculations when net weight changes
-                  form.trigger('rate');
-                }}
+                type="number"
+                min="0.01"
+                step="0.01"
+                {...field}
+                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
               />
             </FormControl>
+            <FormMessage />
           </FormItem>
         )}
       />
-    </>
+      
+      <FormField
+        control={form.control}
+        name="party"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Party</FormLabel>
+            <FormControl>
+              <Input {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    </div>
   );
 };
 

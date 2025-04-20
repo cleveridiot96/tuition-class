@@ -1,55 +1,46 @@
 
 import { useState, useEffect } from 'react';
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T) => void] {
-  // Get stored value
-  const readValue = (): T => {
-    if (typeof window === 'undefined') {
+const readValue = <T>(key: string, initialValue: T): T => {
+  // Check if we're running in a browser environment
+  if (typeof window === 'undefined') {
+    return initialValue;
+  }
+
+  try {
+    const item = window.localStorage.getItem(key);
+    if (item === null) {
       return initialValue;
     }
     
     try {
-      const item = window.localStorage.getItem(key);
-      return item ? JSON.parse(item) : initialValue;
+      return JSON.parse(item);
     } catch (error) {
       console.warn(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
-  };
-  
-  // State to store our value
-  const [storedValue, setStoredValue] = useState<T>(readValue);
-  
-  // Return a wrapped version of useState's setter function that
-  // persists the new value to localStorage
-  const setValue = (value: T) => {
+  } catch (error) {
+    console.warn(`Error reading localStorage key "${key}":`, error);
+    return initialValue;
+  }
+};
+
+export function useLocalStorage<T>(key: string, initialValue: T) {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    return readValue(key, initialValue);
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    
     try {
-      // Save state
-      setStoredValue(value);
-      
-      // Save to localStorage
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(value));
-      }
+      window.localStorage.setItem(key, JSON.stringify(storedValue));
     } catch (error) {
       console.warn(`Error setting localStorage key "${key}":`, error);
     }
-  };
-  
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === key) {
-        setStoredValue(e.newValue ? JSON.parse(e.newValue) : initialValue);
-      }
-    };
-    
-    // Listen for changes to this localStorage key
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, [initialValue, key]);
-  
-  return [storedValue, setValue];
+  }, [key, storedValue]);
+
+  return [storedValue, setStoredValue] as const;
 }
