@@ -49,7 +49,7 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
   const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
   const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
 
-  const [formState, setFormState: any] = useState<ItemFormState>({
+  const [formState, setFormState] = useState<ItemFormState>({
     lotNumber: initialValues?.lotNumber || '',
     date: initialValues?.date || new Date().toISOString().split('T')[0],
     location: initialValues?.location || '',
