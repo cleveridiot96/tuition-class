@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Trash2 } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { ItemTableProps } from './types/ItemFormTypes';
 
 const ItemsTable: React.FC<ItemTableProps> = ({
@@ -81,6 +81,7 @@ const ItemsTable: React.FC<ItemTableProps> = ({
           onClick={onAddItem}
           className="mt-2"
         >
+          <Plus size={16} className="mr-2" />
           Add Item
         </Button>
       </div>

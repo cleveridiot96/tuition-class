@@ -1,19 +1,11 @@
 
+import { ReactNode } from 'react';
+
 export interface Item {
   id?: string;
   name: string;
   quantity: number;
   rate: number;
-}
-
-export interface ItemFormState {
-  date: string;
-  lotNumber: string;
-  location: string;
-  transporterId: string;
-  transportCost: string;
-  items: Item[];
-  notes: string;
 }
 
 export interface ItemTableProps {
@@ -30,4 +22,16 @@ export interface FormSummaryProps {
   showBrokerage?: boolean;
   expenses?: number;
   total: number;
+}
+
+export interface ItemFormState {
+  lotNumber: string;
+  date: string;
+  location: string;
+  transporterId: string;
+  transportCost: string;
+  items: Item[];
+  notes: string;
+  expenses?: number;
+  totalAfterExpenses?: number;
 }

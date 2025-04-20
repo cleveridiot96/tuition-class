@@ -45,8 +45,6 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
   });
 
   useEffect(() => {
-    // Load initial data
-    // Mock data loading functions - replace with your actual data fetching
     const mockGetLocations = () => ['Location A', 'Location B'];
     const mockGetCustomers = () => [{ id: '1', name: 'Customer A' }, { id: '2', name: 'Customer B' }];
     const mockGetBrokers = () => [{ id: '1', name: 'Broker A', commissionRate: 5 }, { id: '2', name: 'Broker B', commissionRate: 10 }];
@@ -57,7 +55,6 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
     setBrokers(mockGetBrokers());
     setTransporters(mockGetTransporters());
 
-    // If initial sale data is provided, populate the form
     if (initialSale) {
       setFormState({
         lotNumber: initialSale.lotNumber || '',
@@ -178,7 +175,7 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="lotNumber">Lot Number</Label>
