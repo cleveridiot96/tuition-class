@@ -5,19 +5,21 @@ import { Input } from "@/components/ui/input";
 
 const WeightDetails = ({ form }) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4 border rounded-md bg-blue-50">
+      <h3 className="font-bold text-blue-700">Weight Information</h3>
       <FormField
         control={form.control}
         name="bags"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Bags</FormLabel>
+            <FormLabel className="font-bold">Bags (Count)</FormLabel>
             <FormControl>
               <Input 
                 type="number"
                 min="1"
                 {...field}
                 onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
+                className="border-2 border-blue-300"
               />
             </FormControl>
             <FormMessage />
@@ -30,7 +32,7 @@ const WeightDetails = ({ form }) => {
         name="netWeight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Net Weight (KG)</FormLabel>
+            <FormLabel className="font-bold">Net Weight (KG)</FormLabel>
             <FormControl>
               <Input 
                 type="number"
@@ -38,6 +40,7 @@ const WeightDetails = ({ form }) => {
                 step="0.01"
                 {...field}
                 onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                className="border-2 border-blue-300"
               />
             </FormControl>
             <FormMessage />
@@ -50,9 +53,9 @@ const WeightDetails = ({ form }) => {
         name="party"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Party</FormLabel>
+            <FormLabel className="font-bold">Party</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input {...field} className="border-2 border-blue-300" />
             </FormControl>
             <FormMessage />
           </FormItem>

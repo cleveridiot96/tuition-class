@@ -2,6 +2,7 @@
 import { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { PurchaseFormData } from "../PurchaseFormSchema";
+import { toast } from "sonner";
 
 interface UseBagExtractorProps {
   form: UseFormReturn<PurchaseFormData>;
@@ -26,11 +27,14 @@ export const useBagExtractor = ({ form }: UseBagExtractorProps) => {
   }, [form]);
   
   const extractBagsFromLotNumber = (lotNumber: string) => {
+    console.log("Extracting bags from lot number:", lotNumber);
     const match = lotNumber.match(/[\/\\](\d+)/);
     if (match && match[1]) {
       const bags = parseInt(match[1], 10);
       if (!isNaN(bags)) {
+        console.log("Extracted bags:", bags);
         form.setValue('bags', bags);
+        toast.success(`Automatically set ${bags} bags from lot number`);
       }
     }
   };
