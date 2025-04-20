@@ -65,7 +65,12 @@ export {
 export * from './inventoryService';
 
 // Re-export purchase functionality
-export * from './purchaseService';
+export {
+  addPurchase,
+  updatePurchase,
+  deletePurchase,
+  savePurchases
+} from './purchaseService';
 
 // Export sales functionality
 export {

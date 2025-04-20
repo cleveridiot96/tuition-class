@@ -29,7 +29,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
   const [transporters, setTransporters] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
   const [locations, setLocations] = useState<string[]>([]);
-  const [showBrokerage, setShowBrokerage] = useState<boolean>(true); // Always show brokerage now
+  const [showBrokerage, setShowBrokerage] = useState<boolean>(true);
   const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
   const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
 
@@ -50,6 +50,8 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
       brokerageValue: initialData?.brokerageValue || 1, // Default 1%
       notes: initialData?.notes || "",
       agentId: initialData?.agentId || "",
+      billNumber: initialData?.billNumber || "",
+      billAmount: initialData?.billAmount || undefined,
     }
   });
 
@@ -61,6 +63,13 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
 
   useEffect(() => {
     loadInitialData();
+    
+    // Extract bags from lot number on initial load if lotNumber exists
+    const lotNumber = form.getValues().lotNumber;
+    if (lotNumber) {
+      extractBagsFromLotNumber(lotNumber);
+    }
+    
     if (initialData?.agentId) {
       setShowBrokerage(true);
     }

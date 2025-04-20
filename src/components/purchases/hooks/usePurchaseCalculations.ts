@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
-import { PurchaseFormData } from "../types/PurchaseTypes";
+import { PurchaseFormData } from "../PurchaseFormSchema";
 
 interface UsePurchaseCalculationsProps {
   form: UseFormReturn<PurchaseFormData>;
