@@ -1,0 +1,51 @@
+
+/* Form field fixes to prevent blurring and ensure visibility */
+input,
+select,
+textarea,
+.select-trigger {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.select-trigger:focus {
+  border-color: #7c3aed !important;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.2) !important;
+  outline: none !important;
+}
+
+input::placeholder,
+select::placeholder,
+textarea::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+/* Fix for disabled inputs */
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  cursor: not-allowed;
+}
+
+/* Ensure dropdown items are visible */
+.select-content {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  z-index: 50 !important;
+}
+
+.select-item {
+  color: #1e293b !important;
+}
+
+.select-item:hover,
+.select-item:focus {
+  background-color: #f1f5f9 !important;
+}
