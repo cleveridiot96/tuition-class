@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -119,6 +118,12 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
   };
 
   const handleFormSubmit = (data: PurchaseFormData) => {
+    // VALIDATION: At least one of Party Name or Agent must be filled.
+    if (!data.party && !data.agentId) {
+      toast.error("⚠️ Please enter at least either the Party Name or the Agent before saving.");
+      return;
+    }
+
     if (checkDuplicateLot(data.lotNumber) && !initialData) {
       const existingPurchase = getPurchases().find(p => p.lotNumber === data.lotNumber && !p.isDeleted);
       if (existingPurchase) {
@@ -157,7 +162,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
                 </AccordionItem>
                 
                 <AccordionItem value="details" className="border-none">
-                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Quantity & Rate</AccordionTrigger>
+                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Bags & Rate</AccordionTrigger>
                   <AccordionContent>
                     <PurchaseDetails form={form} locations={locations} />
                   </AccordionContent>
@@ -202,6 +207,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
                   type="submit" 
                   size="lg"
                   className="md-ripple bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  disabled={form.formState.isSubmitting}
                 >
                   {initialData ? "Update Purchase" : "Add Purchase"}
                 </Button>
