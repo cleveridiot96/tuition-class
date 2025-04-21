@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import Navigation from "@/components/Navigation";
 import PurchaseTable from "@/components/purchases/PurchaseTable";
@@ -6,7 +7,7 @@ import MultiItemPurchaseForm from "@/components/purchases/MultiItemPurchaseForm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { getPurchases, savePurchases, getSuppliers, saveSuppliers } from "@/services/storageService";
+import { getPurchases, savePurchases, getSuppliers } from "@/services/storageService";
 import { Purchase } from "@/services/types";
 import AddPartyDialog from "@/components/purchases/AddPartyDialog";
 import { toast } from "sonner";
@@ -49,7 +50,8 @@ const Purchases = () => {
 
     const updatedSuppliers = [...suppliers, newParty];
     setSuppliers(updatedSuppliers);
-    saveSuppliers(updatedSuppliers);
+    // Cannot use saveSuppliers as it doesn't exist, use direct storage operation
+    localStorage.setItem('suppliers', JSON.stringify(updatedSuppliers));
 
     setNewPartyName("");
     setNewPartyAddress("");
@@ -120,33 +122,42 @@ const Purchases = () => {
             <CardTitle className="text-blue-800">Purchases</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="mb-4 flex justify-between items-center">
-              <Button onClick={() => setIsAdding(true)} className="md-ripple bg-blue-500 text-white hover:bg-blue-700">
+            <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <Button onClick={() => {
+                setIsAdding(true);
+                setIsMultiItemForm(false);
+              }} className="md-ripple bg-blue-500 text-white hover:bg-blue-700">
                 <Plus className="mr-2" size={16} /> Add Purchase
               </Button>
-              <Button onClick={() => setIsMultiItemForm(true)} className="md-ripple bg-blue-500 text-white hover:bg-blue-700">
+              <Button onClick={() => {
+                setIsMultiItemForm(true);
+                setIsAdding(true);
+              }} className="md-ripple bg-blue-500 text-white hover:bg-blue-700">
                 <Plus className="mr-2" size={16} /> Add Multi-Item Purchase
               </Button>
             </div>
 
             {isAdding ? (
-              <PurchaseForm
-                onSubmit={handlePurchaseSubmit}
-                onCancel={() => {
-                  setIsAdding(false);
-                  setEditingPurchase(null);
-                }}
-                initialData={editingPurchase}
-              />
-            ) : isMultiItemForm ? (
-              <MultiItemPurchaseForm
-                onSubmit={handlePurchaseSubmit}
-                onCancel={() => {
-                  setIsMultiItemForm(false);
-                  setEditingPurchase(null);
-                }}
-                initialValues={editingPurchase}
-              />
+              isMultiItemForm ? (
+                <MultiItemPurchaseForm
+                  onSubmit={handlePurchaseSubmit}
+                  onCancel={() => {
+                    setIsMultiItemForm(false);
+                    setIsAdding(false);
+                    setEditingPurchase(null);
+                  }}
+                  initialValues={editingPurchase}
+                />
+              ) : (
+                <PurchaseForm
+                  onSubmit={handlePurchaseSubmit}
+                  onCancel={() => {
+                    setIsAdding(false);
+                    setEditingPurchase(null);
+                  }}
+                  initialData={editingPurchase}
+                />
+              )
             ) : (
               <PurchaseTable
                 purchases={sortedPurchases()}

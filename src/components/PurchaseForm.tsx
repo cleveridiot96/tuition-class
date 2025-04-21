@@ -17,7 +17,7 @@ import {
 } from '@/services/storageService';
 import { purchaseFormSchema } from "./purchases/PurchaseFormSchema";
 import { PurchaseFormProps, PurchaseFormData } from "./purchases/types/PurchaseTypes";
-import { useFormCalculations } from "./purchases/hooks/useFormCalculations";
+import { usePurchaseCalculations } from "./purchases/hooks/usePurchaseCalculations";
 import { useBagExtractor } from "./purchases/hooks/useBagExtractor";
 import PurchaseFormHeader from "./purchases/components/PurchaseFormHeader";
 import PurchaseDetails from "./purchases/components/PurchaseDetails";
@@ -27,7 +27,7 @@ import DuplicateLotDialog from "./purchases/DuplicateLotDialog";
 import { ScrollArea } from "./ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
-const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) => {
+const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initialData }) => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -75,7 +75,8 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     bags: form.watch("bags") || 0,
   };
 
-  const calculations = useFormCalculations(formState);
+  const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } = 
+    usePurchaseCalculations({ form, showBrokerage, initialData });
   
   // Use the bag extractor hook
   const { extractBagsFromLotNumber } = useBagExtractor({ form });
@@ -129,11 +130,11 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     
     const submitData = {
       ...data,
-      totalAmount: calculations.totalAmount,
-      transportCost: calculations.transportCost,
-      brokerageAmount: showBrokerage ? calculations.brokerageAmount : 0,
-      totalAfterExpenses: calculations.totalAfterExpenses,
-      ratePerKgAfterExpenses: calculations.ratePerKgAfterExpenses,
+      totalAmount: totalAmount,
+      transportCost: transportCost,
+      brokerageAmount: showBrokerage ? brokerageAmount : 0,
+      totalAfterExpenses: totalAfterExpenses,
+      ratePerKgAfterExpenses: ratePerKgAfterExpenses,
       id: initialData?.id || Date.now().toString()
     };
     
@@ -167,8 +168,8 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
                   <AccordionContent>
                     <BrokerageDetails 
                       form={form} 
-                      brokerageAmount={calculations.brokerageAmount} 
-                      totalAmount={calculations.totalAmount}
+                      brokerageAmount={brokerageAmount} 
+                      totalAmount={totalAmount}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -177,18 +178,26 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
                   <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Summary</AccordionTrigger>
                   <AccordionContent>
                     <PurchaseSummary 
-                      totalAmount={calculations.totalAmount}
-                      transportCost={calculations.transportCost}
-                      brokerageAmount={calculations.brokerageAmount}
+                      totalAmount={totalAmount}
+                      transportCost={transportCost}
+                      brokerageAmount={brokerageAmount}
                       expenses={form.watch("expenses") || 0}
-                      totalAfterExpenses={calculations.totalAfterExpenses}
-                      ratePerKgAfterExpenses={calculations.ratePerKgAfterExpenses}
+                      totalAfterExpenses={totalAfterExpenses}
+                      ratePerKgAfterExpenses={ratePerKgAfterExpenses}
                     />
                   </AccordionContent>
                 </AccordionItem>
               </Accordion>
               
-              <div className="flex justify-end">
+              <div className="flex justify-between mt-4">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={onCancel}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  Cancel
+                </Button>
                 <Button 
                   type="submit" 
                   size="lg"

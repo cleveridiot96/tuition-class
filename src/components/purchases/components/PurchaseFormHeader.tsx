@@ -27,8 +27,11 @@ const PurchaseFormHeader: React.FC<PurchaseFormHeaderProps> = ({ form }) => {
           <FormItem>
             <FormLabel>Lot Number (Vakkal)</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="Enter lot number" />
+              <Input {...field} placeholder="Enter lot number (e.g. DD/12)" />
             </FormControl>
+            <p className="text-xs text-muted-foreground">
+              Format: Name/BagCount (e.g. DD/12 for 12 bags)
+            </p>
           </FormItem>
         )}
       />

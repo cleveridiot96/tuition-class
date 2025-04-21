@@ -19,34 +19,42 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
   ratePerKgAfterExpenses,
 }) => {
   return (
-    <div className="bg-green-50 p-6 rounded-md border-2 border-green-300">
-      <h2 className="text-lg font-bold text-green-800 mb-4">Purchase Summary</h2>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="p-2 bg-white rounded shadow">
-          <p className="text-sm text-gray-500">Total Amount</p>
-          <p className="font-bold text-lg">₹{totalAmount.toFixed(2)}</p>
+    <div className="p-4 border rounded-md bg-blue-50 space-y-3">
+      <h3 className="text-lg font-semibold text-blue-800">Purchase Summary</h3>
+      
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+        <div>
+          <p className="text-sm text-gray-600">Total Amount:</p>
+          <p className="font-medium">₹{totalAmount.toFixed(2)}</p>
         </div>
-        <div className="p-2 bg-white rounded shadow">
-          <p className="text-sm text-gray-500">Transport Cost</p>
-          <p className="font-bold text-lg">₹{transportCost.toFixed(2)}</p>
+        
+        <div>
+          <p className="text-sm text-gray-600">Transport Cost:</p>
+          <p className="font-medium">₹{transportCost.toFixed(2)}</p>
         </div>
-        {brokerageAmount > 0 && (
-          <div className="p-2 bg-white rounded shadow">
-            <p className="text-sm text-gray-500">Brokerage</p>
-            <p className="font-bold text-lg">₹{brokerageAmount.toFixed(2)}</p>
+        
+        <div>
+          <p className="text-sm text-gray-600">Brokerage:</p>
+          <p className="font-medium">₹{brokerageAmount.toFixed(2)}</p>
+        </div>
+        
+        <div>
+          <p className="text-sm text-gray-600">Other Expenses:</p>
+          <p className="font-medium">₹{expenses.toFixed(2)}</p>
+        </div>
+      </div>
+      
+      <div className="border-t border-blue-200 pt-3 mt-3">
+        <div className="flex justify-between">
+          <div>
+            <p className="text-sm font-medium text-blue-700">Final Amount:</p>
+            <p className="text-xl font-bold text-blue-900">₹{totalAfterExpenses.toFixed(2)}</p>
           </div>
-        )}
-        <div className="p-2 bg-white rounded shadow">
-          <p className="text-sm text-gray-500">Additional Expenses</p>
-          <p className="font-bold text-lg">₹{expenses.toFixed(2)}</p>
-        </div>
-        <div className="p-2 bg-white rounded shadow border-2 border-green-500">
-          <p className="text-sm text-gray-500">Total After Expenses</p>
-          <p className="font-bold text-lg text-green-700">₹{totalAfterExpenses.toFixed(2)}</p>
-        </div>
-        <div className="p-2 bg-white rounded shadow border-2 border-green-500">
-          <p className="text-sm text-gray-500">Rate/kg After Expenses</p>
-          <p className="font-bold text-lg text-green-700">₹{ratePerKgAfterExpenses.toFixed(2)}</p>
+          
+          <div className="text-right">
+            <p className="text-sm font-medium text-blue-700">Rate/KG After Expenses:</p>
+            <p className="text-xl font-bold text-blue-900">₹{ratePerKgAfterExpenses.toFixed(2)}</p>
+          </div>
         </div>
       </div>
     </div>
