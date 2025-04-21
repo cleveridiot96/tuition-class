@@ -56,7 +56,7 @@ const Navigation: React.FC<NavigationProps> = ({
         <div className="flex items-center space-x-4">
           <FontSizeAdjuster />
           {showFormatButton && onFormatClick && (
-            <Button variant="outline" size="sm" onClick={onFormatClick} className="md-ripple text-white border-white hover:bg-white/20">
+            <Button variant="destructive" size="sm" onClick={onFormatClick} className="md-ripple">
               Format
             </Button>
           )}
