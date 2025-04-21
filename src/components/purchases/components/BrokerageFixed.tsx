@@ -1,15 +1,20 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { BrokerageFixedProps } from "../../shared/types/ItemFormTypes";
+import { UseFormReturn } from "react-hook-form";
+import { PurchaseFormData } from "../PurchaseFormSchema";
+
+interface BrokerageFixedProps {
+  form: UseFormReturn<PurchaseFormData>;
+  onChange?: (value: number) => void;
+}
 
 const BrokerageFixed: React.FC<BrokerageFixedProps> = ({ form, onChange }) => {
   // Watch for changes in the brokerageValue field
   const brokerageValue = form.watch("brokerageValue") || 0;
   
-  // When brokerageValue changes, call onChange
-  useEffect(() => {
+  React.useEffect(() => {
     if (onChange) {
       const fixedAmount = parseFloat(brokerageValue.toString()) || 0;
       onChange(fixedAmount);

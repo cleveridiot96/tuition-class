@@ -7,3 +7,10 @@ export interface BrokerageDetailsProps {
   brokerageAmount: number;
   totalAmount: number;
 }
+
+export interface BrokerageDisplayProps {
+  brokerageAmount: number;
+  totalAmount: number;
+  brokerageType: string;
+  brokerageValue: number;
+}

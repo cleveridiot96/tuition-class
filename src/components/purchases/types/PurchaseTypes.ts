@@ -16,3 +16,6 @@ export interface PurchaseDetailsProps {
   form: UseFormReturn<PurchaseFormData>;
   locations: string[];
 }
+
+// Re-export PurchaseFormData type to make it available for other modules
+export { PurchaseFormData } from "../PurchaseFormSchema";

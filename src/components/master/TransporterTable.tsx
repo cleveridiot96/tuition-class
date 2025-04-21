@@ -1,0 +1,59 @@
+
+import React from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Edit2, Trash2 } from "lucide-react";
+
+interface TransporterTableProps {
+  transporters: any[];
+  onEdit: (transporter: any) => void;
+  onRefresh: () => void;
+}
+
+const TransporterTable: React.FC<TransporterTableProps> = ({ transporters, onEdit, onRefresh }) => {
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Name</TableHead>
+            <TableHead>Address</TableHead>
+            <TableHead>Phone</TableHead>
+            <TableHead>Vehicle Details</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transporters.length > 0 ? (
+            transporters.map((transporter) => (
+              <TableRow key={transporter.id}>
+                <TableCell>{transporter.name}</TableCell>
+                <TableCell>{transporter.address || "-"}</TableCell>
+                <TableCell>{transporter.phone || "-"}</TableCell>
+                <TableCell>{transporter.vehicleDetails || "-"}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(transporter)}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <Edit2 size={16} />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center py-4">
+                No transporters found
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+};
+
+export default TransporterTable;
