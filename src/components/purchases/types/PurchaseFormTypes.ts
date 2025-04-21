@@ -38,5 +38,5 @@ export interface PurchaseFormState {
   totalAfterExpenses: number;
   brokerageType: string;
   brokerageRate: number;
-  bags?: number;
+  bags: number; // Add bags property
 }

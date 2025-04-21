@@ -57,7 +57,7 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
         brokerageValue: formState.brokerageRate, // Mapping brokerageRate to brokerageValue for API consistency
         location: formState.location,
         // Add bags property to Purchase
-        bags: formState.bags
+        bags: formState.bags || 0
       };
 
       if (initialValues) {

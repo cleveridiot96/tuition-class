@@ -1,141 +1,84 @@
 
-import React, { useEffect, useState } from "react";
-import Navigation from "@/components/Navigation";
-import DashboardMenu from "@/components/DashboardMenu";
-import { FormatDataHandler } from "@/components/dashboard/FormatDataHandler";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import DashboardHeader from "@/components/dashboard/DashboardHeader";
-import BackupRestoreControls from "@/components/BackupRestoreControls";
-import ProfitLossStatement from "@/components/ProfitLossStatement";
-import DashboardSummary from "@/components/DashboardSummary";
-import { seedInitialData } from "@/services/storageService";
-import { initializeFinancialYears } from "@/services/financialYearService";
-import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
-import { toast } from "@/hooks/use-toast";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Navigation from '@/components/Navigation';
+import DashboardSummary from '@/components/DashboardSummary';
+import DashboardMenu from '@/components/DashboardMenu';
+import { FormatDataHandler } from '@/components/dashboard/FormatDataHandler';
+import { Menu, Package, TrendingUp, Truck, Navigation as LocationIcon, Repeat } from 'lucide-react';
+
+const menuItems = [
+  {
+    category: "Master Data",
+    icon: <Menu className="h-5 w-5" />,
+    items: [
+      { id: "master", label: "Master", description: "Manage suppliers, customers", route: "/master" }
+    ]
+  },
+  {
+    category: "Transactions",
+    icon: <TrendingUp className="h-5 w-5" />,
+    items: [
+      { id: "purchases", label: "Purchases", description: "Record and manage purchases", route: "/purchases" },
+      { id: "sales", label: "Sales", description: "Record and manage sales", route: "/sales" },
+      { id: "payments", label: "Payments", description: "Record payments made", route: "/payments" },
+      { id: "receipts", label: "Receipts", description: "Record receipts received", route: "/receipts" },
+      { id: "cashbook", label: "Cash Book", description: "View cash transactions", route: "/cash-book" }
+    ]
+  },
+  {
+    category: "Inventory",
+    icon: <Package className="h-5 w-5" />,
+    items: [
+      { id: "inventory", label: "Inventory", description: "Manage your inventory", route: "/inventory" },
+      { id: "stock", label: "Stock Report", description: "Generate stock reports", route: "/stock" },
+      { id: "locationTransfer", label: "Location Transfer", description: "Transfer inventory between locations", route: "/location-transfer" }
+    ]
+  },
+  {
+    category: "Transport",
+    icon: <Truck className="h-5 w-5" />,
+    items: [
+      { id: "transport", label: "Transport", description: "Manage transportation", route: "/transport" }
+    ]
+  },
+  {
+    category: "Other",
+    icon: <LocationIcon className="h-5 w-5" />,
+    items: [
+      { id: "ledger", label: "Ledger", description: "View account ledgers", route: "/ledger" },
+      { id: "agents", label: "Agents", description: "Manage agents", route: "/agents" },
+      { id: "calculator", label: "Calculator", description: "Simple calculator", route: "/calculator" }
+    ]
+  }
+];
 
 const Index = () => {
-  const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
-  
-  const {
-    summaryData,
-    profitByTransaction,
-    profitByMonth,
-    totalProfit,
-    isRefreshing,
-    dataVersion,
-    loadDashboardData,
-    incrementDataVersion
-  } = useDashboardData();
-
-  useEffect(() => {
-    const handleBackupCreated = (event: CustomEvent) => {
-      if (event.detail.success) {
-        toast({
-          title: "Backup Created",
-          description: "Data backup successfully downloaded",
-        });
-      } else {
-        toast({
-          title: "Backup Failed",
-          description: "There was a problem creating the backup",
-          variant: "destructive",
-        });
-      }
-    };
-
-    window.addEventListener('backup-created', handleBackupCreated as EventListener);
-    
-    return () => {
-      window.removeEventListener('backup-created', handleBackupCreated as EventListener);
-    };
-  }, []);
-  
-  useEffect(() => {
-    try {
-      initializeFinancialYears();
-      seedInitialData();
-      loadDashboardData();
-    } catch (error) {
-      console.error("Error during initialization:", error);
-    }
-    
-    const handleFocus = () => {
-      loadDashboardData();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [loadDashboardData]);
-
-  useEffect(() => {
-    if (dataVersion > 0) {
-      loadDashboardData();
-    }
-  }, [dataVersion, loadDashboardData]);
-
-  useEffect(() => {
-    const handleRouteChange = () => {
-      loadDashboardData();
-    };
-    
-    handleRouteChange();
-    
-    window.addEventListener('popstate', handleRouteChange);
-    
-    return () => {
-      window.removeEventListener('popstate', handleRouteChange);
-    };
-  }, [loadDashboardData]);
-
-  const handleOpeningBalances = () => {
-    setShowOpeningBalanceSetup(true);
-  };
+  const navigate = useNavigate();
+  const [showFormatter, setShowFormatter] = useState(false);
 
   const handleFormatClick = () => {
-    document.dispatchEvent(new Event('format-click'));
-    return true;
+    setShowFormatter(true);
+    return true; // Indicate that we're handling the format click
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige overflow-x-hidden">
-      <Navigation 
-        title="Dashboard" 
-        showFormatButton={true}
-        onFormatClick={handleFormatClick}
-      />
+    <div className="min-h-screen bg-gray-50">
+      <Navigation title="KKS - Kisan Khata Sahayak" showFormatButton onFormatClick={handleFormatClick} />
       
-      <div className="container mx-auto px-4 py-6 overflow-x-hidden">
-        <DashboardHeader onOpeningBalancesClick={handleOpeningBalances} />
+      <div className="container mx-auto py-8 px-4">
+        <h1 className="text-3xl font-bold mb-8 text-center">Kisan Khata Sahayak</h1>
         
-        <p className="text-lg text-ag-brown mt-2 mb-4 text-center">
-          Agricultural Business Management System
-        </p>
+        <DashboardSummary />
         
-        <BackupRestoreControls 
-          onRefresh={loadDashboardData} 
-          isRefreshing={isRefreshing} 
-        />
+        <div className="mt-8">
+          <DashboardMenu items={menuItems} onItemClick={(route) => navigate(route)} />
+        </div>
         
-        <DashboardMenu />
-        
-        <DashboardSummary summaryData={summaryData} />
-        
-        <ProfitLossStatement 
-          profitByTransaction={profitByTransaction}
-          profitByMonth={profitByMonth}
-          totalProfit={totalProfit}
-        />
+        {showFormatter && (
+          <FormatDataHandler onClose={() => setShowFormatter(false)} />
+        )}
       </div>
-      
-      <OpeningBalanceSetup 
-        isOpen={showOpeningBalanceSetup}
-        onClose={() => setShowOpeningBalanceSetup(false)}
-      />
-      
-      <FormatDataHandler onFormatComplete={loadDashboardData} />
     </div>
   );
 };

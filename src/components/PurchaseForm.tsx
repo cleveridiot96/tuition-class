@@ -24,6 +24,7 @@ import PurchaseDetails from "./purchases/components/PurchaseDetails";
 import BrokerageDetails from "./purchases/BrokerageDetails";
 import PurchaseSummary from "./purchases/PurchaseSummary";
 import DuplicateLotDialog from "./purchases/DuplicateLotDialog";
+import { ScrollArea } from "./ui/scroll-area";
 
 const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -119,33 +120,35 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
 
   return (
     <Card className="p-6">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-          <PurchaseFormHeader form={form} />
-          <PurchaseDetails form={form} locations={locations} />
-          
-          <BrokerageDetails 
-            form={form} 
-            brokerageAmount={calculations.brokerageAmount} 
-            totalAmount={calculations.totalAmount}
-          />
-          
-          <PurchaseSummary 
-            totalAmount={calculations.totalAmount}
-            transportCost={calculations.transportCost}
-            brokerageAmount={calculations.brokerageAmount}
-            expenses={form.watch("expenses") || 0}
-            totalAfterExpenses={calculations.totalAfterExpenses}
-            ratePerKgAfterExpenses={calculations.ratePerKgAfterExpenses}
-          />
-          
-          <div className="flex justify-end">
-            <Button type="submit" size="lg">
-              {initialData ? "Update Purchase" : "Add Purchase"}
-            </Button>
-          </div>
-        </form>
-      </Form>
+      <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+            <PurchaseFormHeader form={form} />
+            <PurchaseDetails form={form} locations={locations} />
+            
+            <BrokerageDetails 
+              form={form} 
+              brokerageAmount={calculations.brokerageAmount} 
+              totalAmount={calculations.totalAmount}
+            />
+            
+            <PurchaseSummary 
+              totalAmount={calculations.totalAmount}
+              transportCost={calculations.transportCost}
+              brokerageAmount={calculations.brokerageAmount}
+              expenses={form.watch("expenses") || 0}
+              totalAfterExpenses={calculations.totalAfterExpenses}
+              ratePerKgAfterExpenses={calculations.ratePerKgAfterExpenses}
+            />
+            
+            <div className="flex justify-end">
+              <Button type="submit" size="lg">
+                {initialData ? "Update Purchase" : "Add Purchase"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </ScrollArea>
 
       <DuplicateLotDialog
         open={showDuplicateLotDialog}
