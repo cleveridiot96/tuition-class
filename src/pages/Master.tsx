@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,7 +83,7 @@ const Master = () => {
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center mb-4">
-              <Tabs defaultValue="suppliers" value={activeTab} onValueChange={setActiveTab}>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
                   <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
                   <TabsTrigger value="customers">Customers</TabsTrigger>
@@ -90,27 +91,27 @@ const Master = () => {
                   <TabsTrigger value="agents">Agents</TabsTrigger>
                   <TabsTrigger value="brokers">Brokers</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="suppliers">
+                  <SupplierTable suppliers={suppliers} onEdit={handleEditClick} onRefresh={loadData} />
+                </TabsContent>
+                <TabsContent value="customers">
+                  <CustomerTable customers={customers} onEdit={handleEditClick} onRefresh={loadData} />
+                </TabsContent>
+                <TabsContent value="transporters">
+                  <TransporterTable transporters={transporters} onEdit={handleEditClick} onRefresh={loadData} />
+                </TabsContent>
+                <TabsContent value="agents">
+                  <AgentTable agents={agents} onEdit={handleEditClick} onRefresh={loadData} />
+                </TabsContent>
+                <TabsContent value="brokers">
+                  <BrokerTable brokers={brokers} onEdit={handleEditClick} onRefresh={loadData} />
+                </TabsContent>
               </Tabs>
               <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-700">
                 <Plus className="mr-2 h-4 w-4" /> Add New
               </Button>
             </div>
-
-            <TabsContent value="suppliers">
-              <SupplierTable suppliers={suppliers} onEdit={handleEditClick} onRefresh={loadData} />
-            </TabsContent>
-            <TabsContent value="customers">
-              <CustomerTable customers={customers} onEdit={handleEditClick} onRefresh={loadData} />
-            </TabsContent>
-            <TabsContent value="transporters">
-              <TransporterTable transporters={transporters} onEdit={handleEditClick} onRefresh={loadData} />
-            </TabsContent>
-            <TabsContent value="agents">
-              <AgentTable agents={agents} onEdit={handleEditClick} onRefresh={loadData} />
-            </TabsContent>
-            <TabsContent value="brokers">
-              <BrokerTable brokers={brokers} onEdit={handleEditClick} onRefresh={loadData} />
-            </TabsContent>
           </CardContent>
         </Card>
       </div>
