@@ -1,6 +1,6 @@
 
 import { UseFormReturn } from "react-hook-form";
-import { PurchaseFormData } from "../PurchaseFormSchema";
+import { PurchaseFormData } from "../types/PurchaseTypes";
 
 interface UseBagExtractorProps {
   form: UseFormReturn<PurchaseFormData>;
@@ -8,24 +8,17 @@ interface UseBagExtractorProps {
 
 export const useBagExtractor = ({ form }: UseBagExtractorProps) => {
   /**
-   * Extracts bag count from a lot number/vakkal string
-   * It looks for numbers after a forward slash "/" or backslash "\"
+   * Extracts bag count from lot number if in format Like "DD/12" where 12 is the bag count
    */
   const extractBagsFromLotNumber = (lotNumber: string): number | null => {
-    if (!lotNumber) return null;
-    
-    // Try to extract bags from the right side of / or \
-    const slashMatch = lotNumber.match(/[\/\\](\d+)$/);
-    if (slashMatch && slashMatch[1]) {
-      const bags = parseInt(slashMatch[1], 10);
-      console.log(`Extracted ${bags} bags from lot number: ${lotNumber}`);
-      return bags;
+    // Look for patterns like "XX/123" where 123 is the bag count
+    const match = lotNumber.match(/\/(\d+)$/);
+    if (match && match[1]) {
+      const bagCount = parseInt(match[1], 10);
+      return isNaN(bagCount) ? null : bagCount;
     }
-    
     return null;
   };
-  
-  return {
-    extractBagsFromLotNumber
-  };
+
+  return { extractBagsFromLotNumber };
 };

@@ -1,19 +1,14 @@
 
 export interface ItemFormState {
-  lotNumber: string;
-  date: string;
-  location: string;
-  transporterId: string;
-  transportCost: string;
-  items: {
-    id?: string;
-    name: string;
-    quantity: number;
-    rate: number;
-  }[];
-  notes: string;
-  expenses?: number;
-  brokerageType?: string;
-  brokerageRate?: number;
-  bags?: number;
+  id: string;
+  name: string;
+  quantity: number;
+  rate: number;
+}
+
+export interface ItemFormProps {
+  items: ItemFormState[];
+  onItemChange: (index: number, field: string, value: any) => void;
+  onAddItem: () => void;
+  onRemoveItem: (index: number) => void;
 }

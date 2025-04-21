@@ -1,6 +1,6 @@
 
 import { UseFormReturn } from "react-hook-form";
-import { PurchaseFormData } from "../PurchaseFormSchema";
+import { PurchaseFormData } from "./PurchaseTypes";
 
 export interface BrokerageDetailsProps {
   form: UseFormReturn<PurchaseFormData>;
@@ -13,4 +13,10 @@ export interface BrokerageDisplayProps {
   totalAmount: number;
   brokerageType: string;
   brokerageValue: number;
+}
+
+export interface BrokerageFormProps {
+  form: UseFormReturn<PurchaseFormData>;
+  brokerageType: string;
+  onBrokerageTypeChange: (type: string) => void;
 }

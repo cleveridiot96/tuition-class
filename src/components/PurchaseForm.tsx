@@ -1,32 +1,29 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   getSuppliers,
   getTransporters,
   getAgents,
-  checkDuplicateLot,
-  getPurchases,
   getLocations,
 } from '@/services/storageService';
 import { purchaseFormSchema } from "./purchases/PurchaseFormSchema";
 import { PurchaseFormProps, PurchaseFormData } from "./purchases/types/PurchaseTypes";
 import { usePurchaseCalculations } from "./purchases/hooks/usePurchaseCalculations";
 import { useBagExtractor } from "./purchases/hooks/useBagExtractor";
-import PurchaseFormHeader from "./purchases/components/PurchaseFormHeader";
-import PurchaseDetails from "./purchases/components/PurchaseDetails";
-import BrokerageDetails from "./purchases/BrokerageDetails";
-import PurchaseSummary from "./purchases/PurchaseSummary";
-import DuplicateLotDialog from "./purchases/DuplicateLotDialog";
-import { ScrollArea } from "./ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
+import { usePurchaseValidation } from "./purchases/hooks/usePurchaseValidation";
+import PurchaseAccordion from "./purchases/components/PurchaseAccordion";
+import PurchaseFormActions from "./purchases/components/PurchaseFormActions";
+import DialogManager from "./purchases/components/DialogManager";
 
 const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initialData }) => {
+  // State
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
@@ -34,7 +31,9 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
   const [showBrokerage, setShowBrokerage] = useState<boolean>(true);
   const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
   const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
+  const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
 
+  // Form setup
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseFormSchema),
     defaultValues: {
@@ -57,29 +56,13 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
     }
   });
 
-  // Create a formState object compatible with our calculations hooks
-  const formState = {
-    lotNumber: form.watch("lotNumber") || "",
-    date: form.watch("date") || "",
-    location: form.watch("location") || "",
-    agentId: form.watch("agentId") || "",
-    transporterId: form.watch("transporterId") || "",
-    transportCost: form.watch("transportRate") ? (form.watch("transportRate") * form.watch("netWeight")).toString() : "0",
-    items: [{ id: "1", name: "", quantity: form.watch("netWeight") || 0, rate: form.watch("rate") || 0 }],
-    notes: form.watch("notes") || "",
-    expenses: form.watch("expenses") || 0,
-    totalAfterExpenses: 0,
-    brokerageType: form.watch("brokerageType") || "percentage",
-    brokerageRate: form.watch("brokerageValue") || 1,
-    bags: form.watch("bags") || 0,
-  };
-
+  // Custom hooks
   const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } = 
     usePurchaseCalculations({ form, showBrokerage, initialData });
-  
-  // Use the bag extractor hook
   const { extractBagsFromLotNumber } = useBagExtractor({ form });
+  const { validatePurchaseForm } = usePurchaseValidation();
 
+  // Load initial data
   useEffect(() => {
     loadInitialData();
     
@@ -88,8 +71,8 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
     }
   }, [initialData]);
 
+  // Extract bags from lot number
   useEffect(() => {
-    // Extract bags from lot number whenever lot number changes
     const lotNumber = form.watch("lotNumber");
     if (lotNumber) {
       const extractedBags = extractBagsFromLotNumber(lotNumber);
@@ -99,7 +82,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
     }
   }, [form.watch("lotNumber")]);
 
-  // Calculate transport cost whenever transport rate or net weight changes
+  // Calculate transport cost
   useEffect(() => {
     const transportRate = form.watch("transportRate");
     const netWeight = form.watch("netWeight");
@@ -110,6 +93,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
     }
   }, [form.watch("transportRate"), form.watch("netWeight")]);
 
+  // Helper functions
   const loadInitialData = () => {
     setSuppliers(getSuppliers());
     setTransporters(getTransporters());
@@ -117,22 +101,38 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
     setLocations(getLocations());
   };
 
+  // Form submission handler
   const handleFormSubmit = (data: PurchaseFormData) => {
-    // VALIDATION: At least one of Party Name or Agent must be filled.
-    if (!data.party && !data.agentId) {
-      toast.error("⚠️ Please enter at least either the Party Name or the Agent before saving.");
-      return;
-    }
-
-    if (checkDuplicateLot(data.lotNumber) && !initialData) {
-      const existingPurchase = getPurchases().find(p => p.lotNumber === data.lotNumber && !p.isDeleted);
-      if (existingPurchase) {
-        setDuplicateLotInfo(existingPurchase);
+    // Validate the form data
+    const validation = validatePurchaseForm(data, !!initialData);
+    
+    if (!validation.isValid) {
+      // If duplicate lot is found, show dialog
+      if (validation.duplicatePurchase) {
+        setDuplicateLotInfo(validation.duplicatePurchase);
         setShowDuplicateLotDialog(true);
+        setPendingSubmitData(data);
         return;
       }
+      // If other validation errors, they've been handled in the validation function
+      return;
     }
     
+    // If validation passes, submit the data
+    submitData(data);
+  };
+
+  // Continue with submission after duplicate confirmation
+  const handleContinueDespiteDuplicate = () => {
+    if (pendingSubmitData) {
+      submitData(pendingSubmitData);
+      setPendingSubmitData(null);
+    }
+    setShowDuplicateLotDialog(false);
+  };
+
+  // Submit data to parent component
+  const submitData = (data: PurchaseFormData) => {
     const submitData = {
       ...data,
       totalAmount: totalAmount,
@@ -153,78 +153,32 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
         <div className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-              <Accordion type="single" collapsible defaultValue="header">
-                <AccordionItem value="header" className="border-none">
-                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Purchase Details</AccordionTrigger>
-                  <AccordionContent>
-                    <PurchaseFormHeader form={form} />
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem value="details" className="border-none">
-                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Bags & Rate</AccordionTrigger>
-                  <AccordionContent>
-                    <PurchaseDetails form={form} locations={locations} />
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem value="brokerage" className="border-none">
-                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Brokerage Details</AccordionTrigger>
-                  <AccordionContent>
-                    <BrokerageDetails 
-                      form={form} 
-                      brokerageAmount={brokerageAmount} 
-                      totalAmount={totalAmount}
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-                
-                <AccordionItem value="summary" className="border-none">
-                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Summary</AccordionTrigger>
-                  <AccordionContent>
-                    <PurchaseSummary 
-                      totalAmount={totalAmount}
-                      transportCost={transportCost}
-                      brokerageAmount={brokerageAmount}
-                      expenses={form.watch("expenses") || 0}
-                      totalAfterExpenses={totalAfterExpenses}
-                      ratePerKgAfterExpenses={ratePerKgAfterExpenses}
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
+              <PurchaseAccordion
+                form={form}
+                locations={locations}
+                brokerageAmount={brokerageAmount}
+                totalAmount={totalAmount}
+                transportCost={transportCost}
+                expenses={form.watch("expenses") || 0}
+                totalAfterExpenses={totalAfterExpenses}
+                ratePerKgAfterExpenses={ratePerKgAfterExpenses}
+              />
               
-              <div className="flex justify-between mt-4">
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  onClick={onCancel}
-                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  size="lg"
-                  className="md-ripple bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  disabled={form.formState.isSubmitting}
-                >
-                  {initialData ? "Update Purchase" : "Add Purchase"}
-                </Button>
-              </div>
+              <PurchaseFormActions
+                onCancel={onCancel}
+                isSubmitting={form.formState.isSubmitting}
+                isEdit={!!initialData}
+              />
             </form>
           </Form>
         </div>
       </ScrollArea>
 
-      <DuplicateLotDialog
-        open={showDuplicateLotDialog}
-        onOpenChange={setShowDuplicateLotDialog}
+      <DialogManager
+        showDuplicateLotDialog={showDuplicateLotDialog}
+        setShowDuplicateLotDialog={setShowDuplicateLotDialog}
         duplicateLotInfo={duplicateLotInfo}
-        continueDespiteDuplicate={() => {
-          setShowDuplicateLotDialog(false);
-          handleFormSubmit(form.getValues());
-        }}
+        onContinueDespiteDuplicate={handleContinueDespiteDuplicate}
       />
     </Card>
   );

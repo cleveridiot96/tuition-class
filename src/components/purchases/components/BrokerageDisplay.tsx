@@ -1,6 +1,12 @@
 
 import React from 'react';
-import { BrokerageDetailsProps } from '../types/BrokerageTypes';
+
+interface BrokerageDisplayProps {
+  brokerageAmount: number;
+  totalAmount: number;
+  brokerageType: string;
+  brokerageValue: number;
+}
 
 /**
  * Display component for brokerage information in the purchase form
@@ -10,12 +16,7 @@ const BrokerageDisplay = ({
   totalAmount,
   brokerageType,
   brokerageValue
-}: {
-  brokerageAmount: number;
-  totalAmount: number;
-  brokerageType: string;
-  brokerageValue: number;
-}) => {
+}: BrokerageDisplayProps) => {
   return (
     <div className="p-4 bg-gray-50 rounded-lg">
       <h4 className="font-medium mb-2">Brokerage Summary</h4>
