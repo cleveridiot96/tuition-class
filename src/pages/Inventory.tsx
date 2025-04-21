@@ -3,31 +3,13 @@ import Navigation from "@/components/Navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Package, PackageOpen, Edit, Trash2, RefreshCw } from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Package, PackageOpen, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InventoryItem } from "@/services/types";
 import { getInventory, saveInventory } from "@/services/inventoryService";
 import { getPurchases, savePurchases } from "@/services/storageService";
+import InventoryCard from "@/components/inventory/InventoryCard";
+import { EditDialog, ZeroQtyDeleteDialog, HardDeleteDialog, RestoreDialog } from "@/components/inventory/InventoryDialogs";
 
 const Inventory = () => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
@@ -48,7 +30,7 @@ const Inventory = () => {
   const loadInventory = () => {
     const inventoryData = getInventory();
     if (Array.isArray(inventoryData)) {
-      setInventory(inventoryData.filter(item => !item.isDeleted)); // Only show non-deleted items
+      setInventory(inventoryData.filter(item => !item.isDeleted));
       setDeletedItems(inventoryData.filter(item => item.isDeleted));
     } else {
       console.error("Inventory data is not an array:", inventoryData);
@@ -232,12 +214,7 @@ const Inventory = () => {
           <TabsContent value="all" className="mt-0">
             <div className="grid gap-4 md:grid-cols-2">
               {inventory.map((item) => (
-                <InventoryCard 
-                  key={item.id} 
-                  item={item} 
-                  onEdit={handleEdit} 
-                  onDelete={handleDelete}
-                />
+                <InventoryCard key={item.id} item={item} onEdit={handleEdit} onDelete={handleDelete} />
               ))}
             </div>
           </TabsContent>
@@ -247,12 +224,7 @@ const Inventory = () => {
               {inventory
                 .filter(item => item.location === "Chiplun")
                 .map((item) => (
-                  <InventoryCard 
-                    key={item.id} 
-                    item={item} 
-                    onEdit={handleEdit} 
-                    onDelete={handleDelete}
-                  />
+                  <InventoryCard key={item.id} item={item} onEdit={handleEdit} onDelete={handleDelete} />
                 ))}
             </div>
           </TabsContent>
@@ -262,12 +234,7 @@ const Inventory = () => {
               {inventory
                 .filter(item => item.location === "Mumbai")
                 .map((item) => (
-                  <InventoryCard 
-                    key={item.id} 
-                    item={item} 
-                    onEdit={handleEdit} 
-                    onDelete={handleDelete}
-                  />
+                  <InventoryCard key={item.id} item={item} onEdit={handleEdit} onDelete={handleDelete} />
                 ))}
             </div>
           </TabsContent>
@@ -297,201 +264,48 @@ const Inventory = () => {
           </div>
         </div>
       </div>
-      
-      <Dialog open={isEditing} onOpenChange={(open) => !open && setIsEditing(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Inventory Item</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="lotNumber" className="text-right">
-                Lot Number
-              </Label>
-              <Input
-                id="lotNumber"
-                name="lotNumber"
-                value={editItem?.lotNumber || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="quantity" className="text-right">
-                Quantity
-              </Label>
-              <Input
-                id="quantity"
-                name="quantity"
-                type="number"
-                value={editItem?.quantity || 0}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="location" className="text-right">
-                Location
-              </Label>
-              <Input
-                id="location"
-                name="location"
-                value={editItem?.location || ""}
-                onChange={handleInputChange}
-                className="col-span-3"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditSave}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              This item has zero quantity. Do you want to keep it in inventory or delete it?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-              Keep
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => {
-                if (itemToDelete) {
-                  const item = inventory.find(i => i.id === itemToDelete);
-                  if (item) {
-                    confirmDeleteOperation(item);
-                  }
-                }
-              }}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Deletion</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete {itemBeingDeleted?.lotNumber}? This action cannot be undone.
-              {itemBeingDeleted && itemBeingDeleted.quantity > 0 && (
-                <div className="text-red-500 mt-2 font-semibold">
-                  Warning: This item still has {itemBeingDeleted.quantity} bags in stock!
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => {
-              setConfirmDelete(false);
-              setItemBeingDeleted(null);
-            }}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={() => {
-              if (itemBeingDeleted) {
-                executeDelete(itemBeingDeleted.id);
-              }
-            }}>
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-      
-      <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Restore Deleted Items</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-[300px] overflow-y-auto">
-            {deletedItems.length > 0 ? (
-              deletedItems.map(item => (
-                <div key={item.id} className="flex justify-between items-center py-2 border-b">
-                  <div>
-                    <p className="font-medium">{item.lotNumber}</p>
-                    <p className="text-sm text-gray-500">
-                      {item.quantity} bags, {item.location}
-                    </p>
-                  </div>
-                  <Button 
-                    size="sm" 
-                    onClick={() => handleRestore(item)}
-                  >
-                    Restore
-                  </Button>
-                </div>
-              ))
-            ) : (
-              <p className="text-center py-4">No deleted items to restore</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRestoreDialog(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+      <EditDialog 
+        open={isEditing}
+        setOpen={(open) => setIsEditing(open)}
+        editItem={editItem}
+        handleInputChange={handleInputChange}
+        handleEditSave={handleEditSave}
+      />
+
+      <ZeroQtyDeleteDialog
+        open={showDeleteConfirm}
+        setOpen={setShowDeleteConfirm}
+        onDelete={() => {
+          if (itemToDelete) {
+            const item = inventory.find(i => i.id === itemToDelete);
+            if (item) {
+              confirmDeleteOperation(item);
+            }
+          }
+        }}
+        onKeep={() => setShowDeleteConfirm(false)}
+        item={itemToDelete ? inventory.find(i => i.id === itemToDelete) || null : null}
+      />
+
+      <HardDeleteDialog
+        open={confirmDelete}
+        setOpen={setConfirmDelete}
+        item={itemBeingDeleted}
+        onDelete={() => {
+          if (itemBeingDeleted) {
+            executeDelete(itemBeingDeleted.id);
+          }
+        }}
+      />
+
+      <RestoreDialog 
+        open={showRestoreDialog}
+        setOpen={setShowRestoreDialog}
+        deletedItems={deletedItems}
+        onRestore={handleRestore}
+      />
     </div>
-  );
-};
-
-interface InventoryCardProps {
-  item: InventoryItem;
-  onEdit: (item: InventoryItem) => void;
-  onDelete: (id: string) => void;
-}
-
-const InventoryCard = ({ item, onEdit, onDelete }: InventoryCardProps) => {
-  return (
-    <Card className="p-4">
-      <div className="flex justify-between items-center border-b pb-2 mb-2">
-        <h3 className="text-xl font-bold">{item.lotNumber}</h3>
-        <span className={`px-3 py-1 rounded-full text-white ${
-          item.location === "Chiplun" ? "bg-ag-green" : "bg-ag-orange"
-        }`}>
-          {item.location}
-        </span>
-      </div>
-      <div className="mt-2">
-        <p className="text-2xl font-bold">{item.quantity} bags</p>
-        <p className="text-ag-brown text-sm mt-1">
-          Added on: {new Date(item.dateAdded).toLocaleDateString()}
-        </p>
-        <p className="text-ag-brown text-sm">Net Weight: {item.netWeight} Kg</p>
-      </div>
-      <div className="mt-4 flex space-x-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex-1 flex items-center justify-center"
-          onClick={() => onEdit(item)}
-        >
-          <Edit size={16} className="mr-1" /> Edit
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex-1 flex items-center justify-center text-red-500 hover:text-red-700"
-          onClick={() => onDelete(item.id)}
-        >
-          <Trash2 size={16} className="mr-1" /> Delete
-        </Button>
-      </div>
-    </Card>
   );
 };
 
