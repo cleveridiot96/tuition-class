@@ -1,15 +1,8 @@
 
 import React from 'react';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addMonths, subMonths } from 'date-fns';
 
 interface MonthSelectorProps {
   selectedMonth: number;
@@ -18,70 +11,46 @@ interface MonthSelectorProps {
 }
 
 const MonthSelector: React.FC<MonthSelectorProps> = ({ 
-  selectedMonth, 
-  selectedYear, 
-  onChange 
+  selectedMonth,
+  selectedYear,
+  onChange
 }) => {
-  const months = [
-    'January', 'February', 'March', 'April',
-    'May', 'June', 'July', 'August',
-    'September', 'October', 'November', 'December'
-  ];
-
-  const handlePrevMonth = () => {
-    let newMonth = selectedMonth - 1;
-    let newYear = selectedYear;
-    
-    if (newMonth < 0) {
-      newMonth = 11;
-      newYear -= 1;
-    }
-    
-    onChange(newMonth, newYear);
+  const currentDate = new Date(selectedYear, selectedMonth);
+  
+  const handlePreviousMonth = () => {
+    const previousMonth = subMonths(currentDate, 1);
+    onChange(previousMonth.getMonth(), previousMonth.getFullYear());
   };
-
+  
   const handleNextMonth = () => {
-    let newMonth = selectedMonth + 1;
-    let newYear = selectedYear;
-    
-    if (newMonth > 11) {
-      newMonth = 0;
-      newYear += 1;
-    }
-    
-    onChange(newMonth, newYear);
+    const nextMonth = addMonths(currentDate, 1);
+    onChange(nextMonth.getMonth(), nextMonth.getFullYear());
   };
-
+  
   return (
-    <Card className="bg-gradient-to-r from-sky-100 to-blue-100 p-4 shadow-sm border border-sky-200">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-blue-800">Period Selection</h3>
-        
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={handlePrevMonth}
-            className="bg-white hover:bg-blue-50"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          
-          <div className="px-4 py-2 bg-white rounded-md border border-blue-200 font-medium min-w-[180px] text-center">
-            {months[selectedMonth]} {selectedYear}
-          </div>
-          
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={handleNextMonth}
-            className="bg-white hover:bg-blue-50"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-    </Card>
+    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg shadow-sm border border-blue-100">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={handlePreviousMonth}
+        className="md-ripple"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </Button>
+      
+      <h3 className="text-lg font-medium text-blue-800">
+        {format(currentDate, 'MMMM yyyy')}
+      </h3>
+      
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={handleNextMonth}
+        className="md-ripple"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </Button>
+    </div>
   );
 };
 

@@ -192,7 +192,7 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
                 <Button 
                   type="submit" 
                   size="lg"
-                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  className="md-ripple bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 >
                   {initialData ? "Update Purchase" : "Add Purchase"}
                 </Button>

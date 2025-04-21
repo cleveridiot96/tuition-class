@@ -20,7 +20,7 @@ const Index = () => {
 
   const handleFormatClick = () => {
     setShowFormatter(true);
-    return true; // Indicate that we're handling the format click
+    return true;
   };
 
   const handleMonthChange = (month: number, year: number) => {
@@ -38,12 +38,13 @@ const Index = () => {
       />
       
       <div className="container mx-auto py-8 px-4">
-        <h1 className="text-3xl font-bold mb-8 text-center text-ag-brown-dark">
+        <h1 className="text-3xl font-bold mb-8 text-center text-blue-800">
           Kisan Khata Sahayak
         </h1>
         
-        {/* Quick Access Panel - Now moved to the top */}
+        {/* Quick Access Panel at the top */}
         <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4 text-blue-700">Quick Access</h2>
           <DashboardMenu />
         </div>
         
@@ -57,16 +58,18 @@ const Index = () => {
         </div>
         
         {/* Summary Section */}
-        {isLoading ? (
-          <div className="flex justify-center items-center h-48">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-          </div>
-        ) : (
-          <DashboardSummary summaryData={summaryData} />
-        )}
+        <div className="mb-8">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-48">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+            </div>
+          ) : (
+            <DashboardSummary summaryData={summaryData} />
+          )}
+        </div>
         
         {/* Profit Section */}
-        <div className="mt-8">
+        <div className="mb-8">
           <ProfitSection 
             selectedMonth={selectedMonth} 
             selectedYear={selectedYear} 
