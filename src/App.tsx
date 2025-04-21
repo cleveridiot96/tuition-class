@@ -2,7 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner"; // Use the sonner Toaster
 import ErrorBoundary from "@/components/ErrorBoundary";
 import Index from '@/pages/Index';
 import Agents from '@/pages/Agents';
@@ -18,7 +18,7 @@ import Sales from '@/pages/Sales';
 import Stock from '@/pages/Stock';
 import Transport from '@/pages/Transport';
 import NotFound from '@/pages/NotFound';
-import LocationTransfer from '@/pages/LocationTransfer';
+import LocationTransferPage from '@/pages/location-transfer/LocationTransferPage';
 import './App.css';
 
 function App() {
@@ -32,7 +32,7 @@ function App() {
             <Route path="/calculator" element={<Calculator />} />
             <Route path="/cash-book" element={<CashBook />} />
             <Route path="/inventory" element={<Inventory />} />
-            <Route path="/location-transfer" element={<LocationTransfer />} />
+            <Route path="/location-transfer" element={<LocationTransferPage />} />
             <Route path="/ledger" element={<Ledger />} />
             <Route path="/master" element={<Master />} />
             <Route path="/payments" element={<Payments />} />
