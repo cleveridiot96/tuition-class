@@ -52,9 +52,12 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
         brokerageAmount: finalBrokerageAmount,
         // Ensure these are included for type safety
         transportAmount: parseFloat(formState.transportCost || '0'),
+        transportCost: parseFloat(formState.transportCost || '0'), // Convert string to number
         transportRate: initialValues?.transportRate || 0,
         brokerageValue: formState.brokerageRate, // Mapping brokerageRate to brokerageValue for API consistency
-        location: formState.location
+        location: formState.location,
+        // Add bags property to Purchase
+        bags: formState.bags
       };
 
       if (initialValues) {
