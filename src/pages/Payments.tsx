@@ -1,144 +1,107 @@
-
-import React, { useState, useEffect } from "react";
-import { Dialog } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast"; // Using our custom toast
+import React from "react";
 import Navigation from "@/components/Navigation";
-import { 
-  getPayments, 
-  addPayment,
-  updatePayment,
-  deletePayment,
-} from "@/services/paymentService"; // Updated import
-
-// Import the components
-import PaymentsHeader from "@/components/payments/PaymentsHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PaymentsTable from "@/components/payments/PaymentsTable";
-import AddPaymentDialog from "@/components/payments/AddPaymentDialog";
-import EditPaymentDialog from "@/components/payments/EditPaymentDialog";
-import DeleteConfirmDialog from "@/components/payments/DeleteConfirmDialog";
+import PaymentForm from "@/components/payments/PaymentForm";
+import { useState, useEffect } from "react";
+import { getPayments, addPayment, updatePayment, deletePayment } from "@/services/storageService";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { format } from 'date-fns';
 
 const Payments = () => {
   const [payments, setPayments] = useState<any[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [paymentToDelete, setPaymentToDelete] = useState<string | null>(null);
-  const [editingPayment, setEditingPayment] = useState<any | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingPayment, setEditingPayment] = useState<any>(null);
+  const [sortColumn, setSortColumn] = useState<keyof any | null>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
-    loadData();
+    loadPayments();
   }, []);
 
-  const loadData = () => {
-    setIsRefreshing(true);
-    
-    try {
-      const freshPayments = getPayments().filter(p => !p.isDeleted);
-      setPayments(freshPayments);
-      console.log("Payments data refreshed:", freshPayments);
-    } catch (err) {
-      console.error("Error loading payments data:", err);
-      toast.error("Failed to load payments data");
-    } finally {
-      setIsRefreshing(false);
-    }
+  const loadPayments = () => {
+    const paymentsData = getPayments() || [];
+    // Sort payments by date (most recent first)
+    const sortedPayments = [...paymentsData].sort((a, b) => {
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
+    });
+    setPayments(sortedPayments);
   };
 
-  const handleAdd = (data: any) => {
-    try {
-      addPayment(data);
-      loadData();
-      toast.success("Payment added successfully");
-      setIsAddDialogOpen(false);
-    } catch (err) {
-      console.error("Error adding payment:", err);
-      toast.error("Failed to add payment");
-    }
+  const handleAddPayment = (payment: any) => {
+    addPayment(payment);
+    loadPayments();
+    setShowForm(false);
   };
 
-  const handleEdit = (payment: any) => {
+  const handleUpdatePayment = (payment: any) => {
+    updatePayment(payment);
+    loadPayments();
+    setEditingPayment(null);
+    setShowForm(false);
+  };
+
+  const handleDeletePayment = (id: string) => {
+    deletePayment(id);
+    loadPayments();
+  };
+
+  const handleEditPayment = (payment: any) => {
     setEditingPayment(payment);
-    setIsEditDialogOpen(true);
+    setShowForm(true);
   };
 
-  const handleUpdate = (updatedPayment: any) => {
-    if (!editingPayment) return;
-    
-    try {
-      updatePayment(updatedPayment);
-      loadData();
-      toast.success("Payment updated successfully");
-      setIsEditDialogOpen(false);
-      setEditingPayment(null);
-    } catch (err) {
-      console.error("Error updating payment:", err);
-      toast.error("Failed to update payment");
+  const handleSort = (column: keyof any) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
     }
   };
 
-  const confirmDeletePayment = (id: string) => {
-    setPaymentToDelete(id);
-    setShowDeleteConfirm(true);
-  };
+  const sortedPayments = [...payments].sort((a, b) => {
+    if (sortColumn) {
+      const aValue = a[sortColumn];
+      const bValue = b[sortColumn];
 
-  const handleDelete = () => {
-    if (!paymentToDelete) return;
-    
-    try {
-      deletePayment(paymentToDelete);
-      loadData();
-      toast.success("Payment deleted successfully");
-    } catch (err) {
-      console.error("Error deleting payment:", err);
-      toast.error("Failed to delete payment");
-    } finally {
-      setShowDeleteConfirm(false);
-      setPaymentToDelete(null);
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     }
-  };
+    return 0;
+  });
 
   return (
-    <div className="min-h-screen">
-      <Navigation title="Payments" showBackButton={true} />
-      
-      <div className="container mx-auto py-8 px-4">
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <PaymentsHeader 
-            onRefresh={loadData} 
-            isRefreshing={isRefreshing}
-          />
-          
-          <div className="space-y-4">
-            <PaymentsTable 
-              payments={payments} 
-              onEdit={handleEdit}
-              onDelete={confirmDeletePayment} 
-            />
-          </div>
-
-          <AddPaymentDialog
-            open={isAddDialogOpen}
-            onOpenChange={setIsAddDialogOpen}
-            onSubmit={handleAdd}
-          />
-        </Dialog>
-
-        <EditPaymentDialog
-          open={isEditDialogOpen}
-          onOpenChange={(open) => {
-            setIsEditDialogOpen(open);
-            if (!open) setEditingPayment(null);
-          }}
-          payment={editingPayment}
-          onSubmit={handleUpdate}
-        />
-
-        <DeleteConfirmDialog
-          open={showDeleteConfirm}
-          onOpenChange={setShowDeleteConfirm}
-          onDelete={handleDelete}
-        />
+    <div className="min-h-screen bg-gradient-to-br from-red-50 to-red-100">
+      <Navigation title="Payments" showBackButton />
+      <div className="container mx-auto px-4 py-6">
+        <Card className="bg-gradient-to-br from-red-100 to-red-200 border-red-200 shadow">
+          <CardHeader className="flex justify-between items-center">
+            <CardTitle className="text-red-800">Payments</CardTitle>
+            <Button onClick={() => { setShowForm(true); setEditingPayment(null); }} className="md-ripple bg-red-600 hover:bg-red-700 text-white">
+              <Plus className="mr-2 h-4 w-4" /> Add Payment
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {showForm ? (
+              <PaymentForm
+                onSubmit={editingPayment ? handleUpdatePayment : handleAddPayment}
+                onCancel={() => { setShowForm(false); setEditingPayment(null); }}
+                initialData={editingPayment}
+              />
+            ) : (
+              <PaymentsTable
+                payments={sortedPayments}
+                onDelete={handleDeletePayment}
+                onEdit={handleEditPayment}
+                sortColumn={sortColumn}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+              />
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

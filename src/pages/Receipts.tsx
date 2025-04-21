@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Navigation from "@/components/Navigation";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
   Table, 
@@ -218,85 +218,92 @@ const Receipts = () => {
   };
 
   return (
-    <div className="min-h-screen bg-ag-beige pb-10">
+    <div className="min-h-screen bg-gradient-to-br from-lime-50 to-lime-100">
       <Navigation title="Receipts" showBackButton />
       <div className="container mx-auto px-4 py-6">
-        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-          <h2 className="text-2xl font-bold">Payment Receipts</h2>
-          <div className="flex gap-2 flex-wrap">
-            <Button 
-              className="flex items-center gap-2"
-              onClick={handleNewReceipt}
-            >
-              <Plus size={18} /> New Receipt
-            </Button>
-            <Button 
-              onClick={() => setShowRestoreDialog(true)}
-              variant="outline"
-              className="flex items-center gap-2"
-              disabled={deletedReceipts.length === 0}
-            >
-              Restore Deleted ({deletedReceipts.length})
-            </Button>
-          </div>
-        </div>
-        
-        {receipts.length === 0 ? (
-          <Card className="p-6 text-center">
-            <p className="text-xl text-ag-brown">No receipts found.</p>
-            <p className="text-lg text-ag-brown-light mt-2">
-              Create a new receipt to get started.
-            </p>
-          </Card>
-        ) : (
-          <Card className="p-4 overflow-x-auto">
-            <div className="min-w-full">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Receipt #</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Customer</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Mode</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {receipts.map((receipt) => (
-                    <TableRow key={receipt.id}>
-                      <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
-                      <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
-                      <TableCell>{receipt.customerName}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(receipt.amount)}</TableCell>
-                      <TableCell>{receipt.paymentMethod || receipt.mode}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{receipt.notes}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleEdit(receipt)}
-                          >
-                            <Edit size={16} />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleDeleteConfirm(receipt.id)}
-                          >
-                            <Trash2 size={16} className="text-red-500" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        <Card className="bg-gradient-to-br from-lime-100 to-lime-200 border-lime-200 shadow">
+          <CardHeader>
+            <CardTitle className="text-lime-800">Receipts</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+              <h2 className="text-2xl font-bold">Payment Receipts</h2>
+              <div className="flex gap-2 flex-wrap">
+                <Button 
+                  className="flex items-center gap-2"
+                  onClick={handleNewReceipt}
+                >
+                  <Plus size={18} /> New Receipt
+                </Button>
+                <Button 
+                  onClick={() => setShowRestoreDialog(true)}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                  disabled={deletedReceipts.length === 0}
+                >
+                  Restore Deleted ({deletedReceipts.length})
+                </Button>
+              </div>
             </div>
-          </Card>
-        )}
+            
+            {receipts.length === 0 ? (
+              <Card className="p-6 text-center">
+                <p className="text-xl text-ag-brown">No receipts found.</p>
+                <p className="text-lg text-ag-brown-light mt-2">
+                  Create a new receipt to get started.
+                </p>
+              </Card>
+            ) : (
+              <Card className="p-4 overflow-x-auto">
+                <div className="min-w-full">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Receipt #</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead>Mode</TableHead>
+                        <TableHead>Notes</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {receipts.map((receipt) => (
+                        <TableRow key={receipt.id}>
+                          <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
+                          <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
+                          <TableCell>{receipt.customerName}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(receipt.amount)}</TableCell>
+                          <TableCell>{receipt.paymentMethod || receipt.mode}</TableCell>
+                          <TableCell className="max-w-[200px] truncate">{receipt.notes}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleEdit(receipt)}
+                              >
+                                <Edit size={16} />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => handleDeleteConfirm(receipt.id)}
+                              >
+                                <Trash2 size={16} className="text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            )}
+          </CardContent>
+        </Card>
       </div>
       
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
