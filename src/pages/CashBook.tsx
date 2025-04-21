@@ -13,13 +13,21 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 
+interface CashTransaction {
+  id: string;
+  date: string;
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+}
+
 const CashBook = () => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [balance, setBalance] = useState(0);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newTransaction, setNewTransaction] = useState({
     date: format(new Date(), "yyyy-MM-dd"),
-    type: "income",
+    type: "income" as 'income' | 'expense',
     amount: "",
     description: "",
   });
@@ -35,11 +43,11 @@ const CashBook = () => {
     // Calculate balance
     const totalIncome = cashData
       .filter(t => t.type === "income")
-      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
     
     const totalExpense = cashData
       .filter(t => t.type === "expense")
-      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
     
     setBalance(totalIncome - totalExpense);
   };
@@ -55,18 +63,19 @@ const CashBook = () => {
       return;
     }
 
-    const transaction = {
-      ...newTransaction,
+    const transaction: CashTransaction = {
       id: Date.now().toString(),
-      amount: parseFloat(newTransaction.amount),
       date: newTransaction.date || format(new Date(), "yyyy-MM-dd"),
+      type: newTransaction.type,
+      amount: parseFloat(newTransaction.amount),
+      description: newTransaction.description
     };
 
     addCashTransaction(transaction);
     setIsAddDialogOpen(false);
     setNewTransaction({
       date: format(new Date(), "yyyy-MM-dd"),
-      type: "income",
+      type: "income" as 'income' | 'expense',
       amount: "",
       description: "",
     });
@@ -182,7 +191,7 @@ const CashBook = () => {
                 <Label htmlFor="type">Transaction Type</Label>
                 <Select
                   value={newTransaction.type}
-                  onValueChange={(value) => setNewTransaction({ ...newTransaction, type: value })}
+                  onValueChange={(value: 'income' | 'expense') => setNewTransaction({ ...newTransaction, type: value })}
                 >
                   <SelectTrigger id="type">
                     <SelectValue placeholder="Select type" />

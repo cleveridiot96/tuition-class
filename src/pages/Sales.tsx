@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import SalesForm from "@/components/SalesForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
+import { Button } from "@/components/ui/button";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 import { 
   Dialog, 
   DialogContent, 

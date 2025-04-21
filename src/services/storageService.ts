@@ -1,4 +1,3 @@
-
 // Re-export all storage-related functionality
 export * from './core/storageCore';
 export * from './core/yearSpecificStorage';
@@ -94,3 +93,9 @@ export {
 
 // Export all types
 export * from './types';
+
+// Add these exports to the storageService.ts file
+import { getParties, getTransactions } from './ledgerService';
+
+// Export the functions from ledgerService through storageService
+export { getParties, getTransactions };

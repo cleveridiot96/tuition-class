@@ -1,7 +1,7 @@
 
 // Simple cash transaction service
 
-interface CashTransaction {
+export interface CashTransaction {
   id: string;
   date: string;
   type: 'income' | 'expense';
