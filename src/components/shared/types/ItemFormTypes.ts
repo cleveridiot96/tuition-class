@@ -13,6 +13,14 @@ export interface ItemFormState {
     quantity: number;
     rate: number;
   }>;
-  expenses?: string;
+  expenses?: string | number;
   bags?: number;
+  brokerageType?: string;
+  brokerageRate?: number;
+  brokerageAmount?: number;
+  agentId?: string;
+  billNumber?: string;
+  billAmount?: string | number | null;
+  brokerId?: string;
+  customerId?: string;
 }

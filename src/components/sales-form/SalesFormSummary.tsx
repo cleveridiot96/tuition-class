@@ -15,31 +15,37 @@ const SalesFormSummary: React.FC<SalesFormSummaryProps> = ({
   brokerageAmount,
   isCutBill,
   billAmount,
-}) => (
-  <div className="space-y-1 bg-gray-50 p-3 rounded-md">
-    <p className="text-sm">
-      <span className="font-medium">Subtotal:</span> ₹
-      {subtotal.toLocaleString()}
-    </p>
-    <p className="text-sm">
-      <span className="font-medium">Transport:</span> ₹
-      {transportCost.toLocaleString()}
-    </p>
-    <p className="text-sm">
-      <span className="font-medium">Brokerage:</span> ₹
-      {brokerageAmount.toLocaleString()}
-    </p>
-    <p className="text-sm font-semibold">
-      <span>Total:</span> ₹
-      {(subtotal + transportCost + brokerageAmount).toLocaleString()}
-    </p>
-    {isCutBill && billAmount !== null && (
-      <p className="text-sm font-bold text-yellow-700">
-        <span>Bill Amount:</span> ₹
-        {billAmount.toLocaleString()}
+}) => {
+  // Ensure all values are valid numbers for formatting
+  const formatNumber = (value: number | null | undefined): string => {
+    if (value === null || value === undefined || isNaN(value)) return "0";
+    return value.toLocaleString();
+  };
+
+  return (
+    <div className="space-y-1 bg-gray-50 p-3 rounded-md shadow-sm">
+      <p className="text-sm">
+        <span className="font-medium">Subtotal:</span> ₹{formatNumber(subtotal)}
       </p>
-    )}
-  </div>
-);
+      <p className="text-sm">
+        <span className="font-medium">Transport:</span> ₹{formatNumber(transportCost)}
+      </p>
+      <p className="text-sm">
+        <span className="font-medium">Brokerage:</span> ₹{formatNumber(brokerageAmount)}
+      </p>
+      <p className="text-sm font-semibold">
+        <span>Total:</span> ₹
+        {formatNumber(
+          (subtotal || 0) + (transportCost || 0) + (brokerageAmount || 0)
+        )}
+      </p>
+      {isCutBill && billAmount !== null && (
+        <p className="text-sm font-bold text-yellow-700">
+          <span>Bill Amount:</span> ₹{formatNumber(billAmount)}
+        </p>
+      )}
+    </div>
+  );
+};
 
 export default SalesFormSummary;

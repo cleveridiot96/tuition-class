@@ -22,12 +22,20 @@ export const usePurchaseCalculations = ({
 
   // This effect runs whenever form fields change to recalculate all values
   useEffect(() => {
+    // Safe number conversion function
+    const safeNumber = (value: any): number => {
+      if (value === null || value === undefined || isNaN(parseFloat(value))) {
+        return 0;
+      }
+      return parseFloat(value);
+    };
+
     const subscription = form.watch((value, { name }) => {
       const formValues = form.getValues();
-      const netWeight = formValues.netWeight || 0;
-      const rate = formValues.rate || 0;
-      const expenses = formValues.expenses || 0;
-      const transportRate = formValues.transportRate || 0;
+      const netWeight = safeNumber(formValues.netWeight);
+      const rate = safeNumber(formValues.rate);
+      const expenses = safeNumber(formValues.expenses);
+      const transportRate = safeNumber(formValues.transportRate);
       
       // Calculate transport cost
       const calculatedTransportCost = netWeight * transportRate;
@@ -40,7 +48,7 @@ export const usePurchaseCalculations = ({
       // Calculate brokerage
       let calculatedBrokerageAmount = 0;
       if (showBrokerage) {
-        const brokerageValue = formValues.brokerageValue || 1; // Default 1%
+        const brokerageValue = safeNumber(formValues.brokerageValue || 1); // Default 1%
         if (formValues.brokerageType === "percentage") {
           calculatedBrokerageAmount = (calculatedTotalAmount * brokerageValue) / 100;
         } else {
@@ -60,10 +68,10 @@ export const usePurchaseCalculations = ({
 
     // Immediate calculation on component mount
     const formValues = form.getValues();
-    const netWeight = formValues.netWeight || 0;
-    const rate = formValues.rate || 0;
-    const expenses = formValues.expenses || 0;
-    const transportRate = formValues.transportRate || 0;
+    const netWeight = safeNumber(formValues.netWeight);
+    const rate = safeNumber(formValues.rate);
+    const expenses = safeNumber(formValues.expenses);
+    const transportRate = safeNumber(formValues.transportRate);
     
     const calculatedTransportCost = netWeight * transportRate;
     setTransportCost(calculatedTransportCost);
@@ -73,7 +81,7 @@ export const usePurchaseCalculations = ({
     
     let calculatedBrokerageAmount = 0;
     if (showBrokerage) {
-      const brokerageValue = formValues.brokerageValue || 1; // Default 1%
+      const brokerageValue = safeNumber(formValues.brokerageValue || 1); // Default 1%
       if (formValues.brokerageType === "percentage") {
         calculatedBrokerageAmount = (calculatedTotalAmount * brokerageValue) / 100;
       } else {

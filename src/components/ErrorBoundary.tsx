@@ -1,4 +1,3 @@
-
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
@@ -51,7 +50,8 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
     });
     
     // Force a hard refresh if the error is likely to persist without it
-    if (this.state.error?.message?.includes("undefined is not iterable")) {
+    if (this.state.error?.message?.includes("undefined is not iterable") || 
+        this.state.error?.message?.includes("toFixed is not a function")) {
       window.location.reload();
     }
   };
