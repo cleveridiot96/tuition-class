@@ -1,14 +1,18 @@
 
+// Define common form state for both purchase and sales forms
 export interface ItemFormState {
-  id: string;
-  name: string;
-  quantity: number;
-  rate: number;
-}
-
-export interface ItemFormProps {
-  items: ItemFormState[];
-  onItemChange: (index: number, field: string, value: any) => void;
-  onAddItem: () => void;
-  onRemoveItem: (index: number) => void;
+  date: string;
+  lotNumber: string;
+  location: string;
+  transporterId: string;
+  transportCost: string;
+  notes: string;
+  items: Array<{
+    id?: string;
+    name: string;
+    quantity: number;
+    rate: number;
+  }>;
+  expenses?: string;
+  bags?: number;
 }

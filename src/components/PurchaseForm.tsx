@@ -53,7 +53,8 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
       agentId: initialData?.agentId || "",
       billNumber: initialData?.billNumber || "",
       billAmount: initialData?.billAmount || undefined,
-    }
+    },
+    mode: "onChange" // Enable validation on field change
   });
 
   // Custom hooks
@@ -103,6 +104,20 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initial
 
   // Form submission handler
   const handleFormSubmit = (data: PurchaseFormData) => {
+    // Check if either party or agent is filled
+    if (!data.party && !data.agentId) {
+      form.setError("party", { 
+        type: "manual", 
+        message: "Either Party Name or Agent must be specified" 
+      });
+      form.setError("agentId", { 
+        type: "manual", 
+        message: "Either Party Name or Agent must be specified" 
+      });
+      toast.error("Either Party Name or Agent must be specified");
+      return;
+    }
+
     // Validate the form data
     const validation = validatePurchaseForm(data, !!initialData);
     

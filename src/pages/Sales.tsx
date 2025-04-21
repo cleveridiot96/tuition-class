@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import SalesForm from "@/components/SalesForm";
+import MultiItemSalesForm from "@/components/sales/MultiItemSalesForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
@@ -273,7 +274,7 @@ const Sales = () => {
                       <DialogDescription>Fill in the details to record a new sale</DialogDescription>
                     </DialogHeader>
                     <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
-                      <SalesForm onSubmit={handleAdd} />
+                      <MultiItemSalesForm onSubmit={handleAdd} />
                     </ScrollArea>
                   </DialogContent>
                 </Dialog>
@@ -291,7 +292,7 @@ const Sales = () => {
                 </DialogHeader>
                 <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
                   {editingSale && (
-                    <SalesForm 
+                    <MultiItemSalesForm 
                       onSubmit={handleUpdate} 
                       initialData={editingSale} 
                       onPrint={() => {

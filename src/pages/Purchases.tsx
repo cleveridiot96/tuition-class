@@ -61,6 +61,12 @@ const Purchases = () => {
   };
 
   const handlePurchaseSubmit = (purchaseData: Purchase) => {
+    // Validate that either party or agent is filled
+    if (!purchaseData.party && !purchaseData.agentId) {
+      toast.error("Either Party Name or Agent must be specified");
+      return;
+    }
+
     const updatedPurchases = editingPurchase
       ? purchases.map((p) => (p.id === purchaseData.id ? purchaseData : p))
       : [...purchases, purchaseData];

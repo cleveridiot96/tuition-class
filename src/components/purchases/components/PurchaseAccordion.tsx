@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { UseFormReturn } from "react-hook-form";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { PurchaseFormData } from "../PurchaseFormSchema";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PurchaseFormData } from "../types/PurchaseTypes";
 import PurchaseFormHeader from "./PurchaseFormHeader";
 import PurchaseDetails from "./PurchaseDetails";
 import BrokerageDetails from "../BrokerageDetails";
@@ -30,54 +30,41 @@ const PurchaseAccordion: React.FC<PurchaseAccordionProps> = ({
   ratePerKgAfterExpenses,
 }) => {
   return (
-    <Accordion type="single" collapsible defaultValue="header">
-      <AccordionItem value="header" className="border-none">
-        <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">
-          Purchase Details
-        </AccordionTrigger>
-        <AccordionContent>
-          <PurchaseFormHeader form={form} />
-        </AccordionContent>
-      </AccordionItem>
+    <Tabs defaultValue="header">
+      <TabsList className="grid w-full grid-cols-4">
+        <TabsTrigger value="header">Purchase Details</TabsTrigger>
+        <TabsTrigger value="details">Bags & Rate</TabsTrigger>
+        <TabsTrigger value="brokerage">Brokerage Details</TabsTrigger>
+        <TabsTrigger value="summary">Summary</TabsTrigger>
+      </TabsList>
       
-      <AccordionItem value="details" className="border-none">
-        <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">
-          Bags & Rate
-        </AccordionTrigger>
-        <AccordionContent>
-          <PurchaseDetails form={form} locations={locations} />
-        </AccordionContent>
-      </AccordionItem>
+      <TabsContent value="header">
+        <PurchaseFormHeader form={form} />
+      </TabsContent>
       
-      <AccordionItem value="brokerage" className="border-none">
-        <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">
-          Brokerage Details
-        </AccordionTrigger>
-        <AccordionContent>
-          <BrokerageDetails 
-            form={form} 
-            brokerageAmount={brokerageAmount} 
-            totalAmount={totalAmount}
-          />
-        </AccordionContent>
-      </AccordionItem>
+      <TabsContent value="details">
+        <PurchaseDetails form={form} locations={locations} />
+      </TabsContent>
       
-      <AccordionItem value="summary" className="border-none">
-        <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">
-          Summary
-        </AccordionTrigger>
-        <AccordionContent>
-          <PurchaseSummary 
-            totalAmount={totalAmount}
-            transportCost={transportCost}
-            brokerageAmount={brokerageAmount}
-            expenses={expenses}
-            totalAfterExpenses={totalAfterExpenses}
-            ratePerKgAfterExpenses={ratePerKgAfterExpenses}
-          />
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+      <TabsContent value="brokerage">
+        <BrokerageDetails 
+          form={form} 
+          brokerageAmount={brokerageAmount} 
+          totalAmount={totalAmount}
+        />
+      </TabsContent>
+      
+      <TabsContent value="summary">
+        <PurchaseSummary 
+          totalAmount={totalAmount}
+          transportCost={transportCost}
+          brokerageAmount={brokerageAmount}
+          expenses={expenses}
+          totalAfterExpenses={totalAfterExpenses}
+          ratePerKgAfterExpenses={ratePerKgAfterExpenses}
+        />
+      </TabsContent>
+    </Tabs>
   );
 };
 

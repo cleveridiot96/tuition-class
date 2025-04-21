@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
@@ -14,12 +15,15 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
   const [selectedBroker, setSelectedBroker] = useState<Broker | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [formState, setFormState] = useState<ItemFormState & {
+  // Extended form state with sales-specific fields
+  interface SalesFormState extends ItemFormState {
     customerId: string;
     brokerId: string;
     billNumber: string;
     billAmount: string;
-  }>({
+  }
+
+  const [formState, setFormState] = useState<SalesFormState>({
     lotNumber: initialSale?.lotNumber || '',
     date: initialSale?.date || new Date().toISOString().split('T')[0],
     location: initialSale?.location || '',
@@ -31,6 +35,7 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     billAmount: initialSale?.billAmount?.toString() || '',
     items: initialSale?.items || [{ name: '', quantity: 0, rate: 0 }],
     notes: initialSale?.notes || '',
+    bags: initialSale?.bags || 0,
   });
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -118,7 +123,8 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
         billNumber: formState.billNumber,
         billAmount: billAmount,
         items: formState.items,
-        notes: formState.notes
+        notes: formState.notes,
+        bags: formState.bags || 0
       };
 
       await onSubmit(saleData);
