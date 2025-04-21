@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,7 +14,8 @@ import {
   FormField, 
   FormItem, 
   FormLabel, 
-  FormMessage 
+  FormMessage,
+  FormRow
 } from "@/components/ui/form";
 import { 
   Select, 
@@ -22,7 +24,7 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Printer } from "lucide-react";
 import {
   getAgents,
@@ -51,12 +53,13 @@ type FormData = z.infer<typeof formSchema>;
 
 interface ReceiptFormProps {
   onSubmit: (data: any) => void;
+  onCancel: () => void;
   initialData?: any;
 }
 
-const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
+const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
   const [parties, setParties] = useState<any[]>([]);
-  const [partyType, setPartyType] = useState<string>(initialData?.partyType || "agent");
+  const [partyType, setPartyType] = useState<string>(initialData?.partyType || "customer");
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState<any>(null);
   const { toast } = useToast();
@@ -65,7 +68,7 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       ...initialData,
-      partyType: initialData.partyType || "agent",
+      partyType: initialData.partyType || "customer",
       partyId: initialData.partyId || "",
       date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
       billAmount: initialData.billAmount || 0,
@@ -73,7 +76,7 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
       date: format(new Date(), 'yyyy-MM-dd'),
       receiptNumber: `REC-${Date.now().toString().slice(-6)}`,
       amount: 0,
-      partyType: "agent",
+      partyType: "customer",
       partyId: "",
       receiptMode: "cash",
       billNumber: "",
@@ -120,23 +123,42 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
   };
 
   const handleFormSubmit = (data: FormData) => {
-    const selectedParty = parties.find(p => p.id === data.partyId);
-    
-    const submitData = {
-      ...data,
-      partyName: selectedParty?.name || "",
-      id: initialData?.id || Date.now().toString()
-    };
-    
-    setCurrentReceipt(submitData);
-    
-    onSubmit(submitData);
-    
-    if (!initialData) {
-      setIsReceiptDialogOpen(true);
+    try {
+      const selectedParty = parties.find(p => p.id === data.partyId);
+      
+      if (!selectedParty) {
+        toast.error("Please select a valid party");
+        return;
+      }
+      
+      const submitData = {
+        ...data,
+        partyName: selectedParty?.name || "",
+        id: initialData?.id || Date.now().toString()
+      };
+      
+      setCurrentReceipt(submitData);
+      
+      onSubmit(submitData);
+      
+      if (!initialData) {
+        setIsReceiptDialogOpen(true);
+        toast({
+          title: "Receipt Created",
+          description: "Receipt successfully created and ready to print",
+        });
+      } else {
+        toast({
+          title: "Receipt Updated",
+          description: "Receipt successfully updated",
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting receipt:", error);
       toast({
-        title: "Receipt Created",
-        description: "Receipt successfully created and ready to print",
+        title: "Error",
+        description: "Failed to save receipt. Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -182,7 +204,7 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
               </div>
               <div class="row">
                 <div class="label">Received From:</div>
-                <div class="value">${currentReceipt?.partyName}</div>
+                <div class="value">${currentReceipt?.partyName} (${currentReceipt?.partyType})</div>
               </div>
               <div class="row">
                 <div class="label">Amount:</div>
@@ -233,6 +255,7 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
       printWindow.document.open();
       printWindow.document.write(receiptHtml);
       printWindow.document.close();
+      printWindow.focus();
     } else {
       toast({
         title: "Print Error",
@@ -244,10 +267,17 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
 
   return (
     <>
-      <Card className="p-6">
+      <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+        <div className="bg-blue-100 p-4 mb-4 rounded-md">
+          <h3 className="text-lg font-semibold text-blue-800 mb-2">Receipt Information</h3>
+          <p className="text-sm text-blue-700">
+            Select the party type (Customer, Agent, etc.) and then select the specific party from the dropdown.
+          </p>
+        </div>
+        
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormRow>
               <FormField
                 control={form.control}
                 name="date"
@@ -255,7 +285,7 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
                   <FormItem>
                     <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <Input type="date" {...field} className="w-full" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -269,13 +299,15 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
                   <FormItem>
                     <FormLabel>Receipt Number</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter receipt number" />
+                      <Input {...field} placeholder="Enter receipt number" className="w-full" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+            </FormRow>
+            
+            <FormRow>
               <FormField
                 control={form.control}
                 name="amount"
@@ -283,64 +315,8 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
                   <FormItem>
                     <FormLabel>Amount (₹)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} placeholder="0.00" step="0.01" />
+                      <Input type="number" {...field} placeholder="0.00" step="0.01" className="w-full" />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="partyType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Party Type</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        handlePartyTypeChange(value);
-                      }} 
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select party type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="agent">Agent</SelectItem>
-                        <SelectItem value="supplier">Supplier</SelectItem>
-                        <SelectItem value="customer">Customer</SelectItem>
-                        <SelectItem value="broker">Broker</SelectItem>
-                        <SelectItem value="transporter">Transporter</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="partyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Party</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select party" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {parties.map((party) => (
-                          <SelectItem key={party.id} value={party.id}>
-                            {party.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -369,7 +345,71 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
                   </FormItem>
                 )}
               />
+            </FormRow>
               
+            <FormRow>
+              <FormField
+                control={form.control}
+                name="partyType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Party Type</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handlePartyTypeChange(value);
+                      }} 
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select party type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="customer">Customer</SelectItem>
+                        <SelectItem value="agent">Agent</SelectItem>
+                        <SelectItem value="supplier">Supplier</SelectItem>
+                        <SelectItem value="broker">Broker</SelectItem>
+                        <SelectItem value="transporter">Transporter</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="partyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Party</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select party" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {parties.length > 0 ? (
+                          parties.map((party) => (
+                            <SelectItem key={party.id} value={party.id}>
+                              {party.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem disabled value="no-parties">No parties found</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormRow>
+              
+            <FormRow>
               <FormField
                 control={form.control}
                 name="billNumber"
@@ -377,7 +417,7 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
                   <FormItem>
                     <FormLabel>Bill Number (Optional)</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter bill number" />
+                      <Input {...field} placeholder="Enter bill number" className="w-full" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -391,13 +431,15 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
                   <FormItem>
                     <FormLabel>Bill Amount (₹)</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} placeholder="0.00" step="0.01" />
+                      <Input type="number" {...field} placeholder="0.00" step="0.01" className="w-full" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+            </FormRow>
+            
+            <FormRow>
               <FormField
                 control={form.control}
                 name="referenceNumber"
@@ -405,13 +447,13 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
                   <FormItem>
                     <FormLabel>Reference Number (Optional)</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Enter reference number" />
+                      <Input {...field} placeholder="Enter reference number" className="w-full" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
+            </FormRow>
             
             <FormField
               control={form.control}
@@ -428,11 +470,20 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
             />
             
             <div className="flex justify-end space-x-4">
+              <Button 
+                type="button" 
+                onClick={onCancel}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              
               {initialData && currentReceipt && (
                 <Button type="button" onClick={handlePrintReceipt} variant="outline">
                   <Printer className="mr-2 h-4 w-4" /> Print Receipt
                 </Button>
               )}
+              
               <Button type="submit" size="lg">
                 {initialData ? "Update Receipt" : "Create Receipt"}
               </Button>
@@ -450,11 +501,14 @@ const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
             <p>Receipt #{currentReceipt?.receiptNumber} has been created successfully.</p>
             <p className="mt-2">Would you like to print the receipt?</p>
           </div>
-          <div className="flex justify-end">
+          <DialogFooter>
+            <Button onClick={() => setIsReceiptDialogOpen(false)} variant="outline">
+              Close
+            </Button>
             <Button onClick={handlePrintReceipt}>
               <Printer className="mr-2 h-4 w-4" /> Print Receipt
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

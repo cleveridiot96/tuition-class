@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +34,8 @@ import {
   getPurchases,
   getSales
 } from "@/services/storageService";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
@@ -210,281 +213,305 @@ const PaymentForm = ({ onSubmit, onCancel, initialData }: PaymentFormProps) => {
   };
 
   const handleFormSubmit = (data: FormData) => {
-    // Get party name for record
-    const selectedParty = parties.find(p => p.id === data.partyId);
-    
-    // Get transaction details if selected
-    let transactionDetails = null;
-    if (data.isAgainstTransaction && data.transactionId) {
-      transactionDetails = transactions.find(t => t.id === data.transactionId);
+    try {
+      // Get party name for record
+      const selectedParty = parties.find(p => p.id === data.partyId);
+      
+      if (!selectedParty) {
+        toast.error("Please select a valid party");
+        return;
+      }
+      
+      // Get transaction details if selected
+      let transactionDetails = null;
+      if (data.isAgainstTransaction && data.transactionId) {
+        transactionDetails = transactions.find(t => t.id === data.transactionId);
+        if (!transactionDetails && data.isAgainstTransaction) {
+          toast.error("Please select a valid transaction");
+          return;
+        }
+      }
+      
+      // Format data for submission
+      const submitData = {
+        ...data,
+        partyName: selectedParty?.name || "",
+        transactionDetails: transactionDetails,
+        id: initialData?.id || Date.now().toString()
+      };
+      
+      // Submit the data
+      onSubmit(submitData);
+      toast.success(initialData ? "Payment updated successfully" : "Payment added successfully");
+    } catch (error) {
+      console.error("Error submitting payment:", error);
+      toast.error("Failed to save payment. Please try again.");
     }
-    
-    // Format data for submission
-    const submitData = {
-      ...data,
-      partyName: selectedParty?.name || "",
-      transactionDetails: transactionDetails,
-      id: initialData?.id || Date.now().toString()
-    };
-    
-    // Submit the data
-    onSubmit(submitData);
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-        <FormRow columns={2}>
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="amount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Amount (₹)</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} placeholder="0.00" step="0.01" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </FormRow>
-        
-        <FormRow columns={2}>
-          <FormField
-            control={form.control}
-            name="partyType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Party Type</FormLabel>
-                <Select 
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    handlePartyTypeChange(value);
-                  }} 
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select party type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="agent">Agent</SelectItem>
-                    <SelectItem value="supplier">Supplier</SelectItem>
-                    <SelectItem value="customer">Customer</SelectItem>
-                    <SelectItem value="broker">Broker</SelectItem>
-                    <SelectItem value="transporter">Transporter</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="partyId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Party</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select party" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {parties.length > 0 ? (
-                      parties.map((party) => (
-                        <SelectItem key={party.id} value={party.id}>
-                          {party.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem disabled value="no-parties">No parties found</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </FormRow>
-
-        <div className="space-y-2">
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="againstTransaction" 
-              checked={showTransactions}
-              onCheckedChange={handleTransactionToggle}
-            />
-            <label
-              htmlFor="againstTransaction"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Payment against specific transaction
-            </label>
+    <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+          <div className="bg-blue-100 p-4 mb-4 rounded-md">
+            <h3 className="text-lg font-semibold text-blue-800 mb-2">Payment Information</h3>
+            <p className="text-sm text-blue-700">
+              Select the party type (Agent, Supplier, Customer, etc.) and then select the specific party from the dropdown.
+            </p>
           </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="onAccount" 
-              checked={isOnAccount}
-              onCheckedChange={handleOnAccountToggle}
+          
+          <FormRow columns={2}>
+            <FormField
+              control={form.control}
+              name="date"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Date</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <label
-              htmlFor="onAccount"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Payment on account
-            </label>
+            
+            <FormField
+              control={form.control}
+              name="amount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Amount (₹)</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} placeholder="0.00" step="0.01" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </FormRow>
+          
+          <FormRow columns={2}>
+            <FormField
+              control={form.control}
+              name="partyType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Party Type</FormLabel>
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handlePartyTypeChange(value);
+                    }} 
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select party type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="agent">Agent</SelectItem>
+                      <SelectItem value="supplier">Supplier</SelectItem>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="broker">Broker</SelectItem>
+                      <SelectItem value="transporter">Transporter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="partyId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Party</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select party" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {parties.length > 0 ? (
+                        parties.map((party) => (
+                          <SelectItem key={party.id} value={party.id}>
+                            {party.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem disabled value="no-parties">No parties found</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </FormRow>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="againstTransaction" 
+                checked={showTransactions}
+                onCheckedChange={handleTransactionToggle}
+              />
+              <label
+                htmlFor="againstTransaction"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Payment against specific transaction
+              </label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="onAccount" 
+                checked={isOnAccount}
+                onCheckedChange={handleOnAccountToggle}
+              />
+              <label
+                htmlFor="onAccount"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Payment on account
+              </label>
+            </div>
           </div>
-        </div>
-        
-        {showTransactions && (
-          <FormField
-            control={form.control}
-            name="transactionId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Select Transaction</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select transaction" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {transactions.length > 0 ? (
-                      transactions.map((transaction) => (
-                        <SelectItem key={transaction.id} value={transaction.id}>
-                          {`${transaction.type === 'purchase' ? 'Lot' : 'Bill'} ${transaction.number} - ₹${transaction.amount.toFixed(2)} (${format(new Date(transaction.date), 'dd/MM/yyyy')})`}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem disabled value="no-transactions">No transactions found</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-        
-        <FormRow columns={2}>
-          <FormField
-            control={form.control}
-            name="paymentMode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Payment Mode</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment mode" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                    <SelectItem value="bank">Bank Transfer</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           
-          <FormField
-            control={form.control}
-            name="billNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel optional>Bill Number</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Enter bill number" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </FormRow>
-        
-        <FormRow columns={2}>
-          <FormField
-            control={form.control}
-            name="billAmount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Bill Amount (₹)</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} placeholder="0.00" step="0.01" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="referenceNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel optional>Reference Number</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="Enter reference number" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </FormRow>
-        
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel optional>Notes</FormLabel>
-              <FormControl>
-                <Textarea rows={3} {...field} placeholder="Enter any additional notes" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+          {showTransactions && (
+            <FormField
+              control={form.control}
+              name="transactionId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Select Transaction</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select transaction" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {transactions.length > 0 ? (
+                        transactions.map((transaction) => (
+                          <SelectItem key={transaction.id} value={transaction.id}>
+                            {`${transaction.type === 'purchase' ? 'Lot' : 'Bill'} ${transaction.number} - ₹${transaction.amount.toFixed(2)} (${format(new Date(transaction.date), 'dd/MM/yyyy')})`}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem disabled value="no-transactions">No transactions found</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        />
-        
-        <div className="flex justify-end space-x-2 pt-2">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={onCancel}
-          >
-            Cancel
-          </Button>
-          <Button type="submit">
-            {initialData ? "Update Payment" : "Make Payment"}
-          </Button>
-        </div>
-      </form>
-    </Form>
+          
+          <FormRow columns={2}>
+            <FormField
+              control={form.control}
+              name="paymentMode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Mode</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment mode" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="cheque">Cheque</SelectItem>
+                      <SelectItem value="bank">Bank Transfer</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="billNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel optional>Bill Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter bill number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </FormRow>
+          
+          <FormRow columns={2}>
+            <FormField
+              control={form.control}
+              name="billAmount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bill Amount (₹)</FormLabel>
+                  <FormControl>
+                    <Input type="number" {...field} placeholder="0.00" step="0.01" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="referenceNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel optional>Reference Number</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter reference number" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </FormRow>
+          
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel optional>Notes</FormLabel>
+                <FormControl>
+                  <Textarea rows={3} {...field} placeholder="Enter any additional notes" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <div className="flex justify-end space-x-2 pt-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onCancel}
+            >
+              Cancel
+            </Button>
+            <Button type="submit">
+              {initialData ? "Update Payment" : "Make Payment"}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </Card>
   );
 };
 

@@ -15,6 +15,7 @@ import { PurchaseFormProps, PurchaseFormData } from "./types/PurchaseTypes";
 import { usePurchaseCalculations } from "./hooks/usePurchaseCalculations";
 import { useBagExtractor } from "./hooks/useBagExtractor";
 import { usePurchaseValidation } from "./hooks/usePurchaseValidation";
+import { usePartyManagement } from "./usePartyManagement";
 import PurchaseFormContent from "./PurchaseFormContent";
 
 const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initialData }) => {
@@ -52,6 +53,17 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
     mode: "onChange"
   });
 
+  // Load entities data
+  const loadData = () => {
+    setSuppliers(getSuppliers());
+    setTransporters(getTransporters());
+    setAgents(getAgents());
+    setLocations(getLocations());
+  };
+
+  // Setup party management
+  const partyManagement = usePartyManagement({ form, loadData });
+
   // Custom hooks
   const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } =
     usePurchaseCalculations({ form, showBrokerage, initialData });
@@ -60,10 +72,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
 
   // Load initial data
   useEffect(() => {
-    setSuppliers(getSuppliers());
-    setTransporters(getTransporters());
-    setAgents(getAgents());
-    setLocations(getLocations());
+    loadData();
     if (initialData?.agentId) setShowBrokerage(true);
   }, [initialData]);
 
@@ -164,6 +173,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
       duplicateLotInfo={duplicateLotInfo}
       onContinueDespiteDuplicate={handleContinueDespiteDuplicate}
       handleFormSubmit={handleFormSubmit}
+      partyManagement={partyManagement}
     />
   );
 };
