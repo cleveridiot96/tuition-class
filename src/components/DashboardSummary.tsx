@@ -54,16 +54,16 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 max-w-full">
-      <div className="w-full h-full">
+      <div className="w-full h-full transform transition-all hover:scale-102">
         <PurchaseSummaryCard {...safeData.purchases} />
       </div>
-      <div className="w-full h-full">
+      <div className="w-full h-full transform transition-all hover:scale-102">
         <SalesSummaryCard {...safeData.sales} />
       </div>
-      <div className="w-full h-full">
+      <div className="w-full h-full transform transition-all hover:scale-102">
         <StockSummaryCard {...safeData.stock} />
       </div>
-      <div className="w-full h-full">
+      <div className="w-full h-full transform transition-all hover:scale-102">
         <CashSummaryCard
           cashBalance={cashBalance}
           todayCashIn={todayCash.cashIn}
@@ -71,48 +71,48 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
         />
       </div>
       
-      <div className="md:col-span-2 w-full h-full">
+      <div className="md:col-span-2 w-full h-full transform transition-all hover:scale-102">
         <DashboardCard 
           title="Receivables & Payables"
           onClick={() => navigate('/ledger')}
-          className="h-full"
+          className="h-full bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200"
         >
           <div className="grid grid-cols-2 gap-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-500">Total Receivables</div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg shadow-sm border border-blue-200">
+              <div className="text-sm text-blue-700">Total Receivables</div>
               <div className="text-2xl font-bold text-blue-600">₹{receivables.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-1">From customers</div>
+              <div className="text-xs text-blue-500 mt-1">From customers</div>
             </div>
-            <div className="bg-red-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-500">Total Payables</div>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 p-4 rounded-lg shadow-sm border border-red-200">
+              <div className="text-sm text-red-700">Total Payables</div>
               <div className="text-2xl font-bold text-red-600">₹{payables.toLocaleString()}</div>
-              <div className="text-xs text-gray-500 mt-1">To agents, brokers & transporters</div>
+              <div className="text-xs text-red-500 mt-1">To agents, brokers & transporters</div>
             </div>
           </div>
         </DashboardCard>
       </div>
       
-      <div className="md:col-span-2 w-full h-full">
+      <div className="md:col-span-2 w-full h-full transform transition-all hover:scale-102">
         <DashboardCard 
           title="Stock Summary"
           onClick={() => navigate('/stock')}
-          className="h-full"
+          className="h-full bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200"
         >
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-amber-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500">Mumbai</div>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-3 rounded-lg shadow-sm border border-amber-200">
+              <div className="text-sm text-amber-700">Mumbai</div>
               <div className="text-xl font-bold text-amber-600">
                 {safeData.stock.mumbai} bags
               </div>
             </div>
-            <div className="bg-amber-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500">Chiplun</div>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-3 rounded-lg shadow-sm border border-amber-200">
+              <div className="text-sm text-amber-700">Chiplun</div>
               <div className="text-xl font-bold text-amber-600">
                 {safeData.stock.chiplun} bags
               </div>
             </div>
-            <div className="bg-amber-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500">Sawantwadi</div>
+            <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-3 rounded-lg shadow-sm border border-amber-200">
+              <div className="text-sm text-amber-700">Sawantwadi</div>
               <div className="text-xl font-bold text-amber-600">
                 {safeData.stock.sawantwadi} bags
               </div>

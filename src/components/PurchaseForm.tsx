@@ -25,6 +25,7 @@ import BrokerageDetails from "./purchases/BrokerageDetails";
 import PurchaseSummary from "./purchases/PurchaseSummary";
 import DuplicateLotDialog from "./purchases/DuplicateLotDialog";
 import { ScrollArea } from "./ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "./ui/accordion";
 
 const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -87,6 +88,28 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
     }
   }, [initialData]);
 
+  useEffect(() => {
+    // Extract bags from lot number whenever lot number changes
+    const lotNumber = form.watch("lotNumber");
+    if (lotNumber) {
+      const extractedBags = extractBagsFromLotNumber(lotNumber);
+      if (extractedBags) {
+        form.setValue("bags", extractedBags);
+      }
+    }
+  }, [form.watch("lotNumber")]);
+
+  // Calculate transport cost whenever transport rate or net weight changes
+  useEffect(() => {
+    const transportRate = form.watch("transportRate");
+    const netWeight = form.watch("netWeight");
+    
+    if (transportRate > 0 && netWeight > 0) {
+      const transportCost = transportRate * netWeight;
+      console.log(`Transport cost calculated: ${transportCost} = ${transportRate} * ${netWeight}`);
+    }
+  }, [form.watch("transportRate"), form.watch("netWeight")]);
+
   const loadInitialData = () => {
     setSuppliers(getSuppliers());
     setTransporters(getTransporters());
@@ -119,35 +142,64 @@ const PurchaseForm: React.FC<PurchaseFormProps> = ({ onSubmit, initialData }) =>
   };
 
   return (
-    <Card className="p-6">
+    <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 shadow-md overflow-hidden">
       <ScrollArea className="h-[calc(100vh-200px)] pr-4">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <PurchaseFormHeader form={form} />
-            <PurchaseDetails form={form} locations={locations} />
-            
-            <BrokerageDetails 
-              form={form} 
-              brokerageAmount={calculations.brokerageAmount} 
-              totalAmount={calculations.totalAmount}
-            />
-            
-            <PurchaseSummary 
-              totalAmount={calculations.totalAmount}
-              transportCost={calculations.transportCost}
-              brokerageAmount={calculations.brokerageAmount}
-              expenses={form.watch("expenses") || 0}
-              totalAfterExpenses={calculations.totalAfterExpenses}
-              ratePerKgAfterExpenses={calculations.ratePerKgAfterExpenses}
-            />
-            
-            <div className="flex justify-end">
-              <Button type="submit" size="lg">
-                {initialData ? "Update Purchase" : "Add Purchase"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+        <div className="p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+              <Accordion type="single" collapsible defaultValue="header">
+                <AccordionItem value="header" className="border-none">
+                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Purchase Details</AccordionTrigger>
+                  <AccordionContent>
+                    <PurchaseFormHeader form={form} />
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="details" className="border-none">
+                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Quantity & Rate</AccordionTrigger>
+                  <AccordionContent>
+                    <PurchaseDetails form={form} locations={locations} />
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="brokerage" className="border-none">
+                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Brokerage Details</AccordionTrigger>
+                  <AccordionContent>
+                    <BrokerageDetails 
+                      form={form} 
+                      brokerageAmount={calculations.brokerageAmount} 
+                      totalAmount={calculations.totalAmount}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+                
+                <AccordionItem value="summary" className="border-none">
+                  <AccordionTrigger className="py-2 text-blue-700 hover:text-blue-900 font-medium">Summary</AccordionTrigger>
+                  <AccordionContent>
+                    <PurchaseSummary 
+                      totalAmount={calculations.totalAmount}
+                      transportCost={calculations.transportCost}
+                      brokerageAmount={calculations.brokerageAmount}
+                      expenses={form.watch("expenses") || 0}
+                      totalAfterExpenses={calculations.totalAfterExpenses}
+                      ratePerKgAfterExpenses={calculations.ratePerKgAfterExpenses}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+              
+              <div className="flex justify-end">
+                <Button 
+                  type="submit" 
+                  size="lg"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  {initialData ? "Update Purchase" : "Add Purchase"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </ScrollArea>
 
       <DuplicateLotDialog

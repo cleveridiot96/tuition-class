@@ -46,7 +46,10 @@ const defaultSummaryData: DashboardSummaryData = {
   }
 };
 
-export const useDashboardData = () => {
+export const useDashboardData = (
+  selectedMonth: number = new Date().getMonth(), 
+  selectedYear: number = new Date().getFullYear()
+) => {
   const [summaryData, setSummaryData] = useState<DashboardSummaryData>(defaultSummaryData);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -56,50 +59,51 @@ export const useDashboardData = () => {
       
       // Get purchases data
       const purchases = getPurchases();
-      const totalPurchases = purchases.reduce((total, purchase) => {
-        if (!purchase.isDeleted) {
-          return total + (purchase.totalAfterExpenses || 0);
-        }
-        return total;
+      
+      // Filter purchases by month and year
+      const startDate = new Date(selectedYear, selectedMonth, 1);
+      const endDate = new Date(selectedYear, selectedMonth + 1, 0); // Last day of month
+      
+      const filteredPurchases = purchases.filter(purchase => {
+        if (purchase.isDeleted) return false;
+        const purchaseDate = new Date(purchase.date);
+        return purchaseDate >= startDate && purchaseDate <= endDate;
+      });
+      
+      const totalPurchases = filteredPurchases.reduce((total, purchase) => {
+        return total + (purchase.totalAfterExpenses || 0);
       }, 0);
 
       // Calculate purchase metrics
-      const purchaseBags = purchases.reduce((total, purchase) => {
-        if (!purchase.isDeleted) {
-          return total + (purchase.quantity || 0);
-        }
-        return total;
+      const purchaseBags = filteredPurchases.reduce((total, purchase) => {
+        return total + (purchase.quantity || 0);
       }, 0);
 
-      const purchaseKgs = purchases.reduce((total, purchase) => {
-        if (!purchase.isDeleted) {
-          return total + (purchase.netWeight || 0);
-        }
-        return total;
+      const purchaseKgs = filteredPurchases.reduce((total, purchase) => {
+        return total + (purchase.netWeight || 0);
       }, 0);
 
       // Get sales data
       const sales = getSales();
-      const totalSales = sales.reduce((total, sale) => {
-        if (!sale.isDeleted) {
-          return total + (sale.totalAmount || 0);
-        }
-        return total;
+      
+      // Filter sales by month and year
+      const filteredSales = sales.filter(sale => {
+        if (sale.isDeleted) return false;
+        const saleDate = new Date(sale.date);
+        return saleDate >= startDate && saleDate <= endDate;
+      });
+      
+      const totalSales = filteredSales.reduce((total, sale) => {
+        return total + (sale.totalAmount || 0);
       }, 0);
 
       // Calculate sales metrics
-      const salesBags = sales.reduce((total, sale) => {
-        if (!sale.isDeleted) {
-          return total + (sale.quantity || 0);
-        }
-        return total;
+      const salesBags = filteredSales.reduce((total, sale) => {
+        return total + (sale.quantity || 0);
       }, 0);
 
-      const salesKgs = sales.reduce((total, sale) => {
-        if (!sale.isDeleted) {
-          return total + (sale.netWeight || 0);
-        }
-        return total;
+      const salesKgs = filteredSales.reduce((total, sale) => {
+        return total + (sale.netWeight || 0);
       }, 0);
 
       // Get inventory data
@@ -137,18 +141,25 @@ export const useDashboardData = () => {
       const payments = getStorageItem<any[]>('payments') || [];
       const receipts = getStorageItem<any[]>('receipts') || [];
       
-      const totalPayments = payments.reduce((total, payment) => {
-        if (!payment.isDeleted) {
-          return total + (payment.amount || 0);
-        }
-        return total;
+      // Filter payments and receipts by month and year
+      const filteredPayments = payments.filter(payment => {
+        if (payment.isDeleted) return false;
+        const paymentDate = new Date(payment.date);
+        return paymentDate >= startDate && paymentDate <= endDate;
+      });
+      
+      const filteredReceipts = receipts.filter(receipt => {
+        if (receipt.isDeleted) return false;
+        const receiptDate = new Date(receipt.date);
+        return receiptDate >= startDate && receiptDate <= endDate;
+      });
+      
+      const totalPayments = filteredPayments.reduce((total, payment) => {
+        return total + (payment.amount || 0);
       }, 0);
       
-      const totalReceipts = receipts.reduce((total, receipt) => {
-        if (!receipt.isDeleted) {
-          return total + (receipt.amount || 0);
-        }
-        return total;
+      const totalReceipts = filteredReceipts.reduce((total, receipt) => {
+        return total + (receipt.amount || 0);
       }, 0);
       
       const cashBalance = totalReceipts - totalPayments;
@@ -181,7 +192,7 @@ export const useDashboardData = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [selectedMonth, selectedYear]);
 
   return { summaryData, isLoading };
 };

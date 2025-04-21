@@ -1,52 +1,62 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut } from 'lucide-react';
-import { useLocalStorage } from '../../hooks/useLocalStorage';
+import { Tooltip } from "@/components/ui/tooltip";
+import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-const FontSizeAdjuster: React.FC = () => {
-  const [fontSize, setFontSize] = useLocalStorage('app-font-size', 100);
+const FontSizeAdjuster = () => {
+  const [fontSize, setFontSize] = useState(16); // Default font size
   
-  const increaseFontSize = () => {
-    const newSize = Math.min(fontSize + 10, 150);
+  useEffect(() => {
+    // Load saved font size from localStorage on component mount
+    const savedFontSize = localStorage.getItem('appFontSize');
+    if (savedFontSize) {
+      const parsedSize = parseInt(savedFontSize);
+      setFontSize(parsedSize);
+      document.documentElement.style.fontSize = `${parsedSize}px`;
+    }
+  }, []);
+  
+  const changeFontSize = (delta: number) => {
+    const newSize = Math.min(Math.max(fontSize + delta, 12), 24); // Limit between 12px and 24px
     setFontSize(newSize);
-    document.documentElement.style.fontSize = `${newSize}%`;
+    document.documentElement.style.fontSize = `${newSize}px`;
+    localStorage.setItem('appFontSize', newSize.toString());
   };
-  
-  const decreaseFontSize = () => {
-    const newSize = Math.max(fontSize - 10, 70);
-    setFontSize(newSize);
-    document.documentElement.style.fontSize = `${newSize}%`;
-  };
-  
-  // Apply font size on component mount
-  React.useEffect(() => {
-    document.documentElement.style.fontSize = `${fontSize}%`;
-  }, [fontSize]);
   
   return (
-    <div className="flex items-center">
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        onClick={decreaseFontSize}
-        className="p-1 h-8 w-8"
-        title="Decrease font size"
-      >
-        <ZoomOut size={18} />
-      </Button>
+    <div className="flex items-center gap-1 bg-white/10 rounded-md p-1">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => changeFontSize(-1)}
+              className="px-2 py-1 h-7 min-w-[28px] text-white hover:bg-white/20"
+            >
+              A-
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Decrease font size</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
       
-      <span className="text-xs mx-1">{fontSize}%</span>
-      
-      <Button 
-        variant="ghost" 
-        size="sm" 
-        onClick={increaseFontSize}
-        className="p-1 h-8 w-8"
-        title="Increase font size"
-      >
-        <ZoomIn size={18} />
-      </Button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => changeFontSize(1)}
+              className="px-2 py-1 h-7 min-w-[28px] text-white hover:bg-white/20"
+            >
+              A+
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Increase font size</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 };

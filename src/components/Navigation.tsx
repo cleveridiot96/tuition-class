@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Home } from 'lucide-react';
 import FontSizeAdjuster from './UI/FontSizeAdjuster';
 
 interface NavigationProps {
@@ -12,6 +12,7 @@ interface NavigationProps {
   rightContent?: React.ReactNode;
   showFormatButton?: boolean;
   onFormatClick?: () => void;
+  showHomeButton?: boolean;
 }
 
 const Navigation: React.FC<NavigationProps> = ({
@@ -20,7 +21,8 @@ const Navigation: React.FC<NavigationProps> = ({
   onBack,
   rightContent,
   showFormatButton = false,
-  onFormatClick
+  onFormatClick,
+  showHomeButton = false
 }) => {
   const navigate = useNavigate();
   
@@ -32,13 +34,22 @@ const Navigation: React.FC<NavigationProps> = ({
     }
   };
   
+  const handleHomeClick = () => {
+    navigate('/');
+  };
+  
   return (
-    <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+    <div className="bg-gradient-to-r from-blue-600 to-purple-600 shadow-md sticky top-0 z-10 text-white">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center">
           {showBackButton && (
-            <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2">
+            <Button variant="ghost" size="icon" onClick={handleBack} className="mr-2 text-white hover:bg-white/10">
               <ArrowLeft size={18} />
+            </Button>
+          )}
+          {showHomeButton && (
+            <Button variant="ghost" size="icon" onClick={handleHomeClick} className="mr-2 text-white hover:bg-white/10">
+              <Home size={18} />
             </Button>
           )}
           {title && <h1 className="text-xl font-bold">{title}</h1>}
@@ -47,7 +58,7 @@ const Navigation: React.FC<NavigationProps> = ({
         <div className="flex items-center space-x-4">
           <FontSizeAdjuster />
           {showFormatButton && onFormatClick && (
-            <Button variant="ghost" size="sm" onClick={onFormatClick}>
+            <Button variant="outline" size="sm" onClick={onFormatClick} className="text-white border-white hover:bg-white/20">
               Format
             </Button>
           )}
