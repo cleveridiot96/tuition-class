@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import Navigation from "@/components/Navigation";
 import { 
-  getLocations, 
+  getLocations,
   getAvailableInventoryByLocation,
   transferBetweenLocations
 } from "@/utils/locationTransfer";

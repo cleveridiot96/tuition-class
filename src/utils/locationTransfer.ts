@@ -1,5 +1,5 @@
 
-import { getLocations, getStorageItem, saveStorageItem } from '@/services/storageService';
+import { getLocations as getStorageLocations, getStorageItem, saveStorageItem } from '@/services/storageService';
 
 interface LocationTransferParams {
   lotNumber: string;
@@ -65,6 +65,11 @@ export const transferBetweenLocations = ({
     console.error("Error transferring inventory:", error);
     return false;
   }
+};
+
+// Export the getLocations function to be used in LocationTransfer.tsx
+export const getLocations = (): string[] => {
+  return getStorageLocations();
 };
 
 export const getAvailableInventoryByLocation = (location: string): any[] => {

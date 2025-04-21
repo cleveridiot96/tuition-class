@@ -6,6 +6,7 @@ import DashboardSummary from '@/components/DashboardSummary';
 import DashboardMenu from '@/components/DashboardMenu';
 import { FormatDataHandler } from '@/components/dashboard/FormatDataHandler';
 import { Menu, Package, TrendingUp, Truck, Navigation as LocationIcon, Repeat } from 'lucide-react';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 const menuItems = [
   {
@@ -56,6 +57,8 @@ const menuItems = [
 const Index = () => {
   const navigate = useNavigate();
   const [showFormatter, setShowFormatter] = useState(false);
+  // Fetch dashboard data
+  const { summaryData } = useDashboardData();
 
   const handleFormatClick = () => {
     setShowFormatter(true);
@@ -69,10 +72,13 @@ const Index = () => {
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-8 text-center">Kisan Khata Sahayak</h1>
         
-        <DashboardSummary />
+        <DashboardSummary summaryData={summaryData} />
         
         <div className="mt-8">
-          <DashboardMenu items={menuItems} onItemClick={(route) => navigate(route)} />
+          <DashboardMenu 
+            items={menuItems} 
+            onItemClick={(route) => navigate(route)} 
+          />
         </div>
         
         {showFormatter && (
