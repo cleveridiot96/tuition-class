@@ -14,12 +14,14 @@ interface MultiItemSalesFormProps {
   onCancel: () => void;
   onSubmit: (sale: Sale) => void;
   initialSale?: Sale;
+  onPrint?: () => void;
 }
 
 const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
   onCancel,
   onSubmit,
-  initialSale
+  initialSale,
+  onPrint
 }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);

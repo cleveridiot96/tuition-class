@@ -66,6 +66,11 @@ const Sales = () => {
     },
   });
 
+  const handleCloseDialog = () => {
+    setIsAddDialogOpen(false);
+    setIsEditDialogOpen(false);
+  };
+
   useEffect(() => {
     loadData();
     const saleId = getSaleIdFromUrl();
@@ -274,7 +279,7 @@ const Sales = () => {
                       <DialogDescription>Fill in the details to record a new sale</DialogDescription>
                     </DialogHeader>
                     <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
-                      <MultiItemSalesForm onSubmit={handleAdd} />
+                      <MultiItemSalesForm onSubmit={handleAdd} onCancel={handleCloseDialog} />
                     </ScrollArea>
                   </DialogContent>
                 </Dialog>
@@ -294,7 +299,8 @@ const Sales = () => {
                   {editingSale && (
                     <MultiItemSalesForm 
                       onSubmit={handleUpdate} 
-                      initialData={editingSale} 
+                      onCancel={() => setIsEditDialogOpen(false)}
+                      initialSale={editingSale} 
                       onPrint={() => {
                         setIsEditDialogOpen(false);
                         setTimeout(() => handlePrintSale(editingSale), 300);

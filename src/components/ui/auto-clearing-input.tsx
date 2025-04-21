@@ -28,7 +28,7 @@ const AutoClearingInput: React.FC<AutoClearingInputProps> = ({
     setWasFocused(true);
     
     // Clear the field if it's a default value (like 0)
-    if (defaultClearing && (e.target.value === "0" || e.target.value === 0 || e.target.value === "0.00")) {
+    if (defaultClearing && (e.target.value === "0" || e.target.value === "0.00" || String(e.target.value) === "0")) {
       setInternalValue("");
       
       // If we have a controlled input with onChange handler

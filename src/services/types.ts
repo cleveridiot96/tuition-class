@@ -99,6 +99,7 @@ export interface Sale {
   billAmount?: number;
   reference?: string;
   location?: string;
+  bags?: number;
   items?: {
     name: string;
     quantity: number;
