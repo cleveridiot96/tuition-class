@@ -11,7 +11,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [showFormatter, setShowFormatter] = useState(false);
   // Fetch dashboard data
-  const { summaryData } = useDashboardData();
+  const { summaryData, isLoading } = useDashboardData();
 
   const handleFormatClick = () => {
     setShowFormatter(true);
@@ -25,7 +25,13 @@ const Index = () => {
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-8 text-center">Kisan Khata Sahayak</h1>
         
-        <DashboardSummary summaryData={summaryData} />
+        {isLoading ? (
+          <div className="flex justify-center items-center h-48">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
+          </div>
+        ) : (
+          <DashboardSummary summaryData={summaryData} />
+        )}
         
         <div className="mt-8">
           <DashboardMenu />

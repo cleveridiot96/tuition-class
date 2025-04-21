@@ -24,6 +24,13 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
   const [stockValue, setStockValue] = useState(0);
   const [cashBalance, setCashBalance] = useState(0);
 
+  // Ensure summaryData always has valid values
+  const safeData = {
+    purchases: summaryData?.purchases || { amount: 0, bags: 0, kgs: 0 },
+    sales: summaryData?.sales || { amount: 0, bags: 0, kgs: 0 },
+    stock: summaryData?.stock || { mumbai: 0, chiplun: 0, sawantwadi: 0 }
+  };
+
   useEffect(() => {
     try {
       const { total: totalReceivables } = getTotalReceivables();
@@ -43,18 +50,18 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
     } catch (error) {
       console.error("Error loading dashboard summary data:", error);
     }
-  }, [summaryData.stock]);
+  }, [safeData.stock]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 max-w-full">
       <div className="w-full h-full">
-        <PurchaseSummaryCard {...summaryData.purchases} />
+        <PurchaseSummaryCard {...safeData.purchases} />
       </div>
       <div className="w-full h-full">
-        <SalesSummaryCard {...summaryData.sales} />
+        <SalesSummaryCard {...safeData.sales} />
       </div>
       <div className="w-full h-full">
-        <StockSummaryCard {...summaryData.stock} />
+        <StockSummaryCard {...safeData.stock} />
       </div>
       <div className="w-full h-full">
         <CashSummaryCard
@@ -95,19 +102,19 @@ const DashboardSummary = ({ summaryData }: DashboardSummaryProps) => {
             <div className="bg-amber-50 p-3 rounded-lg">
               <div className="text-sm text-gray-500">Mumbai</div>
               <div className="text-xl font-bold text-amber-600">
-                {summaryData.stock.mumbai} bags
+                {safeData.stock.mumbai} bags
               </div>
             </div>
             <div className="bg-amber-50 p-3 rounded-lg">
               <div className="text-sm text-gray-500">Chiplun</div>
               <div className="text-xl font-bold text-amber-600">
-                {summaryData.stock.chiplun} bags
+                {safeData.stock.chiplun} bags
               </div>
             </div>
             <div className="bg-amber-50 p-3 rounded-lg">
               <div className="text-sm text-gray-500">Sawantwadi</div>
               <div className="text-xl font-bold text-amber-600">
-                {summaryData.stock.sawantwadi} bags
+                {safeData.stock.sawantwadi} bags
               </div>
             </div>
           </div>
