@@ -53,6 +53,7 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
         transportCost: data.transportCost || 0,
       });
       addSale(normalizedSale);
+      // Fix: updateInventoryAfterSale expects only one parameter
       updateInventoryAfterSale(data);
       loadData();
       toast.success("Sale added successfully");
@@ -77,6 +78,7 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
       });
 
       if (updatedSale.quantity !== editingSale.quantity || updatedSale.lotNumber !== editingSale.lotNumber) {
+        // Fix: updateInventoryAfterSale expects only one parameter
         updateInventoryAfterSale(editingSale);
         updateInventoryAfterSale(updatedSale);
       }
@@ -100,6 +102,7 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
     try {
       const saleToRemove = sales.find(s => s.id === saleToDelete);
       if (saleToRemove) {
+        // Fix: updateInventoryAfterSale expects only one parameter
         updateInventoryAfterSale(saleToRemove);
         deleteSale(saleToDelete);
         loadData();
@@ -137,6 +140,7 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
       };
 
       updateSale(updatedSale);
+      // Fix: updateInventoryAfterSale expects only one parameter
       updateInventoryAfterSale(updatedSale);
       loadData();
       toast.success("Sale restored successfully");

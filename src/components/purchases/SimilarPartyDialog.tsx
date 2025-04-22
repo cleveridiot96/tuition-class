@@ -15,14 +15,27 @@ export interface SimilarPartyDialogProps {
   onOpenChange: (open: boolean) => void;
   similarParty: any;
   onUseParty: () => void;
+  // Add compatibility for onUseSuggested prop name
+  onUseSuggested?: () => void;
 }
 
 const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
   open,
   onOpenChange,
   similarParty,
-  onUseParty
+  onUseParty,
+  onUseSuggested
 }) => {
+  // Use either callback function that's provided
+  const handleUseParty = () => {
+    if (onUseSuggested) {
+      onUseSuggested();
+    } else if (onUseParty) {
+      onUseParty();
+    }
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -42,10 +55,7 @@ const SimilarPartyDialog: React.FC<SimilarPartyDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Create New
           </Button>
-          <Button onClick={() => {
-            onUseParty();
-            onOpenChange(false);
-          }}>
+          <Button onClick={handleUseParty}>
             Use This Party
           </Button>
         </DialogFooter>
