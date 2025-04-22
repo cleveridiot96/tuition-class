@@ -10,6 +10,20 @@ const FontSizeAdjuster = () => {
     const savedSize = localStorage.getItem("font-size-preference") || "normal";
     setCurrentSize(savedSize);
     applyFontSize(savedSize);
+    
+    // Apply the CSS on load
+    const style = document.createElement('style');
+    style.innerHTML = `
+      .font-size-small { font-size: 0.85rem !important; }
+      .font-size-normal { font-size: 1rem !important; }
+      .font-size-large { font-size: 1.15rem !important; }
+      .font-size-x-large { font-size: 1.3rem !important; }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
   }, []);
   
   const applyFontSize = (size: string) => {

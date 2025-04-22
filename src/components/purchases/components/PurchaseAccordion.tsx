@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { UseFormReturn } from "react-hook-form";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PurchaseFormData } from "../types/PurchaseTypes";
 import PurchaseFormHeader from "./PurchaseFormHeader";
 import PurchaseDetails from "./PurchaseDetails";
@@ -32,31 +31,28 @@ const PurchaseAccordion: React.FC<PurchaseAccordionProps> = ({
   partyManagement,
 }: PurchaseAccordionProps) => {
   return (
-    <Tabs defaultValue="header">
-      <TabsList className="grid w-full grid-cols-4">
-        <TabsTrigger value="header">Purchase Details</TabsTrigger>
-        <TabsTrigger value="details">Bags & Rate</TabsTrigger>
-        <TabsTrigger value="brokerage">Brokerage Details</TabsTrigger>
-        <TabsTrigger value="summary">Summary</TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="header">
+    <div className="space-y-8">
+      <section className="bg-white p-4 rounded-lg shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Purchase Details</h2>
         <PurchaseFormHeader form={form} />
-      </TabsContent>
+      </section>
       
-      <TabsContent value="details">
+      <section className="bg-white p-4 rounded-lg shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Bags & Rate</h2>
         <PurchaseDetails form={form} locations={locations} />
-      </TabsContent>
+      </section>
       
-      <TabsContent value="brokerage">
+      <section className="bg-white p-4 rounded-lg shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Brokerage Details</h2>
         <BrokerageDetails 
           form={form} 
           brokerageAmount={brokerageAmount} 
           totalAmount={totalAmount}
         />
-      </TabsContent>
+      </section>
       
-      <TabsContent value="summary">
+      <section className="bg-white p-4 rounded-lg shadow-sm">
+        <h2 className="text-lg font-medium mb-4">Summary</h2>
         <PurchaseSummary 
           totalAmount={totalAmount}
           transportCost={transportCost}
@@ -65,8 +61,8 @@ const PurchaseAccordion: React.FC<PurchaseAccordionProps> = ({
           totalAfterExpenses={totalAfterExpenses}
           ratePerKgAfterExpenses={ratePerKgAfterExpenses}
         />
-      </TabsContent>
-    </Tabs>
+      </section>
+    </div>
   );
 };
 

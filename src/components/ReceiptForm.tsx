@@ -1,260 +1,329 @@
 
-import React from 'react';
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { v4 as uuidv4 } from "uuid";
+import { toast } from "sonner";
 import {
   Form,
-  FormControl,
   FormField,
   FormItem,
   FormLabel,
+  FormControl,
   FormMessage,
-  FormRow
+  FormRow,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
-import { Card } from "@/components/ui/card";
-import { getCustomers } from "@/services/storageService";
+import { getCustomers, getBrokers, getNextReceiptNumber } from "@/services/storageService";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
-  amount: z.coerce.number().positive("Amount must be positive"),
-  customerId: z.string().min(1, "Customer is required"),
-  receiptMode: z.string().min(1, "Receipt mode is required"),
-  billNumber: z.string().optional(),
+  receiptNumber: z.string().min(1, "Receipt number is required"),
+  entityId: z.string().min(1, "Please select an entity"),
+  entityType: z.enum(["customer", "broker"]),
+  amount: z.number().min(1, "Amount must be greater than 0"),
+  paymentMethod: z.enum(["cash", "bank"]),
   reference: z.string().optional(),
-  notes: z.string().optional()
+  notes: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
-
-export interface ReceiptFormProps {
+interface ReceiptFormProps {
   onSubmit: (data: any) => void;
   onCancel: () => void;
   initialData?: any;
 }
 
 const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
-  const [customers, setCustomers] = React.useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [brokers, setBrokers] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState("customer");
   
-  const form = useForm<FormData>({
+  const form = useForm({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData ? {
-      ...initialData,
-      date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
-      customerId: initialData.customerId || "",
-      receiptMode: initialData.receiptMode || "cash",
-    } : {
-      date: format(new Date(), 'yyyy-MM-dd'),
-      amount: 0,
-      customerId: "",
-      receiptMode: "cash",
-      billNumber: "",
-      reference: "",
-      notes: ""
-    }
+    defaultValues: {
+      date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
+      receiptNumber: initialData?.receiptNumber || getNextReceiptNumber(),
+      entityId: initialData?.customerId || initialData?.brokerId || "",
+      entityType: initialData?.customerId ? "customer" : "broker",
+      amount: initialData?.amount || 0,
+      paymentMethod: initialData?.paymentMethod || "cash",
+      reference: initialData?.reference || "",
+      notes: initialData?.notes || "",
+    },
   });
-  
-  React.useEffect(() => {
-    // Load customers
-    const loadedCustomers = getCustomers();
-    setCustomers(loadedCustomers);
-  }, []);
 
-  const handleFormSubmit = (data: FormData) => {
-    try {
-      // Get customer name for record
-      const selectedCustomer = customers.find(c => c.id === data.customerId);
-      
-      if (!selectedCustomer) {
-        toast.error("Please select a valid customer");
-        return;
+  const entityType = form.watch("entityType");
+
+  useEffect(() => {
+    // Set active tab based on form value
+    setActiveTab(entityType);
+  }, [entityType]);
+
+  useEffect(() => {
+    // Load customers and brokers
+    setCustomers(getCustomers() || []);
+    setBrokers(getBrokers() || []);
+    
+    // If initial data has customerId or brokerId, set the appropriate tab
+    if (initialData) {
+      if (initialData.customerId) {
+        form.setValue("entityType", "customer");
+        form.setValue("entityId", initialData.customerId);
+        setActiveTab("customer");
+      } else if (initialData.brokerId) {
+        form.setValue("entityType", "broker");
+        form.setValue("entityId", initialData.brokerId);
+        setActiveTab("broker");
       }
+    }
+  }, [initialData]);
+
+  const handleSubmit = (data: z.infer<typeof formSchema>) => {
+    try {
+      const { entityId, entityType, ...rest } = data;
       
-      // Format data for submission
+      // Prepare data based on entity type
+      const entityData = entityType === "customer" 
+        ? { 
+            customerId: entityId, 
+            customerName: customers.find(c => c.id === entityId)?.name || "Unknown Customer" 
+          }
+        : { 
+            brokerId: entityId, 
+            brokerName: brokers.find(b => b.id === entityId)?.name || "Unknown Broker" 
+          };
+      
+      // Combine data for submission
       const submitData = {
-        ...data,
-        customerName: selectedCustomer?.name || "",
-        id: initialData?.id || Date.now().toString(),
-        receiptNumber: initialData?.receiptNumber || `R-${Date.now().toString().slice(-6)}`,
-        paymentMethod: data.receiptMode // For compatibility with existing code
+        ...rest,
+        ...entityData,
+        id: initialData?.id || uuidv4(),
+        amount: Number(data.amount),
       };
       
-      // Submit the data
       onSubmit(submitData);
       toast.success(initialData ? "Receipt updated successfully" : "Receipt added successfully");
     } catch (error) {
-      console.error("Error submitting receipt:", error);
-      toast.error("Failed to save receipt. Please try again.");
+      console.error("Error in receipt form:", error);
+      toast.error("Error submitting the form. Please check your inputs.");
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    form.setValue("entityType", tab as "customer" | "broker");
+    form.setValue("entityId", ""); // Reset entity ID when switching tabs
+  };
+
   return (
-    <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-          <div className="bg-blue-100 p-4 mb-4 rounded-md">
-            <h3 className="text-lg font-semibold text-blue-800 mb-2">Receipt Information</h3>
-            <p className="text-sm text-blue-700">
-              Enter receipt details from customer.
-            </p>
-          </div>
-          
-          <FormRow columns={2}>
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="amount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount (₹)</FormLabel>
-                  <FormControl>
-                    <Input type="number" {...field} placeholder="0.00" step="0.01" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </FormRow>
-          
-          <FormRow columns={2}>
-            <FormField
-              control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Customer</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+    <ScrollArea className="h-[calc(100vh-200px)] pr-4">
+      <div className="p-4 bg-white rounded-lg">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <FormRow columns={2}>
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
-                      </SelectTrigger>
+                      <Input type="date" {...field} />
                     </FormControl>
-                    <SelectContent>
-                      {customers.length > 0 ? (
-                        customers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem disabled value="no-customers">No customers found</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="receiptMode"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Receipt Mode</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="receiptNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Receipt Number</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select receipt mode" />
-                      </SelectTrigger>
+                      <Input {...field} />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="cash">Cash</SelectItem>
-                      <SelectItem value="cheque">Cheque</SelectItem>
-                      <SelectItem value="bank">Bank Transfer</SelectItem>
-                      <SelectItem value="upi">UPI</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </FormRow>
-          
-          <FormRow columns={2}>
-            <FormField
-              control={form.control}
-              name="billNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel optional>Bill Number</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter bill number" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="reference"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel optional>Reference</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="Enter reference" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </FormRow>
-          
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel optional>Notes</FormLabel>
-                <FormControl>
-                  <Textarea rows={3} {...field} placeholder="Enter any additional notes" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <div className="flex justify-end space-x-2 pt-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onCancel}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormRow>
+
+            <Tabs
+              value={activeTab}
+              onValueChange={handleTabChange}
+              className="w-full"
             >
-              Cancel
-            </Button>
-            <Button type="submit">
-              {initialData ? "Update Receipt" : "Add Receipt"}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </Card>
+              <TabsList className="w-full grid grid-cols-2 mb-4">
+                <TabsTrigger value="customer">Customer</TabsTrigger>
+                <TabsTrigger value="broker">Broker</TabsTrigger>
+              </TabsList>
+
+              <FormField
+                control={form.control}
+                name="entityType"
+                render={({ field }) => (
+                  <input type="hidden" {...field} />
+                )}
+              />
+
+              <TabsContent value="customer" className="mt-0">
+                <FormField
+                  control={form.control}
+                  name="entityId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={entityType === "customer" ? field.value : ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select customer" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {customers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+
+              <TabsContent value="broker" className="mt-0">
+                <FormField
+                  control={form.control}
+                  name="entityId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Broker</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={entityType === "broker" ? field.value : ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select broker" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {brokers.map((broker) => (
+                            <SelectItem key={broker.id} value={broker.id}>
+                              {broker.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </TabsContent>
+            </Tabs>
+
+            <FormRow columns={2}>
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="paymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Payment Method</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="bank">Bank</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormRow>
+
+            <FormRow columns={1}>
+              <FormField
+                control={form.control}
+                name="reference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>Reference</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormRow>
+
+            <FormRow columns={1}>
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel optional>Notes</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </FormRow>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={onCancel}>
+                Cancel
+              </Button>
+              <Button type="submit">{initialData ? "Update" : "Save"}</Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+    </ScrollArea>
   );
 };
 
