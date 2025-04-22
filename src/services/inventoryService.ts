@@ -25,6 +25,7 @@ export const addInventoryItem = (item: InventoryItem): void => {
     ...item,
     id: item.id || uuidv4(),
     dateAdded: item.dateAdded || new Date().toISOString(),
+    bags: item.bags || item.quantity, // Ensure bags is initialized if not provided
   };
 
   inventory.push(newItem);
@@ -36,6 +37,11 @@ export const updateInventoryItem = (updatedItem: InventoryItem): void => {
   const index = inventory.findIndex(item => item.id === updatedItem.id);
   
   if (index !== -1) {
+    // Ensure bags property is maintained or updated correctly
+    if (!updatedItem.bags && inventory[index].bags) {
+      updatedItem.bags = inventory[index].bags;
+    }
+    
     inventory[index] = updatedItem;
     saveStorageItem('inventory', inventory);
   }
@@ -112,8 +118,8 @@ export const updateInventoryAfterSale = (sale: Sale): void => {
     const updatedItem = {
       ...item,
       quantity: item.quantity - quantityToDeduct,
-      bags: item.bags - quantityToDeduct,
-      netWeight: item.netWeight - (quantityToDeduct * (item.netWeight / item.bags)),
+      bags: (item.bags || item.quantity) - quantityToDeduct,
+      netWeight: item.netWeight - (quantityToDeduct * (item.netWeight / (item.bags || item.quantity))),
     };
     
     updateInventoryItem(updatedItem);

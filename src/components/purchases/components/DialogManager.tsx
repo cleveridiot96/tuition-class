@@ -36,8 +36,8 @@ interface DialogManagerProps {
     setNewBrokerName: (name: string) => void;
     newBrokerAddress: string;
     setNewBrokerAddress: (address: string) => void;
-    newBrokerRate: string;
-    setNewBrokerRate: (rate: string) => void;
+    newBrokerRate: number | string;
+    setNewBrokerRate: (rate: number | string) => void;
     handleAddNewBroker: () => void;
   };
 }
@@ -76,7 +76,7 @@ const DialogManager: React.FC<DialogManagerProps> = ({
             open={partyManagement.showSimilarPartyDialog}
             onOpenChange={partyManagement.setShowSimilarPartyDialog}
             similarParty={partyManagement.similarParty}
-            onUseSuggested={partyManagement.useSuggestedParty}
+            onUseParty={partyManagement.useSuggestedParty}
           />
           
           {/* Transporter Dialog */}
@@ -98,8 +98,8 @@ const DialogManager: React.FC<DialogManagerProps> = ({
             setNewBrokerName={partyManagement.setNewBrokerName}
             newBrokerAddress={partyManagement.newBrokerAddress}
             setNewBrokerAddress={partyManagement.setNewBrokerAddress}
-            newBrokerRate={partyManagement.newBrokerRate}
-            setNewBrokerRate={partyManagement.setNewBrokerRate}
+            newBrokerRate={Number(partyManagement.newBrokerRate)}
+            setNewBrokerRate={(rate) => partyManagement.setNewBrokerRate(rate.toString())}
             handleAddNewBroker={partyManagement.handleAddNewBroker}
           />
         </>

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,11 @@ import { toast } from "sonner";
 import BackupRestoreDialog from "./backup/BackupRestoreDialog";
 import PortableAppButton from "./dashboard/PortableAppButton";
 
-const DashboardSummary = () => {
+interface DashboardSummaryProps {
+  summaryData?: any;
+}
+
+const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summaryData }) => {
   const navigate = useNavigate();
   const [totalSales, setTotalSales] = useState(0);
   const [totalPurchases, setTotalPurchases] = useState(0);

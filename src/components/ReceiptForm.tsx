@@ -39,6 +39,8 @@ const formSchema = z.object({
   notes: z.string().optional(),
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 interface ReceiptFormProps {
   onSubmit: (data: any) => void;
   onCancel: () => void;
@@ -50,7 +52,7 @@ const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
   const [brokers, setBrokers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("customer");
   
-  const form = useForm({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
@@ -90,7 +92,7 @@ const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
     }
   }, [initialData]);
 
-  const handleSubmit = (data: z.infer<typeof formSchema>) => {
+  const handleSubmit = (data: FormValues) => {
     try {
       const { entityId, entityType, ...rest } = data;
       
@@ -121,9 +123,9 @@ const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
     }
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    form.setValue("entityType", tab as "customer" | "broker");
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    form.setValue("entityType", value as "customer" | "broker");
     form.setValue("entityId", ""); // Reset entity ID when switching tabs
   };
 

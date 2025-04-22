@@ -53,7 +53,7 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
         transportCost: data.transportCost || 0,
       });
       addSale(normalizedSale);
-      updateInventoryAfterSale(data.lotNumber, data.quantity);
+      updateInventoryAfterSale(data);
       loadData();
       toast.success("Sale added successfully");
       setIsAddDialogOpen(false);
@@ -77,8 +77,8 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
       });
 
       if (updatedSale.quantity !== editingSale.quantity || updatedSale.lotNumber !== editingSale.lotNumber) {
-        updateInventoryAfterSale(editingSale.lotNumber, -editingSale.quantity);
-        updateInventoryAfterSale(updatedSale.lotNumber, updatedSale.quantity);
+        updateInventoryAfterSale(editingSale);
+        updateInventoryAfterSale(updatedSale);
       }
       updateSale(normalizedSale);
       loadData();
@@ -100,7 +100,7 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
     try {
       const saleToRemove = sales.find(s => s.id === saleToDelete);
       if (saleToRemove) {
-        updateInventoryAfterSale(saleToRemove.lotNumber, -saleToRemove.quantity);
+        updateInventoryAfterSale(saleToRemove);
         deleteSale(saleToDelete);
         loadData();
         toast.success("Sale deleted successfully");
@@ -137,7 +137,7 @@ export function useSalesActionHandlers(setSales, setDeletedSales) {
       };
 
       updateSale(updatedSale);
-      updateInventoryAfterSale(saleToRestore.lotNumber, saleToRestore.quantity);
+      updateInventoryAfterSale(updatedSale);
       loadData();
       toast.success("Sale restored successfully");
     } catch {

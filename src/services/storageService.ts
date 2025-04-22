@@ -1,3 +1,4 @@
+
 // Re-export all storage-related functionality
 export * from './core/storageCore';
 export * from './core/yearSpecificStorage';
@@ -96,6 +97,25 @@ export * from './types';
 
 // Add these exports to the storageService.ts file
 import { getParties, getTransactions } from './ledgerService';
+import { 
+  getTotalSalesValue, 
+  getTotalPurchaseValue, 
+  getTotalInventoryValue,
+  getLastBackupTime,
+  getBackupList,
+  getNextPaymentNumber,
+  getNextReceiptNumber 
+} from './dashboardService';
 
 // Export the functions from ledgerService through storageService
-export { getParties, getTransactions };
+export { 
+  getParties, 
+  getTransactions,
+  getTotalSalesValue, 
+  getTotalPurchaseValue, 
+  getTotalInventoryValue,
+  getLastBackupTime,
+  getBackupList,
+  getNextPaymentNumber,
+  getNextReceiptNumber 
+};
