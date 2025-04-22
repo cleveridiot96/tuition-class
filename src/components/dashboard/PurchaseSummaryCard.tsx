@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { baggage-claim } from 'lucide-react';
+import { BaggageClaim } from 'lucide-react';
 
 interface PurchaseSummaryCardProps {
   amount: number;
@@ -15,10 +15,10 @@ const PurchaseSummaryCard: React.FC<PurchaseSummaryCardProps> = ({
   kgs
 }) => {
   return (
-    <Card className="h-full bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+    <Card className="h-full bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm hover:shadow-md transition-shadow md-ripple">
       <CardHeader className="pb-2 flex flex-row items-center justify-between bg-gradient-to-r from-blue-200 to-blue-100 border-b border-blue-200">
         <CardTitle className="text-lg font-semibold text-blue-800">Purchase Summary</CardTitle>
-        <baggage-claim className="h-5 w-5 text-blue-600" />
+        <BaggageClaim className="h-5 w-5 text-blue-600" />
       </CardHeader>
       <CardContent className="pt-4">
         <div className="space-y-3">
