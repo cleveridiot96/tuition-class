@@ -53,7 +53,7 @@ const Receipts = () => {
     customerId: '',
     amount: 0,
     notes: '',
-    paymentMethod: 'cash',
+    paymentMethod: 'cash' as 'cash' | 'bank',
     reference: ''
   });
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -97,11 +97,11 @@ const Receipts = () => {
     setEditForm({
       date: receipt.date || new Date().toISOString().split('T')[0],
       receiptNumber: receipt.receiptNumber || '',
-      customerName: receipt.customerName || '',
-      customerId: receipt.customerId || '',
+      customerName: receipt.customerName || receipt.partyName || '',
+      customerId: receipt.customerId || receipt.entityId || '',
       amount: receipt.amount || 0,
       notes: receipt.notes || '',
-      paymentMethod: receipt.paymentMethod || 'cash',
+      paymentMethod: (receipt.paymentMethod || receipt.mode || 'cash') as 'cash' | 'bank',
       reference: receipt.reference || ''
     });
     setIsEditDialogOpen(true);
@@ -129,15 +129,17 @@ const Receipts = () => {
     e.preventDefault();
     
     if (editingReceipt) {
-      const updatedReceipt = {
+      const updatedReceipt: ReceiptType = {
         ...editingReceipt,
         date: editForm.date,
         receiptNumber: editForm.receiptNumber,
         customerName: editForm.customerName,
         customerId: editForm.customerId,
+        entityId: editForm.customerId,
         amount: editForm.amount,
         notes: editForm.notes,
         paymentMethod: editForm.paymentMethod,
+        mode: editForm.paymentMethod,
         reference: editForm.reference
       };
       
@@ -155,16 +157,18 @@ const Receipts = () => {
         date: editForm.date,
         receiptNumber: editForm.receiptNumber,
         customerId: editForm.customerId,
+        entityId: editForm.customerId,
+        entityType: "customer",
         customerName: selectedCustomer?.name || editForm.customerName,
+        partyName: selectedCustomer?.name || editForm.customerName,
         amount: editForm.amount,
         notes: editForm.notes,
-        paymentMethod: editForm.paymentMethod as 'cash' | 'bank',
+        paymentMethod: editForm.paymentMethod,
+        mode: editForm.paymentMethod,
         reference: editForm.reference,
-        mode: editForm.paymentMethod as 'cash' | 'bank',
         partyType: "customer",
         partyId: editForm.customerId,
-        partyName: selectedCustomer?.name || editForm.customerName,
-        paymentMode: editForm.paymentMethod as 'cash' | 'bank'
+        paymentMode: editForm.paymentMethod
       };
       
       addReceipt(newReceipt);
@@ -190,6 +194,11 @@ const Receipts = () => {
         ...prev,
         customerId: value,
         customerName: selectedCustomer?.name || prev.customerName
+      }));
+    } else if (name === 'paymentMethod') {
+      setEditForm(prev => ({
+        ...prev,
+        [name]: value as 'cash' | 'bank'
       }));
     } else {
       setEditForm(prev => ({
@@ -272,9 +281,9 @@ const Receipts = () => {
                         <TableRow key={receipt.id}>
                           <TableCell className="font-medium">{receipt.receiptNumber}</TableCell>
                           <TableCell>{new Date(receipt.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{receipt.customerName}</TableCell>
+                          <TableCell>{receipt.customerName || receipt.partyName}</TableCell>
                           <TableCell className="text-right">{formatCurrency(receipt.amount)}</TableCell>
-                          <TableCell>{receipt.paymentMethod || receipt.mode}</TableCell>
+                          <TableCell>{receipt.paymentMethod || receipt.mode || receipt.paymentMode}</TableCell>
                           <TableCell className="max-w-[200px] truncate">{receipt.notes}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">

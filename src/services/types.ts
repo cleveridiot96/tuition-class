@@ -16,6 +16,7 @@ export interface InventoryItem {
   isDeleted?: boolean;
   // Adding missing fields
   agentId?: string;
+  agentName?: string;
   purchaseRate?: number;
   finalCost?: number;
   date?: string;
@@ -102,13 +103,16 @@ export interface Purchase {
   totalAmount: number;
   agentId?: string;
   agent?: string;
+  broker?: string;
   party?: string;
   transporterId?: string;
   transporter?: string;
   transportCost?: number;
   transportAmount?: number;
+  transportRate?: number;
   brokerageType?: string;
   brokerageRate?: number;
+  brokerageValue?: number;
   brokerageAmount?: number;
   expenses?: number;
   totalAfterExpenses?: number;
@@ -159,6 +163,12 @@ export interface Payment {
   reference?: string;
   notes?: string;
   isDeleted?: boolean;
+  // Adding missing fields used in the app
+  partyId?: string;
+  partyName?: string;
+  mode?: "cash" | "bank";
+  partyType?: string;
+  paymentMode?: "cash" | "bank";
 }
 
 // Adding Receipt type
@@ -173,4 +183,14 @@ export interface Receipt {
   reference?: string;
   notes?: string;
   isDeleted?: boolean;
+  // Adding missing fields used in the app
+  customerId?: string;
+  customerName?: string;
+  brokerId?: string; 
+  brokerName?: string;
+  mode?: "cash" | "bank";
+  partyId?: string;
+  partyName?: string;
+  partyType?: string;
+  paymentMode?: "cash" | "bank";
 }

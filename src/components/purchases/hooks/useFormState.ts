@@ -31,7 +31,7 @@ export const useFormState = (initialValues?: Purchase) => {
     expenses: initialValues?.expenses || 0,
     totalAfterExpenses: initialValues?.totalAfterExpenses || 0,
     brokerageType: initialValues?.brokerageType || 'percentage',
-    brokerageRate: initialValues?.brokerageValue || 1,
+    brokerageRate: initialValues?.brokerageRate || initialValues?.brokerageValue || 1,
     bags: initialValues?.bags || 0, // Initialize bags
   });
 

@@ -50,11 +50,12 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
         totalAmount: calculateSubtotal(),
         totalAfterExpenses: calculateTotal(),
         brokerageAmount: finalBrokerageAmount,
-        // Ensure these are included for type safety
+        // Ensure these are included for type safety and consistent property names
         transportAmount: parseFloat(formState.transportCost || '0'),
-        transportCost: parseFloat(formState.transportCost || '0'), // Convert string to number
+        transportCost: parseFloat(formState.transportCost || '0'), 
         transportRate: initialValues?.transportRate || 0,
-        brokerageValue: formState.brokerageRate, // Mapping brokerageRate to brokerageValue for API consistency
+        brokerageValue: formState.brokerageRate, // Map brokerageRate to brokerageValue for consistency
+        brokerageRate: formState.brokerageRate, // Keep both properties for backward compatibility
         location: formState.location,
         // Add bags property to Purchase
         bags: formState.bags || 0
