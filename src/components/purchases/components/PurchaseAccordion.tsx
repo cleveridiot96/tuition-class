@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { UseFormReturn } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +8,7 @@ import BrokerageDetails from "../BrokerageDetails";
 import PurchaseSummary from "../PurchaseSummary";
 
 interface PurchaseAccordionProps {
-  form: UseFormReturn<PurchaseFormData>;
+  form: any;
   locations: string[];
   brokerageAmount: number;
   totalAmount: number;
@@ -17,9 +16,10 @@ interface PurchaseAccordionProps {
   expenses: number;
   totalAfterExpenses: number;
   ratePerKgAfterExpenses: number;
+  partyManagement?: any;
 }
 
-const PurchaseAccordion: React.FC<PurchaseAccordionProps> = ({
+const PurchaseAccordion = ({
   form,
   locations,
   brokerageAmount,
@@ -28,7 +28,8 @@ const PurchaseAccordion: React.FC<PurchaseAccordionProps> = ({
   expenses,
   totalAfterExpenses,
   ratePerKgAfterExpenses,
-}) => {
+  partyManagement,
+}: PurchaseAccordionProps) => {
   return (
     <Tabs defaultValue="header">
       <TabsList className="grid w-full grid-cols-4">

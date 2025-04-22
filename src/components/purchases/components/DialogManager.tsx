@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -6,13 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import DuplicateLotDialog from "../DuplicateLotDialog";
 
-const DialogManager = ({
-  // Duplicate lot dialog props
+interface DuplicateLotDialogProps {
+  showDuplicateLotDialog: boolean;
+  setShowDuplicateLotDialog: (show: boolean) => void;
+  duplicateLotInfo: any;
+  onContinueDespiteDuplicate: () => void;
+}
+
+const DialogManager: React.FC<DuplicateLotDialogProps> = ({
   showDuplicateLotDialog,
   setShowDuplicateLotDialog,
   duplicateLotInfo,
   onContinueDespiteDuplicate,
-  
   // Party dialog props
   showAddPartyDialog,
   setShowAddPartyDialog,
