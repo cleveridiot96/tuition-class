@@ -1,7 +1,15 @@
+
 import React from 'react';
-import ReceiptForm from './ReceiptForm';
-import PaymentForm from './PaymentForm';
-import { useDisclosure } from '@mantine/hooks';
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import PaymentForm from "@/components/PaymentForm";
+import ReceiptForm from "@/components/ReceiptForm";
 
 interface TransactionDialogsProps {
   showReceiptDialog: boolean;
@@ -15,17 +23,36 @@ const TransactionDialogs = ({
   setShowReceiptDialog,
   showPaymentDialog,
   setShowPaymentDialog,
-}) => {
+}: TransactionDialogsProps) => {
   return (
     <>
-      <ReceiptForm 
-        onSubmit={() => {}} 
-        onCancel={() => setShowReceiptDialog(false)}
-      />
-      <PaymentForm 
-        onSubmit={() => {}} 
-        onCancel={() => setShowPaymentDialog(false)}
-      />
+      {showReceiptDialog && (
+        <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Add New Receipt</DialogTitle>
+            </DialogHeader>
+            <ReceiptForm 
+              onSubmit={() => setShowReceiptDialog(false)} 
+              onCancel={() => setShowReceiptDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showPaymentDialog && (
+        <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Add New Payment</DialogTitle>
+            </DialogHeader>
+            <PaymentForm 
+              onSubmit={() => setShowPaymentDialog(false)} 
+              onCancel={() => setShowPaymentDialog(false)}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };

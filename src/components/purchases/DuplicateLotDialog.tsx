@@ -15,14 +15,14 @@ interface DuplicateLotDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   duplicateLotInfo: any;
-  continueDespiteDuplicate: () => void;
+  onContinue: () => void;
 }
 
 const DuplicateLotDialog: React.FC<DuplicateLotDialogProps> = ({
   open,
   onOpenChange,
   duplicateLotInfo,
-  continueDespiteDuplicate,
+  onContinue,
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -40,7 +40,7 @@ const DuplicateLotDialog: React.FC<DuplicateLotDialogProps> = ({
             {duplicateLotInfo && (
               <ul className="list-disc pl-5 space-y-1 text-sm">
                 <li>Party: {duplicateLotInfo.party}</li>
-                <li>Quantity: {duplicateLotInfo.quantity} bags</li>
+                <li>Quantity: {duplicateLotInfo.bags || duplicateLotInfo.quantity} bags</li>
                 <li>Net Weight: {duplicateLotInfo.netWeight} kg</li>
                 <li>Rate: ₹{duplicateLotInfo.rate} per kg</li>
               </ul>
@@ -51,7 +51,7 @@ const DuplicateLotDialog: React.FC<DuplicateLotDialogProps> = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Change Lot Number
           </Button>
-          <Button onClick={continueDespiteDuplicate}>
+          <Button onClick={onContinue}>
             Continue Anyway
           </Button>
         </DialogFooter>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { UseFormReturn } from "react-hook-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +9,7 @@ import BrokerageDetails from "../BrokerageDetails";
 import PurchaseSummary from "../PurchaseSummary";
 
 interface PurchaseAccordionProps {
-  form: any;
+  form: UseFormReturn<any>;
   locations: string[];
   brokerageAmount: number;
   totalAmount: number;
@@ -19,7 +20,7 @@ interface PurchaseAccordionProps {
   partyManagement?: any;
 }
 
-const PurchaseAccordion = ({
+const PurchaseAccordion: React.FC<PurchaseAccordionProps> = ({
   form,
   locations,
   brokerageAmount,
