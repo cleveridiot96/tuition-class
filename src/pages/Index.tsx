@@ -3,11 +3,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import DashboardSummary from '@/components/DashboardSummary';
-import DashboardMenu from '@/components/DashboardMenu';
 import { FormatDataHandler } from '@/components/dashboard/FormatDataHandler';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import ProfitSection from '@/components/dashboard/ProfitSection';
 import MonthSelector from '@/components/dashboard/MonthSelector';
+import SalesSummaryCard from '@/components/dashboard/SalesSummaryCard';
+import PurchaseSummaryCard from '@/components/dashboard/PurchaseSummaryCard';
+import StockSummaryCard from '@/components/dashboard/StockSummaryCard';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -15,7 +17,6 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   
-  // Fetch dashboard data
   const { summaryData, isLoading } = useDashboardData(selectedMonth, selectedYear);
 
   const handleFormatClick = () => {
@@ -31,7 +32,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       <Navigation 
-        title="KKS - Kisan Khata Sahayak" 
+        title="Kirana Retail" 
         showFormatButton 
         onFormatClick={handleFormatClick} 
         showHomeButton
@@ -39,14 +40,8 @@ const Index = () => {
       
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-3xl font-bold mb-8 text-center text-blue-800">
-          Kisan Khata Sahayak
+          Kirana Retail
         </h1>
-        
-        {/* Quick Access Panel at the top */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-700">Quick Access</h2>
-          <DashboardMenu />
-        </div>
         
         {/* Month Selector */}
         <div className="mb-6">
@@ -57,15 +52,40 @@ const Index = () => {
           />
         </div>
         
-        {/* Summary Section */}
-        <div className="mb-8">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-48">
-              <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent"></div>
-            </div>
-          ) : (
-            <DashboardSummary />
-          )}
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div 
+            onClick={() => navigate('/sales')} 
+            className="transition-transform hover:-translate-y-1 cursor-pointer md-ripple"
+          >
+            <SalesSummaryCard 
+              amount={summaryData.sales.amount}
+              bags={summaryData.sales.bags}
+              kgs={summaryData.sales.kgs}
+            />
+          </div>
+          
+          <div 
+            onClick={() => navigate('/purchases')} 
+            className="transition-transform hover:-translate-y-1 cursor-pointer md-ripple"
+          >
+            <PurchaseSummaryCard 
+              amount={summaryData.purchases.amount}
+              bags={summaryData.purchases.bags}
+              kgs={summaryData.purchases.kgs}
+            />
+          </div>
+          
+          <div 
+            onClick={() => navigate('/stock')} 
+            className="transition-transform hover:-translate-y-1 cursor-pointer md-ripple"
+          >
+            <StockSummaryCard 
+              mumbai={summaryData.stock.mumbai}
+              chiplun={summaryData.stock.chiplun}
+              sawantwadi={summaryData.stock.sawantwadi}
+            />
+          </div>
         </div>
         
         {/* Profit Section */}

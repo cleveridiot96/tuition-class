@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart } from 'lucide-react';
+import { ShoppingCart } from 'lucide-react';
 
 interface SalesSummaryCardProps {
   amount: number;
@@ -17,8 +17,8 @@ const SalesSummaryCard: React.FC<SalesSummaryCardProps> = ({
   return (
     <Card className="h-full bg-gradient-to-br from-green-50 to-green-100 border-green-200 shadow-sm hover:shadow-md transition-shadow">
       <CardHeader className="pb-2 flex flex-row items-center justify-between bg-gradient-to-r from-green-200 to-green-100 border-b border-green-200">
-        <CardTitle className="text-lg font-semibold text-green-800">Sales</CardTitle>
-        <BarChart className="h-5 w-5 text-green-600" />
+        <CardTitle className="text-lg font-semibold text-green-800">Sales Summary</CardTitle>
+        <ShoppingCart className="h-5 w-5 text-green-600" />
       </CardHeader>
       <CardContent className="pt-4">
         <div className="space-y-3">
