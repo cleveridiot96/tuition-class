@@ -20,6 +20,13 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
   sortDirection,
   onSort,
 }) => {
+  const formatQuantity = (quantity: number) => {
+    if (quantity < 0) {
+      return <span className="text-red-500">({Math.abs(quantity)})</span>;
+    }
+    return quantity;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center">
@@ -35,28 +42,16 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => onSort("lotNumber")}
-              >
+              <TableHead className="cursor-pointer" onClick={() => onSort("lotNumber")}>
                 Lot Number {sortColumn === "lotNumber" && (sortDirection === "asc" ? "▲" : "▼")}
               </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => onSort("location")}
-              >
+              <TableHead className="cursor-pointer" onClick={() => onSort("location")}>
                 Location {sortColumn === "location" && (sortDirection === "asc" ? "▲" : "▼")}
               </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => onSort("quantity")}
-              >
+              <TableHead className="cursor-pointer" onClick={() => onSort("quantity")}>
                 Bags {sortColumn === "quantity" && (sortDirection === "asc" ? "▲" : "▼")}
               </TableHead>
-              <TableHead 
-                className="cursor-pointer" 
-                onClick={() => onSort("weight")}
-              >
+              <TableHead className="cursor-pointer" onClick={() => onSort("weight")}>
                 Weight (kg) {sortColumn === "weight" && (sortDirection === "asc" ? "▲" : "▼")}
               </TableHead>
               <TableHead>Rate/kg</TableHead>
@@ -69,8 +64,10 @@ const InventoryTable: React.FC<InventoryTableProps> = ({
                 <TableRow key={item.id}>
                   <TableCell>{item.lotNumber}</TableCell>
                   <TableCell>{item.location}</TableCell>
-                  <TableCell>{item.bags}</TableCell>
-                  <TableCell>{item.netWeight?.toFixed(2) || 0}</TableCell>
+                  <TableCell>{formatQuantity(item.bags)}</TableCell>
+                  <TableCell>
+                    {formatQuantity(item.netWeight?.toFixed(2) || 0)}
+                  </TableCell>
                   <TableCell>₹{item.rate?.toFixed(2) || 0}</TableCell>
                   <TableCell>
                     ₹{((item.netWeight || 0) * (item.rate || 0)).toFixed(2)}

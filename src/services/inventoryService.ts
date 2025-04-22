@@ -13,7 +13,7 @@ export const saveInventory = (inventory: InventoryItem[]): void => {
 export const addInventoryItem = (item: InventoryItem): void => {
   const inventory = getInventory();
   
-  // Ensure all required fields
+  // Allow negative quantities by removing minimum checks
   const itemWithDefaults = {
     ...item,
     remainingQuantity: item.remainingQuantity ?? item.quantity,
@@ -30,7 +30,6 @@ export const updateInventoryItem = (updatedItem: InventoryItem): void => {
   const index = inventory.findIndex(item => item.id === updatedItem.id);
   
   if (index !== -1) {
-    // Ensure all required fields are present
     const itemWithDefaults = {
       ...updatedItem,
       remainingQuantity: updatedItem.remainingQuantity ?? updatedItem.quantity ?? inventory[index].quantity,
@@ -58,22 +57,17 @@ export const updateInventoryAfterSale = (lotNumber: string, quantitySold: number
   const itemIndex = inventory.findIndex(item => item.lotNumber === lotNumber && !item.isDeleted);
   
   if (itemIndex !== -1) {
-    // Update inventory item
     const originalQuantity = inventory[itemIndex].quantity;
     const originalWeight = inventory[itemIndex].netWeight;
     const weightPerUnit = originalWeight / originalQuantity;
     
+    // Allow negative quantities by removing minimum checks
     inventory[itemIndex].quantity -= quantitySold;
     inventory[itemIndex].remainingQuantity = inventory[itemIndex].quantity;
     inventory[itemIndex].soldQuantity = (inventory[itemIndex].soldQuantity || 0) + quantitySold;
     
-    // Calculate new weight
+    // Calculate new weight (can be negative)
     inventory[itemIndex].remainingWeight = inventory[itemIndex].quantity * weightPerUnit;
-    
-    // If quantity becomes 0 or less, mark as deleted
-    if (inventory[itemIndex].quantity <= 0) {
-      inventory[itemIndex].isDeleted = true;
-    }
     
     saveInventory(inventory);
   }
