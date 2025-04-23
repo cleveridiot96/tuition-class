@@ -17,7 +17,6 @@ const AgentForm: React.FC<AgentFormProps> = ({ onAgentAdded, onCancel, initialVa
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: initialValues?.name || '',
-    address: initialValues?.address || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,7 +43,6 @@ const AgentForm: React.FC<AgentFormProps> = ({ onAgentAdded, onCancel, initialVa
       const newAgent: Agent = {
         id: initialValues?.id || uuidv4(),
         name: formData.name.trim(),
-        address: formData.address,
         balance: initialValues?.balance || 0,
       };
 
@@ -77,17 +75,6 @@ const AgentForm: React.FC<AgentFormProps> = ({ onAgentAdded, onCancel, initialVa
           onChange={handleChange}
           placeholder="Enter agent name"
           required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <textarea
-          id="address"
-          name="address"
-          value={formData.address}
-          onChange={handleChange}
-          placeholder="Enter address (optional)"
-          className="w-full min-h-[80px] p-2 border rounded-md"
         />
       </div>
       <div className="flex justify-end space-x-2">

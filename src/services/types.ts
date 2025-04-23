@@ -1,3 +1,4 @@
+
 // Adding all the required interfaces
 
 export interface InventoryItem {

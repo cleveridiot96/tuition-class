@@ -17,7 +17,7 @@ const TransporterTable: React.FC<TransporterTableProps> = ({ transporters, onEdi
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Vehicle Details</TableHead>
+            <TableHead>Vehicle Number</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -26,7 +26,7 @@ const TransporterTable: React.FC<TransporterTableProps> = ({ transporters, onEdi
             transporters.map((transporter) => (
               <TableRow key={transporter.id}>
                 <TableCell>{transporter.name}</TableCell>
-                <TableCell>{transporter.vehicleDetails || "-"}</TableCell>
+                <TableCell>{transporter.vehicleNumber || "-"}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"

@@ -17,8 +17,6 @@ const AgentTable: React.FC<AgentTableProps> = ({ agents, onEdit, onRefresh }) =>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead>Phone</TableHead>
             <TableHead>Commission</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -28,8 +26,6 @@ const AgentTable: React.FC<AgentTableProps> = ({ agents, onEdit, onRefresh }) =>
             agents.map((agent) => (
               <TableRow key={agent.id}>
                 <TableCell>{agent.name}</TableCell>
-                <TableCell>{agent.address || "-"}</TableCell>
-                <TableCell>{agent.phone || "-"}</TableCell>
                 <TableCell>{agent.commission ? `${agent.commission}%` : "-"}</TableCell>
                 <TableCell className="text-right">
                   <Button
@@ -45,7 +41,7 @@ const AgentTable: React.FC<AgentTableProps> = ({ agents, onEdit, onRefresh }) =>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={3} className="text-center py-4">
                 No agents found
               </TableCell>
             </TableRow>

@@ -13,9 +13,6 @@ import { Broker } from "@/services/types";
 
 const formSchema = z.object({
   name: z.string().min(1, "Broker name is required"),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email("Invalid email").optional().or(z.literal('')),
   commissionRate: z.number().min(0).optional(),
 });
 
@@ -38,9 +35,6 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || "",
-      address: initialData?.address || "",
-      phone: initialData?.phone || "",
-      email: initialData?.email || "",
       commissionRate: initialData?.commissionRate || 0,
     },
   });
@@ -53,9 +47,6 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
       const newBroker: Broker = {
         id: initialData?.id || uuidv4(),
         name: data.name, // This is now guaranteed to be a string due to the form schema
-        address: data.address,
-        phone: data.phone,
-        email: data.email,
         commissionRate: data.commissionRate,
         balance: initialData?.balance || 0,
       };
@@ -76,26 +67,6 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
         <Label htmlFor="name">Broker Name *</Label>
         <Input id="name" {...register("name")} />
         {errors.name && <p className="text-red-500 text-sm">{errors.name.message}</p>}
-      </div>
-
-      <div>
-        <Label htmlFor="address">Address</Label>
-        <Textarea id="address" {...register("address")} />
-        {errors.address && <p className="text-red-500 text-sm">{errors.address.message}</p>}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input id="phone" {...register("phone")} />
-          {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
-        </div>
-        
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" {...register("email")} />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
-        </div>
       </div>
 
       <div>

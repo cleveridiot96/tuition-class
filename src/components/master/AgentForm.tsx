@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const agentSchema = z.object({
   name: z.string().min(1, "Agent name is required"),
-  address: z.string().optional(),
-  phone: z.string().optional(),
   commission: z.coerce.number().min(0, "Commission cannot be negative").optional(),
 });
 
@@ -26,8 +23,6 @@ const AgentForm: React.FC<AgentFormProps> = ({ onClose, initialData }) => {
     resolver: zodResolver(agentSchema),
     defaultValues: {
       name: initialData?.name || "",
-      address: initialData?.address || "",
-      phone: initialData?.phone || "",
       commission: initialData?.commission || 1,
     },
   });
@@ -47,30 +42,6 @@ const AgentForm: React.FC<AgentFormProps> = ({ onClose, initialData }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Agent Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
