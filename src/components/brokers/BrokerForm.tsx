@@ -49,16 +49,22 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
     setIsSubmitting(true);
     
     try {
+      // Ensure name is not undefined to satisfy the Broker type requirement
       const newBroker: Broker = {
         id: initialData?.id || uuidv4(),
-        ...data,
+        name: data.name, // This is now guaranteed to be a string due to the form schema
+        address: data.address,
+        phone: data.phone,
+        email: data.email,
+        commissionRate: data.commissionRate,
+        balance: initialData?.balance || 0,
       };
       
       onBrokerAdded(newBroker);
-      toast.success("Broker added successfully");
+      toast.success(`Broker ${initialData ? 'updated' : 'added'} successfully`);
     } catch (error) {
-      console.error("Error adding broker:", error);
-      toast.error("Failed to add broker");
+      console.error(`Error ${initialData ? 'updating' : 'adding'} broker:`, error);
+      toast.error(`Failed to ${initialData ? 'update' : 'add'} broker`);
     } finally {
       setIsSubmitting(false);
     }
@@ -110,7 +116,9 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
           Cancel
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Adding..." : "Add Broker"}
+          {isSubmitting 
+            ? (initialData ? "Updating..." : "Adding...") 
+            : (initialData ? "Update Broker" : "Add Broker")}
         </Button>
       </div>
     </form>
