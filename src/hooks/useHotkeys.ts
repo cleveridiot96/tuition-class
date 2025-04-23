@@ -65,17 +65,13 @@ export const showAvailableShortcuts = () => {
     { keys: 'Escape', description: 'Return to Home' },
   ];
 
+  // Instead of using JSX, create a string representation of the shortcuts
+  const shortcutsText = shortcuts
+    .map(shortcut => `${shortcut.keys}: ${shortcut.description}`)
+    .join('\n');
+
   toast.info("Available Keyboard Shortcuts", {
-    duration: 5000,
-    description: (
-      <div className="mt-2">
-        {shortcuts.map((shortcut, index) => (
-          <div key={index} className="flex justify-between text-sm mb-1">
-            <span className="font-mono bg-gray-100 px-1 rounded">{shortcut.keys}</span>
-            <span className="ml-4">{shortcut.description}</span>
-          </div>
-        ))}
-      </div>
-    )
+    description: shortcutsText,
+    duration: 5000
   });
 };
