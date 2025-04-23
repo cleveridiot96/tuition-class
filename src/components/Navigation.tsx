@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Home, Menu } from 'lucide-react';
 import FontSizeAdjuster from './UI/FontSizeAdjuster';
@@ -30,6 +30,7 @@ const Navigation: React.FC<NavigationProps> = ({
   showHomeButton = true
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   const handleBack = () => {
     if (onBack) {
@@ -43,8 +44,10 @@ const Navigation: React.FC<NavigationProps> = ({
     navigate('/');
   };
   
+  const headerClasses = "sticky top-0 z-10 w-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-md";
+  
   return (
-    <div className="sticky top-0 z-10 w-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-md">
+    <div className={headerClasses}>
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">

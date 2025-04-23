@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { MinusCircle, PlusCircle } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { toast } from "sonner";
 
 const MIN_FONT_SIZE = 14;
@@ -15,54 +14,28 @@ const FontSizeAdjuster = () => {
   });
   
   useEffect(() => {
-    // Set the font size on the html element to affect the entire app
     document.documentElement.style.fontSize = `${fontSize}px`;
     localStorage.setItem('app-font-size', fontSize.toString());
   }, [fontSize]);
   
-  const increaseFontSize = () => {
-    if (fontSize < MAX_FONT_SIZE) {
-      const newSize = fontSize + 1;
-      setFontSize(newSize);
-      toast.info(`Font size increased to ${newSize}px`);
-    } else {
-      toast.info(`Maximum font size reached (${MAX_FONT_SIZE}px)`);
-    }
-  };
-  
-  const decreaseFontSize = () => {
-    if (fontSize > MIN_FONT_SIZE) {
-      const newSize = fontSize - 1;
-      setFontSize(newSize);
-      toast.info(`Font size decreased to ${newSize}px`);
-    } else {
-      toast.info(`Minimum font size reached (${MIN_FONT_SIZE}px)`);
-    }
+  const handleSliderChange = (value: number[]) => {
+    const newSize = value[0];
+    setFontSize(newSize);
+    toast.info(`Font size changed to ${newSize}px`);
   };
   
   return (
-    <div className="flex items-center">
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={decreaseFontSize}
-        title="Decrease font size"
-        className="text-white hover:bg-white/10"
-      >
-        <span className="sr-only">Decrease font size</span>
-        <MinusCircle size={16} />
-      </Button>
-      <span className="text-white mx-1 text-xs">{fontSize}px</span>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={increaseFontSize}
-        title="Increase font size"
-        className="text-white hover:bg-white/10"
-      >
-        <span className="sr-only">Increase font size</span>
-        <PlusCircle size={16} />
-      </Button>
+    <div className="flex items-center gap-4 w-48">
+      <span className="text-white text-lg">A</span>
+      <Slider
+        min={MIN_FONT_SIZE}
+        max={MAX_FONT_SIZE}
+        step={1}
+        value={[fontSize]}
+        onValueChange={handleSliderChange}
+        className="flex-1"
+      />
+      <span className="text-white text-xl">A</span>
     </div>
   );
 };
