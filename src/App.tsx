@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -26,28 +25,32 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <ErrorBoundary>
-        <Router>
-          <RippleProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/agents" element={<Agents />} />
-              <Route path="/calculator" element={<Calculator />} />
-              <Route path="/cash-book" element={<CashBook />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/location-transfer" element={<LocationTransferPage />} />
-              <Route path="/ledger" element={<Ledger />} />
-              <Route path="/master" element={<Master />} />
-              <Route path="/payments" element={<Payments />} />
-              <Route path="/purchases" element={<Purchases />} />
-              <Route path="/receipts" element={<Receipts />} />
-              <Route path="/sales" element={<Sales />} />
-              <Route path="/stock" element={<Stock />} />
-              <Route path="/transport" element={<Transport />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </RippleProvider>
-        </Router>
-        <Toaster />
+        <div className="min-h-screen w-full flex flex-col">
+          <Router>
+            <RippleProvider>
+              <div className="flex-1 overflow-auto">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/agents" element={<Agents />} />
+                  <Route path="/calculator" element={<Calculator />} />
+                  <Route path="/cash-book" element={<CashBook />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/location-transfer" element={<LocationTransferPage />} />
+                  <Route path="/ledger" element={<Ledger />} />
+                  <Route path="/master" element={<Master />} />
+                  <Route path="/payments" element={<Payments />} />
+                  <Route path="/purchases" element={<Purchases />} />
+                  <Route path="/receipts" element={<Receipts />} />
+                  <Route path="/sales" element={<Sales />} />
+                  <Route path="/stock" element={<Stock />} />
+                  <Route path="/transport" element={<Transport />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </RippleProvider>
+          </Router>
+          <Toaster />
+        </div>
       </ErrorBoundary>
     </ThemeProvider>
   );

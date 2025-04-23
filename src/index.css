@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,6 +75,13 @@
 @layer base {
   * {
     @apply border-border;
+  }
+  html, body, #root {
+    height: 100vh;
+    width: 100vw;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
   }
   body {
     @apply bg-background text-foreground;
