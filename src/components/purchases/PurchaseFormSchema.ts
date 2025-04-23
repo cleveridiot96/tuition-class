@@ -5,7 +5,7 @@ export const purchaseFormSchema = z.object({
   date: z.string().nonempty("Date is required"),
   lotNumber: z.string().nonempty("Lot number is required"),
   bags: z.coerce.number().min(1, "Bags must be at least 1"),
-  party: z.string().nonempty("Party is required"),
+  party: z.string().optional(),
   agentId: z.string().optional(),
   location: z.string().nonempty("Location is required"),
   netWeight: z.coerce.number().min(0.01, "Net weight must be greater than 0"),

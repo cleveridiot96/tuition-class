@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Customer, Broker, Transporter, Sale } from '@/services/types';
 import { getCustomers, getBrokers, getTransporters, getLocations } from '@/services/storageService';
 import ItemsTable from '../shared/ItemsTable';
@@ -73,88 +74,103 @@ const MultiItemSalesForm: React.FC<MultiItemSalesFormProps> = ({
   }, [formState.brokerId, brokers]);
 
   return (
-    <div className="w-full max-w-full px-2 sm:px-4 md:px-6 mx-auto overflow-x-hidden">
-      <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
-        <Tabs defaultValue="header" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="header">Sale Details</TabsTrigger>
-            <TabsTrigger value="parties">Parties</TabsTrigger>
-            <TabsTrigger value="items">Items</TabsTrigger>
-            <TabsTrigger value="summary">Summary</TabsTrigger>
-          </TabsList>
+    <div className="w-full max-w-full mx-auto bg-white rounded-lg shadow-md">
+      <ScrollArea className="h-[calc(100vh-120px)]">
+        <div className="p-6 max-w-3xl mx-auto">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-blue-800">{initialSale ? 'Edit Sale' : 'Add New Sale'}</h2>
+            <p className="text-gray-600 text-sm mt-1">Fill in the sale details</p>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Tabs defaultValue="header" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-4">
+                <TabsTrigger value="header" className="text-base py-3">Sale Details</TabsTrigger>
+                <TabsTrigger value="parties" className="text-base py-3">Parties</TabsTrigger>
+                <TabsTrigger value="items" className="text-base py-3">Items</TabsTrigger>
+                <TabsTrigger value="summary" className="text-base py-3">Summary</TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="header">
-            <SalesFormHeader
-              lotNumber={formState.lotNumber}
-              date={formState.date}
-              location={formState.location}
-              billNumber={formState.billNumber}
-              billAmount={formState.billAmount}
-              locations={locations}
-              onInputChange={handleInputChange}
-              onSelectChange={handleSelectChange}
-            />
-          </TabsContent>
-
-          <TabsContent value="parties">
-            <PartiesSection
-              customers={customers}
-              brokers={brokers}
-              transporters={transporters}
-              customerId={formState.customerId}
-              brokerId={formState.brokerId}
-              transporterId={formState.transporterId}
-              transportCost={formState.transportCost}
-              onSelectChange={handleSelectChange}
-              onInputChange={handleInputChange}
-            />
-          </TabsContent>
-
-          <TabsContent value="items">
-            <div className="overflow-x-auto -mx-2 sm:mx-0 px-2 sm:px-0">
-              <ItemsTable
-                items={formState.items}
-                onItemChange={handleItemChange}
-                onRemoveItem={handleRemoveItem}
-                onAddItem={handleAddItem}
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="summary">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <textarea
-                  id="notes"
-                  name="notes"
-                  className="w-full p-2 rounded-md border"
-                  rows={3}
-                  value={formState.notes}
-                  onChange={(e) => handleInputChange(e)}
-                  placeholder="Enter notes..."
+              <TabsContent value="header" className="p-4 border rounded-lg">
+                <SalesFormHeader
+                  lotNumber={formState.lotNumber}
+                  date={formState.date}
+                  location={formState.location}
+                  billNumber={formState.billNumber}
+                  billAmount={formState.billAmount}
+                  locations={locations}
+                  onInputChange={handleInputChange}
+                  onSelectChange={handleSelectChange}
                 />
-              </div>
+              </TabsContent>
 
-              <FormSummary
-                subtotal={calculateSubtotal()}
-                transportCost={parseFloat(formState.transportCost || '0')}
-                brokerageAmount={calculateBrokerageAmount()}
-                showBrokerage={!!selectedBroker}
-                total={calculateTotal()}
-              />
+              <TabsContent value="parties" className="p-4 border rounded-lg">
+                <PartiesSection
+                  customers={customers}
+                  brokers={brokers}
+                  transporters={transporters}
+                  customerId={formState.customerId}
+                  brokerId={formState.brokerId}
+                  transporterId={formState.transporterId}
+                  transportCost={formState.transportCost}
+                  onSelectChange={handleSelectChange}
+                  onInputChange={handleInputChange}
+                />
+              </TabsContent>
+
+              <TabsContent value="items" className="p-4 border rounded-lg">
+                <div className="overflow-x-auto">
+                  <ItemsTable
+                    items={formState.items}
+                    onItemChange={handleItemChange}
+                    onRemoveItem={handleRemoveItem}
+                    onAddItem={handleAddItem}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="summary" className="p-4 border rounded-lg">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Notes</label>
+                    <textarea
+                      id="notes"
+                      name="notes"
+                      className="w-full p-3 rounded-md border text-base"
+                      rows={4}
+                      value={formState.notes}
+                      onChange={(e) => handleInputChange(e)}
+                      placeholder="Enter notes..."
+                    />
+                  </div>
+
+                  <FormSummary
+                    subtotal={calculateSubtotal()}
+                    transportCost={parseFloat(formState.transportCost || '0')}
+                    brokerageAmount={calculateBrokerageAmount()}
+                    showBrokerage={!!selectedBroker}
+                    total={calculateTotal()}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-8 pt-4 border-t">
+              <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto text-base py-6">
+                Cancel
+              </Button>
+              {initialSale && onPrint && (
+                <Button type="button" variant="outline" onClick={onPrint} className="w-full sm:w-auto text-base py-6">
+                  Print
+                </Button>
+              )}
+              <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-base py-6">
+                {isSubmitting ? 'Saving...' : initialSale ? 'Update Sale' : 'Save Sale'}
+              </Button>
             </div>
-          </TabsContent>
-        </Tabs>
-
-        <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
-          <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-            {isSubmitting ? 'Saving...' : initialSale ? 'Update Sale' : 'Save Sale'}
-          </Button>
+          </form>
         </div>
-      </form>
+      </ScrollArea>
     </div>
   );
 };

@@ -24,9 +24,8 @@ const SalesFormContent = ({
   handleFormSubmit,
 }) => (
   <Form {...form}>
-    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6 max-w-4xl mx-auto">
-      <div className="bg-white p-4 rounded-lg shadow-sm">
-        <h2 className="text-lg font-medium mb-4">Sale Details</h2>
+    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+      <div className="bg-white p-6 rounded-lg border">
         <SalesFormFields
           form={form}
           inventory={inventory}
@@ -43,7 +42,8 @@ const SalesFormContent = ({
           setIsCutBill={handleBillAmountToggle}
         />
       </div>
-      <div className="flex flex-col md:flex-row justify-between bg-white p-4 rounded-lg shadow-sm">
+      
+      <div className="flex flex-col md:flex-row justify-between bg-white p-6 rounded-lg border">
         <SalesFormSummary
           subtotal={form.watch("quantity") * form.watch("rate")}
           transportCost={form.watch("transportCost")}

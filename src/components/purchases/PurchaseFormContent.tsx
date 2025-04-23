@@ -29,11 +29,16 @@ const PurchaseFormContent = ({
   handleFormSubmit,
   partyManagement,
 }: any) => (
-  <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100 shadow-md overflow-hidden">
-    <ScrollArea className="h-[calc(100vh-200px)] md:h-[calc(100vh-250px)]">
-      <div className="p-6">
+  <Card className="bg-white border-blue-100 shadow-md overflow-hidden">
+    <ScrollArea className="h-[calc(100vh-120px)]">
+      <div className="p-6 max-w-2xl mx-auto">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-blue-800">{isEdit ? 'Edit Purchase' : 'Add New Purchase'}</h2>
+              <p className="text-gray-600 text-sm mt-1">Fill in the purchase details</p>
+            </div>
+
             <PurchaseAccordion
               form={form}
               locations={locations}

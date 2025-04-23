@@ -1,5 +1,6 @@
 
 import React from "react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import SalesFormContent from "./sales-form/SalesFormContent";
 import { useSalesFormLogic } from "./sales-form/useSalesFormLogic";
 
@@ -46,24 +47,35 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSubmit, initialData, onPrint })
   };
 
   return (
-    <SalesFormContent
-      form={form}
-      inventory={inventory}
-      customers={customers}
-      brokers={brokers}
-      transporters={transporters}
-      maxQuantity={maxQuantity}
-      isCutBill={isCutBill}
-      initialData={initialData}
-      selectedLot={selectedLot}
-      selectedBroker={selectedBroker}
-      handleLotChange={handleLotChange}
-      handleBrokerChange={handleBrokerChange}
-      handleBillAmountToggle={handleBillAmountToggle}
-      onPrint={onPrint}
-      isSubmitting={isSubmitting}
-      handleFormSubmit={handleFormSubmit}
-    />
+    <div className="w-full max-w-full mx-auto bg-white rounded-lg shadow-md">
+      <ScrollArea className="h-[calc(100vh-120px)]">
+        <div className="p-6 max-w-3xl mx-auto">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-blue-800">{initialData ? 'Edit Sale' : 'Add New Sale'}</h2>
+            <p className="text-gray-600 text-sm mt-1">Fill in the sale details</p>
+          </div>
+          
+          <SalesFormContent
+            form={form}
+            inventory={inventory}
+            customers={customers}
+            brokers={brokers}
+            transporters={transporters}
+            maxQuantity={maxQuantity}
+            isCutBill={isCutBill}
+            initialData={initialData}
+            selectedLot={selectedLot}
+            selectedBroker={selectedBroker}
+            handleLotChange={handleLotChange}
+            handleBrokerChange={handleBrokerChange}
+            handleBillAmountToggle={handleBillAmountToggle}
+            onPrint={onPrint}
+            isSubmitting={isSubmitting}
+            handleFormSubmit={handleFormSubmit}
+          />
+        </div>
+      </ScrollArea>
+    </div>
   );
 };
 

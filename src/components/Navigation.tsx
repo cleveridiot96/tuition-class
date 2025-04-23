@@ -28,7 +28,7 @@ const Navigation: React.FC<NavigationProps> = ({
   rightContent,
   showFormatButton = false,
   onFormatClick,
-  showHomeButton = false
+  showHomeButton = true // Changed default to true so home button always shows
 }) => {
   const navigate = useNavigate();
   
@@ -70,6 +70,7 @@ const Navigation: React.FC<NavigationProps> = ({
             </Button>
           )}
           
+          {/* Always show home button */}
           {showHomeButton && (
             <Button variant="ghost" size="icon" onClick={handleHomeClick} className="md-ripple mr-2 text-white hover:bg-white/10">
               <Home size={18} />
