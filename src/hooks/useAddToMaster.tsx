@@ -34,9 +34,14 @@ export function useAddToMaster() {
    */
   const handleConfirmAdd = useCallback(() => {
     if (newItemValue && onConfirmCallback) {
-      onConfirmCallback(newItemValue);
-      setShowConfirmDialog(false);
-      toast.success(`"${newItemValue}" added to master list`);
+      try {
+        onConfirmCallback(newItemValue);
+        setShowConfirmDialog(false);
+        toast.success(`"${newItemValue}" added to master list`);
+      } catch (error) {
+        console.error("Error adding item to master list:", error);
+        toast.error(`Failed to add "${newItemValue}" to master list. Please try again.`);
+      }
     }
   }, [newItemValue, onConfirmCallback]);
   
@@ -45,7 +50,7 @@ export function useAddToMaster() {
    */
   const AddToMasterDialog = useCallback(() => (
     <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>Add to Master List</DialogTitle>
         </DialogHeader>
@@ -57,6 +62,7 @@ export function useAddToMaster() {
               id="confirmValue" 
               value={newItemValue}
               onChange={(e) => setNewItemValue(e.target.value)}
+              autoComplete="off"
             />
           </div>
         </div>

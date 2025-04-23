@@ -16,7 +16,7 @@ const PortableAppButton = () => {
       
       if (result) {
         toast.success("Portable App Created", {
-          description: "Just unzip and open launcher.html to use your app anywhere!"
+          description: "Extract the ZIP file and open index.html to use your app anywhere!"
         });
       } else {
         toast.error("Failed to create portable version");
