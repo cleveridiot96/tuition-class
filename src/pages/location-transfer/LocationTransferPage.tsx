@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 import { getInventory, getLocations, updateInventoryItem } from '@/services/storageService';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useHotkeys } from '@/hooks/useHotkeys';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 
 const LocationTransferPage = () => {
   const [inventory, setInventory] = useState<any[]>([]);
@@ -19,7 +21,6 @@ const LocationTransferPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [availableQuantity, setAvailableQuantity] = useState(0);
   const [filteredInventory, setFilteredInventory] = useState<any[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
 
   useHotkeys([
     { key: 'Enter', handler: () => handleTransfer(), description: 'Submit transfer' },
@@ -44,14 +45,13 @@ const LocationTransferPage = () => {
   useEffect(() => {
     if (sourceLocation) {
       const filtered = inventory.filter(item => 
-        item.location === sourceLocation && item.quantity > 0 &&
-        (searchTerm === '' || item.lotNumber.toLowerCase().includes(searchTerm.toLowerCase()))
+        item.location === sourceLocation && item.quantity > 0
       );
       setFilteredInventory(filtered);
     } else {
       setFilteredInventory([]);
     }
-  }, [inventory, sourceLocation, searchTerm]);
+  }, [inventory, sourceLocation]);
 
   useEffect(() => {
     if (selectedItem) {
@@ -146,8 +146,12 @@ const LocationTransferPage = () => {
   const resetForm = () => {
     setSelectedItem('');
     setQuantity(1);
-    setSearchTerm('');
   };
+
+  const inventoryOptions = filteredInventory.map(item => ({
+    value: item.id,
+    label: `${item.lotNumber} - ${item.quantity} units`
+  }));
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
@@ -164,11 +168,13 @@ const LocationTransferPage = () => {
               <div className="space-y-6 max-w-2xl mx-auto">
                 <div className="mb-6">
                   <Label htmlFor="search" className="text-lg font-medium">Search Inventory</Label>
-                  <Input
-                    id="search"
-                    placeholder="Search by lot number..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                  <SearchableSelect
+                    options={inventoryOptions}
+                    value={selectedItem}
+                    onValueChange={setSelectedItem}
+                    placeholder="Select an item to transfer"
+                    emptyMessage={sourceLocation ? "No items available in this location" : "Select source location first"}
+                    disabled={!sourceLocation || filteredInventory.length === 0}
                     className="mt-1"
                   />
                 </div>
@@ -183,7 +189,7 @@ const LocationTransferPage = () => {
                       <SelectTrigger id="source-location" className="mt-1">
                         <SelectValue placeholder="Select source location" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent searchable>
                         {locations.map(loc => (
                           <SelectItem key={`source-${loc}`} value={loc}>{loc}</SelectItem>
                         ))}
@@ -200,39 +206,13 @@ const LocationTransferPage = () => {
                       <SelectTrigger id="target-location" className="mt-1">
                         <SelectValue placeholder="Select target location" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent searchable>
                         {locations.map(loc => (
                           <SelectItem key={`target-${loc}`} value={loc}>{loc}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                
-                <div>
-                  <Label htmlFor="item-select" className="text-lg font-medium">Select Item</Label>
-                  <Select
-                    value={selectedItem}
-                    onValueChange={setSelectedItem}
-                    disabled={!sourceLocation || filteredInventory.length === 0}
-                  >
-                    <SelectTrigger id="item-select" className="mt-1">
-                      <SelectValue placeholder={
-                        !sourceLocation 
-                          ? "Select source location first" 
-                          : filteredInventory.length === 0 
-                          ? "No items available in this location" 
-                          : "Select an item"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredInventory.map(item => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {`${item.lotNumber} - ${item.quantity} units`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
                 
                 <div>

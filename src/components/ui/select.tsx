@@ -83,8 +83,6 @@ const SelectContent = React.forwardRef<
 >(({ className, children, position = "popper", searchable = false, ...props }, ref) => {
   const [searchQuery, setSearchQuery] = React.useState("");
   
-  console.log("SelectContent rendering with children:", children);
-  
   // Additional safety check for children
   const safeChildren = React.useMemo(() => {
     try {

@@ -4,3 +4,5 @@
 @import './components/ui/styles/animations.css';
 @import './components/ui/styles/tables.css';
 @import './components/ui/styles/components.css';
+@import './styles/global-dropdown-fixes.css';
+@import './styles/form-fixes.css';
