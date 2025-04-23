@@ -17,7 +17,7 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onTransporterAdded, o
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: initialValues?.name || '',
-    address: initialValues?.address || '',
+    vehicleDetails: initialValues?.vehicleDetails || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,7 +44,7 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onTransporterAdded, o
       const newTransporter: Transporter = {
         id: initialValues?.id || uuidv4(),
         name: formData.name.trim(),
-        address: formData.address,
+        vehicleDetails: formData.vehicleDetails,
         balance: initialValues?.balance || 0,
       };
 
@@ -80,13 +80,13 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onTransporterAdded, o
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
+        <Label htmlFor="vehicleDetails">Vehicle Details</Label>
         <textarea
-          id="address"
-          name="address"
-          value={formData.address}
+          id="vehicleDetails"
+          name="vehicleDetails"
+          value={formData.vehicleDetails}
           onChange={handleChange}
-          placeholder="Enter address (optional)"
+          placeholder="Enter vehicle details (optional)"
           className="w-full min-h-[80px] p-2 border rounded-md"
         />
       </div>

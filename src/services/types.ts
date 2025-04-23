@@ -1,3 +1,4 @@
+
 // Adding all the required interfaces
 
 export interface InventoryItem {
@@ -71,7 +72,7 @@ export interface Broker {
 export interface Transporter {
   id: string;
   name: string;
-  vehicleNumber?: string;
+  vehicleDetails?: string;
   balance?: number;
   isDeleted?: boolean;
 }
