@@ -39,7 +39,11 @@ const PurchaseAccordion: React.FC<PurchaseAccordionProps> = ({
       
       <section className="bg-white p-4 rounded-lg shadow-sm">
         <h2 className="text-lg font-medium mb-4">Bags & Rate</h2>
-        <PurchaseDetails form={form} locations={locations} />
+        <PurchaseDetails 
+          form={form} 
+          locations={locations} 
+          partyManagement={partyManagement} 
+        />
       </section>
       
       <section className="bg-white p-4 rounded-lg shadow-sm">
