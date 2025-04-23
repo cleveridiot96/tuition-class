@@ -5,6 +5,7 @@ import { SelectTrigger } from "./select-trigger"
 import { SelectContent, SelectScrollUpButton, SelectScrollDownButton } from "./select-content"
 import { SelectItem } from "./select-item"
 import { SelectProps } from "./types"
+import { cn } from "@/lib/utils"
 
 const Select = SelectPrimitive.Root
 const SelectGroup = SelectPrimitive.Group
