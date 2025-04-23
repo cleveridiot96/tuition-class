@@ -9,8 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 
 const transporterSchema = z.object({
   name: z.string().min(1, "Transporter name is required"),
-  address: z.string().optional(),
-  phone: z.string().optional(),
   vehicleDetails: z.string().optional(),
 });
 
@@ -26,14 +24,11 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onClose, initialData 
     resolver: zodResolver(transporterSchema),
     defaultValues: {
       name: initialData?.name || "",
-      address: initialData?.address || "",
-      phone: initialData?.phone || "",
       vehicleDetails: initialData?.vehicleDetails || "",
     },
   });
 
   const onSubmit = (data: TransporterFormValues) => {
-    // Placeholder for transporter form submission
     console.log("Transporter form data:", data);
     onClose();
   };
@@ -47,30 +42,6 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onClose, initialData 
           render={({ field }) => (
             <FormItem>
               <FormLabel>Transporter Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>

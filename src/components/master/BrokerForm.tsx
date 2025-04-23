@@ -6,12 +6,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Broker } from "@/services/types";
 
 const brokerSchema = z.object({
   name: z.string().min(1, "Broker name is required"),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  commission: z.coerce.number().min(0, "Commission cannot be negative").optional(),
+  commissionRate: z.coerce.number().min(0, "Commission cannot be negative").optional(),
 });
 
 type BrokerFormValues = z.infer<typeof brokerSchema>;
@@ -26,14 +25,11 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onClose, initialData }) => {
     resolver: zodResolver(brokerSchema),
     defaultValues: {
       name: initialData?.name || "",
-      address: initialData?.address || "",
-      phone: initialData?.phone || "",
-      commission: initialData?.commission || 1,
+      commissionRate: initialData?.commissionRate || 1,
     },
   });
 
   const onSubmit = (data: BrokerFormValues) => {
-    // Placeholder for broker form submission
     console.log("Broker form data:", data);
     onClose();
   };
@@ -55,31 +51,7 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onClose, initialData }) => {
         />
         <FormField
           control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="commission"
+          name="commissionRate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Commission (%)</FormLabel>

@@ -6,11 +6,11 @@ import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { v4 as uuidv4 } from "uuid";
+import { Agent } from "@/services/types";
 
 const agentSchema = z.object({
   name: z.string().min(1, "Agent name is required"),
-  address: z.string().optional(),
-  phone: z.string().optional(),
   commission: z.coerce.number().min(0, "Commission cannot be negative").optional(),
 });
 
@@ -26,15 +26,18 @@ const AgentForm: React.FC<AgentFormProps> = ({ onClose, initialData }) => {
     resolver: zodResolver(agentSchema),
     defaultValues: {
       name: initialData?.name || "",
-      address: initialData?.address || "",
-      phone: initialData?.phone || "",
       commission: initialData?.commission || 1,
     },
   });
 
   const onSubmit = (data: AgentFormValues) => {
-    // Placeholder for agent form submission
-    console.log("Agent form data:", data);
+    const newAgent: Agent = {
+      id: initialData?.id || uuidv4(),
+      name: data.name,
+      commissionRate: data.commission,
+      balance: initialData?.balance || 0,
+    };
+    console.log("Agent form data:", newAgent);
     onClose();
   };
 
@@ -47,30 +50,6 @@ const AgentForm: React.FC<AgentFormProps> = ({ onClose, initialData }) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Agent Name</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Phone</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
