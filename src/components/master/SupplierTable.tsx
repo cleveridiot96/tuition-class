@@ -2,7 +2,7 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
 
 interface SupplierTableProps {
   suppliers: any[];
@@ -17,9 +17,6 @@ const SupplierTable: React.FC<SupplierTableProps> = ({ suppliers, onEdit, onRefr
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Email</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -28,9 +25,6 @@ const SupplierTable: React.FC<SupplierTableProps> = ({ suppliers, onEdit, onRefr
             suppliers.map((supplier) => (
               <TableRow key={supplier.id}>
                 <TableCell>{supplier.name}</TableCell>
-                <TableCell>{supplier.address || "-"}</TableCell>
-                <TableCell>{supplier.phone || "-"}</TableCell>
-                <TableCell>{supplier.email || "-"}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"
@@ -45,7 +39,7 @@ const SupplierTable: React.FC<SupplierTableProps> = ({ suppliers, onEdit, onRefr
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={2} className="text-center py-4">
                 No suppliers found
               </TableCell>
             </TableRow>

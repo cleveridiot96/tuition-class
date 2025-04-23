@@ -2,7 +2,7 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
 
 interface CustomerTableProps {
   customers: any[];
@@ -17,9 +17,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ customers, onEdit, onRefr
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Email</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -28,9 +25,6 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ customers, onEdit, onRefr
             customers.map((customer) => (
               <TableRow key={customer.id}>
                 <TableCell>{customer.name}</TableCell>
-                <TableCell>{customer.address || "-"}</TableCell>
-                <TableCell>{customer.phone || "-"}</TableCell>
-                <TableCell>{customer.email || "-"}</TableCell>
                 <TableCell className="text-right">
                   <Button
                     variant="ghost"
@@ -45,7 +39,7 @@ const CustomerTable: React.FC<CustomerTableProps> = ({ customers, onEdit, onRefr
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={2} className="text-center py-4">
                 No customers found
               </TableCell>
             </TableRow>

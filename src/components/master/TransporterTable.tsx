@@ -2,7 +2,7 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
 
 interface TransporterTableProps {
   transporters: any[];
@@ -17,8 +17,6 @@ const TransporterTable: React.FC<TransporterTableProps> = ({ transporters, onEdi
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead>Phone</TableHead>
             <TableHead>Vehicle Details</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -28,8 +26,6 @@ const TransporterTable: React.FC<TransporterTableProps> = ({ transporters, onEdi
             transporters.map((transporter) => (
               <TableRow key={transporter.id}>
                 <TableCell>{transporter.name}</TableCell>
-                <TableCell>{transporter.address || "-"}</TableCell>
-                <TableCell>{transporter.phone || "-"}</TableCell>
                 <TableCell>{transporter.vehicleDetails || "-"}</TableCell>
                 <TableCell className="text-right">
                   <Button
@@ -45,7 +41,7 @@ const TransporterTable: React.FC<TransporterTableProps> = ({ transporters, onEdi
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={3} className="text-center py-4">
                 No transporters found
               </TableCell>
             </TableRow>

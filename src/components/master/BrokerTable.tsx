@@ -2,7 +2,7 @@
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2 } from "lucide-react";
 
 interface BrokerTableProps {
   brokers: any[];
@@ -17,8 +17,6 @@ const BrokerTable: React.FC<BrokerTableProps> = ({ brokers, onEdit, onRefresh })
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
-            <TableHead>Address</TableHead>
-            <TableHead>Phone</TableHead>
             <TableHead>Commission</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -28,8 +26,6 @@ const BrokerTable: React.FC<BrokerTableProps> = ({ brokers, onEdit, onRefresh })
             brokers.map((broker) => (
               <TableRow key={broker.id}>
                 <TableCell>{broker.name}</TableCell>
-                <TableCell>{broker.address || "-"}</TableCell>
-                <TableCell>{broker.phone || "-"}</TableCell>
                 <TableCell>{broker.commission ? `${broker.commission}%` : "-"}</TableCell>
                 <TableCell className="text-right">
                   <Button
@@ -45,7 +41,7 @@ const BrokerTable: React.FC<BrokerTableProps> = ({ brokers, onEdit, onRefresh })
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-4">
+              <TableCell colSpan={3} className="text-center py-4">
                 No brokers found
               </TableCell>
             </TableRow>
