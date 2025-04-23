@@ -5,10 +5,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Broker } from "@/services/types";
+import { GlassmorphismButton } from "@/components/ui/glassmorphism-button";
 
 const formSchema = z.object({
   name: z.string().min(1, "Broker name is required"),
@@ -82,14 +82,14 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <GlassmorphismButton type="button" variant="blue" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        </GlassmorphismButton>
+        <GlassmorphismButton type="submit" variant="orange" disabled={isSubmitting}>
           {isSubmitting 
             ? (initialData ? "Updating..." : "Adding...") 
             : (initialData ? "Update Broker" : "Add Broker")}
-        </Button>
+        </GlassmorphismButton>
       </div>
     </form>
   );

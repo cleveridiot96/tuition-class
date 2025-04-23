@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
 import { Transporter } from '@/services/types';
+import { GlassmorphismButton } from '@/components/ui/glassmorphism-button';
 
 interface TransporterFormProps {
   onTransporterAdded: (transporter: Transporter) => void;
@@ -91,12 +91,12 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onTransporterAdded, o
         />
       </div>
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
+        <GlassmorphismButton type="button" variant="blue" onClick={onCancel}>
           Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        </GlassmorphismButton>
+        <GlassmorphismButton type="submit" variant="green" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : initialValues ? "Update Transporter" : "Add Transporter"}
-        </Button>
+        </GlassmorphismButton>
       </div>
     </form>
   );

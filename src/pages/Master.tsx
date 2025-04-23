@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getSuppliers, getCustomers, getTransporters, getAgents, getBrokers } from "@/services/storageService";
@@ -17,6 +16,7 @@ import CustomerTable from "@/components/master/CustomerTable";
 import TransporterTable from "@/components/master/TransporterTable";
 import AgentTable from "@/components/master/AgentTable";
 import BrokerTable from "@/components/master/BrokerTable";
+import { GlassmorphismButton } from "@/components/ui/glassmorphism-button";
 
 const Master = () => {
   const [activeTab, setActiveTab] = useState("suppliers");
@@ -108,9 +108,9 @@ const Master = () => {
                   <BrokerTable brokers={brokers} onEdit={handleEditClick} onRefresh={loadData} />
                 </TabsContent>
               </Tabs>
-              <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-700">
+              <GlassmorphismButton onClick={handleAddClick} variant="purple">
                 <Plus className="mr-2 h-4 w-4" /> Add New
-              </Button>
+              </GlassmorphismButton>
             </div>
           </CardContent>
         </Card>

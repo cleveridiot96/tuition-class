@@ -1,6 +1,5 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
@@ -8,6 +7,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { v4 as uuidv4 } from "uuid";
 import { Agent } from "@/services/types";
+import { GlassmorphismButton } from "@/components/ui/glassmorphism-button";
 
 const agentSchema = z.object({
   name: z.string().min(1, "Agent name is required"),
@@ -69,8 +69,8 @@ const AgentForm: React.FC<AgentFormProps> = ({ onClose, initialData }) => {
           )}
         />
         <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit">Save</Button>
+          <GlassmorphismButton type="button" variant="blue" onClick={onClose}>Cancel</GlassmorphismButton>
+          <GlassmorphismButton type="submit" variant="green">Save</GlassmorphismButton>
         </div>
       </form>
     </Form>

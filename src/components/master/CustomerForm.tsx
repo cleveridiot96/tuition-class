@@ -1,11 +1,11 @@
 
 import React from "react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { GlassmorphismButton } from "@/components/ui/glassmorphism-button";
 
 const customerSchema = z.object({
   name: z.string().min(1, "Customer name is required"),
@@ -47,8 +47,8 @@ const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, initialData }) => 
           )}
         />
         <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-          <Button type="submit">Save</Button>
+          <GlassmorphismButton type="button" variant="blue" onClick={onClose}>Cancel</GlassmorphismButton>
+          <GlassmorphismButton type="submit" variant="purple">Save</GlassmorphismButton>
         </div>
       </form>
     </Form>
