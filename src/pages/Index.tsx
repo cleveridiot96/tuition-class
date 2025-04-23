@@ -16,7 +16,7 @@ import { Download } from 'lucide-react';
 import { createPortableVersion } from '@/services/backup/backupService';
 import { toast } from 'sonner';
 import { useHotkeys } from '@/hooks/useHotkeys';
-import GlassmorphismButton from '@/components/ui/GlassmorphismButton';
+import { GlassmorphismButton } from '@/components/ui/glassmorphism-button';
 
 const Index = () => {
   const navigate = useNavigate();
