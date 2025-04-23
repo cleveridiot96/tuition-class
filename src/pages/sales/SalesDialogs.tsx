@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import MultiItemSalesForm from "@/components/sales/MultiItemSalesForm";
+import SimpleSalesForm from "@/components/sales/SimpleSalesForm";
 import SalesReceipt from "@/components/SalesReceipt";
 import { Sale } from "@/services/types";
 
@@ -41,7 +41,7 @@ export default function SalesDialogs({
             <DialogDescription>Fill in the details to record a new sale</DialogDescription>
           </DialogHeader>
           <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
-            <MultiItemSalesForm onSubmit={handleAdd} onCancel={handleCloseDialog} />
+            <SimpleSalesForm onSubmit={handleAdd} onCancel={handleCloseDialog} />
           </ScrollArea>
         </DialogContent>
       </Dialog>
@@ -57,10 +57,10 @@ export default function SalesDialogs({
           </DialogHeader>
           <ScrollArea className="max-h-[calc(90vh-130px)] px-6 py-4">
             {editingSale && (
-              <MultiItemSalesForm
+              <SimpleSalesForm
                 onSubmit={handleUpdate}
                 onCancel={handleCloseDialog}
-                initialSale={editingSale}
+                initialData={editingSale}
                 onPrint={() => {
                   setIsEditDialogOpen(false);
                   setTimeout(() => handlePrintSale(editingSale), 300);
