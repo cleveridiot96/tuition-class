@@ -31,7 +31,8 @@ interface EnhancedSearchableSelectProps {
   masterType?: string;
 }
 
-export function EnhancedSearchableSelect({
+// Optimize performance with React.memo and useCallback
+export const EnhancedSearchableSelect = React.memo(({
   options = [],
   value,
   onValueChange,
@@ -42,13 +43,14 @@ export function EnhancedSearchableSelect({
   disabled = false,
   className,
   masterType = "item"
-}: EnhancedSearchableSelectProps) {
+}: EnhancedSearchableSelectProps) => {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [suggestedMatch, setSuggestedMatch] = React.useState<string | null>(null);
   
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
 
+  // Reset state when dropdown closes
   React.useEffect(() => {
     if (!open) {
       setSearchTerm("");
@@ -56,7 +58,7 @@ export function EnhancedSearchableSelect({
     }
   }, [open]);
 
-  // Enhanced filtering with fuzzy matching
+  // Enhanced filtering with fuzzy matching - memoized for performance
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return options;
     
@@ -78,6 +80,8 @@ export function EnhancedSearchableSelect({
       
       if (bestMatch) {
         setSuggestedMatch(bestMatch.label);
+      } else {
+        setSuggestedMatch(null);
       }
     } else {
       setSuggestedMatch(null);
@@ -86,60 +90,63 @@ export function EnhancedSearchableSelect({
     return matches;
   }, [options, searchTerm]);
 
+  // Check if input matches any option - memoized
   const inputMatchesOption = React.useMemo(() => {
     if (!searchTerm) return false;
-    
     return options.some(option => 
       option.label.toLowerCase() === searchTerm.toLowerCase() ||
       option.value.toLowerCase() === searchTerm.toLowerCase()
     );
   }, [options, searchTerm]);
 
+  // Get selected option - memoized
   const selectedOption = React.useMemo(() => {
     if (!value) return null;
     return options.find(option => option.value === value) || null;
   }, [options, value]);
 
-  const handleSelect = (currentValue: string) => {
+  // Handler functions
+  const handleSelect = React.useCallback((currentValue: string) => {
     onValueChange(currentValue);
     setOpen(false);
     setSearchTerm("");
     setSuggestedMatch(null);
-  };
+  }, [onValueChange]);
 
-  const handleAddNewItem = () => {
-    if (searchTerm.trim() && !inputMatchesOption && onAddNew) {
-      onAddNew(searchTerm.trim());
+  const handleAddNewItem = React.useCallback(() => {
+    if (searchTerm.trim() && !inputMatchesOption) {
+      if (onAddNew) {
+        onAddNew(searchTerm.trim());
+      } else {
+        confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
+          onValueChange(confirmedValue);
+        });
+      }
       setOpen(false);
-    } else if (searchTerm.trim() && !inputMatchesOption) {
-      confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
-        onValueChange(confirmedValue);
-        setOpen(false);
-      });
     }
-  };
+  }, [searchTerm, inputMatchesOption, onAddNew, confirmAddToMaster, onValueChange]);
 
-  const useSuggestedMatch = () => {
+  const useSuggestedMatch = React.useCallback(() => {
     if (suggestedMatch) {
       const matchingOption = options.find(option => option.label === suggestedMatch);
       if (matchingOption) {
         handleSelect(matchingOption.value);
       }
     }
-  };
+  }, [suggestedMatch, options, handleSelect]);
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleInputKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (filteredOptions.length === 1) {
         // If there's only one option, select it
         handleSelect(filteredOptions[0].value);
-      } else if (!inputMatchesOption && searchTerm.trim() && (onAddNew || confirmAddToMaster)) {
+      } else if (!inputMatchesOption && searchTerm.trim()) {
         // If input doesn't match any option and we can add new items
         handleAddNewItem();
       }
     }
-  };
+  }, [filteredOptions, handleSelect, inputMatchesOption, searchTerm, handleAddNewItem]);
 
   return (
     <>
@@ -254,4 +261,8 @@ export function EnhancedSearchableSelect({
       <AddToMasterDialog />
     </>
   );
-}
+});
+
+EnhancedSearchableSelect.displayName = "EnhancedSearchableSelect";
+
+export default EnhancedSearchableSelect;

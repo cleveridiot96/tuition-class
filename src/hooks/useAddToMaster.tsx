@@ -1,85 +1,68 @@
 
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
-/**
- * Hook for managing "Add to Master" functionality in dropdown components
- */
-export function useAddToMaster() {
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [newItemValue, setNewItemValue] = useState('');
+interface UseAddToMasterReturn {
+  confirmAddToMaster: (value: string, onConfirm: (value: string) => void) => void;
+  AddToMasterDialog: React.FC;
+}
+
+export function useAddToMaster(): UseAddToMasterReturn {
+  const [showDialog, setShowDialog] = useState(false);
+  const [currentValue, setCurrentValue] = useState('');
   const [onConfirmCallback, setOnConfirmCallback] = useState<((value: string) => void) | null>(null);
-  
-  /**
-   * Shows the confirmation dialog for adding a new item
-   */
+
   const confirmAddToMaster = useCallback((value: string, onConfirm: (value: string) => void) => {
-    setNewItemValue(value);
+    setCurrentValue(value);
     setOnConfirmCallback(() => onConfirm);
-    setShowConfirmDialog(true);
+    setShowDialog(true);
   }, []);
-  
-  /**
-   * Handles the confirmation action
-   */
-  const handleConfirmAdd = useCallback(() => {
-    if (newItemValue && onConfirmCallback) {
+
+  const handleConfirm = useCallback(() => {
+    if (onConfirmCallback && currentValue) {
       try {
-        onConfirmCallback(newItemValue);
-        setShowConfirmDialog(false);
-        toast.success(`"${newItemValue}" added to master list`);
+        onConfirmCallback(currentValue);
+        toast.success(`"${currentValue}" added to master successfully`);
       } catch (error) {
-        console.error("Error adding item to master list:", error);
-        toast.error(`Failed to add "${newItemValue}" to master list. Please try again.`);
+        console.error('Error adding to master:', error);
+        toast.error('Failed to add to master');
       }
     }
-  }, [newItemValue, onConfirmCallback]);
-  
-  /**
-   * Renders the confirmation dialog component
-   */
-  const AddToMasterDialog = useCallback(() => (
-    <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-      <DialogContent className="sm:max-w-md bg-white">
-        <DialogHeader>
-          <DialogTitle>Add to Master List</DialogTitle>
-        </DialogHeader>
-        <div className="py-4">
-          <p className="mb-4">"{newItemValue}" not found. Add to master list?</p>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="confirmValue">Value to add:</Label>
-            <Input 
-              id="confirmValue" 
-              value={newItemValue}
-              onChange={(e) => setNewItemValue(e.target.value)}
-              autoComplete="off"
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
-            No, Cancel
-          </Button>
-          <Button onClick={handleConfirmAdd}>
-            Yes, Add to Master
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  ), [showConfirmDialog, newItemValue, handleConfirmAdd]);
-  
-  return {
-    confirmAddToMaster,
-    AddToMasterDialog
-  };
+    setShowDialog(false);
+  }, [currentValue, onConfirmCallback]);
+
+  const handleCancel = useCallback(() => {
+    setShowDialog(false);
+  }, []);
+
+  const AddToMasterDialog = useCallback(() => {
+    return (
+      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add to Master</AlertDialogTitle>
+            <AlertDialogDescription>
+              Do you want to add "{currentValue}" to the master list? This will make it available for future use.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirm}>Add</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  }, [showDialog, currentValue, handleCancel, handleConfirm]);
+
+  return { confirmAddToMaster, AddToMasterDialog };
 }

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,28 @@ import { toast } from "sonner";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 import { ExternalLink, Printer, FileSpreadsheet } from "lucide-react";
 
+// Define interfaces for type safety
+interface Party {
+  id: string;
+  name: string;
+  balance?: number;
+  partyType?: string; // Using partyType instead of type to avoid TypeScript conflicts
+}
+
+interface Transaction {
+  id: string;
+  partyId: string;
+  date: string;
+  type: 'credit' | 'debit';
+  amount: number;
+  description: string;
+  reference?: string;
+}
+
 const Ledger = () => {
-  const [parties, setParties] = useState<any[]>([]);
+  const [parties, setParties] = useState<Party[]>([]);
   const [selectedParty, setSelectedParty] = useState<string>("");
-  const [transactions, setTransactions] = useState<any[]>([]);
-  const [filteredTransactions, setFilteredTransactions] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [dateRange, setDateRange] = useState({
     startDate: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd"),
     endDate: format(new Date(), "yyyy-MM-dd"),
@@ -31,6 +48,7 @@ const Ledger = () => {
   const [balance, setBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Load parties only once on component mount
   useEffect(() => {
     loadAllParties();
   }, []);
@@ -43,7 +61,7 @@ const Ledger = () => {
       const customers = getCustomers() || [];
       
       // Combine all unique parties
-      const allParties = [...ledgerParties];
+      const allParties: Party[] = [...ledgerParties];
       
       // Add suppliers if not already in the list
       suppliers.forEach(supplier => {
@@ -51,7 +69,7 @@ const Ledger = () => {
           allParties.push({
             id: supplier.id,
             name: supplier.name,
-            type: 'supplier'
+            partyType: 'supplier' // Use partyType instead of type
           });
         }
       });
@@ -62,7 +80,7 @@ const Ledger = () => {
           allParties.push({
             id: customer.id,
             name: customer.name,
-            type: 'customer'
+            partyType: 'customer' // Use partyType instead of type
           });
         }
       });
@@ -74,22 +92,23 @@ const Ledger = () => {
     }
   };
 
+  // Load party data when selected party changes
   useEffect(() => {
     if (selectedParty) {
-      loadPartiedData(selectedParty);
+      loadPartyData(selectedParty);
     } else {
       setTransactions([]);
     }
   }, [selectedParty]);
 
-  const loadPartiedData = async (partyId: string) => {
+  const loadPartyData = async (partyId: string) => {
     setIsLoading(true);
     try {
       // Get regular transactions
       const allTransactions = getTransactions() || [];
       let partyTransactions = allTransactions.filter(
         (transaction) => transaction.partyId === partyId && !transaction.isDeleted
-      );
+      ) as Transaction[];
       
       // Get sales related to this party
       const sales = getSales() || [];
@@ -102,7 +121,7 @@ const Ledger = () => {
         id: `sale-${sale.id}`,
         partyId,
         date: sale.date,
-        type: 'credit', // Assuming sale is credit to party account
+        type: 'credit' as const, // Typed as literal
         amount: sale.totalAmount,
         description: `Sale - ${sale.lotNumber || ''}`,
         reference: `Bill #${sale.billNumber || sale.id.substring(0, 6)}`,
@@ -119,7 +138,7 @@ const Ledger = () => {
         id: `purchase-${purchase.id}`,
         partyId,
         date: purchase.date,
-        type: 'debit', // Assuming purchase is debit to party account
+        type: 'debit' as const, // Typed as literal
         amount: purchase.totalAmount,
         description: `Purchase - ${purchase.lotNumber || ''}`,
         reference: `PO #${purchase.id.substring(0, 6)}`,
@@ -146,32 +165,34 @@ const Ledger = () => {
     }
   };
 
-  useEffect(() => {
-    if (transactions.length > 0) {
-      const filtered = transactions.filter((transaction) => {
-        const transactionDate = new Date(transaction.date);
-        const startDate = new Date(dateRange.startDate);
-        const endDate = new Date(dateRange.endDate);
-        endDate.setHours(23, 59, 59, 999); // End of day
-        return transactionDate >= startDate && transactionDate <= endDate;
-      });
+  // Filter transactions and calculate balance when transactions or date range changes
+  // Use useMemo for performance
+  const filteredTransactions = useMemo(() => {
+    if (transactions.length === 0) return [];
+    
+    const filtered = transactions.filter((transaction) => {
+      const transactionDate = new Date(transaction.date);
+      const startDate = new Date(dateRange.startDate);
+      const endDate = new Date(dateRange.endDate);
+      endDate.setHours(23, 59, 59, 999); // End of day
+      return transactionDate >= startDate && transactionDate <= endDate;
+    });
 
-      setFilteredTransactions(filtered);
+    // Calculate running balance for each transaction
+    let runningBalance = 0;
+    const transactionsWithBalance = filtered.map(transaction => {
+      if (transaction.type === "debit") {
+        runningBalance -= transaction.amount;
+      } else {
+        runningBalance += transaction.amount;
+      }
+      return { ...transaction, runningBalance };
+    });
 
-      // Calculate balance
-      let totalBalance = 0;
-      filtered.forEach((transaction) => {
-        if (transaction.type === "debit") {
-          totalBalance -= transaction.amount;
-        } else {
-          totalBalance += transaction.amount;
-        }
-      });
-      setBalance(totalBalance);
-    } else {
-      setFilteredTransactions([]);
-      setBalance(0);
-    }
+    // Update the total balance
+    setBalance(runningBalance);
+    
+    return transactionsWithBalance;
   }, [transactions, dateRange]);
 
   const handlePartyChange = (partyId: string) => {
@@ -200,10 +221,10 @@ const Ledger = () => {
     });
   };
   
-  const partyOptions = parties.map(party => ({
+  const partyOptions = useMemo(() => parties.map(party => ({
     value: party.id,
     label: party.name
-  }));
+  })), [parties]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -288,44 +309,33 @@ const Ledger = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredTransactions.map((transaction, index) => {
-                          let runningBalance = 0;
-                          for (let i = 0; i <= index; i++) {
-                            if (filteredTransactions[i].type === "debit") {
-                              runningBalance -= filteredTransactions[i].amount;
-                            } else {
-                              runningBalance += filteredTransactions[i].amount;
-                            }
-                          }
-
-                          return (
-                            <TableRow key={transaction.id}>
-                              <TableCell>
-                                {format(new Date(transaction.date), "dd/MM/yyyy")}
-                              </TableCell>
-                              <TableCell>{transaction.description}</TableCell>
-                              <TableCell>{transaction.reference || "-"}</TableCell>
-                              <TableCell>
-                                {transaction.type === "debit"
-                                  ? `₹${transaction.amount.toLocaleString()}`
-                                  : "-"}
-                              </TableCell>
-                              <TableCell>
-                                {transaction.type === "credit"
-                                  ? `₹${transaction.amount.toLocaleString()}`
-                                  : "-"}
-                              </TableCell>
-                              <TableCell
-                                className={
-                                  runningBalance >= 0 ? "text-green-600 print:text-black" : "text-red-600 print:text-black"
-                                }
-                              >
-                                ₹{Math.abs(runningBalance).toLocaleString()}
-                                {runningBalance >= 0 ? " Cr" : " Dr"}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
+                        {filteredTransactions.map((transaction, index) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
+                              {format(new Date(transaction.date), "dd/MM/yyyy")}
+                            </TableCell>
+                            <TableCell>{transaction.description}</TableCell>
+                            <TableCell>{transaction.reference || "-"}</TableCell>
+                            <TableCell>
+                              {transaction.type === "debit"
+                                ? `₹${transaction.amount.toLocaleString()}`
+                                : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {transaction.type === "credit"
+                                ? `₹${transaction.amount.toLocaleString()}`
+                                : "-"}
+                            </TableCell>
+                            <TableCell
+                              className={
+                                transaction.runningBalance >= 0 ? "text-green-600 print:text-black" : "text-red-600 print:text-black"
+                              }
+                            >
+                              ₹{Math.abs(transaction.runningBalance).toLocaleString()}
+                              {transaction.runningBalance >= 0 ? " Cr" : " Dr"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
                       </TableBody>
                     </Table>
                   </div>
@@ -354,28 +364,30 @@ const Ledger = () => {
       </div>
       
       {/* Print Styles */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .print\\:block {
+              display: block !important;
+            }
+            .container, .container * {
+              visibility: visible;
+            }
+            .container {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+            }
+            .print\\:hidden {
+              display: none !important;
+            }
           }
-          .print\\:block {
-            display: block !important;
-          }
-          .container, .container * {
-            visibility: visible;
-          }
-          .container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          .print\\:hidden {
-            display: none !important;
-          }
-        }
-      `}</style>
+        `
+      }} />
     </div>
   );
 };

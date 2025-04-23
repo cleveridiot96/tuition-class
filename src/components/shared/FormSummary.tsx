@@ -61,10 +61,7 @@ const FormSummary: React.FC<FormSummaryProps> = ({
       
       <div className="flex justify-between border-t pt-2">
         <span className="font-bold">Total:</span>
-        <span className="font-bold">₹{formatCurrency(
-          // For sales forms, don't include brokerage in the total
-          isSalesForm && showBrokerage ? total - (brokerageAmount || 0) : total
-        )}</span>
+        <span className="font-bold">₹{formatCurrency(total)}</span>
       </div>
     </div>
   );

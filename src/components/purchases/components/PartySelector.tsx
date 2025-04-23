@@ -78,6 +78,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
       addSupplier(newParty);
       loadSuppliers();
       form.setValue("party", value.trim());
+      toast.success("New party added successfully");
     } catch (error) {
       console.error("Error adding new party:", error);
       toast.error("Failed to add new party. Please try again.");

@@ -1,6 +1,7 @@
+
 // Service Worker for offline functionality
-const CACHE_NAME = 'kisan-khata-sahayak-v3';
-const DYNAMIC_CACHE = 'kisan-khata-dynamic-v2';
+const CACHE_NAME = 'kisan-khata-sahayak-v4';
+const DYNAMIC_CACHE = 'kisan-khata-dynamic-v3';
 
 // List of core assets to cache for offline use
 const urlsToCache = [
@@ -15,12 +16,51 @@ const urlsToCache = [
   '/manifest.json'
 ];
 
+// Optimize cache management with improved strategies
+const CACHE_STRATEGIES = {
+  // Network first, falling back to cache
+  NETWORK_FIRST: 'network-first',
+  // Cache first, falling back to network
+  CACHE_FIRST: 'cache-first',
+  // Stale-while-revalidate: return cache then update
+  STALE_WHILE_REVALIDATE: 'stale-while-revalidate'
+};
+
+// Define which strategy to use for different types of requests
+const getStrategyForRequest = (url) => {
+  const urlObj = new URL(url);
+  
+  // For API endpoints, always try network first
+  if (url.includes('/api/')) {
+    return CACHE_STRATEGIES.NETWORK_FIRST;
+  }
+  
+  // For core app assets, prefer cache
+  if (urlsToCache.includes(urlObj.pathname) || 
+      url.match(/\.(js|css|woff2?)$/)) {
+    return CACHE_STRATEGIES.CACHE_FIRST;
+  }
+  
+  // For images, use stale-while-revalidate for a good balance
+  if (url.match(/\.(png|jpe?g|gif|svg|webp)$/)) {
+    return CACHE_STRATEGIES.STALE_WHILE_REVALIDATE;
+  }
+  
+  // Default to network first for everything else
+  return CACHE_STRATEGIES.NETWORK_FIRST;
+};
+
 // Optimize image files if they are being fetched
 const compressImage = async (response) => {
   // Only compress images if we have the capability
   if (self.createImageBitmap && response.headers.get('content-type')?.includes('image')) {
     try {
       const blob = await response.clone().blob();
+      // Skip compression for small images (under 50KB)
+      if (blob.size < 50 * 1024) {
+        return response;
+      }
+      
       const bitmap = await createImageBitmap(blob, {
         resizeWidth: 800, // Limit size to 800px
         resizeQuality: 'medium'
@@ -34,7 +74,7 @@ const compressImage = async (response) => {
       // Convert back to blob with compression
       const compressedBlob = await canvas.convertToBlob({
         type: 'image/webp', // Convert to WebP for better compression
-        quality: 0.8
+        quality: 0.75
       });
       
       // Return the compressed image as a new Response
@@ -75,11 +115,11 @@ self.addEventListener('activate', (event) => {
           return caches.delete(name);
         })
       );
+    }).then(() => {
+      // Take control of all clients as soon as it activates
+      return self.clients.claim();
     })
   );
-  
-  // Take control of all clients as soon as it activates
-  event.waitUntil(self.clients.claim());
 });
 
 // Helper function to determine if a request should be cached
@@ -93,7 +133,82 @@ const shouldCache = (url) => {
   return url.match(/\.(js|css|png|jpg|jpeg|svg|webp|woff2?)$/) || urlsToCache.includes(url);
 };
 
-// Fetch event - serve from cache, fall back to network
+// Handle different caching strategies
+const handleNetworkFirst = async (request) => {
+  try {
+    // Try network first
+    const networkResponse = await fetch(request.clone());
+    
+    // Cache response if valid and caching is appropriate
+    if (networkResponse && networkResponse.status === 200 && shouldCache(request.url)) {
+      const responseToCache = await compressImage(networkResponse.clone());
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, responseToCache);
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    // Fall back to cache if network fails
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) return cachedResponse;
+    
+    // If no cache found, return offline fallback
+    return caches.match('/index.html');
+  }
+};
+
+const handleCacheFirst = async (request) => {
+  // Check cache first
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) return cachedResponse;
+  
+  // Fall back to network
+  try {
+    const networkResponse = await fetch(request.clone());
+    
+    // Cache the response for future use
+    if (networkResponse && networkResponse.status === 200 && shouldCache(request.url)) {
+      const responseToCache = await compressImage(networkResponse.clone());
+      const cache = await caches.open(DYNAMIC_CACHE);
+      cache.put(request, responseToCache);
+    }
+    
+    return networkResponse;
+  } catch (error) {
+    // If both cache and network fail
+    return caches.match('/index.html');
+  }
+};
+
+const handleStaleWhileRevalidate = async (request) => {
+  // Check cache first
+  const cachedResponse = await caches.match(request);
+  
+  // Start fetch request immediately (don't await)
+  const fetchPromise = fetch(request.clone())
+    .then(async (networkResponse) => {
+      if (networkResponse && networkResponse.status === 200 && shouldCache(request.url)) {
+        const responseToCache = await compressImage(networkResponse.clone());
+        const cache = await caches.open(DYNAMIC_CACHE);
+        cache.put(request, responseToCache);
+      }
+      return networkResponse;
+    })
+    .catch(() => {
+      // If fetch fails, we already returned cached version if available
+      console.log('Network request failed, already served from cache');
+    });
+  
+  // Return cached response immediately if available
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+  
+  // If nothing in cache, wait for network
+  return fetchPromise;
+};
+
+// Fetch event - handle with different strategies
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests and requests to external domains
   if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
@@ -109,47 +224,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then(async (response) => {
-        // Return from cache if found
-        if (response) {
-          return response;
-        }
-
-        // Clone the request - request can only be used once
-        const fetchRequest = event.request.clone();
-
-        // Otherwise, fetch from network
-        return fetch(fetchRequest).then(async (response) => {
-          // Don't cache if response is not valid
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          // Try to optimize images if possible
-          const optimizedResponse = await compressImage(response);
-          
-          // Only cache assets that we care about
-          if (shouldCache(event.request.url)) {
-            // Clone the optimized response as it can only be consumed once
-            const responseToCache = optimizedResponse.clone();
-            
-            // Cache the fetched resource
-            caches.open(DYNAMIC_CACHE)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-          }
-
-          return optimizedResponse;
-        }).catch((error) => {
-          console.error('Fetch failed; returning offline page instead.', error);
-          // If fetch fails (e.g., user is offline), return a fallback
-          return caches.match('/index.html');
-        });
-      })
-  );
+  // Determine strategy based on request type
+  const strategy = getStrategyForRequest(event.request.url);
+  
+  // Use appropriate strategy
+  switch (strategy) {
+    case CACHE_STRATEGIES.NETWORK_FIRST:
+      event.respondWith(handleNetworkFirst(event.request));
+      break;
+    case CACHE_STRATEGIES.CACHE_FIRST:
+      event.respondWith(handleCacheFirst(event.request));
+      break;
+    case CACHE_STRATEGIES.STALE_WHILE_REVALIDATE:
+      event.respondWith(handleStaleWhileRevalidate(event.request));
+      break;
+    default:
+      event.respondWith(handleNetworkFirst(event.request));
+  }
 });
 
 // Clean up stale dynamic cache entries periodically
@@ -198,10 +289,9 @@ self.addEventListener('periodicsync', (event) => {
   }
 });
 
+// Handle data sync
 async function syncData() {
-  // This would sync any local data when the user comes back online
   console.log('Background sync triggered');
-  // For truly offline app, this would just save data locally
   
   // Notify the app that sync has occurred
   const clients = await self.clients.matchAll();
@@ -211,9 +301,6 @@ async function syncData() {
       timestamp: Date.now()
     });
   }
+  
+  return true;
 }
-
-// Listen for storage events (like USB drive disconnection)
-self.addEventListener('storage', (event) => {
-  console.log('Storage event in service worker:', event);
-});
