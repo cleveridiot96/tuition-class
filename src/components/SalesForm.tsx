@@ -1,8 +1,10 @@
 
 import React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card } from "@/components/ui/card";
 import SalesFormContent from "./sales-form/SalesFormContent";
 import { useSalesFormLogic } from "./sales-form/useSalesFormLogic";
+import { toast } from "sonner";
 
 // This component only handles the callback and manages separation of logic/content
 interface SalesFormProps {
@@ -43,15 +45,17 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSubmit, initialData, onPrint })
       broker: brokers.find((b) => b.id === formData.brokerId)?.name,
       transporter: transporters.find((t) => t.id === formData.transporterId)?.name
     };
+    
+    toast.success(initialData ? "Sale updated successfully" : "Sale added successfully");
     onSubmit(salesData);
   };
 
   return (
-    <div className="w-full max-w-full mx-auto bg-white rounded-lg shadow-md">
+    <Card className="bg-white border-green-100 shadow-md overflow-hidden">
       <ScrollArea className="h-[calc(100vh-120px)]">
         <div className="p-6 max-w-3xl mx-auto">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-blue-800">{initialData ? 'Edit Sale' : 'Add New Sale'}</h2>
+            <h2 className="text-2xl font-bold text-green-800">{initialData ? 'Edit Sale' : 'Add New Sale'}</h2>
             <p className="text-gray-600 text-sm mt-1">Fill in the sale details</p>
           </div>
           
@@ -75,7 +79,7 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSubmit, initialData, onPrint })
           />
         </div>
       </ScrollArea>
-    </div>
+    </Card>
   );
 };
 

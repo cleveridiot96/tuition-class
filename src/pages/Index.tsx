@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { createPortableVersion } from '@/services/backup/backupService';
 import { toast } from 'sonner';
+import { useHotkeys } from '@/hooks/useHotkeys';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -25,6 +26,18 @@ const Index = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { summaryData, isLoading } = useDashboardData(selectedMonth, selectedYear);
+
+  // Register keyboard shortcuts
+  useHotkeys([
+    { key: 'p', ctrl: true, handler: () => navigate('/purchases') },
+    { key: 's', ctrl: true, handler: () => navigate('/sales') },
+    { key: 'i', ctrl: true, handler: () => navigate('/inventory') },
+    { key: 't', ctrl: true, handler: () => navigate('/location-transfer') },
+    { key: 'h', ctrl: true, handler: () => navigate('/') },
+    { key: 'm', ctrl: true, handler: () => navigate('/master') },
+    { key: 'b', ctrl: true, handler: () => handleCreatePortable() },
+    { key: 'Escape', handler: () => navigate('/') },
+  ]);
 
   const handleFormatClick = () => {
     setShowFormatter(true);
@@ -38,12 +51,14 @@ const Index = () => {
 
   const handleRefreshData = () => {
     setIsRefreshing(true);
+    toast.info("Refreshing data...");
     setTimeout(() => {
       window.location.reload();
     }, 100);
   };
 
   const handleCreatePortable = async () => {
+    toast.info("Creating portable version...");
     const result = await createPortableVersion();
     if (result.success) {
       toast.success("Portable version created", { 
@@ -65,10 +80,10 @@ const Index = () => {
         onFormatClick={handleFormatClick}
       />
 
-      <main className="w-full md:max-w-md mx-auto px-0 md:px-0 py-0">
+      <main className="container mx-auto px-4 py-4">
         {/* Quick Actions - front and center, very tap-friendly */}
-        <section className="w-full px-2 pt-2 md:pt-4">
-          <h2 className="text-lg md:text-2xl font-bold mb-2 md:mb-4 text-blue-800 text-center">
+        <section className="w-full mb-6">
+          <h2 className="text-lg md:text-2xl font-bold mb-4 text-blue-800 text-center">
             Quick Actions
           </h2>
           <div>
@@ -77,27 +92,30 @@ const Index = () => {
         </section>
 
         {/* Backup/Restore Panel - bold & prominent */}
-        <section className="w-full px-2 mt-4">
+        <section className="w-full mb-6">
           <BackupRestoreControls
             onRefresh={handleRefreshData}
             isRefreshing={isRefreshing}
           />
-          <div className="flex flex-col items-stretch md:flex-row md:items-center md:justify-between gap-2 mt-2">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mt-2">
             <Button 
               variant="outline" 
               size="lg"
-              className="w-full md:w-auto flex items-center justify-center gap-2 text-base md:text-lg py-4"
+              className="w-full md:w-auto flex items-center justify-center gap-2 text-base py-4"
               onClick={handleCreatePortable}
             >
               <Download size={20} />
               Export to Portable Version
             </Button>
-            <StorageDebugger />
+            {/* Help text explaining what Storage Manager does */}
+            <div className="text-sm text-gray-600 italic">
+              Storage Manager: View, export, or import app data
+            </div>
           </div>
         </section>
 
         {/* Month Selector */}
-        <section className="w-full px-2 mt-4">
+        <section className="w-full mb-6">
           <MonthSelector 
             selectedMonth={selectedMonth} 
             selectedYear={selectedYear} 
@@ -105,9 +123,9 @@ const Index = () => {
           />
         </section>
         
-        {/* Summary Cards - one column for mobile */}
-        <section className="w-full px-2 mt-4">
-          <div className="grid grid-cols-1 gap-4">
+        {/* Summary Cards - responsive grid */}
+        <section className="w-full mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
               onClick={() => navigate('/sales')}
               className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
@@ -142,7 +160,7 @@ const Index = () => {
         </section>
 
         {/* Profit Section (can be collapsed by user if needed, but always visible by default) */}
-        <section className="w-full px-2 mt-4">
+        <section className="w-full mb-6">
           <ProfitSection 
             selectedMonth={selectedMonth} 
             selectedYear={selectedYear} 
@@ -153,11 +171,9 @@ const Index = () => {
         {showFormatter && (
           <FormatDataHandler onFormatComplete={() => setShowFormatter(false)} />
         )}
-
       </main>
     </div>
   );
 };
 
 export default Index;
-

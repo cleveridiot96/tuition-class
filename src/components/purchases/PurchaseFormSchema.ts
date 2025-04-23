@@ -16,7 +16,8 @@ export const purchaseFormSchema = z.object({
   brokerageType: z.enum(["percentage", "fixed"]).default("percentage"),
   brokerageValue: z.coerce.number().min(0, "Brokerage value cannot be negative").default(1), // Default 1%
   notes: z.string().optional(),
-  billNumber: z.string().optional(),
+  // Making these truly optional
+  billNumber: z.string().optional().or(z.literal("")),
   billAmount: z.coerce.number().optional(),
 });
 

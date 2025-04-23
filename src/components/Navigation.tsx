@@ -9,7 +9,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import DashboardMenu from './DashboardMenu';
+import { menuItems } from './DashboardMenu';
 
 interface NavigationProps {
   title?: string;
@@ -28,7 +28,7 @@ const Navigation: React.FC<NavigationProps> = ({
   rightContent,
   showFormatButton = false,
   onFormatClick,
-  showHomeButton = true // Changed default to true so home button always shows
+  showHomeButton = true
 }) => {
   const navigate = useNavigate();
   
@@ -58,8 +58,22 @@ const Navigation: React.FC<NavigationProps> = ({
               <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                 <h2 className="text-xl font-bold">Kirana Retail</h2>
               </div>
-              <div className="p-4">
-                <DashboardMenu />
+              <div className="p-0">
+                {/* iOS style list menu with icons */}
+                <ul className="divide-y">
+                  {menuItems.map((item) => (
+                    <li key={item.title}>
+                      <Button 
+                        variant="ghost" 
+                        className="w-full flex justify-start items-center p-4 rounded-none hover:bg-gray-100 text-gray-700"
+                        onClick={() => navigate(item.path)}
+                      >
+                        <item.icon size={20} className="mr-4 text-blue-600" />
+                        <span className="text-base">{item.title}</span>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </SheetContent>
           </Sheet>
