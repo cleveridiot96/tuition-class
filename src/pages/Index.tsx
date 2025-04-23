@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -72,59 +71,49 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
       <Navigation 
         title="Kirana Retail" 
         showFormatButton 
         onFormatClick={handleFormatClick}
       />
 
-      <main className="container mx-auto px-4 py-4 animate-fade-in">
-        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
-          <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+      <main className="container mx-auto px-4 py-6 animate-fade-in">
+        <section className="w-full mb-8 transform transition-all duration-500 hover:scale-[1.01]">
+          <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-800 bg-clip-text text-transparent">
             Quick Actions
           </h2>
-          <div className="backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20 shadow-xl">
+          <div className="backdrop-blur-xl bg-white/30 p-8 rounded-xl border border-white/20 shadow-xl">
             <DashboardMenu />
           </div>
         </section>
 
-        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
-          <BackupRestoreControls
-            onRefresh={handleRefreshData}
-            isRefreshing={isRefreshing}
-          />
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mt-2">
-            <GlassmorphismButton 
-              variant="purple"
-              size="lg"
-              className="w-full md:w-auto flex items-center justify-center gap-2 text-base py-4"
-              onClick={handleCreatePortable}
-            >
-              <Download size={20} />
-              Export to Portable Version
-            </GlassmorphismButton>
-            <div className="text-sm text-gray-600 italic">
-              Storage Manager: View, export, or import app data
+        <section className="w-full mb-8">
+          <div className="backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20 shadow-xl mb-8">
+            <BackupRestoreControls
+              onRefresh={handleRefreshData}
+              isRefreshing={isRefreshing}
+            />
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mt-2">
+              <GlassmorphismButton 
+                variant="purple"
+                size="lg"
+                className="w-full md:w-auto flex items-center justify-center gap-2 text-base py-4"
+                onClick={handleCreatePortable}
+              >
+                <Download size={20} />
+                Export to Portable Version
+              </GlassmorphismButton>
+              <div className="text-sm text-gray-600 italic">
+                Storage Manager: View, export, or import app data
+              </div>
             </div>
           </div>
-        </section>
-
-        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
-          <div className="backdrop-blur-xl bg-white/30 p-4 rounded-xl border border-white/20 shadow-xl">
-            <MonthSelector 
-              selectedMonth={selectedMonth} 
-              selectedYear={selectedYear} 
-              onChange={handleMonthChange} 
-            />
-          </div>
-        </section>
         
-        <section className="w-full mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <div
               onClick={() => navigate('/sales')}
-              className="cursor-pointer"
+              className="cursor-pointer transform transition-all duration-300 hover:scale-[1.02]"
             >
               <SalesSummaryCard 
                 amount={summaryData.sales.amount}
@@ -134,7 +123,7 @@ const Index = () => {
             </div>
             <div 
               onClick={() => navigate('/purchases')}
-              className="cursor-pointer"
+              className="cursor-pointer transform transition-all duration-300 hover:scale-[1.02]"
             >
               <PurchaseSummaryCard 
                 amount={summaryData.purchases.amount}
@@ -144,7 +133,7 @@ const Index = () => {
             </div>
             <div 
               onClick={() => navigate('/stock')}
-              className="cursor-pointer"
+              className="cursor-pointer transform transition-all duration-300 hover:scale-[1.02]"
             >
               <StockSummaryCard 
                 mumbai={summaryData.stock.mumbai}
