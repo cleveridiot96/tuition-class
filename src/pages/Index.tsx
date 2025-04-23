@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -17,6 +16,7 @@ import { Download } from 'lucide-react';
 import { createPortableVersion } from '@/services/backup/backupService';
 import { toast } from 'sonner';
 import { useHotkeys } from '@/hooks/useHotkeys';
+import GlassmorphismButton from '@/components/ui/GlassmorphismButton';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -27,7 +27,6 @@ const Index = () => {
   
   const { summaryData, isLoading } = useDashboardData(selectedMonth, selectedYear);
 
-  // Register keyboard shortcuts
   useHotkeys([
     { key: 'p', ctrl: true, handler: () => navigate('/purchases') },
     { key: 's', ctrl: true, handler: () => navigate('/sales') },
@@ -73,7 +72,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-purple-100">
-      {/* Always-visible Navigation bar with hamburger */}
       <Navigation 
         title="Kirana Retail" 
         showFormatButton 
@@ -81,41 +79,37 @@ const Index = () => {
       />
 
       <main className="container mx-auto px-4 py-4">
-        {/* Quick Actions - front and center, very tap-friendly */}
         <section className="w-full mb-6">
-          <h2 className="text-lg md:text-2xl font-bold mb-4 text-blue-800 text-center">
+          <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
             Quick Actions
           </h2>
-          <div>
+          <div className="backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20 shadow-xl">
             <DashboardMenu />
           </div>
         </section>
 
-        {/* Backup/Restore Panel - bold & prominent */}
         <section className="w-full mb-6">
           <BackupRestoreControls
             onRefresh={handleRefreshData}
             isRefreshing={isRefreshing}
           />
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mt-2">
-            <Button 
-              variant="outline" 
+            <GlassmorphismButton 
+              variant="purple"
               size="lg"
               className="w-full md:w-auto flex items-center justify-center gap-2 text-base py-4"
               onClick={handleCreatePortable}
             >
               <Download size={20} />
               Export to Portable Version
-            </Button>
-            {/* Help text explaining what Storage Manager does */}
+            </GlassmorphismButton>
             <div className="text-sm text-gray-600 italic">
               Storage Manager: View, export, or import app data
             </div>
           </div>
         </section>
 
-        {/* Month Selector */}
-        <section className="w-full mb-6">
+        <section className="w-full mb-6 backdrop-blur-xl bg-white/30 p-4 rounded-xl border border-white/20">
           <MonthSelector 
             selectedMonth={selectedMonth} 
             selectedYear={selectedYear} 
@@ -123,7 +117,6 @@ const Index = () => {
           />
         </section>
         
-        {/* Summary Cards - responsive grid */}
         <section className="w-full mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
@@ -159,15 +152,13 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Profit Section (can be collapsed by user if needed, but always visible by default) */}
-        <section className="w-full mb-6">
+        <section className="w-full mb-6 backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20">
           <ProfitSection 
             selectedMonth={selectedMonth} 
             selectedYear={selectedYear} 
           />
         </section>
 
-        {/* Data format Handler (for advanced users; shown if needed) */}
         {showFormatter && (
           <FormatDataHandler onFormatComplete={() => setShowFormatter(false)} />
         )}
