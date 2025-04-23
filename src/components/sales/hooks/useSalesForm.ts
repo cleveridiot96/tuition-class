@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
@@ -138,7 +139,7 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
       };
 
       if (brokerageAmount > 0) {
-        (saleData as any).brokerageAmount = brokerageAmount;
+        saleData.brokerageAmount = brokerageAmount;
       }
 
       await onSubmit(saleData);

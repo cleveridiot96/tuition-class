@@ -1,28 +1,28 @@
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import { KeyboardShortcutsProvider } from './components/KeyboardShortcutsProvider';
+import { optimizedStorage } from '@/services/core/storage-core';
 
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import './styles/global-dropdown-fixes.css'
-import './styles/form-fixes.css'
-import './styles/animations.css'
-import { ToastProvider } from '@/hooks/toast/toast-context'
-import { setupCrashRecovery } from '@/utils/crash/crashDetection'
-import { setupUSBDetection } from '@/utils/storage/usbDetection'
-import RippleProvider from '@/components/RippleProvider'
+// Pre-initialize the optimized storage
+React.useEffect(() => {
+  // Ensure critical data is loaded into memory cache
+  optimizedStorage.get('locations');
+  optimizedStorage.get('customers');
+  optimizedStorage.get('suppliers');
+  optimizedStorage.get('brokers');
+  optimizedStorage.get('agents');
+  optimizedStorage.get('transporters');
+}, []);
 
-// Setup crash recovery system
-setupCrashRecovery();
-
-// Setup USB drive detection if supported
-setupUSBDetection();
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+root.render(
   <React.StrictMode>
-    <ToastProvider>
-      <RippleProvider>
+    <BrowserRouter>
+      <KeyboardShortcutsProvider>
         <App />
-      </RippleProvider>
-    </ToastProvider>
-  </React.StrictMode>,
-)
+      </KeyboardShortcutsProvider>
+    </BrowserRouter>
+  </React.StrictMode>
+);

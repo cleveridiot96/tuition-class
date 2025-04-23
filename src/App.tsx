@@ -20,8 +20,19 @@ import NotFound from '@/pages/NotFound';
 import LocationTransferPage from '@/pages/location-transfer/LocationTransferPage';
 import RippleProvider from '@/components/RippleProvider';
 import './App.css';
+import { KeyboardShortcutsProvider } from '@/components/KeyboardShortcutsProvider';
+import { optimizedStorage } from '@/services/core/storage-core';
 
-function App() {
+const App = () => {
+  React.useEffect(() => {
+    optimizedStorage.get('locations');
+    optimizedStorage.get('customers');
+    optimizedStorage.get('suppliers');
+    optimizedStorage.get('brokers');
+    optimizedStorage.get('agents');
+    optimizedStorage.get('transporters');
+  }, []);
+
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <ErrorBoundary>
@@ -54,6 +65,6 @@ function App() {
       </ErrorBoundary>
     </ThemeProvider>
   );
-}
+};
 
 export default App;

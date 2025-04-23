@@ -8,7 +8,7 @@ export interface FormSummaryProps {
   showBrokerage?: boolean;
   expenses?: number;
   total: number;
-  isSalesForm?: boolean; // Added to differentiate between sales and purchase forms
+  isSalesForm?: boolean; // Used to differentiate between sales and purchase forms
 }
 
 const FormSummary: React.FC<FormSummaryProps> = ({
