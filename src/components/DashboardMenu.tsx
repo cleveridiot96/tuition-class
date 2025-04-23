@@ -1,6 +1,6 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { GlassmorphismButton } from "@/components/ui/glassmorphism-button";
 import { Box, FileText, FileBarChart, Package, RefreshCcw, ArrowLeftRight, Users, DollarSign, BookText } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 
@@ -80,26 +80,19 @@ export const menuItems = [
 const DashboardMenu = () => {
   const navigate = useNavigate();
 
-  const getVariantForIndex = (index: number): 'purple' | 'blue' | 'orange' | 'green' => {
-    const variants: ('purple' | 'blue' | 'orange' | 'green')[] = ['purple', 'blue', 'orange', 'green'];
-    return variants[index % variants.length];
-  };
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {menuItems.map((item, index) => (
-        <GlassmorphismButton
+      {menuItems.map((item) => (
+        <Button
           key={item.title}
-          variant={getVariantForIndex(index)}
-          glowIntensity="medium"
-          size="lg"
-          className="flex flex-col justify-center items-center h-28 w-full"
+          variant="card"
+          className={`md-ripple card-hover flex flex-col justify-center items-center h-28 bg-gradient-to-br ${item.color} hover:shadow-lg text-white`}
           onClick={() => navigate(item.path)}
         >
           <item.icon size={24} className="mb-2" />
           <div className="text-base font-medium">{item.title}</div>
           <div className="text-xs opacity-80 text-center">{item.description}</div>
-        </GlassmorphismButton>
+        </Button>
       ))}
     </div>
   );

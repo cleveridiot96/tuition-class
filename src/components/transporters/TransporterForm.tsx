@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
 import { Transporter } from '@/services/types';
-import { GlassmorphismButton } from '@/components/ui/glassmorphism-button';
 
 interface TransporterFormProps {
   onTransporterAdded: (transporter: Transporter) => void;
@@ -17,7 +17,7 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onTransporterAdded, o
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: initialValues?.name || '',
-    vehicleDetails: initialValues?.vehicleDetails || '',
+    address: initialValues?.address || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,7 +44,7 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onTransporterAdded, o
       const newTransporter: Transporter = {
         id: initialValues?.id || uuidv4(),
         name: formData.name.trim(),
-        vehicleDetails: formData.vehicleDetails,
+        address: formData.address,
         balance: initialValues?.balance || 0,
       };
 
@@ -80,23 +80,23 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onTransporterAdded, o
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="vehicleDetails">Vehicle Details</Label>
+        <Label htmlFor="address">Address</Label>
         <textarea
-          id="vehicleDetails"
-          name="vehicleDetails"
-          value={formData.vehicleDetails}
+          id="address"
+          name="address"
+          value={formData.address}
           onChange={handleChange}
-          placeholder="Enter vehicle details (optional)"
+          placeholder="Enter address (optional)"
           className="w-full min-h-[80px] p-2 border rounded-md"
         />
       </div>
       <div className="flex justify-end space-x-2">
-        <GlassmorphismButton type="button" variant="blue" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </GlassmorphismButton>
-        <GlassmorphismButton type="submit" variant="green" disabled={isSubmitting}>
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : initialValues ? "Update Transporter" : "Add Transporter"}
-        </GlassmorphismButton>
+        </Button>
       </div>
     </form>
   );

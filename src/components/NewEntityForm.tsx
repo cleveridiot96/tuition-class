@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
@@ -12,7 +13,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { GlassmorphismButton } from '@/components/ui/glassmorphism-button';
 
 interface Field {
   name: string;
@@ -141,9 +141,9 @@ const NewEntityForm = ({ onSubmit, fields, initialData }: NewEntityFormProps) =>
           />
         ))}
         <div className="flex justify-end">
-          <GlassmorphismButton type="submit" variant="purple">
+          <Button type="submit">
             {initialData ? 'Update' : 'Add'}
-          </GlassmorphismButton>
+          </Button>
         </div>
       </form>
     </Form>

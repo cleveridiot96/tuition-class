@@ -5,13 +5,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Broker } from "@/services/types";
-import { GlassmorphismButton } from "@/components/ui/glassmorphism-button";
 
 const formSchema = z.object({
   name: z.string().min(1, "Broker name is required"),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email("Invalid email").optional().or(z.literal('')),
   commissionRate: z.number().min(0).optional(),
 });
 
@@ -34,6 +38,9 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: initialData?.name || "",
+      address: initialData?.address || "",
+      phone: initialData?.phone || "",
+      email: initialData?.email || "",
       commissionRate: initialData?.commissionRate || 0,
     },
   });
@@ -46,6 +53,9 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
       const newBroker: Broker = {
         id: initialData?.id || uuidv4(),
         name: data.name, // This is now guaranteed to be a string due to the form schema
+        address: data.address,
+        phone: data.phone,
+        email: data.email,
         commissionRate: data.commissionRate,
         balance: initialData?.balance || 0,
       };
@@ -69,6 +79,26 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
       </div>
 
       <div>
+        <Label htmlFor="address">Address</Label>
+        <Textarea id="address" {...register("address")} />
+        {errors.address && <p className="text-red-500 text-sm">{errors.address.message}</p>}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="phone">Phone</Label>
+          <Input id="phone" {...register("phone")} />
+          {errors.phone && <p className="text-red-500 text-sm">{errors.phone.message}</p>}
+        </div>
+        
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input id="email" {...register("email")} />
+          {errors.email && <p className="text-red-500 text-sm">{errors.email.message}</p>}
+        </div>
+      </div>
+
+      <div>
         <Label htmlFor="commissionRate">Commission Rate (%)</Label>
         <Input
           id="commissionRate"
@@ -82,14 +112,14 @@ const BrokerForm: React.FC<BrokerFormProps> = ({ onBrokerAdded, onCancel, initia
       </div>
 
       <div className="flex justify-end space-x-2">
-        <GlassmorphismButton type="button" variant="blue" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </GlassmorphismButton>
-        <GlassmorphismButton type="submit" variant="orange" disabled={isSubmitting}>
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting 
             ? (initialData ? "Updating..." : "Adding...") 
             : (initialData ? "Update Broker" : "Add Broker")}
-        </GlassmorphismButton>
+        </Button>
       </div>
     </form>
   );

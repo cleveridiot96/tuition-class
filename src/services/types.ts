@@ -38,6 +38,9 @@ export interface EnhancedInventoryItem extends InventoryItem {
 export interface Agent {
   id: string;
   name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   balance?: number;
   commissionRate?: number;
   isDeleted?: boolean;
@@ -47,6 +50,9 @@ export interface Agent {
 export interface Supplier {
   id: string;
   name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   balance?: number;
   isDeleted?: boolean;
 }
@@ -55,6 +61,9 @@ export interface Supplier {
 export interface Customer {
   id: string;
   name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   balance?: number;
   isDeleted?: boolean;
 }
@@ -63,6 +72,9 @@ export interface Customer {
 export interface Broker {
   id: string;
   name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   balance?: number;
   commissionRate?: number;
   isDeleted?: boolean;
@@ -72,7 +84,9 @@ export interface Broker {
 export interface Transporter {
   id: string;
   name: string;
-  vehicleDetails?: string;
+  address?: string;
+  phone?: string;
+  vehicleNumber?: string;
   balance?: number;
   isDeleted?: boolean;
 }

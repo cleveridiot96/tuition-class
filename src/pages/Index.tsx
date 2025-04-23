@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -16,7 +17,6 @@ import { Download } from 'lucide-react';
 import { createPortableVersion } from '@/services/backup/backupService';
 import { toast } from 'sonner';
 import { useHotkeys } from '@/hooks/useHotkeys';
-import { GlassmorphismButton } from '@/components/ui/glassmorphism-button';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ const Index = () => {
   
   const { summaryData, isLoading } = useDashboardData(selectedMonth, selectedYear);
 
+  // Register keyboard shortcuts
   useHotkeys([
     { key: 'p', ctrl: true, handler: () => navigate('/purchases') },
     { key: 's', ctrl: true, handler: () => navigate('/sales') },
@@ -71,49 +72,63 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
+    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-purple-100">
+      {/* Always-visible Navigation bar with hamburger */}
       <Navigation 
         title="Kirana Retail" 
         showFormatButton 
         onFormatClick={handleFormatClick}
       />
 
-      <main className="container mx-auto px-4 py-6 animate-fade-in">
-        <section className="w-full mb-8 transform transition-all duration-500 hover:scale-[1.01]">
-          <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-gray-700 via-gray-600 to-gray-800 bg-clip-text text-transparent">
+      <main className="container mx-auto px-4 py-4">
+        {/* Quick Actions - front and center, very tap-friendly */}
+        <section className="w-full mb-6">
+          <h2 className="text-lg md:text-2xl font-bold mb-4 text-blue-800 text-center">
             Quick Actions
           </h2>
-          <div className="backdrop-blur-xl bg-white/30 p-8 rounded-xl border border-white/20 shadow-xl">
+          <div>
             <DashboardMenu />
           </div>
         </section>
 
-        <section className="w-full mb-8">
-          <div className="backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20 shadow-xl mb-8">
-            <BackupRestoreControls
-              onRefresh={handleRefreshData}
-              isRefreshing={isRefreshing}
-            />
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mt-2">
-              <GlassmorphismButton 
-                variant="purple"
-                size="lg"
-                className="w-full md:w-auto flex items-center justify-center gap-2 text-base py-4"
-                onClick={handleCreatePortable}
-              >
-                <Download size={20} />
-                Export to Portable Version
-              </GlassmorphismButton>
-              <div className="text-sm text-gray-600 italic">
-                Storage Manager: View, export, or import app data
-              </div>
+        {/* Backup/Restore Panel - bold & prominent */}
+        <section className="w-full mb-6">
+          <BackupRestoreControls
+            onRefresh={handleRefreshData}
+            isRefreshing={isRefreshing}
+          />
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mt-2">
+            <Button 
+              variant="outline" 
+              size="lg"
+              className="w-full md:w-auto flex items-center justify-center gap-2 text-base py-4"
+              onClick={handleCreatePortable}
+            >
+              <Download size={20} />
+              Export to Portable Version
+            </Button>
+            {/* Help text explaining what Storage Manager does */}
+            <div className="text-sm text-gray-600 italic">
+              Storage Manager: View, export, or import app data
             </div>
           </div>
+        </section>
+
+        {/* Month Selector */}
+        <section className="w-full mb-6">
+          <MonthSelector 
+            selectedMonth={selectedMonth} 
+            selectedYear={selectedYear} 
+            onChange={handleMonthChange} 
+          />
+        </section>
         
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Summary Cards - responsive grid */}
+        <section className="w-full mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
               onClick={() => navigate('/sales')}
-              className="cursor-pointer transform transition-all duration-300 hover:scale-[1.02]"
+              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
             >
               <SalesSummaryCard 
                 amount={summaryData.sales.amount}
@@ -123,7 +138,7 @@ const Index = () => {
             </div>
             <div 
               onClick={() => navigate('/purchases')}
-              className="cursor-pointer transform transition-all duration-300 hover:scale-[1.02]"
+              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
             >
               <PurchaseSummaryCard 
                 amount={summaryData.purchases.amount}
@@ -133,7 +148,7 @@ const Index = () => {
             </div>
             <div 
               onClick={() => navigate('/stock')}
-              className="cursor-pointer transform transition-all duration-300 hover:scale-[1.02]"
+              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
             >
               <StockSummaryCard 
                 mumbai={summaryData.stock.mumbai}
@@ -144,15 +159,15 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
-          <div className="backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20 shadow-xl">
-            <ProfitSection 
-              selectedMonth={selectedMonth} 
-              selectedYear={selectedYear} 
-            />
-          </div>
+        {/* Profit Section (can be collapsed by user if needed, but always visible by default) */}
+        <section className="w-full mb-6">
+          <ProfitSection 
+            selectedMonth={selectedMonth} 
+            selectedYear={selectedYear} 
+          />
         </section>
 
+        {/* Data format Handler (for advanced users; shown if needed) */}
         {showFormatter && (
           <FormatDataHandler onFormatComplete={() => setShowFormatter(false)} />
         )}

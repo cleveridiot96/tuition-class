@@ -17,35 +17,34 @@ const StockSummaryCard: React.FC<StockSummaryCardProps> = ({
   const totalBags = mumbai + chiplun + sawantwadi;
   
   return (
-    <div className="h-full relative overflow-hidden rounded-lg bg-gradient-to-br from-rose-400/20 via-pink-400/20 to-red-400/20 backdrop-blur-xl border border-rose-400/30 shadow-lg hover:shadow-rose-400/20 transition-all duration-500 hover:-translate-y-1">
-      <div className="absolute inset-0 bg-gradient-to-br from-rose-400/10 to-red-400/10 animate-pulse"></div>
-      <CardHeader className="pb-2 flex flex-row items-center justify-between relative z-10">
-        <CardTitle className="text-xl font-bold bg-gradient-to-r from-rose-400 to-red-500 bg-clip-text text-transparent">Stock Summary</CardTitle>
-        <Package className="h-6 w-6 text-rose-400" />
+    <Card className="h-full bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 shadow-sm hover:shadow-md transition-shadow">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between bg-gradient-to-r from-amber-200 to-amber-100 border-b border-amber-200">
+        <CardTitle className="text-lg font-semibold text-amber-800">Stock</CardTitle>
+        <Package className="h-5 w-5 text-amber-600" />
       </CardHeader>
-      <CardContent className="pt-4 relative z-10">
-        <div className="space-y-4">
+      <CardContent className="pt-4">
+        <div className="space-y-3">
           <div>
-            <p className="text-base text-rose-300 font-medium">Total Bags</p>
-            <p className="text-3xl font-bold text-rose-400">{totalBags.toLocaleString()}</p>
+            <p className="text-sm text-amber-700">Total Bags</p>
+            <p className="text-2xl font-bold text-amber-800">{totalBags.toLocaleString()}</p>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-rose-400/5 p-2 rounded-md border border-rose-400/10 hover:bg-rose-400/10 transition-colors">
-              <p className="text-sm text-rose-300 font-medium">Mumbai</p>
-              <p className="text-lg font-bold text-rose-400">{mumbai}</p>
+          <div className="grid grid-cols-3 gap-1">
+            <div className="bg-amber-50 p-1.5 rounded-md">
+              <p className="text-xs text-amber-600">Mumbai</p>
+              <p className="text-sm font-semibold text-amber-700">{mumbai}</p>
             </div>
-            <div className="bg-rose-400/5 p-2 rounded-md border border-rose-400/10 hover:bg-rose-400/10 transition-colors">
-              <p className="text-sm text-rose-300 font-medium">Chiplun</p>
-              <p className="text-lg font-bold text-rose-400">{chiplun}</p>
+            <div className="bg-amber-50 p-1.5 rounded-md">
+              <p className="text-xs text-amber-600">Chiplun</p>
+              <p className="text-sm font-semibold text-amber-700">{chiplun}</p>
             </div>
-            <div className="bg-rose-400/5 p-2 rounded-md border border-rose-400/10 hover:bg-rose-400/10 transition-colors">
-              <p className="text-sm text-rose-300 font-medium">Sawantwadi</p>
-              <p className="text-lg font-bold text-rose-400">{sawantwadi}</p>
+            <div className="bg-amber-50 p-1.5 rounded-md">
+              <p className="text-xs text-amber-600">Sawantwadi</p>
+              <p className="text-sm font-semibold text-amber-700">{sawantwadi}</p>
             </div>
           </div>
         </div>
       </CardContent>
-    </div>
+    </Card>
   );
 };
 

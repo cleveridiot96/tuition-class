@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { v4 as uuidv4 } from 'uuid';
 import { Agent } from '@/services/types';
-import { GlassmorphismButton } from '@/components/ui/glassmorphism-button';
 
 interface AgentFormProps {
   onAgentAdded: (agent: Agent) => void;
@@ -17,6 +17,7 @@ const AgentForm: React.FC<AgentFormProps> = ({ onAgentAdded, onCancel, initialVa
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: initialValues?.name || '',
+    address: initialValues?.address || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,6 +44,7 @@ const AgentForm: React.FC<AgentFormProps> = ({ onAgentAdded, onCancel, initialVa
       const newAgent: Agent = {
         id: initialValues?.id || uuidv4(),
         name: formData.name.trim(),
+        address: formData.address,
         balance: initialValues?.balance || 0,
       };
 
@@ -77,13 +79,24 @@ const AgentForm: React.FC<AgentFormProps> = ({ onAgentAdded, onCancel, initialVa
           required
         />
       </div>
+      <div className="space-y-2">
+        <Label htmlFor="address">Address</Label>
+        <textarea
+          id="address"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          placeholder="Enter address (optional)"
+          className="w-full min-h-[80px] p-2 border rounded-md"
+        />
+      </div>
       <div className="flex justify-end space-x-2">
-        <GlassmorphismButton type="button" variant="blue" onClick={onCancel}>
+        <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
-        </GlassmorphismButton>
-        <GlassmorphismButton type="submit" variant="purple" disabled={isSubmitting}>
+        </Button>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : initialValues ? "Update Agent" : "Add Agent"}
-        </GlassmorphismButton>
+        </Button>
       </div>
     </form>
   );

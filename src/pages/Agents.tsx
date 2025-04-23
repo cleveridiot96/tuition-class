@@ -15,7 +15,8 @@ const Agents = () => {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<Omit<Agent, "id" | "balance">>({
-    name: ""
+    name: "",
+    address: ""
   });
 
   // Load agents on component mount
@@ -52,7 +53,8 @@ const Agents = () => {
     });
     
     setFormData({
-      name: ""
+      name: "",
+      address: ""
     });
     
     setShowForm(false);
@@ -84,6 +86,10 @@ const Agents = () => {
                     <h3 className="text-2xl font-bold">{agent.name}</h3>
                   </div>
                   <div className="grid grid-cols-1 gap-2">
+                    <div>
+                      <p className="font-semibold">पता (Address):</p>
+                      <p>{agent.address}</p>
+                    </div>
                     <div className={`mt-2 p-2 rounded-md ${
                       agent.balance > 0 
                         ? "bg-green-100" 
@@ -130,6 +136,19 @@ const Agents = () => {
                     name="name"
                     placeholder="Agent name"
                     value={formData.name}
+                    onChange={handleChange}
+                    className="text-lg p-6"
+                    required
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <Label htmlFor="address" className="form-label">पता (Address)</Label>
+                  <Input
+                    id="address"
+                    name="address"
+                    placeholder="Address"
+                    value={formData.address}
                     onChange={handleChange}
                     className="text-lg p-6"
                     required

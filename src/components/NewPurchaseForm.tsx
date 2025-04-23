@@ -1,9 +1,9 @@
 
 import React from 'react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { GlassmorphismButton } from '@/components/ui/glassmorphism-button';
 
 interface FormField {
   name: string;
@@ -74,9 +74,9 @@ const NewPurchaseForm = ({
           )}
         </div>
       ))}
-      <GlassmorphismButton type="submit" variant="purple" className="w-full">
+      <Button type="submit" className="w-full">
         {initialData ? 'Update' : 'Add'} Purchase
-      </GlassmorphismButton>
+      </Button>
     </form>
   );
 };

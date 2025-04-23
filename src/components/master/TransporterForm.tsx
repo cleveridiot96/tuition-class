@@ -1,14 +1,16 @@
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { GlassmorphismButton } from "@/components/ui/glassmorphism-button";
 
 const transporterSchema = z.object({
   name: z.string().min(1, "Transporter name is required"),
+  address: z.string().optional(),
+  phone: z.string().optional(),
   vehicleDetails: z.string().optional(),
 });
 
@@ -24,11 +26,14 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onClose, initialData 
     resolver: zodResolver(transporterSchema),
     defaultValues: {
       name: initialData?.name || "",
+      address: initialData?.address || "",
+      phone: initialData?.phone || "",
       vehicleDetails: initialData?.vehicleDetails || "",
     },
   });
 
   const onSubmit = (data: TransporterFormValues) => {
+    // Placeholder for transporter form submission
     console.log("Transporter form data:", data);
     onClose();
   };
@@ -50,6 +55,30 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onClose, initialData 
         />
         <FormField
           control={form.control}
+          name="address"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Address</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Phone</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
           name="vehicleDetails"
           render={({ field }) => (
             <FormItem>
@@ -61,8 +90,8 @@ const TransporterForm: React.FC<TransporterFormProps> = ({ onClose, initialData 
           )}
         />
         <div className="flex justify-end space-x-2">
-          <GlassmorphismButton type="button" variant="blue" onClick={onClose}>Cancel</GlassmorphismButton>
-          <GlassmorphismButton type="submit" variant="green">Save</GlassmorphismButton>
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit">Save</Button>
         </div>
       </form>
     </Form>
