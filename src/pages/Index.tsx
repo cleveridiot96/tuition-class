@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
@@ -71,16 +72,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-purple-100">
+    <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       <Navigation 
         title="Kirana Retail" 
         showFormatButton 
         onFormatClick={handleFormatClick}
       />
 
-      <main className="container mx-auto px-4 py-4">
-        <section className="w-full mb-6">
-          <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+      <main className="container mx-auto px-4 py-4 animate-fade-in">
+        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
+          <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
             Quick Actions
           </h2>
           <div className="backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20 shadow-xl">
@@ -88,7 +89,7 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="w-full mb-6">
+        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
           <BackupRestoreControls
             onRefresh={handleRefreshData}
             isRefreshing={isRefreshing}
@@ -109,19 +110,21 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="w-full mb-6 backdrop-blur-xl bg-white/30 p-4 rounded-xl border border-white/20">
-          <MonthSelector 
-            selectedMonth={selectedMonth} 
-            selectedYear={selectedYear} 
-            onChange={handleMonthChange} 
-          />
+        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
+          <div className="backdrop-blur-xl bg-white/30 p-4 rounded-xl border border-white/20 shadow-xl">
+            <MonthSelector 
+              selectedMonth={selectedMonth} 
+              selectedYear={selectedYear} 
+              onChange={handleMonthChange} 
+            />
+          </div>
         </section>
         
         <section className="w-full mb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
               onClick={() => navigate('/sales')}
-              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
+              className="cursor-pointer"
             >
               <SalesSummaryCard 
                 amount={summaryData.sales.amount}
@@ -131,7 +134,7 @@ const Index = () => {
             </div>
             <div 
               onClick={() => navigate('/purchases')}
-              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
+              className="cursor-pointer"
             >
               <PurchaseSummaryCard 
                 amount={summaryData.purchases.amount}
@@ -141,7 +144,7 @@ const Index = () => {
             </div>
             <div 
               onClick={() => navigate('/stock')}
-              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
+              className="cursor-pointer"
             >
               <StockSummaryCard 
                 mumbai={summaryData.stock.mumbai}
@@ -152,11 +155,13 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="w-full mb-6 backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20">
-          <ProfitSection 
-            selectedMonth={selectedMonth} 
-            selectedYear={selectedYear} 
-          />
+        <section className="w-full mb-6 transform transition-all duration-500 hover:scale-[1.01]">
+          <div className="backdrop-blur-xl bg-white/30 p-6 rounded-xl border border-white/20 shadow-xl">
+            <ProfitSection 
+              selectedMonth={selectedMonth} 
+              selectedYear={selectedYear} 
+            />
+          </div>
         </section>
 
         {showFormatter && (
