@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
-import { refreshCw, Download, Upload, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Download, Upload, AlertTriangle } from 'lucide-react';
 import { toast } from "sonner";
 import { exportDataBackup, importDataBackup } from '@/services/storageService';
 import { useHotkeys, showAvailableShortcuts } from '@/hooks/useHotkeys';
@@ -121,7 +121,7 @@ const BackupRestoreControls: React.FC<BackupRestoreControlsProps> = ({
           disabled={isRefreshing}
           className="flex items-center justify-center gap-2 py-4 border-blue-200"
         >
-          <refreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
           Refresh Data
         </Button>
         

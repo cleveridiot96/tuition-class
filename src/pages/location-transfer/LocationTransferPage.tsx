@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { getInventory, getLocations, updateInventory } from '@/services/storageService';
+import { getInventory, getLocations, updateInventoryItem } from '@/services/storageService';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useHotkeys } from '@/hooks/useHotkeys';
 
@@ -22,7 +21,6 @@ const LocationTransferPage = () => {
   const [filteredInventory, setFilteredInventory] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Register hotkeys
   useHotkeys([
     { key: 'Enter', handler: () => handleTransfer(), description: 'Submit transfer' },
     { key: 'Escape', handler: () => resetForm(), description: 'Reset form' }
@@ -94,7 +92,6 @@ const LocationTransferPage = () => {
         return;
       }
 
-      // Find if item already exists in target location
       const existingTargetItem = inventory.find(item => 
         item.lotNumber === sourceItem.lotNumber && 
         item.location === targetLocation
@@ -102,14 +99,12 @@ const LocationTransferPage = () => {
 
       const updatedInventory = [...inventory];
       
-      // Update source item
       const sourceIndex = updatedInventory.findIndex(item => item.id === selectedItem);
       updatedInventory[sourceIndex] = {
         ...updatedInventory[sourceIndex],
         quantity: updatedInventory[sourceIndex].quantity - quantity
       };
 
-      // Update or create target item
       if (existingTargetItem) {
         const targetIndex = updatedInventory.findIndex(item => item.id === existingTargetItem.id);
         updatedInventory[targetIndex] = {
@@ -126,15 +121,19 @@ const LocationTransferPage = () => {
         updatedInventory.push(newTargetItem);
       }
 
-      // Save updated inventory
-      updateInventory(updatedInventory);
+      updatedInventory.forEach(item => {
+        const originalItem = inventory.find(i => i.id === item.id);
+        if (originalItem && JSON.stringify(originalItem) !== JSON.stringify(item)) {
+          updateInventoryItem(item);
+        }
+      });
+      
       setInventory(updatedInventory);
       
       toast.success('Inventory transfer completed', {
         description: `${quantity} units of ${sourceItem.lotNumber} moved from ${sourceLocation} to ${targetLocation}`
       });
 
-      // Reset form fields
       setSelectedItem('');
       setQuantity(1);
       
@@ -163,7 +162,6 @@ const LocationTransferPage = () => {
           <CardContent className="p-6">
             <ScrollArea className="h-[calc(100vh-200px)]">
               <div className="space-y-6 max-w-2xl mx-auto">
-                {/* Search Box */}
                 <div className="mb-6">
                   <Label htmlFor="search" className="text-lg font-medium">Search Inventory</Label>
                   <Input
@@ -176,7 +174,6 @@ const LocationTransferPage = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Source Location */}
                   <div>
                     <Label htmlFor="source-location" className="text-lg font-medium">Source Location</Label>
                     <Select
@@ -194,7 +191,6 @@ const LocationTransferPage = () => {
                     </Select>
                   </div>
                   
-                  {/* Target Location */}
                   <div>
                     <Label htmlFor="target-location" className="text-lg font-medium">Target Location</Label>
                     <Select
@@ -213,7 +209,6 @@ const LocationTransferPage = () => {
                   </div>
                 </div>
                 
-                {/* Item Selection */}
                 <div>
                   <Label htmlFor="item-select" className="text-lg font-medium">Select Item</Label>
                   <Select
@@ -240,7 +235,6 @@ const LocationTransferPage = () => {
                   </Select>
                 </div>
                 
-                {/* Quantity Input */}
                 <div>
                   <Label htmlFor="quantity" className="text-lg font-medium">
                     Quantity {availableQuantity > 0 && `(Available: ${availableQuantity})`}
@@ -257,7 +251,6 @@ const LocationTransferPage = () => {
                   />
                 </div>
                 
-                {/* Transfer Button */}
                 <div className="flex justify-center pt-4">
                   <Button 
                     onClick={handleTransfer}
@@ -269,7 +262,6 @@ const LocationTransferPage = () => {
                   </Button>
                 </div>
 
-                {/* Help Text */}
                 <div className="mt-4 text-sm text-gray-600 bg-purple-50 p-4 rounded-lg">
                   <p className="font-medium mb-2">Quick Guide:</p>
                   <ol className="list-decimal ml-5 space-y-1">

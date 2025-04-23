@@ -8,7 +8,11 @@ import PartySelector from "./PartySelector";
 import BrokerSelector from "./BrokerSelector";
 import { PurchaseDetailsProps } from "../types/PurchaseTypes";
 
-const PurchaseDetails: React.FC<PurchaseDetailsProps> = ({ form, locations, partyManagement }) => {
+interface ExtendedPurchaseDetailsProps extends PurchaseDetailsProps {
+  partyManagement: any;
+}
+
+const PurchaseDetails: React.FC<ExtendedPurchaseDetailsProps> = ({ form, locations, partyManagement }) => {
   return (
     <FormRow columns={2}>
       <PartySelector form={form} partyManagement={partyManagement} />
