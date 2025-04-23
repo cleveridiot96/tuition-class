@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
@@ -93,7 +92,6 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     return subtotal * (brokerageRate / 100);
   };
 
-  // Calculate total without brokerage (per requirements)
   const calculateTotal = () => {
     if (formState.billAmount && parseFloat(formState.billAmount) > 0) {
       return parseFloat(formState.billAmount);
@@ -101,7 +99,6 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     
     const subtotal = calculateSubtotal();
     const transportCost = parseFloat(formState.transportCost || '0');
-    // Note: Brokerage is not included in total per requirements
     return subtotal + transportCost;
   };
 
@@ -133,13 +130,16 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
         location: formState.location,
         totalAmount: calculateTotal(),
         transportCost: parseFloat(formState.transportCost || '0'),
-        brokerageAmount: brokerageAmount,
         billNumber: formState.billNumber,
         billAmount: billAmount,
         items: formState.items,
         notes: formState.notes,
         bags: formState.bags || 0
       };
+
+      if (brokerageAmount > 0) {
+        (saleData as any).brokerageAmount = brokerageAmount;
+      }
 
       await onSubmit(saleData);
       toast({

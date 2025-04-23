@@ -135,6 +135,7 @@ export interface Sale {
   billNumber?: string;
   billAmount?: number;
   amount?: number;
+  brokerageAmount?: number; // Added this property
 }
 
 // Adding Payment type
