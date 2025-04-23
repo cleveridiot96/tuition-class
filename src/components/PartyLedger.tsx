@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -82,8 +83,8 @@ const PartyLedger: React.FC = () => {
       
       const partyPurchases = purchases.filter(
         (purchase) => !purchase.isDeleted && 
-        ((partyType === 'supplier' && purchase.partyId === partyId) || 
-         (partyType === 'broker' && purchase.brokerId === partyId) ||
+        ((partyType === 'supplier' && purchase.party === partyId) || 
+         (partyType === 'broker' && purchase.broker === partyId) ||
          (partyType === 'agent' && purchase.agentId === partyId))
       );
       

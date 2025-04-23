@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -21,7 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { InventoryItem } from '@/services/types';
-import { getInventory, updateInventoryAfterTransfer } from '@/services/storageService';
+import { getInventory, updateInventoryAfterTransfer } from '@/services/inventoryService';
 import { useToast } from "@/hooks/use-toast";
 import { EnhancedSearchableSelect } from '@/components/ui/enhanced-select';
 
@@ -97,7 +98,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
         return;
       }
 
-      // Update inventory
+      // Update inventory using the imported function
       const updatedInventory = updateInventoryAfterTransfer(inventory, itemId, quantity, fromLocation, toLocation);
       setInventory(updatedInventory);
 

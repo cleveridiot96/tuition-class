@@ -151,3 +151,71 @@ export const updateInventoryAfterSale = (sale: Sale): void => {
 export const saveInventory = (inventory: InventoryItem[]): void => {
   saveStorageItem('inventory', inventory);
 };
+
+// Add the missing function for inventory transfers
+export const updateInventoryAfterTransfer = (
+  inventory: InventoryItem[], 
+  itemId: string, 
+  quantity: number, 
+  fromLocation: string, 
+  toLocation: string
+): InventoryItem[] => {
+  // Find the source item
+  const sourceItemIndex = inventory.findIndex(item => 
+    item.id === itemId && item.location === fromLocation
+  );
+  
+  if (sourceItemIndex === -1) {
+    toast.error(`Item not found in ${fromLocation}`);
+    return inventory;
+  }
+  
+  const sourceItem = inventory[sourceItemIndex];
+  
+  // Check if there's enough quantity
+  if ((sourceItem.remainingQuantity || 0) < quantity) {
+    toast.error(`Not enough quantity available in ${fromLocation}`);
+    return inventory;
+  }
+  
+  // Update source item
+  const updatedSourceItem = {
+    ...sourceItem,
+    remainingQuantity: (sourceItem.remainingQuantity || sourceItem.quantity) - quantity
+  };
+  
+  // Check if destination already has this item
+  const destItemIndex = inventory.findIndex(item => 
+    item.lotNumber === sourceItem.lotNumber && 
+    item.location === toLocation &&
+    !item.isDeleted
+  );
+  
+  const result = [...inventory];
+  result[sourceItemIndex] = updatedSourceItem;
+  
+  if (destItemIndex !== -1) {
+    // Update existing destination item
+    const destItem = result[destItemIndex];
+    result[destItemIndex] = {
+      ...destItem,
+      remainingQuantity: (destItem.remainingQuantity || destItem.quantity) + quantity
+    };
+  } else {
+    // Create new inventory entry for the destination
+    result.push({
+      id: uuidv4(),
+      lotNumber: sourceItem.lotNumber,
+      quantity,
+      remainingQuantity: quantity,
+      location: toLocation,
+      dateAdded: new Date().toISOString(),
+      purchaseId: sourceItem.purchaseId,
+      netWeight: sourceItem.netWeight ? (sourceItem.netWeight / sourceItem.quantity) * quantity : undefined,
+      rate: sourceItem.rate,
+      transferredFrom: fromLocation
+    });
+  }
+  
+  return result;
+};
