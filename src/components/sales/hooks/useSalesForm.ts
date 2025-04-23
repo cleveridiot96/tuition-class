@@ -30,7 +30,7 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     customerId: initialSale?.customerId || '',
     brokerId: initialSale?.brokerId || '',
     transporterId: initialSale?.transporterId || '',
-    transportCost: initialSale?.transportCost?.toString() || '0',
+    transportCost: initialSale?.transportCost?.toString() || '',
     billNumber: initialSale?.billNumber || '',
     billAmount: initialSale?.billAmount?.toString() || '',
     items: initialSale?.items || [{ name: '', quantity: 0, rate: 0 }],
@@ -79,20 +79,30 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
   };
 
   const calculateSubtotal = () => {
-    return formState.items.reduce((total, item) => total + (item.quantity * item.rate), 0);
+    return formState.items.reduce((total, item) => {
+      const quantity = Number(item.quantity) || 0;
+      const rate = Number(item.rate) || 0;
+      return total + (quantity * rate);
+    }, 0);
   };
 
   const calculateBrokerageAmount = () => {
     if (!selectedBroker) return 0;
-    return calculateSubtotal() * (selectedBroker.commissionRate / 100);
+    const subtotal = calculateSubtotal();
+    const brokerageRate = selectedBroker.commissionRate || 0;
+    return subtotal * (brokerageRate / 100);
   };
 
+  // Calculate total without brokerage (per requirements)
   const calculateTotal = () => {
     if (formState.billAmount && parseFloat(formState.billAmount) > 0) {
       return parseFloat(formState.billAmount);
     }
     
-    return calculateSubtotal() + parseFloat(formState.transportCost || '0') + calculateBrokerageAmount();
+    const subtotal = calculateSubtotal();
+    const transportCost = parseFloat(formState.transportCost || '0');
+    // Note: Brokerage is not included in total per requirements
+    return subtotal + transportCost;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,6 +113,9 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
       const billAmount = formState.billNumber && formState.billAmount 
         ? parseFloat(formState.billAmount) 
         : 0;
+      
+      const brokerageAmount = calculateBrokerageAmount();
+      const subtotal = calculateSubtotal();
 
       const saleData: Sale = {
         id: initialSale?.id || uuidv4(),
@@ -114,12 +127,13 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
         broker: selectedBroker?.name,
         transporterId: formState.transporterId || undefined,
         transporter: '',  // Will be set by the component
-        quantity: formState.items.reduce((sum, item) => sum + item.quantity, 0),
-        netWeight: formState.items.reduce((sum, item) => sum + item.quantity, 0),
-        rate: formState.items[0]?.rate || 0,
+        quantity: formState.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+        netWeight: formState.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+        rate: Number(formState.items[0]?.rate || 0),
         location: formState.location,
         totalAmount: calculateTotal(),
-        transportCost: parseFloat(formState.transportCost),
+        transportCost: parseFloat(formState.transportCost || '0'),
+        brokerageAmount: brokerageAmount,
         billNumber: formState.billNumber,
         billAmount: billAmount,
         items: formState.items,

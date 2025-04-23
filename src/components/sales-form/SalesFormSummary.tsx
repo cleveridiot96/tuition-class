@@ -22,22 +22,24 @@ const SalesFormSummary: React.FC<SalesFormSummaryProps> = ({
     return value.toLocaleString();
   };
 
+  // Calculate total amount without including brokerage (per requirements)
+  const totalAmount = (subtotal || 0) + (transportCost || 0);
+
   return (
     <div className="space-y-1 bg-gray-50 p-3 rounded-md shadow-sm">
       <p className="text-sm">
         <span className="font-medium">Subtotal:</span> ₹{formatNumber(subtotal)}
       </p>
-      <p className="text-sm">
-        <span className="font-medium">Transport:</span> ₹{formatNumber(transportCost)}
-      </p>
-      <p className="text-sm">
-        <span className="font-medium">Brokerage:</span> ₹{formatNumber(brokerageAmount)}
+      {transportCost > 0 && (
+        <p className="text-sm">
+          <span className="font-medium">Transport:</span> ₹{formatNumber(transportCost)}
+        </p>
+      )}
+      <p className="text-sm text-red-600">
+        <span className="font-medium">Brokerage:</span> -₹{formatNumber(brokerageAmount)}
       </p>
       <p className="text-sm font-semibold">
-        <span>Total:</span> ₹
-        {formatNumber(
-          (subtotal || 0) + (transportCost || 0) + (brokerageAmount || 0)
-        )}
+        <span>Total:</span> ₹{formatNumber(totalAmount)}
       </p>
       {isCutBill && billAmount !== null && (
         <p className="text-sm font-bold text-yellow-700">

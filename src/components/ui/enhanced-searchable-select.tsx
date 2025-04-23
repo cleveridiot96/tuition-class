@@ -95,7 +95,10 @@ export function EnhancedSearchableSelect({
     );
   }, [options, searchTerm]);
 
-  const selectedOption = options.find(option => option.value === value);
+  const selectedOption = React.useMemo(() => {
+    if (!value) return null;
+    return options.find(option => option.value === value) || null;
+  }, [options, value]);
 
   const handleSelect = (currentValue: string) => {
     onValueChange(currentValue);
@@ -106,9 +109,12 @@ export function EnhancedSearchableSelect({
 
   const handleAddNewItem = () => {
     if (searchTerm.trim() && !inputMatchesOption && onAddNew) {
+      onAddNew(searchTerm.trim());
+      setOpen(false);
+    } else if (searchTerm.trim() && !inputMatchesOption) {
       confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
-        onAddNew(confirmedValue);
         onValueChange(confirmedValue);
+        setOpen(false);
       });
     }
   };
@@ -122,16 +128,16 @@ export function EnhancedSearchableSelect({
     }
   };
 
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const relatedTarget = e.relatedTarget as HTMLElement | null;
-    
-    if (searchTerm && !inputMatchesOption && onAddNew && 
-       (!relatedTarget || !relatedTarget.closest('[role="listbox"]'))) {
-      setTimeout(() => {
-        if (open) {
-          handleAddNewItem();
-        }
-      }, 100);
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredOptions.length === 1) {
+        // If there's only one option, select it
+        handleSelect(filteredOptions[0].value);
+      } else if (!inputMatchesOption && searchTerm.trim() && (onAddNew || confirmAddToMaster)) {
+        // If input doesn't match any option and we can add new items
+        handleAddNewItem();
+      }
     }
   };
 
@@ -147,7 +153,7 @@ export function EnhancedSearchableSelect({
             role="combobox"
             aria-expanded={open}
             className={cn(
-              "w-full justify-between bg-white",
+              "w-full justify-between bg-white shadow-sm border-gray-300",
               !value && "text-muted-foreground",
               className
             )}
@@ -168,9 +174,10 @@ export function EnhancedSearchableSelect({
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              onBlur={handleInputBlur}
+              onKeyDown={handleInputKeyDown}
               placeholder={`Search ${placeholder.toLowerCase()}...`}
               className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              autoFocus
               onClick={(e) => e.stopPropagation()}
             />
           </div>
@@ -193,14 +200,16 @@ export function EnhancedSearchableSelect({
                     ) : (
                       <p>"{searchTerm}" not found</p>
                     )}
-                    <Button 
-                      variant="outline" 
-                      className="w-full flex items-center justify-center gap-2"
-                      onClick={handleAddNewItem}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add to {masterType} master?
-                    </Button>
+                    {(onAddNew || confirmAddToMaster) && (
+                      <Button 
+                        variant="outline" 
+                        className="w-full flex items-center justify-center gap-2"
+                        onClick={handleAddNewItem}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add to {masterType} master
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   emptyMessage
@@ -227,13 +236,13 @@ export function EnhancedSearchableSelect({
                   </div>
                 ))}
 
-                {searchTerm.trim() && !inputMatchesOption && (
+                {searchTerm.trim() && !inputMatchesOption && (onAddNew || confirmAddToMaster) && (
                   <div
                     className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground border-t"
                     onClick={handleAddNewItem}
                   >
                     <Plus className="mr-2 h-4 w-4" />
-                    Add "{searchTerm}" to {masterType} master?
+                    Add "{searchTerm}" to {masterType} master
                   </div>
                 )}
               </div>

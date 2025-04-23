@@ -7,13 +7,6 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
@@ -25,6 +18,7 @@ import { getSuppliers, addSupplier } from "@/services/storageService";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
+import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 
 interface PartySelectorProps {
   form: UseFormReturn<PurchaseFormData>;
@@ -71,13 +65,29 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     }
   };
 
-  const handleSelectChange = (value: string) => {
-    if (value === "add_new") {
-      setShowAddPartyDialog(true);
-    } else {
-      form.setValue("party", value);
+  const handleAddNewToMaster = (value: string) => {
+    if (!value.trim()) return;
+    
+    const newParty = {
+      id: `supplier-${uuidv4()}`,
+      name: value.trim(),
+      balance: 0
+    };
+    
+    try {
+      addSupplier(newParty);
+      loadSuppliers();
+      form.setValue("party", value.trim());
+    } catch (error) {
+      console.error("Error adding new party:", error);
+      toast.error("Failed to add new party. Please try again.");
     }
   };
+  
+  const supplierOptions = suppliers.map(supplier => ({
+    value: supplier.name,
+    label: supplier.name
+  }));
   
   return (
     <>
@@ -99,24 +109,14 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
               </Button>
             </div>
             <FormControl>
-              <Select
+              <EnhancedSearchableSelect
+                options={supplierOptions}
                 value={field.value || ""}
-                onValueChange={handleSelectChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select party" />
-                </SelectTrigger>
-                <SelectContent className="bg-white max-h-[300px]">
-                  {suppliers.map((supplier: any) => (
-                    <SelectItem key={supplier.id} value={supplier.name}>
-                      {supplier.name}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="add_new" className="text-blue-600 font-medium">
-                    + Add new party
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                onValueChange={field.onChange}
+                placeholder="Select party"
+                onAddNew={handleAddNewToMaster}
+                masterType="party"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
