@@ -70,9 +70,11 @@ const Navigation: React.FC<NavigationProps> = ({
             </Button>
           )}
           
-          <Button variant="ghost" size="icon" onClick={handleHomeClick} className="md-ripple mr-2 text-white hover:bg-white/10">
-            <Home size={18} />
-          </Button>
+          {showHomeButton && (
+            <Button variant="ghost" size="icon" onClick={handleHomeClick} className="md-ripple mr-2 text-white hover:bg-white/10">
+              <Home size={18} />
+            </Button>
+          )}
           
           {title && <h1 className="text-xl font-bold">{title}</h1>}
         </div>

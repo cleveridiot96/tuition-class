@@ -63,7 +63,6 @@ const Index = () => {
         title="Kirana Retail" 
         showFormatButton 
         onFormatClick={handleFormatClick} 
-        showHomeButton
       />
       
       <div className="container mx-auto py-8 px-4">
@@ -71,6 +70,7 @@ const Index = () => {
           Kirana Retail
         </h1>
         
+        {/* Backup/Restore Controls */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-8">
           <BackupRestoreControls
             onRefresh={handleRefreshData}
@@ -131,13 +131,13 @@ const Index = () => {
           />
         </div>
         
-        {/* Dashboard Menu */}
+        {/* Dashboard Menu - Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4 text-blue-800">Quick Actions</h2>
           <DashboardMenu />
         </div>
         
-        {/* Storage Debugger */}
+        {/* Storage Debugger and Portable export button */}
         <div className="flex justify-end mt-6">
           <div className="flex flex-wrap gap-3">
             <StorageDebugger />
