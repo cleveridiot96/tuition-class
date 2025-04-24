@@ -26,10 +26,15 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({ form, locations = [
               </SelectTrigger>
             </FormControl>
             <SelectContent>
+              <SelectItem value="placeholder" disabled>
+                Select location
+              </SelectItem>
               {locations.map((location) => (
-                <SelectItem key={location} value={location}>
-                  {location}
-                </SelectItem>
+                location ? (
+                  <SelectItem key={location} value={location}>
+                    {location}
+                  </SelectItem>
+                ) : null
               ))}
             </SelectContent>
           </Select>
