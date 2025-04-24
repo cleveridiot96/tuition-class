@@ -1,10 +1,11 @@
 
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
+import { ContextMenuProvider } from "@/components/custom-context-menu/context-menu-context";
 import Index from '@/pages/Index';
 import Agents from '@/pages/Agents';
 import Calculator from '@/pages/Calculator';
@@ -38,7 +39,7 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <ErrorBoundary>
-        <Router>
+        <ContextMenuProvider>
           <KeyboardShortcutsProvider>
             <div className="min-h-screen w-full flex flex-col">
               <RippleProvider>
@@ -65,7 +66,7 @@ const App = () => {
               <Toaster />
             </div>
           </KeyboardShortcutsProvider>
-        </Router>
+        </ContextMenuProvider>
       </ErrorBoundary>
     </ThemeProvider>
   );
