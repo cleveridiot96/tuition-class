@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,20 @@ import { Edit, PrinterIcon, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sale } from "@/services/types";
 import { format } from "date-fns";
+
+const formatAmount = (amount: string | number | undefined): string => {
+  if (amount === undefined || amount === null) return '0.00';
+  if (typeof amount === 'number') {
+    return amount.toFixed(2);
+  }
+  // If it's a string but can be parsed as a number
+  const parsed = parseFloat(amount);
+  if (!isNaN(parsed)) {
+    return parsed.toFixed(2);
+  }
+  // For non-numeric strings
+  return amount;
+};
 
 export default function SalesTable({
   sales,
@@ -48,7 +61,7 @@ export default function SalesTable({
                 <TableCell>{sale.netWeight}</TableCell>
                 <TableCell>₹{sale.rate}</TableCell>
                 <TableCell>₹{sale.totalAmount?.toFixed(2) || "0.00"}</TableCell>
-                <TableCell>₹{sale.billAmount?.toFixed(2) || "0.00"}</TableCell>
+                <TableCell>₹{formatAmount(sale.billAmount)}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button

@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { clearAllData } from './dataClear';
 import { seedInitialData } from './seedData';
 import { saveStorageItem } from '../storageUtils';
+import { exportDataBackup } from './exportBackup';
 
 // Export the function from exportBackup
 export { exportDataBackup } from './exportBackup';

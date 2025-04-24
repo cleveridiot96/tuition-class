@@ -38,7 +38,7 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
       name: item.name || '',
       quantity: item.quantity,
       rate: item.rate
-    })) || [{ name: '', quantity: 0, rate: 0 }]) as { id?: string; name: string; quantity: number; rate: number }[],
+    })) || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }]) as { id?: string; name: string; quantity: number; rate: number }[],
     notes: initialSale?.notes || '',
     bags: initialSale?.bags || 0,
   });
@@ -123,7 +123,7 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
       // Convert form items to SaleItems
       const saleItems: SaleItem[] = formState.items.map(item => ({
         id: item.id || uuidv4(),
-        inventoryItemId: item.id || uuidv4(), // Using item.id or generating new one
+        inventoryItemId: item.id || uuidv4(),
         name: item.name,
         lotNumber: formState.lotNumber,
         quantity: item.quantity,
@@ -156,6 +156,9 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
         billAmount: billAmount,
         items: saleItems,
         notes: formState.notes || '',
+        salesBroker: selectedBroker?.name || undefined,
+        customer: '', // Will be set by the component
+        isDeleted: false,
       };
 
       if (brokerageAmount > 0) {

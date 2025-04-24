@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from 'uuid';
@@ -157,18 +156,23 @@ export const usePurchaseList = () => {
   const handleAddToInventory = (purchase: Purchase) => {
     const inventoryItem: InventoryItem = {
       id: uuidv4(),
+      purchaseId: purchase.id,
       lotNumber: purchase.lotNumber,
-      quantity: purchase.quantity,
+      quantity: purchase.quantity || 0,
       location: purchase.location,
       dateAdded: new Date().toISOString(),
       netWeight: purchase.netWeight,
-      remainingQuantity: purchase.quantity,
+      remainingQuantity: purchase.quantity || 0,
       purchaseRate: purchase.rate,
       finalCost: purchase.totalAfterExpenses,
       agentId: purchase.agentId || '',
       agentName: purchase.agent || '',
       date: purchase.date,
       rate: purchase.rate,
+      ratePerKgAfterExpenses: purchase.totalAfterExpenses / purchase.netWeight,
+      supplier: purchase.party || '',
+      isDeleted: false,
+      isSoldOut: false
     };
 
     addInventoryItem(inventoryItem);

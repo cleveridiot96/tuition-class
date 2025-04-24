@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getStorageItem, saveStorageItem } from './storageUtils';
 import { toast } from 'sonner';
-import { Purchase, Sale, Agent, Customer, Broker, Supplier, Transporter, Party } from './types';
+import { Purchase, Sale, Agent, Customer, Broker, Supplier, Transporter, Party, Payment, Receipt, InventoryItem } from './types';
 
 // Re-export core storage utilities
 export { getStorageItem, saveStorageItem } from './storageUtils';
@@ -35,7 +35,7 @@ export {
 } from './debug/storageDebug';
 
 // Data model interfaces - re-export them all
-export {
+export type {
   Agent,
   Supplier,
   Customer,
@@ -73,7 +73,8 @@ export const addPurchase = (purchase: Purchase): void => {
   purchases.push(purchase);
   savePurchases(purchases);
   
-  // Update inventory after purchase
+  // Import and use from inventoryService
+  const { updateInventoryAfterPurchase } = require('./inventoryService');
   updateInventoryAfterPurchase(purchase);
 };
 
@@ -111,7 +112,8 @@ export const addSale = (sale: Sale): void => {
   sales.push(sale);
   saveSales(sales);
   
-  // Update inventory after sale
+  // Import and use from inventoryService
+  const { updateInventoryAfterSale } = require('./inventoryService');
   updateInventoryAfterSale(sale);
 };
 
@@ -136,6 +138,63 @@ export const deleteSale = (id: string): void => {
   if (index !== -1) {
     sales[index] = { ...sales[index], isDeleted: true };
     saveSales(sales);
+  }
+};
+
+// Payments & Receipts Functions
+export const getPayments = (): Payment[] => {
+  return getStorageItem<Payment[]>('payments') || [];
+};
+
+export const addPayment = (payment: Payment): void => {
+  const payments = getPayments();
+  payments.push(payment);
+  saveStorageItem('payments', payments);
+};
+
+export const updatePayment = (payment: Payment): void => {
+  const payments = getPayments();
+  const index = payments.findIndex(p => p.id === payment.id);
+  if (index !== -1) {
+    payments[index] = payment;
+    saveStorageItem('payments', payments);
+  }
+};
+
+export const deletePayment = (id: string): void => {
+  const payments = getPayments();
+  const index = payments.findIndex(p => p.id === id);
+  if (index !== -1) {
+    payments[index] = { ...payments[index], isDeleted: true };
+    saveStorageItem('payments', payments);
+  }
+};
+
+export const getReceipts = (): Receipt[] => {
+  return getStorageItem<Receipt[]>('receipts') || [];
+};
+
+export const addReceipt = (receipt: Receipt): void => {
+  const receipts = getReceipts();
+  receipts.push(receipt);
+  saveStorageItem('receipts', receipts);
+};
+
+export const updateReceipt = (receipt: Receipt): void => {
+  const receipts = getReceipts();
+  const index = receipts.findIndex(r => r.id === receipt.id);
+  if (index !== -1) {
+    receipts[index] = receipt;
+    saveStorageItem('receipts', receipts);
+  }
+};
+
+export const deleteReceipt = (id: string): void => {
+  const receipts = getReceipts();
+  const index = receipts.findIndex(r => r.id === id);
+  if (index !== -1) {
+    receipts[index] = { ...receipts[index], isDeleted: true };
+    saveStorageItem('receipts', receipts);
   }
 };
 
@@ -227,6 +286,7 @@ export const getTotalPurchaseValue = (): number => {
 };
 
 export const getTotalInventoryValue = (): number => {
+  const { getInventory } = require('./inventoryService');
   const inventory = getInventory() || [];
   return inventory
     .filter(item => !item.isDeleted && item.remainingQuantity > 0)

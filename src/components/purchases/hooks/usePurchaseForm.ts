@@ -58,7 +58,10 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
         brokerageRate: formState.brokerageRate, // Keep both properties for backward compatibility
         location: formState.location,
         // Add bags property to Purchase
-        bags: formState.bags || 0
+        bags: formState.bags || 0,
+        // Add party since it's required in Purchase type
+        party: initialValues?.party || '',
+        partyId: initialValues?.partyId || undefined
       };
 
       if (initialValues) {
