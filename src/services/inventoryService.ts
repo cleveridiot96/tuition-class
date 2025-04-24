@@ -26,6 +26,7 @@ export const addInventoryItem = (item: InventoryItem): void => {
     id: item.id || uuidv4(),
     dateAdded: item.dateAdded || new Date().toISOString(),
     bags: item.bags || item.quantity, // Ensure bags is initialized if not provided
+    remainingQuantity: item.remainingQuantity || item.quantity // Initialize remainingQuantity if not provided
   };
 
   inventory.push(newItem);
@@ -42,8 +43,13 @@ export const updateInventoryItem = (updatedItem: InventoryItem): void => {
       updatedItem.bags = inventory[index].bags;
     }
     
+    // Ensure remainingQuantity is set correctly
+    if (updatedItem.remainingQuantity === undefined) {
+      updatedItem.remainingQuantity = updatedItem.quantity;
+    }
+    
     inventory[index] = updatedItem;
-    saveStorageItem('inventory', inventory);
+    saveInventory(inventory);
   }
 };
 
@@ -54,7 +60,7 @@ export const deleteInventoryItem = (id: string): void => {
   if (index !== -1) {
     // Soft delete the item by marking it as deleted
     inventory[index] = { ...inventory[index], isDeleted: true };
-    saveStorageItem('inventory', inventory);
+    saveInventory(inventory);
   }
 };
 
@@ -66,6 +72,7 @@ export const updateInventoryAfterPurchase = (purchase: Purchase): void => {
     lotNumber: purchase.lotNumber,
     quantity: purchase.bags || 0,
     bags: purchase.bags || 0,
+    remainingQuantity: purchase.bags || 0, // Initialize remainingQuantity with bags count
     location: purchase.location || 'Default',
     dateAdded: purchase.date || new Date().toISOString(),
     purchaseId: purchase.id,
@@ -83,7 +90,7 @@ export const updateInventoryAfterSale = (sale: Sale): void => {
   const lotItems = inventory.filter(item => 
     item.lotNumber === sale.lotNumber && 
     !item.isDeleted && 
-    item.quantity > 0
+    (item.remainingQuantity || item.quantity) > 0
   );
 
   if (lotItems.length === 0) {
@@ -93,6 +100,7 @@ export const updateInventoryAfterSale = (sale: Sale): void => {
       lotNumber: sale.lotNumber,
       quantity: -sale.quantity,
       bags: -sale.quantity,
+      remainingQuantity: -sale.quantity,
       location: sale.location || 'Default',
       dateAdded: sale.date || new Date().toISOString(),
       saleId: sale.id,
@@ -112,13 +120,13 @@ export const updateInventoryAfterSale = (sale: Sale): void => {
   
   for (let i = 0; i < lotItems.length && remainingQuantity > 0; i++) {
     const item = lotItems[i];
-    const quantityToDeduct = Math.min(item.quantity, remainingQuantity);
+    const availableQuantity = item.remainingQuantity || item.quantity;
+    const quantityToDeduct = Math.min(availableQuantity, remainingQuantity);
     
     // Update the inventory item
     const updatedItem = {
       ...item,
-      quantity: item.quantity - quantityToDeduct,
-      bags: (item.bags || item.quantity) - quantityToDeduct,
+      remainingQuantity: availableQuantity - quantityToDeduct,
       netWeight: item.netWeight - (quantityToDeduct * (item.netWeight / (item.bags || item.quantity))),
     };
     
@@ -133,6 +141,7 @@ export const updateInventoryAfterSale = (sale: Sale): void => {
       lotNumber: sale.lotNumber,
       quantity: -remainingQuantity,
       bags: -remainingQuantity,
+      remainingQuantity: -remainingQuantity,
       location: sale.location || lotItems[0].location,
       dateAdded: sale.date || new Date().toISOString(),
       saleId: sale.id,
@@ -152,7 +161,7 @@ export const saveInventory = (inventory: InventoryItem[]): void => {
   saveStorageItem('inventory', inventory);
 };
 
-// Add the missing function for inventory transfers
+// Function for inventory transfers
 export const updateInventoryAfterTransfer = (
   inventory: InventoryItem[], 
   itemId: string, 
@@ -173,15 +182,19 @@ export const updateInventoryAfterTransfer = (
   const sourceItem = inventory[sourceItemIndex];
   
   // Check if there's enough quantity
-  if ((sourceItem.remainingQuantity || 0) < quantity) {
-    toast.error(`Not enough quantity available in ${fromLocation}`);
+  const availableQuantity = sourceItem.remainingQuantity !== undefined 
+    ? sourceItem.remainingQuantity 
+    : sourceItem.quantity;
+    
+  if (availableQuantity < quantity) {
+    toast.error(`Not enough quantity available in ${fromLocation}. Available: ${availableQuantity}`);
     return inventory;
   }
   
   // Update source item
   const updatedSourceItem = {
     ...sourceItem,
-    remainingQuantity: (sourceItem.remainingQuantity || sourceItem.quantity) - quantity
+    remainingQuantity: availableQuantity - quantity
   };
   
   // Check if destination already has this item
@@ -199,7 +212,7 @@ export const updateInventoryAfterTransfer = (
     const destItem = result[destItemIndex];
     result[destItemIndex] = {
       ...destItem,
-      remainingQuantity: (destItem.remainingQuantity || destItem.quantity) + quantity
+      remainingQuantity: (destItem.remainingQuantity !== undefined ? destItem.remainingQuantity : destItem.quantity) + quantity
     };
   } else {
     // Create new inventory entry for the destination

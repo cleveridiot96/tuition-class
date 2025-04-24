@@ -1,4 +1,3 @@
-
 // Adding all the required interfaces
 
 export interface InventoryItem {
@@ -20,6 +19,7 @@ export interface InventoryItem {
   purchaseRate?: number;
   finalCost?: number;
   date?: string;
+  transferredFrom?: string;  // Added for inventory transfers
 }
 
 // Adding EnhancedInventoryItem for StockReport

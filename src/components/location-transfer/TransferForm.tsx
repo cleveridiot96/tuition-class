@@ -1,4 +1,5 @@
 
+// Just importing useToast from the correct location
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -22,8 +23,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { InventoryItem } from '@/services/types';
-import { getInventory, updateInventoryAfterTransfer } from '@/services/inventoryService';
-import { useToast } from "@/hooks/use-toast";
+import { getInventory, updateInventoryAfterTransfer, saveInventory } from '@/services/inventoryService';
+import { toast } from "sonner";
 import { EnhancedSearchableSelect } from '@/components/ui/enhanced-select';
 
 const transferFormSchema = z.object({
@@ -43,6 +44,7 @@ type TransferFormValues = z.infer<typeof transferFormSchema>;
 const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const { toast } = useToast();
 
   const form = useForm<TransferFormValues>({
@@ -56,43 +58,41 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
   });
 
   useEffect(() => {
-    const loadInventory = () => {
-      const inventoryData = getInventory() || [];
-      setInventory(inventoryData);
-    };
-
     loadInventory();
   }, []);
 
-  const handleItemChange = (itemId: string) => {
-    setSelectedItemId(itemId);
+  const loadInventory = () => {
+    const inventoryData = getInventory() || [];
+    // Filter for items that have remaining quantity
+    const availableItems = inventoryData.filter(item => 
+      (item.remainingQuantity || item.quantity) > 0 && !item.isDeleted
+    );
+    setInventory(availableItems);
   };
 
-  const onSubmitHandler = async (values: TransferFormValues) => {
-    try {
-      const itemId = values.itemId;
-      const quantity = values.quantity;
-      const fromLocation = values.fromLocation;
-      const toLocation = values.toLocation;
-
-      // Find the selected inventory item
-      const itemIndex = inventory.findIndex(item => item.id === itemId);
-      if (itemIndex === -1) {
-        toast({
-          title: "Error",
-          description: "Inventory item not found.",
-          variant: "destructive",
-        });
-        return;
+  useEffect(() => {
+    if (selectedItemId) {
+      const item = inventory.find(item => item.id === selectedItemId);
+      if (item) {
+        setSelectedItem(item);
+        form.setValue('fromLocation', item.location);
       }
+    }
+  }, [selectedItemId, inventory, form]);
 
-      const item = inventory[itemIndex];
+  const handleItemChange = (itemId: string) => {
+    setSelectedItemId(itemId);
+    form.setValue('itemId', itemId);
+  };
 
-      // Check if there is enough quantity in the from location
-      if (item.location !== fromLocation || item.remainingQuantity === undefined || item.remainingQuantity < quantity) {
+  const onSubmitHandler = (values: TransferFormValues) => {
+    try {
+      const { itemId, quantity, fromLocation, toLocation } = values;
+      
+      if (fromLocation === toLocation) {
         toast({
           title: "Error",
-          description: `Not enough quantity in ${fromLocation}. Available: ${item.remainingQuantity || 0}`,
+          description: "From and To locations cannot be the same",
           variant: "destructive",
         });
         return;
@@ -100,8 +100,10 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
 
       // Update inventory using the imported function
       const updatedInventory = updateInventoryAfterTransfer(inventory, itemId, quantity, fromLocation, toLocation);
-      setInventory(updatedInventory);
-
+      
+      // Save the updated inventory
+      saveInventory(updatedInventory);
+      
       toast({
         title: "Success",
         description: "Inventory transferred successfully.",
@@ -129,23 +131,29 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmitHandler)} className="space-y-4">
-                <FormItem>
-                  <FormLabel>Inventory Item</FormLabel>
-                  <FormControl>
-                    <EnhancedSearchableSelect
-                      options={inventory.map(item => ({
-                        value: item.id,
-                        label: `${item.lotNumber} (${item.remainingQuantity || 0} bags)`
-                      }))}
-                      value={selectedItemId}
-                      onValueChange={handleItemChange}
-                      placeholder="Select inventory item"
-                      emptyMessage="No inventory items found"
-                      masterType="inventory"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                <FormField
+                  control={form.control}
+                  name="itemId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Inventory Item</FormLabel>
+                      <FormControl>
+                        <EnhancedSearchableSelect
+                          options={inventory.map(item => ({
+                            value: item.id,
+                            label: `${item.lotNumber} (${item.remainingQuantity || item.quantity} bags in ${item.location})`
+                          }))}
+                          value={selectedItemId}
+                          onValueChange={handleItemChange}
+                          placeholder="Select inventory item"
+                          emptyMessage="No inventory items found"
+                          masterType="inventory"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}
@@ -154,8 +162,17 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
                     <FormItem>
                       <FormLabel>Quantity</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input 
+                          type="number" 
+                          {...field} 
+                          max={selectedItem ? (selectedItem.remainingQuantity || selectedItem.quantity) : undefined}
+                        />
                       </FormControl>
+                      {selectedItem && (
+                        <p className="text-xs text-gray-500">
+                          Available: {selectedItem.remainingQuantity || selectedItem.quantity} bags
+                        </p>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}
@@ -168,7 +185,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
                     <FormItem>
                       <FormLabel>From Location</FormLabel>
                       <FormControl>
-                        <Input type="text" {...field} />
+                        <Input type="text" {...field} readOnly={!!selectedItemId} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -193,7 +210,12 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
                   <Button type="button" variant="outline" onClick={onCancel}>
                     Cancel
                   </Button>
-                  <Button type="submit">Transfer</Button>
+                  <Button 
+                    type="submit"
+                    disabled={!selectedItem || form.watch('quantity') > (selectedItem.remainingQuantity || selectedItem.quantity)}
+                  >
+                    Transfer
+                  </Button>
                 </div>
               </form>
             </Form>
