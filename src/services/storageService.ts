@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getStorageItem, saveStorageItem } from './storageUtils';
 import { toast } from 'sonner';
-import { Purchase, Sale } from './types';
+import { Purchase, Sale, Agent, Customer, Broker, Supplier, Transporter, Party } from './types';
 
 // Re-export core storage utilities
 export { getStorageItem, saveStorageItem } from './storageUtils';
@@ -34,55 +34,23 @@ export {
   getStorageStats
 } from './debug/storageDebug';
 
-// Data model interfaces
-export interface Agent {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-}
-
-export interface Supplier {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-}
-
-export interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-}
-
-export interface Broker {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-}
-
-export interface Transporter {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-}
-
-export interface Party {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  type: 'supplier' | 'customer' | 'agent' | 'broker' | 'transporter';
-  balance?: number;
-}
+// Data model interfaces - re-export them all
+export {
+  Agent,
+  Supplier,
+  Customer,
+  Broker,
+  Transporter,
+  Party,
+  Purchase,
+  Sale,
+  Payment,
+  Receipt,
+  InventoryItem,
+  EnhancedInventoryItem,
+  SaleItem,
+  BasePurchase
+} from './types';
 
 // Storage functions
 

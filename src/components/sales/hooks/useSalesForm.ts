@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useToast } from "@/hooks/use-toast";
-import { Sale, Customer, Broker } from '@/services/types';
+import { Sale, Customer, Broker, SaleItem } from '@/services/types';
 import { ItemFormState } from '../../shared/types/ItemFormTypes';
 
 interface UseSalesFormProps {
@@ -33,7 +33,12 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
     transportCost: initialSale?.transportCost?.toString() || '',
     billNumber: initialSale?.billNumber || '',
     billAmount: initialSale?.billAmount?.toString() || '',
-    items: initialSale?.items || [{ name: '', quantity: 0, rate: 0 }],
+    items: (initialSale?.items?.map(item => ({
+      id: item.id,
+      name: item.name || '',
+      quantity: item.quantity,
+      rate: item.rate
+    })) || [{ name: '', quantity: 0, rate: 0 }]) as { id?: string; name: string; quantity: number; rate: number }[],
     notes: initialSale?.notes || '',
     bags: initialSale?.bags || 0,
   });
@@ -114,28 +119,43 @@ export const useSalesForm = ({ onSubmit, initialSale }: UseSalesFormProps) => {
       
       const brokerageAmount = calculateBrokerageAmount();
       const subtotal = calculateSubtotal();
+      
+      // Convert form items to SaleItems
+      const saleItems: SaleItem[] = formState.items.map(item => ({
+        id: item.id || uuidv4(),
+        inventoryItemId: item.id || uuidv4(), // Using item.id or generating new one
+        name: item.name,
+        lotNumber: formState.lotNumber,
+        quantity: item.quantity,
+        rate: item.rate,
+        totalAmount: item.quantity * item.rate
+      }));
 
       const saleData: Sale = {
         id: initialSale?.id || uuidv4(),
         date: formState.date,
         lotNumber: formState.lotNumber,
+        location: formState.location,
         customerId: formState.customerId,
-        customer: '',  // Will be set by the component
+        customerName: '', // Will be set by the component
         brokerId: formState.brokerId || undefined,
-        broker: selectedBroker?.name,
+        brokerName: selectedBroker?.name,
+        broker: selectedBroker?.name, // For compatibility
         transporterId: formState.transporterId || undefined,
-        transporter: '',  // Will be set by the component
+        transporterName: '',  // Will be set by the component
+        destination: formState.location || '',
+        totalBags: formState.bags || 0,
+        bags: formState.bags || 0,
         quantity: formState.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
         netWeight: formState.items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
         rate: Number(formState.items[0]?.rate || 0),
-        location: formState.location,
         totalAmount: calculateTotal(),
         transportCost: parseFloat(formState.transportCost || '0'),
+        transportAmount: parseFloat(formState.transportCost || '0'),
         billNumber: formState.billNumber,
         billAmount: billAmount,
-        items: formState.items,
-        notes: formState.notes,
-        bags: formState.bags || 0
+        items: saleItems,
+        notes: formState.notes || '',
       };
 
       if (brokerageAmount > 0) {
