@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import Index from '@/pages/Index';
 import Agents from '@/pages/Agents';
 import Calculator from '@/pages/Calculator';
@@ -24,7 +25,8 @@ import { optimizedStorage } from '@/services/core/storage-core';
 import './App.css';
 
 const App = () => {
-  React.useEffect(() => {
+  // Initialize storage on app load
+  useEffect(() => {
     optimizedStorage.get('locations');
     optimizedStorage.get('customers');
     optimizedStorage.get('suppliers');
@@ -37,30 +39,32 @@ const App = () => {
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <ErrorBoundary>
         <Router>
-          <div className="min-h-screen w-full flex flex-col">
-            <RippleProvider>
-              <div className="flex-1 overflow-auto">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/agents" element={<Agents />} />
-                  <Route path="/calculator" element={<Calculator />} />
-                  <Route path="/cash-book" element={<CashBook />} />
-                  <Route path="/inventory" element={<Inventory />} />
-                  <Route path="/location-transfer" element={<LocationTransferPage />} />
-                  <Route path="/ledger" element={<Ledger />} />
-                  <Route path="/master" element={<Master />} />
-                  <Route path="/payments" element={<Payments />} />
-                  <Route path="/purchases" element={<Purchases />} />
-                  <Route path="/receipts" element={<Receipts />} />
-                  <Route path="/sales" element={<Sales />} />
-                  <Route path="/stock" element={<Stock />} />
-                  <Route path="/transport" element={<Transport />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </RippleProvider>
-            <Toaster />
-          </div>
+          <KeyboardShortcutsProvider>
+            <div className="min-h-screen w-full flex flex-col">
+              <RippleProvider>
+                <div className="flex-1 overflow-auto">
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/agents" element={<Agents />} />
+                    <Route path="/calculator" element={<Calculator />} />
+                    <Route path="/cash-book" element={<CashBook />} />
+                    <Route path="/inventory" element={<Inventory />} />
+                    <Route path="/location-transfer" element={<LocationTransferPage />} />
+                    <Route path="/ledger" element={<Ledger />} />
+                    <Route path="/master" element={<Master />} />
+                    <Route path="/payments" element={<Payments />} />
+                    <Route path="/purchases" element={<Purchases />} />
+                    <Route path="/receipts" element={<Receipts />} />
+                    <Route path="/sales" element={<Sales />} />
+                    <Route path="/stock" element={<Stock />} />
+                    <Route path="/transport" element={<Transport />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+              </RippleProvider>
+              <Toaster />
+            </div>
+          </KeyboardShortcutsProvider>
         </Router>
       </ErrorBoundary>
     </ThemeProvider>
