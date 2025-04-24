@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -45,7 +44,6 @@ const PartyLedger = () => {
   }, [partyId, partyType]);
 
   const loadEntities = () => {
-    // Load suppliers and customers from storage
     const suppliersData = getSuppliers() || [];
     const customersData = getCustomers() || [];
     
@@ -56,17 +54,13 @@ const PartyLedger = () => {
   const loadTransactions = () => {
     setLoading(true);
     try {
-      // Looking at the function signature in storageService.ts, it needs partyId, startDate, and endDate
-      // We'll use an empty string for start date and current date for end date as defaults
       const startDate = "";
       const endDate = format(new Date(), "yyyy-MM-dd");
       
-      // Get transactions for the selected party
       const allTransactions = getTransactions(partyId, startDate, endDate) || [];
       
       setTransactions(allTransactions);
       
-      // Calculate balance
       let partyBalance = 0;
       allTransactions.forEach((transaction) => {
         if (transaction.type === "purchase") {
@@ -104,18 +98,17 @@ const PartyLedger = () => {
     }
   };
 
-  // Prepare options for party dropdown
   const partyOptions = partyType === "supplier" 
-    ? suppliers.map(s => ({ value: s.id, label: s.name })) 
-    : customers.map(c => ({ value: c.id, label: c.name }));
+    ? suppliers.filter(Boolean).map(s => ({ value: s.id || 'unknown', label: s.name || 'Unknown Supplier' }))
+    : customers.filter(Boolean).map(c => ({ value: c.id || 'unknown', label: c.name || 'Unknown Customer' }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-amber-100">
-      <Navigation title="Party Ledger" showBackButton className="bg-amber-700" />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
+      <Navigation title="Party Ledger" showBackButton className="bg-purple-700" />
       <div className="container mx-auto px-4 py-6">
-        <Card className="bg-gradient-to-br from-amber-100 to-amber-200 border-amber-200 shadow">
+        <Card className="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-200 shadow">
           <CardHeader>
-            <CardTitle className="text-amber-800">Party Ledger</CardTitle>
+            <CardTitle className="text-purple-800">Party Ledger</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -138,8 +131,8 @@ const PartyLedger = () => {
                 {partyId && transactions.length > 0 ? (
                   <div>
                     <div className="mb-4">
-                      <div className="bg-amber-50 p-4 rounded-md shadow border border-amber-300">
-                        <div className="font-semibold text-amber-800">
+                      <div className="bg-purple-50 p-4 rounded-md shadow border border-purple-300">
+                        <div className="font-semibold text-purple-800">
                           Current Balance: 
                           <span className={`${balance >= 0 ? 'text-green-600' : 'text-red-600'} text-lg ml-2`}>
                             ₹{Math.abs(balance).toFixed(2)}
@@ -150,7 +143,7 @@ const PartyLedger = () => {
                     </div>
 
                     <Table>
-                      <TableHeader className="bg-amber-100">
+                      <TableHeader className="bg-purple-100">
                         <TableRow>
                           <TableHead>Date</TableHead>
                           <TableHead>Type</TableHead>
@@ -163,7 +156,6 @@ const PartyLedger = () => {
                       <TableBody>
                         {transactions.map((transaction, index) => {
                           let runningBalance = 0;
-                          // Calculate running balance
                           for (let i = 0; i <= index; i++) {
                             const t = transactions[i];
                             if (t.type === "purchase") {
