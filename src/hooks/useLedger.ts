@@ -2,13 +2,28 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { getParties, getTransactions } from '@/services/storageService';
+import { getStorageItem } from '@/services/storageService';
 import { Party } from '@/services/types';
 
 // Export the getPartyName function for use in other components
 export const getPartyName = (partyId: string, parties: Party[] = []): string => {
   const party = parties.find((p) => p.id === partyId);
   return party ? party.name : "Unknown";
+};
+
+// Helper function to get parties
+export const getParties = (): Party[] => {
+  return getStorageItem<Party[]>('parties') || [];
+};
+
+// Helper function to get transactions
+export const getTransactions = (partyId: string, startDate: string, endDate: string) => {
+  const allTransactions = getStorageItem('transactions') || [];
+  return allTransactions.filter((t: any) => 
+    t.partyId === partyId && 
+    t.date >= startDate && 
+    t.date <= endDate
+  );
 };
 
 export const useLedger = () => {

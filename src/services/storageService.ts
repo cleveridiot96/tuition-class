@@ -36,6 +36,13 @@ export const getLocations = () => {
   return getStorageItem('locations') || ['Mumbai', 'Chiplun', 'Sawantwadi'];
 };
 
+// Add Agents function that was missing
+export const addAgent = (agent: any) => {
+  const agents = getAgents();
+  agents.push(agent);
+  saveStorageItem('agents', agents);
+};
+
 // Backup and System Operations
 export { 
   exportDataBackup,
@@ -54,6 +61,12 @@ export const saveInventory = (inventory: any[]) => {
 
 export const updateInventoryAfterTransfer = (updatedInventory: any[]) => {
   saveStorageItem('inventory', updatedInventory);
+};
+
+// Add missing functions for transaction handling
+export const getTransactions = (partyId: string, startDate: string, endDate: string): any[] => {
+  // Placeholder implementation - you'll need to customize this
+  return [];
 };
 
 // Dashboard Related Functions (placeholders)
@@ -128,6 +141,42 @@ export const getNextReceiptNumber = () => {
   return `RCP-${receipts.length + 1}`;
 };
 
+// Add missing CRUD operations
+export const updatePurchase = (purchaseId: string, updatedPurchase: any) => {
+  const purchases = getPurchases();
+  const index = purchases.findIndex(p => p.id === purchaseId);
+  if (index !== -1) {
+    purchases[index] = updatedPurchase;
+    saveStorageItem('purchases', purchases);
+  }
+};
+
+export const deletePurchase = (purchaseId: string) => {
+  const purchases = getPurchases();
+  const index = purchases.findIndex(p => p.id === purchaseId);
+  if (index !== -1) {
+    purchases[index] = { ...purchases[index], isDeleted: true };
+    saveStorageItem('purchases', purchases);
+  }
+};
+
+export const addInventoryItem = (item: any) => {
+  const inventory = getInventory();
+  inventory.push(item);
+  saveStorageItem('inventory', inventory);
+};
+
+export const checkDuplicateLot = (lotNumber: string): boolean => {
+  const purchases = getPurchases();
+  return purchases.some(p => p.lotNumber === lotNumber && !p.isDeleted);
+};
+
+export const addSupplier = (supplier: any) => {
+  const suppliers = getSuppliers();
+  suppliers.push(supplier);
+  saveStorageItem('suppliers', suppliers);
+};
+
 // Placeholder for other entity-related additions
 export const addCustomer = (customer: any) => {
   const customers = getCustomers();
@@ -154,5 +203,20 @@ export const addPurchase = (purchase: any) => {
 };
 
 // Re-export important types for convenience
-export * from '@/services/types';
-
+export type { 
+  Agent, 
+  Broker, 
+  Customer, 
+  Supplier, 
+  Transporter, 
+  Purchase, 
+  Sale, 
+  InventoryItem,
+  Payment,
+  Receipt,
+  SaleItem,
+  BasePurchase,
+  BaseEntity,
+  Party,
+  EnhancedInventoryItem
+} from '@/services/types';
