@@ -1,76 +1,18 @@
 
-import React, { useState, useEffect } from "react";
-import Navigation from "@/components/Navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { getSuppliers, getCustomers, getTransporters, getAgents, getBrokers } from "@/services/storageService";
-import SupplierForm from "@/components/master/SupplierForm";
-import CustomerForm from "@/components/master/CustomerForm";
-import TransporterForm from "@/components/master/TransporterForm";
-import AgentForm from "@/components/master/AgentForm";
-import BrokerForm from "@/components/master/BrokerForm";
-import SupplierTable from "@/components/master/SupplierTable";
-import CustomerTable from "@/components/master/CustomerTable";
-import TransporterTable from "@/components/master/TransporterTable";
-import AgentTable from "@/components/master/AgentTable";
-import BrokerTable from "@/components/master/BrokerTable";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getMasters } from "@/services/storageService";
+import { MasterForm } from "@/components/master/MasterForm";
+import Navigation from "@/components/Navigation";
 
 const Master = () => {
-  const [activeTab, setActiveTab] = useState("suppliers");
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [transporters, setTransporters] = useState<any[]>([]);
-  const [agents, setAgents] = useState<any[]>([]);
-  const [brokers, setBrokers] = useState<any[]>([]);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingItem, setEditingItem] = useState<any>(null);
-
-  useEffect(() => {
-    loadData();
-  }, []);
+  const [masters, setMasters] = useState(getMasters());
+  const [showForm, setShowForm] = useState(false);
 
   const loadData = () => {
-    setSuppliers(getSuppliers());
-    setCustomers(getCustomers());
-    setTransporters(getTransporters());
-    setAgents(getAgents());
-    setBrokers(getBrokers());
-  };
-
-  const handleAddClick = () => {
-    setEditingItem(null);
-    setShowAddDialog(true);
-  };
-
-  const handleEditClick = (item: any) => {
-    setEditingItem(item);
-    setShowAddDialog(true);
-  };
-
-  const handleDialogClose = () => {
-    setShowAddDialog(false);
-    setEditingItem(null);
-    loadData();
-  };
-
-  const renderForm = () => {
-    switch (activeTab) {
-      case "suppliers":
-        return <SupplierForm onClose={handleDialogClose} initialData={editingItem} />;
-      case "customers":
-        return <CustomerForm onClose={handleDialogClose} initialData={editingItem} />;
-      case "transporters":
-        return <TransporterForm onClose={handleDialogClose} initialData={editingItem} />;
-      case "agents":
-        return <AgentForm onClose={handleDialogClose} initialData={editingItem} />;
-      case "brokers":
-        return <BrokerForm onClose={handleDialogClose} initialData={editingItem} />;
-      default:
-        return null;
-    }
+    const data = getMasters();
+    setMasters(data);
   };
 
   return (
@@ -82,50 +24,39 @@ const Master = () => {
             <CardTitle className="text-indigo-800">Master Data</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between items-center mb-4">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                  <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-                  <TabsTrigger value="customers">Customers</TabsTrigger>
-                  <TabsTrigger value="transporters">Transporters</TabsTrigger>
-                  <TabsTrigger value="agents">Agents</TabsTrigger>
-                  <TabsTrigger value="brokers">Brokers</TabsTrigger>
-                </TabsList>
+            <Button 
+              onClick={() => setShowForm(true)} 
+              className="mb-4 bg-indigo-600 hover:bg-indigo-700"
+            >
+              + Add Master
+            </Button>
 
-                <TabsContent value="suppliers">
-                  <SupplierTable suppliers={suppliers} onEdit={handleEditClick} onRefresh={loadData} />
-                </TabsContent>
-                <TabsContent value="customers">
-                  <CustomerTable customers={customers} onEdit={handleEditClick} onRefresh={loadData} />
-                </TabsContent>
-                <TabsContent value="transporters">
-                  <TransporterTable transporters={transporters} onEdit={handleEditClick} onRefresh={loadData} />
-                </TabsContent>
-                <TabsContent value="agents">
-                  <AgentTable agents={agents} onEdit={handleEditClick} onRefresh={loadData} />
-                </TabsContent>
-                <TabsContent value="brokers">
-                  <BrokerTable brokers={brokers} onEdit={handleEditClick} onRefresh={loadData} />
-                </TabsContent>
-              </Tabs>
-              <Button onClick={handleAddClick} className="bg-indigo-600 hover:bg-indigo-700">
-                <Plus className="mr-2 h-4 w-4" /> Add New
-              </Button>
-            </div>
+            {showForm && (
+              <MasterForm
+                onClose={() => setShowForm(false)}
+                onSaved={loadData}
+              />
+            )}
+
+            {masters.length === 0 ? (
+              <p className="text-gray-500">No masters saved yet.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {masters.map((m) => (
+                  <div 
+                    key={m.id} 
+                    className="p-4 border rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <h3 className="text-lg font-semibold text-indigo-800 mb-2">{m.name}</h3>
+                    <p className="text-gray-600">{m.phone}</p>
+                    <p className="text-gray-500">{m.address}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
-
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              {editingItem ? "Edit" : "Add"} {activeTab.slice(0, -1)}
-            </DialogTitle>
-          </DialogHeader>
-          {renderForm()}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
