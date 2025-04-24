@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -15,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  getPartyTransactions,
+  getTransactions,
   getSuppliers,
   getCustomers,
 } from "@/services/storageService";
@@ -56,34 +55,33 @@ const PartyLedger = () => {
   const loadTransactions = () => {
     setLoading(true);
     try {
-      // Get transactions for selected party
-      const selectedParty = 
-        partyType === "supplier" 
-          ? suppliers.find((s) => s.id === partyId)
-          : customers.find((c) => c.id === partyId);
-          
-      if (selectedParty) {
-        const partyTransactions = getPartyTransactions(partyId, partyType);
-        setTransactions(partyTransactions);
-        
-        // Calculate balance
-        let partyBalance = 0;
-        partyTransactions.forEach((transaction) => {
-          if (transaction.type === "purchase") {
+      // Get all transactions
+      const allTransactions = getTransactions() || [];
+      
+      // Filter transactions for the selected party
+      const partyTransactions = allTransactions.filter(transaction => 
+        transaction.partyId === partyId
+      );
+      
+      setTransactions(partyTransactions);
+      
+      // Calculate balance
+      let partyBalance = 0;
+      partyTransactions.forEach((transaction) => {
+        if (transaction.type === "purchase") {
+          partyBalance -= transaction.amount;
+        } else if (transaction.type === "sale") {
+          partyBalance += transaction.amount;
+        } else if (transaction.type === "payment") {
+          if (transaction.paymentDirection === "to-party") {
             partyBalance -= transaction.amount;
-          } else if (transaction.type === "sale") {
+          } else {
             partyBalance += transaction.amount;
-          } else if (transaction.type === "payment") {
-            if (transaction.paymentDirection === "to-party") {
-              partyBalance -= transaction.amount;
-            } else {
-              partyBalance += transaction.amount;
-            }
           }
-        });
-        
-        setBalance(partyBalance);
-      }
+        }
+      });
+      
+      setBalance(partyBalance);
     } catch (error) {
       console.error("Error loading transactions:", error);
     } finally {
