@@ -11,7 +11,17 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
-const PurchaseBrokerageDetails = ({ form, showBrokerage, brokerageAmount }) => {
+interface PurchaseBrokerageDetailsProps {
+  form: any;
+  showBrokerage: boolean;
+  brokerageAmount: number;
+}
+
+const PurchaseBrokerageDetails: React.FC<PurchaseBrokerageDetailsProps> = ({
+  form,
+  showBrokerage,
+  brokerageAmount,
+}) => {
   if (!showBrokerage) return null;
 
   return (

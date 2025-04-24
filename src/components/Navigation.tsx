@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ interface NavigationProps {
   showFormatButton?: boolean;
   onFormatClick?: () => void;
   showHomeButton?: boolean;
+  className?: string; // Add className prop
 }
 
 const Navigation: React.FC<NavigationProps> = ({
@@ -27,7 +29,8 @@ const Navigation: React.FC<NavigationProps> = ({
   rightContent,
   showFormatButton = false,
   onFormatClick,
-  showHomeButton = true
+  showHomeButton = true,
+  className = '' // Default to empty string
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,7 +47,7 @@ const Navigation: React.FC<NavigationProps> = ({
     navigate('/');
   };
   
-  const headerClasses = "sticky top-0 z-10 w-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-md";
+  const headerClasses = `sticky top-0 z-10 w-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-md ${className}`;
   
   return (
     <div className={headerClasses}>
