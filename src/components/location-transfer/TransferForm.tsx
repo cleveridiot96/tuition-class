@@ -1,5 +1,4 @@
 
-// Just importing useToast from the correct location
 import React, { useState, useEffect } from 'react';
 import {
   Card,
@@ -23,7 +22,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { InventoryItem } from '@/services/types';
-import { getInventory, updateInventoryAfterTransfer, saveInventory } from '@/services/inventoryService';
+import { getInventory, updateInventoryAfterTransfer, saveInventory } from '@/services/storageService';
 import { toast } from "sonner";
 import { EnhancedSearchableSelect } from '@/components/ui/enhanced-select';
 
@@ -45,7 +44,6 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [selectedItemId, setSelectedItemId] = useState<string>('');
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const { toast } = useToast();
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferFormSchema),
@@ -90,11 +88,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
       const { itemId, quantity, fromLocation, toLocation } = values;
       
       if (fromLocation === toLocation) {
-        toast({
-          title: "Error",
-          description: "From and To locations cannot be the same",
-          variant: "destructive",
-        });
+        toast.error("From and To locations cannot be the same");
         return;
       }
 
@@ -104,19 +98,12 @@ const TransferForm: React.FC<TransferFormProps> = ({ onCancel, onSubmit }) => {
       // Save the updated inventory
       saveInventory(updatedInventory);
       
-      toast({
-        title: "Success",
-        description: "Inventory transferred successfully.",
-      });
+      toast.success("Inventory transferred successfully");
 
       onSubmit();
     } catch (error) {
       console.error("Error transferring inventory:", error);
-      toast({
-        title: "Error",
-        description: "Failed to transfer inventory.",
-        variant: "destructive",
-      });
+      toast.error("Failed to transfer inventory");
     }
   };
 

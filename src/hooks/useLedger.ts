@@ -42,6 +42,7 @@ export const useLedger = () => {
   };
 
   const getPartyName = (partyId: string) => {
+    const parties = getParties();
     const party = parties.find((p) => p.id === partyId);
     return party ? party.name : "Unknown";
   };

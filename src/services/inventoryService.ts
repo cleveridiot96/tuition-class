@@ -1,167 +1,102 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { getStorageItem, saveStorageItem } from './storageUtils';
-import { InventoryItem, Purchase, Sale } from './types';
-import { toast } from 'sonner';
+import { Purchase, Sale, InventoryItem } from './types';
 
 export const getInventory = (): InventoryItem[] => {
   return getStorageItem<InventoryItem[]>('inventory') || [];
-};
-
-export const addInventoryItem = (item: InventoryItem): void => {
-  // Check for duplicate lot number
-  const inventory = getInventory();
-  const duplicateItem = inventory.find(i => 
-    i.lotNumber === item.lotNumber && 
-    i.location === item.location && 
-    !i.isDeleted
-  );
-
-  if (duplicateItem) {
-    toast.warning(`Duplicate lot number detected: ${item.lotNumber}. This lot already exists in ${item.location}.`);
-  }
-
-  const newItem = {
-    ...item,
-    id: item.id || uuidv4(),
-    dateAdded: item.dateAdded || new Date().toISOString(),
-    bags: item.bags || item.quantity, // Ensure bags is initialized if not provided
-    remainingQuantity: item.remainingQuantity || item.quantity // Initialize remainingQuantity if not provided
-  };
-
-  inventory.push(newItem);
-  saveStorageItem('inventory', inventory);
-};
-
-export const updateInventoryItem = (updatedItem: InventoryItem): void => {
-  const inventory = getInventory();
-  const index = inventory.findIndex(item => item.id === updatedItem.id);
-  
-  if (index !== -1) {
-    // Ensure bags property is maintained or updated correctly
-    if (!updatedItem.bags && inventory[index].bags) {
-      updatedItem.bags = inventory[index].bags;
-    }
-    
-    // Ensure remainingQuantity is set correctly
-    if (updatedItem.remainingQuantity === undefined) {
-      updatedItem.remainingQuantity = updatedItem.quantity;
-    }
-    
-    inventory[index] = updatedItem;
-    saveInventory(inventory);
-  }
-};
-
-export const deleteInventoryItem = (id: string): void => {
-  const inventory = getInventory();
-  const index = inventory.findIndex(item => item.id === id);
-  
-  if (index !== -1) {
-    // Soft delete the item by marking it as deleted
-    inventory[index] = { ...inventory[index], isDeleted: true };
-    saveInventory(inventory);
-  }
-};
-
-export const updateInventoryAfterPurchase = (purchase: Purchase): void => {
-  if (!purchase.lotNumber) return;
-
-  const inventoryItem: InventoryItem = {
-    id: uuidv4(),
-    lotNumber: purchase.lotNumber,
-    quantity: purchase.bags || 0,
-    bags: purchase.bags || 0,
-    remainingQuantity: purchase.bags || 0, // Initialize remainingQuantity with bags count
-    location: purchase.location || 'Default',
-    dateAdded: purchase.date || new Date().toISOString(),
-    purchaseId: purchase.id,
-    netWeight: purchase.netWeight || 0,
-    rate: purchase.rate || 0,
-  };
-
-  addInventoryItem(inventoryItem);
-};
-
-export const updateInventoryAfterSale = (sale: Sale): void => {
-  if (!sale.lotNumber) return;
-
-  const inventory = getInventory();
-  const lotItems = inventory.filter(item => 
-    item.lotNumber === sale.lotNumber && 
-    !item.isDeleted && 
-    (item.remainingQuantity || item.quantity) > 0
-  );
-
-  if (lotItems.length === 0) {
-    // Create negative inventory entry if lot doesn't exist
-    const negativeInventoryItem: InventoryItem = {
-      id: uuidv4(),
-      lotNumber: sale.lotNumber,
-      quantity: -sale.quantity,
-      bags: -sale.quantity,
-      remainingQuantity: -sale.quantity,
-      location: sale.location || 'Default',
-      dateAdded: sale.date || new Date().toISOString(),
-      saleId: sale.id,
-      netWeight: -sale.netWeight || 0,
-      rate: sale.rate || 0,
-    };
-    
-    addInventoryItem(negativeInventoryItem);
-    toast.warning(`Created negative inventory for lot ${sale.lotNumber}. Please add purchase to balance.`);
-    return;
-  }
-
-  // Sort items by date added (oldest first)
-  lotItems.sort((a, b) => new Date(a.dateAdded).getTime() - new Date(b.dateAdded).getTime());
-  
-  let remainingQuantity = sale.quantity;
-  
-  for (let i = 0; i < lotItems.length && remainingQuantity > 0; i++) {
-    const item = lotItems[i];
-    const availableQuantity = item.remainingQuantity || item.quantity;
-    const quantityToDeduct = Math.min(availableQuantity, remainingQuantity);
-    
-    // Update the inventory item
-    const updatedItem = {
-      ...item,
-      remainingQuantity: availableQuantity - quantityToDeduct,
-      netWeight: item.netWeight - (quantityToDeduct * (item.netWeight / (item.bags || item.quantity))),
-    };
-    
-    updateInventoryItem(updatedItem);
-    remainingQuantity -= quantityToDeduct;
-  }
-  
-  // If there's still remaining quantity to deduct, create a negative inventory entry
-  if (remainingQuantity > 0) {
-    const negativeInventoryItem: InventoryItem = {
-      id: uuidv4(),
-      lotNumber: sale.lotNumber,
-      quantity: -remainingQuantity,
-      bags: -remainingQuantity,
-      remainingQuantity: -remainingQuantity,
-      location: sale.location || lotItems[0].location,
-      dateAdded: sale.date || new Date().toISOString(),
-      saleId: sale.id,
-      netWeight: -(remainingQuantity * (sale.netWeight / sale.quantity)),
-      rate: sale.rate || 0,
-    };
-    
-    addInventoryItem(negativeInventoryItem);
-    toast.warning(`Created negative inventory for lot ${sale.lotNumber}. Sold ${remainingQuantity} more bags than available.`);
-  }
-
-  // Update inventory reference in the sale
-  saveStorageItem('sales', getStorageItem('sales'));
 };
 
 export const saveInventory = (inventory: InventoryItem[]): void => {
   saveStorageItem('inventory', inventory);
 };
 
-// Function for inventory transfers
+export const addInventoryItem = (item: Omit<InventoryItem, 'id'>): void => {
+  const inventory = getInventory();
+  const newItem = { ...item, id: uuidv4() };
+  inventory.push(newItem);
+  saveInventory(inventory);
+};
+
+export const updateInventoryItem = (item: InventoryItem): void => {
+  const inventory = getInventory();
+  const index = inventory.findIndex(i => i.id === item.id);
+  
+  if (index !== -1) {
+    inventory[index] = item;
+    saveInventory(inventory);
+  }
+};
+
+export const deleteInventoryItem = (id: string): void => {
+  const inventory = getInventory();
+  const index = inventory.findIndex(i => i.id === id);
+  
+  if (index !== -1) {
+    inventory[index] = { ...inventory[index], isDeleted: true };
+    saveInventory(inventory);
+  }
+};
+
+export const updateInventoryAfterPurchase = (purchase: Purchase): void => {
+  try {
+    if (purchase.isDeleted) return;
+    
+    const inventory = getInventory();
+    
+    // Create new inventory item from purchase
+    const inventoryItem: InventoryItem = {
+      id: uuidv4(),
+      purchaseId: purchase.id,
+      lotNumber: purchase.lotNumber,
+      date: purchase.date,
+      quantity: purchase.bags,
+      remainingQuantity: purchase.bags,
+      location: purchase.location,
+      netWeight: purchase.netWeight,
+      rate: purchase.rate,
+      ratePerKgAfterExpenses: purchase.ratePerKgAfterExpenses || 0,
+      supplier: purchase.party,
+      isDeleted: false
+    };
+    
+    inventory.push(inventoryItem);
+    saveInventory(inventory);
+  } catch (error) {
+    console.error("Error updating inventory after purchase:", error);
+  }
+};
+
+export const updateInventoryAfterSale = (sale: Sale): void => {
+  try {
+    if (sale.isDeleted || !sale.items || sale.items.length === 0) return;
+    
+    const inventory = getInventory();
+    
+    // Update inventory based on sold items
+    sale.items.forEach(saleItem => {
+      const inventoryItem = inventory.find(item => item.id === saleItem.inventoryItemId);
+      
+      if (inventoryItem) {
+        // Calculate remaining quantity after sale
+        const remainingQty = (inventoryItem.remainingQuantity || inventoryItem.quantity) - saleItem.quantity;
+        
+        // Update inventory item
+        inventoryItem.remainingQuantity = Math.max(0, remainingQty);
+        
+        // If completely sold, mark as effectively "sold out"
+        if (inventoryItem.remainingQuantity === 0) {
+          inventoryItem.isSoldOut = true;
+        }
+      }
+    });
+    
+    saveInventory(inventory);
+  } catch (error) {
+    console.error("Error updating inventory after sale:", error);
+  }
+};
+
 export const updateInventoryAfterTransfer = (
   inventory: InventoryItem[], 
   itemId: string, 
@@ -169,66 +104,53 @@ export const updateInventoryAfterTransfer = (
   fromLocation: string, 
   toLocation: string
 ): InventoryItem[] => {
-  // Find the source item
-  const sourceItemIndex = inventory.findIndex(item => 
-    item.id === itemId && item.location === fromLocation
-  );
-  
-  if (sourceItemIndex === -1) {
-    toast.error(`Item not found in ${fromLocation}`);
-    return inventory;
-  }
-  
-  const sourceItem = inventory[sourceItemIndex];
-  
-  // Check if there's enough quantity
-  const availableQuantity = sourceItem.remainingQuantity !== undefined 
-    ? sourceItem.remainingQuantity 
-    : sourceItem.quantity;
+  try {
+    // Create a deep copy of the inventory array
+    const updatedInventory = [...inventory];
     
-  if (availableQuantity < quantity) {
-    toast.error(`Not enough quantity available in ${fromLocation}. Available: ${availableQuantity}`);
-    return inventory;
-  }
-  
-  // Update source item
-  const updatedSourceItem = {
-    ...sourceItem,
-    remainingQuantity: availableQuantity - quantity
-  };
-  
-  // Check if destination already has this item
-  const destItemIndex = inventory.findIndex(item => 
-    item.lotNumber === sourceItem.lotNumber && 
-    item.location === toLocation &&
-    !item.isDeleted
-  );
-  
-  const result = [...inventory];
-  result[sourceItemIndex] = updatedSourceItem;
-  
-  if (destItemIndex !== -1) {
-    // Update existing destination item
-    const destItem = result[destItemIndex];
-    result[destItemIndex] = {
-      ...destItem,
-      remainingQuantity: (destItem.remainingQuantity !== undefined ? destItem.remainingQuantity : destItem.quantity) + quantity
+    // Find the source item
+    const sourceItemIndex = updatedInventory.findIndex(item => item.id === itemId);
+    
+    if (sourceItemIndex === -1) {
+      throw new Error("Inventory item not found");
+    }
+    
+    const sourceItem = updatedInventory[sourceItemIndex];
+    const availableQuantity = sourceItem.remainingQuantity || sourceItem.quantity;
+    
+    if (quantity > availableQuantity) {
+      throw new Error("Transfer quantity exceeds available quantity");
+    }
+    
+    // Update the source item's remaining quantity
+    updatedInventory[sourceItemIndex] = {
+      ...sourceItem,
+      remainingQuantity: availableQuantity - quantity
     };
-  } else {
-    // Create new inventory entry for the destination
-    result.push({
+    
+    // Create a new inventory item at the destination
+    const destinationItem: InventoryItem = {
       id: uuidv4(),
+      purchaseId: sourceItem.purchaseId,
       lotNumber: sourceItem.lotNumber,
-      quantity,
+      date: new Date().toISOString().split('T')[0],
+      quantity: quantity,
       remainingQuantity: quantity,
       location: toLocation,
-      dateAdded: new Date().toISOString(),
-      purchaseId: sourceItem.purchaseId,
-      netWeight: sourceItem.netWeight ? (sourceItem.netWeight / sourceItem.quantity) * quantity : undefined,
+      netWeight: sourceItem.netWeight * (quantity / sourceItem.quantity),
       rate: sourceItem.rate,
-      transferredFrom: fromLocation
-    });
+      ratePerKgAfterExpenses: sourceItem.ratePerKgAfterExpenses,
+      supplier: sourceItem.supplier,
+      isDeleted: false,
+      transferredFrom: sourceItem.id
+    };
+    
+    // Add the new item to the inventory
+    updatedInventory.push(destinationItem);
+    
+    return updatedInventory;
+  } catch (error) {
+    console.error("Error updating inventory after transfer:", error);
+    throw error;
   }
-  
-  return result;
 };

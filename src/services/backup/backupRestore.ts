@@ -10,8 +10,10 @@ export const clearAllData = () => {
   try {
     localStorage.clear();
     window.dispatchEvent(new Event('storage'));
+    return true;
   } catch (error) {
     console.error("Clear all data error:", error);
+    return false;
   }
 };
 
@@ -25,8 +27,10 @@ export const clearAllMasterData = () => {
     localStorage.removeItem('transporters');
     localStorage.removeItem('locations');
     window.dispatchEvent(new Event('storage'));
+    return true;
   } catch (error) {
     console.error("Clear master data error:", error);
+    return false;
   }
 };
 
@@ -36,8 +40,41 @@ export const seedInitialData = (force?: boolean) => {
     if (force || !getStorageItem('locations')) {
       saveStorageItem('locations', ["Mumbai", "Chiplun", "Sawantwadi"]);
     }
+    return true;
   } catch (error) {
     console.error("Seed initial data error:", error);
+    return false;
+  }
+};
+
+// Complete format of all data with backup
+export const completeFormatAllData = async (): Promise<boolean> => {
+  try {
+    // Create a backup first
+    const backup = exportDataBackup(true);
+    
+    // If the backup was created successfully, clear all data
+    if (backup) {
+      // Save backup timestamp
+      saveStorageItem('lastBackupTime', new Date().toISOString());
+      
+      // Create a backup file (in a real app, this would download or store the backup)
+      console.log("Data backup created before format");
+      
+      // Clear all data
+      const clearSuccess = clearAllData();
+      
+      // Seed initial data
+      if (clearSuccess) {
+        seedInitialData(true);
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.error("Complete format error:", error);
+    return false;
   }
 };
 

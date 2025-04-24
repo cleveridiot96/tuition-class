@@ -1,17 +1,11 @@
+
 import { v4 as uuidv4 } from 'uuid';
 import { getStorageItem, saveStorageItem } from './storageUtils';
 import { toast } from 'sonner';
 import { Purchase, Sale } from './types';
-import {
-  getInventory,
-  addInventoryItem,
-  updateInventoryItem,
-  deleteInventoryItem,
-  updateInventoryAfterPurchase,
-  updateInventoryAfterSale,
-  updateInventoryAfterTransfer,
-  saveInventory
-} from './inventoryService';
+
+// Re-export core storage utilities
+export { getStorageItem, saveStorageItem } from './storageUtils';
 
 // Re-export inventory functions for backward compatibility
 export {
@@ -23,10 +17,78 @@ export {
   updateInventoryAfterSale,
   updateInventoryAfterTransfer,
   saveInventory
-};
+} from './inventoryService';
 
-// Other storage functions
+// Re-export backup and data management functions
+export { 
+  exportDataBackup, 
+  importDataBackup 
+} from './backup/exportBackup';
 
+export { 
+  clearAllData,
+  clearAllMasterData,
+  seedInitialData,
+  completeFormatAllData
+} from './backup/backupRestore';
+
+export { 
+  debugStorage 
+} from './debug/storageDebug';
+
+// Data model interfaces
+export interface Agent {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface Broker {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface Transporter {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  notes?: string;
+}
+
+export interface Party {
+  id: string;
+  name: string;
+  phone?: string;
+  address?: string;
+  type: 'supplier' | 'customer' | 'agent' | 'broker' | 'transporter';
+  balance?: number;
+}
+
+// Storage functions
+
+// Locations
 export const getLocations = (): string[] => {
   return getStorageItem<string[]>('locations') || ['Mumbai', 'Chiplun', 'Sawantwadi'];
 };
@@ -55,6 +117,16 @@ export const updatePurchase = (purchase: Purchase): void => {
   
   if (index !== -1) {
     purchases[index] = purchase;
+    savePurchases(purchases);
+  }
+};
+
+export const deletePurchase = (id: string): void => {
+  const purchases = getPurchases();
+  const index = purchases.findIndex(p => p.id === id);
+  
+  if (index !== -1) {
+    purchases[index] = { ...purchases[index], isDeleted: true };
     savePurchases(purchases);
   }
 };
@@ -102,40 +174,131 @@ export const deleteSale = (id: string): void => {
 };
 
 // Helper functions
-
 export const checkDuplicateLot = (lotNumber: string): boolean => {
   const purchases = getPurchases() || [];
   return purchases.some(p => p.lotNumber === lotNumber && !p.isDeleted);
 };
 
-// Agent functions
-export const getAgents = () => {
-  return getStorageItem('agents') || [];
+// Entity management functions
+export const getAgents = (): Agent[] => {
+  return getStorageItem<Agent[]>('agents') || [];
 };
 
-export const getSuppliers = () => {
-  return getStorageItem('suppliers') || [];
+export const getSuppliers = (): Supplier[] => {
+  return getStorageItem<Supplier[]>('suppliers') || [];
 };
 
-export const getTransporters = () => {
-  return getStorageItem('transporters') || [];
+export const getTransporters = (): Transporter[] => {
+  return getStorageItem<Transporter[]>('transporters') || [];
 };
 
-export const getBrokers = () => {
-  return getStorageItem('brokers') || [];
+export const getBrokers = (): Broker[] => {
+  return getStorageItem<Broker[]>('brokers') || [];
 };
 
-export const getCustomers = () => {
-  return getStorageItem('customers') || [];
+export const getCustomers = (): Customer[] => {
+  return getStorageItem<Customer[]>('customers') || [];
 };
 
 // Party functions (for ledger)
-export const getParties = () => {
-  return getStorageItem('parties') || [];
+export const getParties = (): Party[] => {
+  return getStorageItem<Party[]>('parties') || [];
 };
 
 export const getTransactions = () => {
   return getStorageItem('transactions') || [];
 };
 
-// Add other storage methods as needed
+// Entity CRUD operations
+export const addAgent = (agent: Omit<Agent, 'id'>): void => {
+  const agents = getAgents();
+  const newAgent = { ...agent, id: uuidv4() };
+  agents.push(newAgent);
+  saveStorageItem('agents', agents);
+};
+
+export const addSupplier = (supplier: Omit<Supplier, 'id'>): void => {
+  const suppliers = getSuppliers();
+  const newSupplier = { ...supplier, id: uuidv4() };
+  suppliers.push(newSupplier);
+  saveStorageItem('suppliers', suppliers);
+};
+
+export const addCustomer = (customer: Omit<Customer, 'id'>): void => {
+  const customers = getCustomers();
+  const newCustomer = { ...customer, id: uuidv4() };
+  customers.push(newCustomer);
+  saveStorageItem('customers', customers);
+};
+
+export const addBroker = (broker: Omit<Broker, 'id'>): void => {
+  const brokers = getBrokers();
+  const newBroker = { ...broker, id: uuidv4() };
+  brokers.push(newBroker);
+  saveStorageItem('brokers', brokers);
+};
+
+export const addTransporter = (transporter: Omit<Transporter, 'id'>): void => {
+  const transporters = getTransporters();
+  const newTransporter = { ...transporter, id: uuidv4() };
+  transporters.push(newTransporter);
+  saveStorageItem('transporters', transporters);
+};
+
+// Dashboard statistics
+export const getTotalSalesValue = (): number => {
+  const sales = getSales() || [];
+  return sales
+    .filter(sale => !sale.isDeleted)
+    .reduce((total, sale) => total + (sale.totalAmount || 0), 0);
+};
+
+export const getTotalPurchaseValue = (): number => {
+  const purchases = getPurchases() || [];
+  return purchases
+    .filter(p => !p.isDeleted)
+    .reduce((total, purchase) => total + (purchase.totalAmount || 0), 0);
+};
+
+export const getTotalInventoryValue = (): number => {
+  const inventory = getInventory() || [];
+  return inventory
+    .filter(item => !item.isDeleted && item.remainingQuantity > 0)
+    .reduce((total, item) => total + (item.ratePerKgAfterExpenses * item.remainingQuantity), 0);
+};
+
+// Backup and Restore utilities
+export const getLastBackupTime = (): string | null => {
+  const backupTimestamp = getStorageItem<string>('lastBackupTime');
+  return backupTimestamp;
+};
+
+export const getBackupList = (): string[] => {
+  // This would typically return a list of available backups
+  // For now, let's return a dummy implementation
+  const lastBackup = getLastBackupTime();
+  return lastBackup ? [lastBackup] : [];
+};
+
+// Payment and Receipt utilities
+export const getNextPaymentNumber = (): string => {
+  const payments = getStorageItem<any[]>('payments') || [];
+  const latestNum = payments.length > 0 
+    ? Math.max(...payments.map(p => {
+        const num = parseInt(p.paymentNumber?.replace(/[^0-9]/g, '') || '0');
+        return isNaN(num) ? 0 : num;
+      }))
+    : 0;
+  return `PMT-${(latestNum + 1).toString().padStart(4, '0')}`;
+};
+
+export const getNextReceiptNumber = (): string => {
+  const receipts = getStorageItem<any[]>('receipts') || [];
+  const latestNum = receipts.length > 0 
+    ? Math.max(...receipts.map(r => {
+        const num = parseInt(r.receiptNumber?.replace(/[^0-9]/g, '') || '0');
+        return isNaN(num) ? 0 : num;
+      }))
+    : 0;
+  return `RCT-${(latestNum + 1).toString().padStart(4, '0')}`;
+};
