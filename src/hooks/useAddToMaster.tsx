@@ -1,68 +1,111 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
+import { addCustomer, addSupplier, addBroker, addTransporter, addAgent } from '@/services/storageService';
 
-interface UseAddToMasterReturn {
-  confirmAddToMaster: (value: string, onConfirm: (value: string) => void) => void;
-  AddToMasterDialog: React.FC;
-}
+export function useAddToMaster() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [itemName, setItemName] = useState('');
+  const [itemType, setItemType] = useState<'customer' | 'supplier' | 'broker' | 'transporter' | 'agent'>('customer');
+  const [callback, setCallback] = useState<((value: string) => void) | null>(null);
 
-export function useAddToMaster(): UseAddToMasterReturn {
-  const [showDialog, setShowDialog] = useState(false);
-  const [currentValue, setCurrentValue] = useState('');
-  const [onConfirmCallback, setOnConfirmCallback] = useState<((value: string) => void) | null>(null);
+  const confirmAddToMaster = (
+    name: string,
+    onConfirm: (value: string) => void,
+    type: 'customer' | 'supplier' | 'broker' | 'transporter' | 'agent' = 'customer'
+  ) => {
+    setItemName(name);
+    setItemType(type);
+    setCallback(() => onConfirm);
+    setIsOpen(true);
+  };
 
-  const confirmAddToMaster = useCallback((value: string, onConfirm: (value: string) => void) => {
-    setCurrentValue(value);
-    setOnConfirmCallback(() => onConfirm);
-    setShowDialog(true);
-  }, []);
-
-  const handleConfirm = useCallback(() => {
-    if (onConfirmCallback && currentValue) {
-      try {
-        onConfirmCallback(currentValue);
-        toast.success(`"${currentValue}" added to master successfully`);
-      } catch (error) {
-        console.error('Error adding to master:', error);
-        toast.error('Failed to add to master');
-      }
+  const handleAddItem = () => {
+    if (!itemName.trim()) {
+      toast.error('Name cannot be empty');
+      return;
     }
-    setShowDialog(false);
-  }, [currentValue, onConfirmCallback]);
 
-  const handleCancel = useCallback(() => {
-    setShowDialog(false);
-  }, []);
+    try {
+      const newId = `${itemType}-${Date.now()}`;
+      const newItem = {
+        id: newId,
+        name: itemName,
+      };
 
-  const AddToMasterDialog = useCallback(() => {
-    return (
-      <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Add to Master</AlertDialogTitle>
-            <AlertDialogDescription>
-              Do you want to add "{currentValue}" to the master list? This will make it available for future use.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancel}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>Add</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    );
-  }, [showDialog, currentValue, handleCancel, handleConfirm]);
+      // Add to appropriate storage
+      switch (itemType) {
+        case 'customer':
+          addCustomer(newItem);
+          break;
+        case 'supplier':
+          addSupplier(newItem);
+          break;
+        case 'broker':
+          addBroker({...newItem, commissionRate: 1}); // Default commission rate
+          break;
+        case 'transporter':
+          addTransporter(newItem);
+          break;
+        case 'agent':
+          addAgent(newItem);
+          break;
+      }
 
-  return { confirmAddToMaster, AddToMasterDialog };
+      toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} added successfully`);
+      
+      // Call the callback with the new ID
+      if (callback) {
+        callback(newId);
+      }
+      
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error adding item:', error);
+      toast.error(`Failed to add ${itemType}`);
+    }
+  };
+
+  const AddToMasterDialog = () => (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Add New {itemType.charAt(0).toUpperCase() + itemType.slice(1)}</DialogTitle>
+        </DialogHeader>
+        <div className="py-4">
+          <Label htmlFor="name">Name</Label>
+          <Input
+            id="name"
+            value={itemName}
+            onChange={(e) => setItemName(e.target.value)}
+            className="mt-2"
+            autoFocus
+          />
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleAddItem}>
+            Add {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  return {
+    confirmAddToMaster,
+    AddToMasterDialog,
+  };
 }

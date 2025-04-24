@@ -1,5 +1,5 @@
 
-import * as React from "react";
+import React from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -10,12 +10,12 @@ interface EnhancedSelectOptionProps {
   onSelect: () => void;
 }
 
-export const EnhancedSelectOption = React.memo(({
+export const EnhancedSelectOption: React.FC<EnhancedSelectOptionProps> = ({
   value,
   label,
   isSelected,
   onSelect
-}: EnhancedSelectOptionProps) => {
+}) => {
   return (
     <div
       className={cn(
@@ -33,6 +33,4 @@ export const EnhancedSelectOption = React.memo(({
       {label}
     </div>
   );
-});
-
-EnhancedSelectOption.displayName = "EnhancedSelectOption";
+};

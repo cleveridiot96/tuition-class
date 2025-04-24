@@ -69,14 +69,14 @@ const Ledger = () => {
   }, [transactions, dateRange, setBalance]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <Navigation title="Party Ledger" showBackButton />
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-amber-100">
+      <Navigation title="Party Ledger" showBackButton className="sticky top-0 z-10 bg-amber-700 text-white shadow-md" />
       <div className="container mx-auto px-4 py-6">
-        <Card className="bg-gradient-to-br from-gray-100 to-gray-200 border-gray-200 shadow print:shadow-none print:border-none">
-          <CardHeader className="print:hidden">
-            <CardTitle className="text-gray-800">Party Ledger</CardTitle>
+        <Card className="bg-gradient-to-br from-amber-100 to-amber-200 border-amber-300 shadow print:shadow-none print:border-none">
+          <CardHeader className="print:hidden bg-amber-700 text-white rounded-t-md">
+            <CardTitle className="text-amber-50">Party Ledger</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-amber-50">
             <LedgerFilters
               selectedParty={selectedParty}
               dateRange={dateRange}
@@ -104,8 +104,8 @@ const Ledger = () => {
 
             {isLoading ? (
               <div className="text-center py-8">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500"></div>
-                <p className="mt-2">Loading ledger data...</p>
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500"></div>
+                <p className="mt-2 text-amber-800">Loading ledger data...</p>
               </div>
             ) : (
               <>
@@ -118,11 +118,11 @@ const Ledger = () => {
                     />
                   </>
                 ) : selectedParty ? (
-                  <p className="text-center py-8 text-gray-500">
+                  <p className="text-center py-8 text-amber-800">
                     No transactions found for the selected period.
                   </p>
                 ) : (
-                  <p className="text-center py-8 text-gray-500">
+                  <p className="text-center py-8 text-amber-800">
                     Please select a party to view their ledger.
                   </p>
                 )}

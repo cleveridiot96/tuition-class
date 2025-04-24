@@ -13,9 +13,8 @@ import {
   handleDeleteSale, 
   handleSaleSubmit, 
   handleUpdateInventoryAfterSale,
-  useSalesActionHandlers
 } from "./sales/SalesActionHandlers";
-import SalesForm from "@/components/sales/MultiItemSalesForm";
+import ContinuousSalesForm from "@/components/sales/ContinuousSalesForm";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import DeletedSalesTable from "./sales/DeletedSalesTable";
 
@@ -49,29 +48,39 @@ const Sales = () => {
       sale.id === id ? { ...sale, isDeleted: false } : sale
     );
     setSales(updatedSales);
-    // You would typically also update storage here
+    // Update storage with restored sale
+    const storageService = require('@/services/storageService');
+    storageService.saveSales(updatedSales);
+    
+    // Update UI and show success message
+    loadData();
+    
+    const { toast } = require('sonner');
+    toast.success("Sale restored successfully!");
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
-      <Navigation title="Sales" showBackButton />
+      <Navigation title="Sales" showBackButton className="sticky top-0 z-10 bg-purple-700 text-white shadow-md" />
       <div className="container mx-auto px-4 py-6">
         <Card className="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-200 shadow">
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <CardTitle className="text-purple-800">Sales</CardTitle>
-            <Button
-              onClick={() => {
-                setIsAdding(true);
-                setEditingSale(null);
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Sale
-            </Button>
+            {!isAdding && (
+              <Button
+                onClick={() => {
+                  setIsAdding(true);
+                  setEditingSale(null);
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Add Sale
+              </Button>
+            )}
           </CardHeader>
           <CardContent>
             {isAdding ? (
-              <SalesForm
+              <ContinuousSalesForm
                 onCancel={() => {
                   setIsAdding(false);
                   setEditingSale(null);

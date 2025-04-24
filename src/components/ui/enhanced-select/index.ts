@@ -1,5 +1,5 @@
 
-export * from './enhanced-searchable-select';
+export { EnhancedSearchableSelect } from './enhanced-searchable-select';
 export * from './types';
 export * from './use-enhanced-select';
 export * from './enhanced-select-option';

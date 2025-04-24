@@ -11,9 +11,25 @@ export const getPartyName = (partyId: string, parties: Party[] = []): string => 
   return party ? party.name : "Unknown";
 };
 
-// Helper function to get parties
+// Helper function to get parties from all possible sources
 export const getParties = (): Party[] => {
-  return getStorageItem<Party[]>('parties') || [];
+  // Get data from all potential sources
+  const customers = getStorageItem<Party[]>('customers') || [];
+  const suppliers = getStorageItem<Party[]>('suppliers') || [];
+  const brokers = getStorageItem<Party[]>('brokers') || [];
+  const agents = getStorageItem<Party[]>('agents') || [];
+  const parties = getStorageItem<Party[]>('parties') || [];
+  
+  // Combine all sources and deduplicate by ID
+  const allParties = [...customers, ...suppliers, ...brokers, ...agents, ...parties];
+  const uniqueParties = allParties.reduce((acc, party) => {
+    if (!acc.find(p => p.id === party.id)) {
+      acc.push(party);
+    }
+    return acc;
+  }, [] as Party[]);
+  
+  return uniqueParties;
 };
 
 // Helper function to get transactions
@@ -41,6 +57,7 @@ export const useLedger = () => {
   useEffect(() => {
     const loadedParties = getParties();
     setParties(loadedParties);
+    console.log('Loaded parties:', loadedParties); // Debug output
   }, []);
 
   // Load transactions when selectedParty changes

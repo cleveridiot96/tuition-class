@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,9 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
   const [notes, setNotes] = useState<string>("");
   const [locations, setLocations] = useState<string[]>([]);
   const [availableQuantity, setAvailableQuantity] = useState<number>(0);
+  const [bags, setBags] = useState<number>(0);
+  const [weightPerBag, setWeightPerBag] = useState<number>(50);
+  const [isManualWeight, setIsManualWeight] = useState<boolean>(false);
 
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -51,6 +55,14 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
       setAvailableQuantity(0);
     }
   }, [selectedItem, fromLocation, items]);
+
+  // Calculate weight based on bags
+  useEffect(() => {
+    if (!isManualWeight) {
+      const calculatedWeight = bags * weightPerBag;
+      setQuantity(calculatedWeight);
+    }
+  }, [bags, weightPerBag, isManualWeight]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,6 +131,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
         fromLocation,
         toLocation,
         quantity: Number(quantity),
+        bags,
         notes,
         timestamp: new Date().toISOString()
       };
@@ -134,6 +147,8 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
       setFromLocation("");
       setToLocation("");
       setQuantity("");
+      setBags(0);
+      setIsManualWeight(false);
       setNotes("");
       
       const refreshedInventory = getInventory();
@@ -155,10 +170,41 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
       return;
     }
     
+    setIsManualWeight(true);
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
       setQuantity(numValue);
+      
+      // Update bags based on weight only if weight per bag is valid
+      if (weightPerBag > 0) {
+        const calculatedBags = Math.round(numValue / weightPerBag);
+        setBags(calculatedBags);
+      }
     }
+  };
+
+  const handleBagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    
+    if (isNaN(value)) {
+      setBags(0);
+      return;
+    }
+    
+    setBags(value);
+    setIsManualWeight(false);
+  };
+
+  const handleWeightPerBagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    
+    if (isNaN(value) || value <= 0) {
+      setWeightPerBag(50); // Default to 50kg if invalid
+      return;
+    }
+    
+    setWeightPerBag(value);
+    setIsManualWeight(false);
   };
 
   return (
@@ -215,10 +261,38 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="bags">
+                Number of Bags
+              </Label>
+              <Input
+                id="bags"
+                type="number"
+                min="0"
+                step="1"
+                value={bags}
+                onChange={handleBagsChange}
+                placeholder="Enter number of bags"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="weightPerBag">Weight per Bag (kg)</Label>
+              <Input
+                id="weightPerBag"
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={weightPerBag}
+                onChange={handleWeightPerBagChange}
+                placeholder="Weight per bag"
+              />
+            </div>
+            
             <div className="space-y-2">
               <Label htmlFor="quantity">
-                Quantity (kg) {availableQuantity > 0 && `- Available: ${availableQuantity} kg`}
+                Total Weight (kg) {availableQuantity > 0 && `- Available: ${availableQuantity} kg`}
               </Label>
               <Input
                 id="quantity"
@@ -228,10 +302,16 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
                 max={availableQuantity.toString()}
                 value={quantity}
                 onChange={handleQuantityChange}
-                placeholder="Enter quantity to transfer"
+                placeholder="Enter total weight to transfer"
+                className={isManualWeight ? "border-amber-400" : ""}
               />
+              {isManualWeight && (
+                <p className="text-xs text-amber-600">Manual weight set</p>
+              )}
             </div>
-            
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="date">Date</Label>
               <Input
@@ -241,24 +321,24 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmi
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="notes">Notes (Optional)</Label>
-            <Input
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional notes..."
-            />
+            
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Input
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add any additional notes..."
+              />
+            </div>
           </div>
         </CardContent>
         
         <CardFooter className="flex justify-between">
-          <Button type="button" variant="outline" onClick={() => onSubmit()}>
+          <Button type="button" variant="outline" onClick={() => onSubmit ? onSubmit() : onTransferComplete()}>
             Cancel
           </Button>
-          <Button type="submit">
+          <Button type="submit" className="bg-green-600 hover:bg-green-700 text-white">
             Complete Transfer
           </Button>
         </CardFooter>

@@ -1,7 +1,6 @@
 
-import * as React from "react";
-import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { Plus, AlertCircle } from "lucide-react";
 
 interface EnhancedSelectSuggestionProps {
   suggestedMatch: string | null;
@@ -12,48 +11,48 @@ interface EnhancedSelectSuggestionProps {
   showAddOption: boolean;
 }
 
-export const EnhancedSelectSuggestion = React.memo(({
+export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> = ({
   suggestedMatch,
   onUseSuggestion,
   searchTerm,
   onAddNewItem,
   masterType,
   showAddOption
-}: EnhancedSelectSuggestionProps) => {
+}) => {
+  if (!searchTerm) {
+    return (
+      <div className="py-6 text-center text-sm text-muted-foreground">
+        Type to search...
+      </div>
+    );
+  }
+
   return (
-    <div className="py-6 text-center text-sm">
-      {searchTerm.trim() ? (
-        <div className="space-y-2 px-4">
-          {suggestedMatch ? (
-            <div className="space-y-2">
-              <p>Did you mean?</p>
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={onUseSuggestion}
-              >
-                {suggestedMatch}
-              </Button>
-            </div>
-          ) : (
-            <p>"{searchTerm}" not found</p>
-          )}
-          {showAddOption && (
-            <Button 
-              variant="outline" 
-              className="w-full flex items-center justify-center gap-2"
-              onClick={onAddNewItem}
-            >
-              <Plus className="h-4 w-4" />
-              Add to {masterType} master
-            </Button>
-          )}
+    <div className="p-2">
+      {suggestedMatch ? (
+        <div className="p-2 text-sm">
+          <p className="mb-2">Did you mean:</p>
+          <div
+            className="flex items-center px-3 py-2 rounded-sm cursor-pointer hover:bg-accent"
+            onClick={onUseSuggestion}
+          >
+            <span className="ml-2">{suggestedMatch}</span>
+          </div>
+        </div>
+      ) : searchTerm.length > 0 && showAddOption ? (
+        <div
+          className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground"
+          onClick={onAddNewItem}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add "{searchTerm}" to {masterType} master
         </div>
       ) : (
-        <p>No options available</p>
+        <div className="flex items-center gap-2 py-6 text-center text-sm text-muted-foreground">
+          <AlertCircle className="h-4 w-4" />
+          <span>No results found.</span>
+        </div>
       )}
     </div>
   );
-});
-
-EnhancedSelectSuggestion.displayName = "EnhancedSelectSuggestion";
+};
