@@ -283,59 +283,9 @@ export type {
   EnhancedInventoryItem
 } from '@/services/types';
 
-export const getMasters = () => {
-  try {
-    const data = getStorageItem<any[]>('masters');
-    return data || [];
-  } catch (err) {
-    console.error("Failed to load masters", err);
-    return [];
-  }
-};
-
-export const addMaster = (master: { 
-  id: string; 
-  name: string; 
-  phone: string; 
-  address: string 
-}) => {
-  try {
-    const existing = getMasters();
-    existing.push(master);
-    saveStorageItem('masters', existing);
-  } catch (err) {
-    console.error("Failed to save master", err);
-  }
-};
-
-// Optional: Add a method to delete a master
-export const deleteMaster = (masterId: string) => {
-  try {
-    const existing = getMasters();
-    const updatedMasters = existing.filter(m => m.id !== masterId);
-    saveStorageItem('masters', updatedMasters);
-  } catch (err) {
-    console.error("Failed to delete master", err);
-  }
-};
-
-// Optional: Add a method to update a master
-export const updateMaster = (masterId: string, updatedMaster: Partial<{
-  name: string;
-  phone: string;
-  address: string;
-}>) => {
-  try {
-    const existing = getMasters();
-    const masterIndex = existing.findIndex(m => m.id === masterId);
-    if (masterIndex !== -1) {
-      existing[masterIndex] = { 
-        ...existing[masterIndex], 
-        ...updatedMaster 
-      };
-      saveStorageItem('masters', existing);
-    }
-  } catch (err) {
-    console.error("Failed to update master", err);
-  }
-};
+export {
+  getMasters,
+  addMaster,
+  deleteMaster,
+  updateMaster
+} from './masterService';
