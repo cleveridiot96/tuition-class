@@ -2,8 +2,11 @@
 import { toast } from "sonner";
 import { clearAllData } from './dataClear';
 import { seedInitialData } from './seedData';
-import { exportDataBackup } from './exportBackup';
 import { saveStorageItem } from '../storageUtils';
+
+// Export the function from exportBackup
+export { exportDataBackup } from './exportBackup';
+export { importDataBackup } from './importBackup';
 
 // Complete format of all data with backup
 export const completeFormatAllData = async (): Promise<boolean> => {

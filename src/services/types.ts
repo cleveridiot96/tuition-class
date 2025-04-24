@@ -1,4 +1,3 @@
-
 // Basic interfaces
 export interface BasePurchase {
   id: string;
@@ -138,6 +137,7 @@ export interface Agent {
   phone?: string;
   address?: string;
   notes?: string;
+  balance?: number; // Adding optional balance field to resolve previous type errors
 }
 
 export interface Supplier {
@@ -154,6 +154,7 @@ export interface Customer {
   phone?: string;
   address?: string;
   notes?: string;
+  balance?: number; // Added optional balance
 }
 
 export interface Broker {
@@ -163,6 +164,7 @@ export interface Broker {
   address?: string;
   notes?: string;
   commissionRate?: number;
+  balance?: number; // Added optional balance
 }
 
 export interface Transporter {
@@ -171,6 +173,8 @@ export interface Transporter {
   phone?: string;
   address?: string;
   notes?: string;
+  vehicleNumber?: string; // Added optional vehicleNumber
+  balance?: number; // Added optional balance
 }
 
 // Add EnhancedInventoryItem for StockReport
