@@ -62,7 +62,7 @@ export default function SalesTable({
                 <TableCell>{sale.netWeight}</TableCell>
                 <TableCell>₹{sale.rate}</TableCell>
                 <TableCell>₹{sale.totalAmount ? formatAmount(sale.totalAmount) : "0.00"}</TableCell>
-                <TableCell>₹{formatAmount(sale.billAmount)}</TableCell>
+                <TableCell>₹{formatAmount(sale.billAmount || 0)}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button

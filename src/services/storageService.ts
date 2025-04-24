@@ -2,7 +2,7 @@
 import { getStorageItem, saveStorageItem, removeStorageItem } from './core/storageCore';
 import { exportDataBackup } from './backup/exportBackup';
 import { importDataBackup } from './backup/importBackup';
-import { completeFormatAllData } from './system/systemOperations';
+import { completeFormatAllData, clearAllData } from './backup/backupRestore';
 
 // Re-export core storage functions
 export { 
@@ -13,35 +13,64 @@ export {
 
 // Export utility functions for getting collections
 export const getAgents = () => {
-  return getStorageItem<any[]>('agents');
+  return getStorageItem<any[]>('agents') || [];
 };
 
 export const getBrokers = () => {
-  return getStorageItem<any[]>('brokers');
+  return getStorageItem<any[]>('brokers') || [];
 };
 
 export const getCustomers = () => {
-  return getStorageItem<any[]>('customers');
+  return getStorageItem<any[]>('customers') || [];
 };
 
 export const getSuppliers = () => {
-  return getStorageItem<any[]>('suppliers');
+  return getStorageItem<any[]>('suppliers') || [];
 };
 
 export const getTransporters = () => {
-  return getStorageItem<any[]>('transporters');
+  return getStorageItem<any[]>('transporters') || [];
 };
 
 export const getLocations = () => {
   return getStorageItem<string[]>('locations') || ['Mumbai', 'Chiplun', 'Sawantwadi'];
 };
 
-// Add Agents function that was missing
+// Add functions for entities
 export const addAgent = (agent: any) => {
   const agents = getAgents();
   agents.push(agent);
   saveStorageItem('agents', agents);
 };
+
+// For debugStorage used in useStorageDebug.ts
+export const debugStorage = {
+  getAllData: () => {
+    const data: Record<string, any> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) {
+        try {
+          data[key] = JSON.parse(localStorage.getItem(key) || 'null');
+        } catch (e) {
+          data[key] = localStorage.getItem(key);
+        }
+      }
+    }
+    return data;
+  },
+  getItem: (key: string) => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : null;
+    } catch (e) {
+      return localStorage.getItem(key);
+    }
+  }
+};
+
+// Re-export clearAllData
+export { clearAllData } from './backup/backupRestore';
 
 // Backup and System Operations
 export { 
@@ -52,7 +81,7 @@ export {
 
 // Inventory and Transaction Related
 export const getInventory = () => {
-  return getStorageItem<any[]>('inventory');
+  return getStorageItem<any[]>('inventory') || [];
 };
 
 export const saveInventory = (inventory: any[]) => {
@@ -63,10 +92,40 @@ export const updateInventoryAfterTransfer = (updatedInventory: any[]) => {
   saveStorageItem('inventory', updatedInventory);
 };
 
-// Add missing functions for transaction handling
+// Add missing sales-related functions
+export const addSale = (sale: any) => {
+  const sales = getSales();
+  sales.push(sale);
+  saveStorageItem('sales', sales);
+};
+
+export const updateSale = (saleId: string, updatedSale: any) => {
+  const sales = getSales();
+  const index = sales.findIndex(s => s.id === saleId);
+  if (index !== -1) {
+    sales[index] = updatedSale;
+    saveStorageItem('sales', sales);
+  }
+};
+
+export const deleteSale = (saleId: string) => {
+  const sales = getSales().filter(s => s.id !== saleId);
+  saveStorageItem('sales', sales);
+};
+
+export const updateInventoryAfterSale = (updatedInventory: any[]) => {
+  saveStorageItem('inventory', updatedInventory);
+};
+
+// Add missing function for purchases
+export const savePurchases = (purchases: any[]) => {
+  saveStorageItem('purchases', purchases);
+};
+
+// Add missing transactions function
 export const getTransactions = (partyId: string, startDate: string, endDate: string): any[] => {
   // Placeholder implementation - you'll need to customize this
-  const allTransactions = getStorageItem<any[]>('transactions');
+  const allTransactions = getStorageItem<any[]>('transactions') || [];
   return allTransactions.filter(t => 
     t.partyId === partyId && 
     t.date >= startDate && 
@@ -76,17 +135,17 @@ export const getTransactions = (partyId: string, startDate: string, endDate: str
 
 // Dashboard Related Functions (placeholders)
 export const getTotalSalesValue = (): number => {
-  const sales = getStorageItem<any[]>('sales');
+  const sales = getStorageItem<any[]>('sales') || [];
   return sales.reduce((total, sale) => total + (sale.totalAmount || 0), 0);
 };
 
 export const getTotalPurchaseValue = (): number => {
-  const purchases = getStorageItem<any[]>('purchases');
+  const purchases = getStorageItem<any[]>('purchases') || [];
   return purchases.reduce((total, purchase) => total + (purchase.totalAmount || 0), 0);
 };
 
 export const getTotalInventoryValue = (): number => {
-  const inventory = getStorageItem<any[]>('inventory');
+  const inventory = getStorageItem<any[]>('inventory') || [];
   return inventory.reduce((total, item) => total + (item.finalCost || 0), 0);
 };
 
@@ -95,25 +154,25 @@ export const getLastBackupTime = (): string | null => {
 };
 
 export const getBackupList = (): string[] => {
-  return getStorageItem<string[]>('backupList');
+  return getStorageItem<string[]>('backupList') || [];
 };
 
 // Purchase and Sale Related
 export const getSales = () => {
-  return getStorageItem<any[]>('sales');
+  return getStorageItem<any[]>('sales') || [];
 };
 
 export const getPurchases = () => {
-  return getStorageItem<any[]>('purchases');
+  return getStorageItem<any[]>('purchases') || [];
 };
 
 // Payment and Receipt Related
 export const getPayments = () => {
-  return getStorageItem<any[]>('payments');
+  return getStorageItem<any[]>('payments') || [];
 };
 
 export const getReceipts = () => {
-  return getStorageItem<any[]>('receipts');
+  return getStorageItem<any[]>('receipts') || [];
 };
 
 export const addPayment = (payment: any) => {
@@ -205,6 +264,11 @@ export const addPurchase = (purchase: any) => {
   const purchases = getPurchases();
   purchases.push(purchase);
   saveStorageItem('purchases', purchases);
+};
+
+// Helper function for getting parties
+export const getParties = () => {
+  return getStorageItem<any[]>('parties') || [];
 };
 
 // Re-export important types for convenience
