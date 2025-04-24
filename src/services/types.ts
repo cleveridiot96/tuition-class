@@ -1,3 +1,4 @@
+
 // Basic interfaces
 export interface BasePurchase {
   id: string;
@@ -8,32 +9,32 @@ export interface BasePurchase {
   location: string;
   netWeight: number;
   rate: number;
-  quantity?: number; // Add quantity property
+  quantity: number;
   transporterId?: string;
   transportRate?: number;
+  transportCost?: number;
   expenses?: number;
   brokerageType?: string;
-  brokerageRate?: number; // Add brokerageRate property
+  brokerageRate?: number;
   brokerageValue?: number;
   notes?: string;
   agentId?: string;
-  agent?: string; // Add agent property for compatibility
-  broker?: string; // Add broker property for compatibility
-  transporter?: string; // Add transporter property for compatibility
+  agent?: string;
+  broker?: string;
+  transporter?: string;
   billNumber?: string;
   billAmount?: number;
   isDeleted?: boolean;
-  totalAmount?: number;
-  transportCost?: number;
+  totalAmount: number;
   transportAmount?: number;
   brokerageAmount?: number;
-  totalAfterExpenses?: number;
+  totalAfterExpenses: number;
   ratePerKgAfterExpenses?: number;
   items?: Array<{id?: string; name: string; quantity: number; rate: number;}>;
 }
 
 export interface Purchase extends BasePurchase {
-  // Additional purchase-specific fields
+  partyId?: string;
 }
 
 export interface SaleItem {
@@ -43,38 +44,39 @@ export interface SaleItem {
   quantity: number;
   rate: number;
   totalAmount: number;
-  name?: string; // Add name property for compatibility
+  name?: string;
 }
 
 export interface Sale {
   id: string;
   date: string;
-  lotNumber?: string; // Make lotNumber optional but available
-  location?: string; // Add location property
+  lotNumber: string;
+  location: string;
   customerId: string;
   customerName?: string;
+  customer?: string;
   brokerId?: string;
   brokerName?: string;
   transporterId?: string;
   transporterName?: string;
-  transportCost?: number; // Add transportCost property
+  transportCost: number;
   destination: string;
   totalBags: number;
   totalAmount: number;
-  quantity?: number; // Add quantity property
-  netWeight?: number; // Add netWeight property
-  rate?: number; // Add rate property
+  quantity: number;
+  netWeight: number;
+  rate: number;
   brokerageAmount?: number;
   transportAmount?: number;
   expenses?: number;
   notes?: string;
   items: SaleItem[];
   isDeleted?: boolean;
-  bags?: number; // Add bags property
-  billNumber?: string; // Add billNumber property
-  billAmount?: number | string; // Add billAmount property
-  broker?: string; // Add broker property for compatibility
-  salesBroker?: string; // Add salesBroker property
+  bags: number;
+  billNumber: string;
+  billAmount: number | string;
+  broker?: string;
+  salesBroker?: string;
 }
 
 export interface InventoryItem {
@@ -83,7 +85,7 @@ export interface InventoryItem {
   lotNumber: string;
   date: string;
   quantity: number;
-  remainingQuantity?: number;
+  remainingQuantity: number;
   location: string;
   netWeight: number;
   rate: number;
@@ -92,10 +94,11 @@ export interface InventoryItem {
   isDeleted: boolean;
   isSoldOut?: boolean;
   transferredFrom?: string;
-  agentId?: string; // Add agentId property
-  purchaseRate?: number; // Add purchaseRate property
-  finalCost?: number; // Add finalCost property
-  dateAdded?: string; // Add dateAdded property
+  agentId?: string;
+  agentName?: string;
+  purchaseRate: number;
+  finalCost: number;
+  dateAdded: string;
 }
 
 export interface Payment {
@@ -111,7 +114,7 @@ export interface Payment {
   reference?: string;
   notes?: string;
   isDeleted?: boolean;
-  partyId?: string; // Add partyId property
+  partyId: string;
 }
 
 export interface Receipt {
@@ -127,57 +130,44 @@ export interface Receipt {
   reference?: string;
   notes?: string;
   isDeleted?: boolean;
-  partyId?: string; // Add partyId property
+  partyId: string;
+  partyName?: string;
+  entityId?: string;
+  mode?: string;
 }
 
-// Add missing interfaces
-export interface Agent {
+// Entity interfaces
+export interface BaseEntity {
   id: string;
   name: string;
   phone?: string;
   address?: string;
   notes?: string;
-  balance?: number; // Adding optional balance field to resolve previous type errors
+  balance?: number;
+  isDeleted?: boolean;
 }
 
-export interface Supplier {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
+export interface Agent extends BaseEntity {
+  commission?: number;
 }
 
-export interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-  balance?: number; // Added optional balance
-}
+export interface Supplier extends BaseEntity {}
 
-export interface Broker {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
+export interface Customer extends BaseEntity {}
+
+export interface Broker extends BaseEntity {
   commissionRate?: number;
-  balance?: number; // Added optional balance
 }
 
-export interface Transporter {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
-  notes?: string;
-  vehicleNumber?: string; // Added optional vehicleNumber
-  balance?: number; // Added optional balance
+export interface Transporter extends BaseEntity {
+  vehicleNumber?: string;
 }
 
-// Add EnhancedInventoryItem for StockReport
+export interface Party extends BaseEntity {
+  type: 'supplier' | 'customer' | 'broker' | 'transporter' | 'agent';
+}
+
+// Report interface
 export interface EnhancedInventoryItem extends InventoryItem {
   agentName: string;
   soldQuantity: number;
