@@ -1,4 +1,3 @@
-
 // Basic interfaces
 export interface BasePurchase {
   id: string;
@@ -115,6 +114,8 @@ export interface Payment {
   notes?: string;
   isDeleted?: boolean;
   partyId: string;
+  partyName?: string;
+  mode?: string;
 }
 
 export interface Receipt {
@@ -133,7 +134,9 @@ export interface Receipt {
   partyId: string;
   partyName?: string;
   entityId?: string;
+  entityType?: string;
   mode?: string;
+  paymentMode?: string;
 }
 
 // Entity interfaces

@@ -1,3 +1,4 @@
+
 import React from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,18 +9,8 @@ import LedgerTable from "@/components/ledger/LedgerTable";
 import LedgerActions from "@/components/ledger/LedgerActions";
 import { useLedger } from "@/hooks/useLedger";
 import { useMemo } from "react";
-import { getSales } from "@/services/saleService";
-import { getPurchases } from "@/services/purchaseService";
-import { getPartyName } from "@/hooks/useLedger";
 
 // Define interfaces for type safety
-interface Party {
-  id: string;
-  name: string;
-  balance?: number;
-  partyType?: string; // Using partyType instead of type to avoid TypeScript conflicts
-}
-
 interface Transaction {
   id: string;
   partyId: string;
@@ -36,14 +27,15 @@ const Ledger = () => {
     dateRange,
     balance,
     partyOptions,
+    parties,
+    transactions,
+    isLoading,
     handlePartyChange,
     handleDateChange,
     handlePrintLedger,
     handleExportToExcel,
-    setBalance,
-    parties,
-    transactions,
-    isLoading
+    getPartyName,
+    setBalance
   } = useLedger();
 
   // Filter transactions and calculate balance when transactions or date range changes
@@ -74,7 +66,7 @@ const Ledger = () => {
     setBalance(runningBalance);
     
     return transactionsWithBalance;
-  }, [transactions, dateRange]);
+  }, [transactions, dateRange, setBalance]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -96,7 +88,7 @@ const Ledger = () => {
             {/* Print Header - Only visible when printing */}
             <div className="hidden print:block mb-8 text-center">
               <h1 className="text-2xl font-bold">Party Ledger</h1>
-              <h2 className="text-xl">{selectedParty ? getPartyName(selectedParty, parties) : ''}</h2>
+              <h2 className="text-xl">{selectedParty ? getPartyName(selectedParty) : ''}</h2>
               <p className="text-sm">
                 From: {format(new Date(dateRange.startDate), "dd/MM/yyyy")} 
                 To: {format(new Date(dateRange.endDate), "dd/MM/yyyy")}
@@ -105,7 +97,7 @@ const Ledger = () => {
 
             {selectedParty && (
               <LedgerSummary 
-                partyName={getPartyName(selectedParty, parties)}
+                partyName={selectedParty ? getPartyName(selectedParty) : ''}
                 balance={balance}
               />
             )}

@@ -158,7 +158,6 @@ const Receipts = () => {
         receiptNumber: editForm.receiptNumber,
         customerId: editForm.customerId,
         entityId: editForm.customerId,
-        entityType: "customer",
         customerName: selectedCustomer?.name || editForm.customerName,
         partyName: selectedCustomer?.name || editForm.customerName,
         amount: editForm.amount,

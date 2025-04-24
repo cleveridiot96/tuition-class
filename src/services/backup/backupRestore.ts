@@ -5,7 +5,7 @@ import { seedInitialData } from './seedData';
 import { saveStorageItem } from '../storageUtils';
 import { exportDataBackup } from './exportBackup';
 
-// Export the function from exportBackup
+// Export functions from other files
 export { exportDataBackup } from './exportBackup';
 export { importDataBackup } from './importBackup';
 
@@ -13,7 +13,7 @@ export { importDataBackup } from './importBackup';
 export const completeFormatAllData = async (): Promise<boolean> => {
   try {
     // Create a backup first
-    const backup = exportDataBackup(true);
+    const backup = await exportDataBackup(true);
     
     if (!backup) {
       toast.error("Failed to create backup before format");

@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -60,7 +61,7 @@ export default function SalesTable({
                 <TableCell>{sale.quantity}</TableCell>
                 <TableCell>{sale.netWeight}</TableCell>
                 <TableCell>₹{sale.rate}</TableCell>
-                <TableCell>₹{sale.totalAmount?.toFixed(2) || "0.00"}</TableCell>
+                <TableCell>₹{sale.totalAmount ? formatAmount(sale.totalAmount) : "0.00"}</TableCell>
                 <TableCell>₹{formatAmount(sale.billAmount)}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">

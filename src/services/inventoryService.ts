@@ -57,7 +57,10 @@ export const updateInventoryAfterPurchase = (purchase: Purchase): void => {
       rate: purchase.rate,
       ratePerKgAfterExpenses: purchase.ratePerKgAfterExpenses || 0,
       supplier: purchase.party,
-      isDeleted: false
+      isDeleted: false,
+      purchaseRate: purchase.rate || 0,
+      finalCost: purchase.totalAfterExpenses || 0,
+      dateAdded: new Date().toISOString()
     };
     
     inventory.push(inventoryItem);
@@ -142,7 +145,10 @@ export const updateInventoryAfterTransfer = (
       ratePerKgAfterExpenses: sourceItem.ratePerKgAfterExpenses,
       supplier: sourceItem.supplier,
       isDeleted: false,
-      transferredFrom: sourceItem.id
+      transferredFrom: sourceItem.id,
+      purchaseRate: sourceItem.purchaseRate,
+      finalCost: sourceItem.finalCost,
+      dateAdded: new Date().toISOString()
     };
     
     // Add the new item to the inventory

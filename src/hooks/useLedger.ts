@@ -1,8 +1,15 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { getParties, getTransactions } from '@/services/storageService';
+import { Party } from '@/services/types';
+
+// Export the getPartyName function for use in other components
+export const getPartyName = (partyId: string, parties: Party[] = []): string => {
+  const party = parties.find((p) => p.id === partyId);
+  return party ? party.name : "Unknown";
+};
 
 export const useLedger = () => {
   const [selectedParty, setSelectedParty] = useState<string>("");
@@ -11,14 +18,35 @@ export const useLedger = () => {
     endDate: format(new Date(), "yyyy-MM-dd"),
   });
   const [balance, setBalance] = useState(0);
+  const [parties, setParties] = useState<Party[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Load parties on mount
+  useEffect(() => {
+    const loadedParties = getParties();
+    setParties(loadedParties);
+  }, []);
+
+  // Load transactions when selectedParty changes
+  useEffect(() => {
+    if (selectedParty) {
+      setIsLoading(true);
+      // Get transactions for the selected party - implement this based on your data structure
+      const partyTransactions = getTransactions(selectedParty, dateRange.startDate, dateRange.endDate);
+      setTransactions(partyTransactions);
+      setIsLoading(false);
+    } else {
+      setTransactions([]);
+    }
+  }, [selectedParty, dateRange.startDate, dateRange.endDate]);
 
   const partyOptions = useMemo(() => {
-    const parties = getParties();
     return parties.map(party => ({
       value: party.id,
       label: party.name
     }));
-  }, []);
+  }, [parties]);
 
   const handlePartyChange = (partyId: string) => {
     setSelectedParty(partyId);
@@ -41,22 +69,19 @@ export const useLedger = () => {
     });
   };
 
-  const getPartyName = (partyId: string) => {
-    const parties = getParties();
-    const party = parties.find((p) => p.id === partyId);
-    return party ? party.name : "Unknown";
-  };
-
   return {
     selectedParty,
     dateRange,
     balance,
     partyOptions,
+    parties,
+    transactions,
+    isLoading,
     handlePartyChange,
     handleDateChange,
     handlePrintLedger,
     handleExportToExcel,
-    getPartyName,
+    getPartyName: (partyId: string) => getPartyName(partyId, parties),
     setBalance
   };
 };
