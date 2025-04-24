@@ -10,7 +10,7 @@ export interface EnhancedSearchableSelectProps {
   options: SelectOption[];
   value: string;
   onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => string;
+  onAddNew?: (value: string) => string; // Ensure this is consistently defined as returning a string
   placeholder?: string;
   emptyMessage?: string;
   disabled?: boolean;

@@ -21,7 +21,7 @@ interface EnhancedSearchableSelectProps {
   options: SelectOption[];
   value?: string;
   onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => string | null;
+  onAddNew?: (value: string) => string;
   placeholder?: string;
   emptyMessage?: string;
   label?: string;
@@ -150,19 +150,23 @@ export const EnhancedSearchableSelect = React.memo(({
     setSuggestedMatch(null);
   }, [onValueChange]);
 
+  // Fix: Make sure we properly use the returned string value from onAddNew
   const handleAddNewItem = React.useCallback(() => {
     if (searchTerm.trim() && !inputMatchesOption) {
       if (onAddNew) {
-        const newPartyId = onAddNew(searchTerm.trim());
-        if (newPartyId) {
-          // If we got a valid ID back, we already selected it in the parent component
+        const newValue = onAddNew(searchTerm.trim());
+        if (newValue) {
+          // If we got a valid value back, update the selection
+          onValueChange(newValue);
           setOpen(false);
           setSearchTerm("");
           return;
         }
       } else {
         confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
-          onValueChange(confirmedValue);
+          if (confirmedValue) {
+            onValueChange(confirmedValue);
+          }
         }, masterType);
       }
       setOpen(false);

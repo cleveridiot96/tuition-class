@@ -14,10 +14,20 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import { getSuppliers, getCustomers, getBrokers, getTransporters, addSupplier, addCustomer, addBroker, addTransporter, saveStorageItem } from "@/services/storageService";
+import { 
+  getSuppliers, 
+  getCustomers, 
+  getBrokers, 
+  getTransporters, 
+  addSupplier, 
+  addCustomer, 
+  addBroker, 
+  addTransporter, 
+  saveStorageItem 
+} from "@/services/storageService";
 
 interface AddToMasterProps {
-  masterType?: "supplier" | "customer" | "broker" | "transporter" | "item";
+  masterType?: "supplier" | "customer" | "broker" | "transporter" | "item" | "party";
 }
 
 export const useAddToMaster = (props?: AddToMasterProps) => {
@@ -33,16 +43,16 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
     name: z.string().min(1, "Name is required"),
   });
 
-  // Add item to appropriate master list - ensure proper saving
-  const addToMasterList = (masterType: string, itemData: any) => {
+  // Add item to appropriate master list with forced persistence
+  const addToMasterList = (masterType: string, itemData: any): string => {
     try {
       if (masterType === "supplier" || masterType === "party") {
         const suppliers = getSuppliers() || [];
         // Check for duplicates
-        if (suppliers.some((s) => s.name.toLowerCase() === itemData.name.toLowerCase())) {
+        if (suppliers.some((s) => s.name && s.name.toLowerCase() === itemData.name.toLowerCase())) {
           setNameError("Supplier with this name already exists");
           toast.error("Supplier with this name already exists");
-          return false;
+          return "";
         }
         
         const newSupplier = {
@@ -56,14 +66,14 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         
         suppliers.push(newSupplier);
         saveStorageItem('suppliers', suppliers);
-        return true;
+        return itemData.name; // Return the name
       } 
       else if (masterType === "customer") {
         const customers = getCustomers() || [];
-        if (customers.some((c) => c.name.toLowerCase() === itemData.name.toLowerCase())) {
+        if (customers.some((c) => c.name && c.name.toLowerCase() === itemData.name.toLowerCase())) {
           setNameError("Customer with this name already exists");
           toast.error("Customer with this name already exists");
-          return false;
+          return "";
         }
         
         const newCustomer = {
@@ -77,14 +87,14 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         
         customers.push(newCustomer);
         saveStorageItem('customers', customers);
-        return true;
+        return itemData.name; // Return the name
       } 
       else if (masterType === "broker") {
         const brokers = getBrokers() || [];
-        if (brokers.some((b) => b.name.toLowerCase() === itemData.name.toLowerCase())) {
+        if (brokers.some((b) => b.name && b.name.toLowerCase() === itemData.name.toLowerCase())) {
           setNameError("Broker with this name already exists");
           toast.error("Broker with this name already exists");
-          return false;
+          return "";
         }
         
         const newBroker = {
@@ -96,14 +106,14 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         
         brokers.push(newBroker);
         saveStorageItem('brokers', brokers);
-        return true;
+        return itemData.name; // Return the name
       } 
       else if (masterType === "transporter") {
         const transporters = getTransporters() || [];
-        if (transporters.some((t) => t.name.toLowerCase() === itemData.name.toLowerCase())) {
+        if (transporters.some((t) => t.name && t.name.toLowerCase() === itemData.name.toLowerCase())) {
           setNameError("Transporter with this name already exists");
           toast.error("Transporter with this name already exists");
-          return false;
+          return "";
         }
         
         const newTransporter = {
@@ -114,19 +124,19 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         
         transporters.push(newTransporter);
         saveStorageItem('transporters', transporters);
-        return true;
+        return itemData.name; // Return the name
       }
       
       toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
-      return true;
+      return itemData.name; // Return the name
     } catch (error) {
       console.error(`Error adding ${masterType}:`, error);
       toast.error(`Failed to add ${masterType}`);
-      return false;
+      return "";
     }
   };
 
-  // Confirm adding item to master
+  // Fix: Make sure handleConfirmAdd properly returns the value
   const handleConfirmAdd = () => {
     try {
       // Reset error state
@@ -137,7 +147,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
       if (!validation.success) {
         setNameError(validation.error.errors[0].message);
         toast.error(validation.error.errors[0].message);
-        return;
+        return "";
       }
       
       const itemData = {
@@ -145,11 +155,11 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         ...additionalFields,
       };
       
-      const success = addToMasterList(currentMasterType, itemData);
+      const addedValue = addToMasterList(currentMasterType, itemData);
       
-      if (success && onConfirmCallback) {
+      if (addedValue && onConfirmCallback) {
         // Return the name as the value (used by searchable dropdowns)
-        onConfirmCallback(newItemName.trim());
+        onConfirmCallback(addedValue);
         
         // Close dialog and reset state
         setIsDialogOpen(false);
@@ -157,13 +167,16 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         setAdditionalFields({});
         setNameError("");
       }
+      
+      return addedValue;
     } catch (error) {
       console.error("Error adding to master:", error);
       toast.error("Error adding item");
+      return "";
     }
   };
 
-  // Open dialog to confirm adding a new item
+  // Fix: Ensure confirmAddToMaster properly handles the return value
   const confirmAddToMaster = (itemName: string, onConfirm: (value: string) => void, masterType?: string) => {
     setNewItemName(itemName);
     setOnConfirmCallback(() => onConfirm);
@@ -194,7 +207,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
       );
     }
     
-    if (currentMasterType === "supplier" || currentMasterType === "customer") {
+    if (currentMasterType === "supplier" || currentMasterType === "customer" || currentMasterType === "party") {
       return (
         <div className="mb-4">
           <Label htmlFor="address">Address (Optional)</Label>

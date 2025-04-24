@@ -65,6 +65,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     }
   };
 
+  // Fix: Make sure this function returns the value string as required by EnhancedSearchableSelect
   const handleAddNewToMaster = (value: string): string => {
     if (!value.trim()) return "";
     
@@ -77,8 +78,12 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     try {
       addSupplier(newParty);
       loadSuppliers();
+      
+      // Set the value in the form
       form.setValue("party", value.trim());
       toast.success("New party added successfully");
+      
+      // Return the value to update the select component
       return value.trim();
     } catch (error) {
       console.error("Error adding new party:", error);
@@ -100,7 +105,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
         render={({ field }) => (
           <FormItem>
             <div className="flex justify-between">
-              <FormLabel>Party Name</FormLabel>
+              <FormLabel>Party Name <span className="text-red-500">*</span></FormLabel>
               <Button
                 type="button"
                 variant="ghost"
@@ -133,7 +138,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="newPartyName">Party Name</Label>
+              <Label htmlFor="newPartyName">Party Name <span className="text-red-500">*</span></Label>
               <Input 
                 id="newPartyName"
                 value={newPartyName}
