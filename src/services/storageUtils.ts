@@ -8,10 +8,11 @@ export {
   clearAllData,
   clearAllMasterData,
   seedInitialData
-} from './core/dataManagement';
+} from './backup/backupRestore';
 
 // Re-export debug functionality
 export * from './debug/storageDebug';
 
 // Re-export backup functionality
 export { exportDataBackup } from './backup/exportBackup';
+export { importDataBackup } from './backup/importBackup';

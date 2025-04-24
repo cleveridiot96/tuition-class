@@ -1,4 +1,3 @@
-
 import { v4 as uuidv4 } from 'uuid';
 import { getStorageItem, saveStorageItem } from './storageUtils';
 import { toast } from 'sonner';
@@ -20,10 +19,8 @@ export {
 } from './inventoryService';
 
 // Re-export backup and data management functions
-export { 
-  exportDataBackup, 
-  importDataBackup 
-} from './backup/exportBackup';
+export { exportDataBackup } from './backup/exportBackup';
+export { importDataBackup } from './backup/importBackup';
 
 export { 
   clearAllData,
@@ -33,7 +30,8 @@ export {
 } from './backup/backupRestore';
 
 export { 
-  debugStorage 
+  debugStorage,
+  getStorageStats
 } from './debug/storageDebug';
 
 // Data model interfaces
