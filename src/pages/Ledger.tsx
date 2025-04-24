@@ -1,23 +1,16 @@
-
-import React, { useState, useEffect, useMemo } from "react";
+import React from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from "date-fns";
-import { 
-  getParties, 
-  getTransactions, 
-  getSuppliers, 
-  getCustomers
-} from "@/services/storageService";
+import LedgerFilters from "@/components/ledger/LedgerFilters";
+import LedgerSummary from "@/components/ledger/LedgerSummary";
+import LedgerTable from "@/components/ledger/LedgerTable";
+import LedgerActions from "@/components/ledger/LedgerActions";
+import { useLedger } from "@/hooks/useLedger";
+import { useMemo } from "react";
 import { getSales } from "@/services/saleService";
 import { getPurchases } from "@/services/purchaseService";
-import { toast } from "sonner";
-import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
-import { ExternalLink, Printer, FileSpreadsheet } from "lucide-react";
+import { getPartyName } from "@/hooks/useLedger";
 
 // Define interfaces for type safety
 interface Party {
@@ -38,132 +31,20 @@ interface Transaction {
 }
 
 const Ledger = () => {
-  const [parties, setParties] = useState<Party[]>([]);
-  const [selectedParty, setSelectedParty] = useState<string>("");
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [dateRange, setDateRange] = useState({
-    startDate: format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), "yyyy-MM-dd"),
-    endDate: format(new Date(), "yyyy-MM-dd"),
-  });
-  const [balance, setBalance] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Load parties only once on component mount
-  useEffect(() => {
-    loadAllParties();
-  }, []);
-
-  const loadAllParties = () => {
-    try {
-      // Get parties from all relevant sources
-      const ledgerParties = getParties() || [];
-      const suppliers = getSuppliers() || [];
-      const customers = getCustomers() || [];
-      
-      // Combine all unique parties
-      const allParties: Party[] = [...ledgerParties];
-      
-      // Add suppliers if not already in the list
-      suppliers.forEach(supplier => {
-        if (!allParties.some(p => p.id === supplier.id)) {
-          allParties.push({
-            id: supplier.id,
-            name: supplier.name,
-            partyType: 'supplier' // Use partyType instead of type
-          });
-        }
-      });
-      
-      // Add customers if not already in the list
-      customers.forEach(customer => {
-        if (!allParties.some(p => p.id === customer.id)) {
-          allParties.push({
-            id: customer.id,
-            name: customer.name,
-            partyType: 'customer' // Use partyType instead of type
-          });
-        }
-      });
-      
-      setParties(allParties);
-    } catch (error) {
-      console.error("Error loading parties:", error);
-      toast.error("Failed to load parties");
-    }
-  };
-
-  // Load party data when selected party changes
-  useEffect(() => {
-    if (selectedParty) {
-      loadPartyData(selectedParty);
-    } else {
-      setTransactions([]);
-    }
-  }, [selectedParty]);
-
-  const loadPartyData = async (partyId: string) => {
-    setIsLoading(true);
-    try {
-      // Get regular transactions
-      const allTransactions = getTransactions() || [];
-      let partyTransactions = allTransactions.filter(
-        (transaction) => transaction.partyId === partyId && !transaction.isDeleted
-      ) as Transaction[];
-      
-      // Get sales related to this party
-      const sales = getSales() || [];
-      const partySales = sales.filter(sale => 
-        (sale.customerId === partyId || sale.customer === getPartyName(partyId)) && !sale.isDeleted
-      );
-      
-      // Convert sales to transaction format
-      const salesTransactions = partySales.map(sale => ({
-        id: `sale-${sale.id}`,
-        partyId,
-        date: sale.date,
-        type: 'credit' as const, // Typed as literal
-        amount: sale.totalAmount,
-        description: `Sale - ${sale.lotNumber || ''}`,
-        reference: `Bill #${sale.billNumber || sale.id.substring(0, 6)}`,
-      }));
-      
-      // Get purchases related to this party
-      const purchases = getPurchases() || [];
-      const partyPurchases = purchases.filter(purchase => 
-        (purchase.party === getPartyName(partyId)) && !purchase.isDeleted
-      );
-      
-      // Convert purchases to transaction format
-      const purchaseTransactions = partyPurchases.map(purchase => ({
-        id: `purchase-${purchase.id}`,
-        partyId,
-        date: purchase.date,
-        type: 'debit' as const, // Typed as literal
-        amount: purchase.totalAmount,
-        description: `Purchase - ${purchase.lotNumber || ''}`,
-        reference: `PO #${purchase.id.substring(0, 6)}`,
-      }));
-      
-      // Combine all transactions
-      const combinedTransactions = [
-        ...partyTransactions,
-        ...salesTransactions,
-        ...purchaseTransactions
-      ];
-      
-      // Sort by date
-      combinedTransactions.sort((a, b) => {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      });
-      
-      setTransactions(combinedTransactions);
-    } catch (error) {
-      console.error("Error loading party data:", error);
-      toast.error("Failed to load party transactions");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const {
+    selectedParty,
+    dateRange,
+    balance,
+    partyOptions,
+    handlePartyChange,
+    handleDateChange,
+    handlePrintLedger,
+    handleExportToExcel,
+    setBalance,
+    parties,
+    transactions,
+    isLoading
+  } = useLedger();
 
   // Filter transactions and calculate balance when transactions or date range changes
   // Use useMemo for performance
@@ -195,37 +76,6 @@ const Ledger = () => {
     return transactionsWithBalance;
   }, [transactions, dateRange]);
 
-  const handlePartyChange = (partyId: string) => {
-    setSelectedParty(partyId);
-  };
-
-  const handleDateChange = (field: "startDate" | "endDate", value: string) => {
-    setDateRange((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const getPartyName = (partyId: string) => {
-    const party = parties.find((p) => p.id === partyId);
-    return party ? party.name : "Unknown";
-  };
-
-  const handlePrintLedger = () => {
-    window.print();
-  };
-
-  const handleExportToExcel = () => {
-    toast.info("Export to Excel", {
-      description: "This feature is coming soon!"
-    });
-  };
-  
-  const partyOptions = useMemo(() => parties.map(party => ({
-    value: party.id,
-    label: party.name
-  })), [parties]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Navigation title="Party Ledger" showBackButton />
@@ -235,41 +85,18 @@ const Ledger = () => {
             <CardTitle className="text-gray-800">Party Ledger</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 print:hidden">
-              <div>
-                <Label htmlFor="party-select">Select Party</Label>
-                <EnhancedSearchableSelect
-                  options={partyOptions}
-                  value={selectedParty}
-                  onValueChange={handlePartyChange}
-                  placeholder="Select a party"
-                  masterType="party"
-                />
-              </div>
-              <div>
-                <Label htmlFor="start-date">Start Date</Label>
-                <Input
-                  id="start-date"
-                  type="date"
-                  value={dateRange.startDate}
-                  onChange={(e) => handleDateChange("startDate", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="end-date">End Date</Label>
-                <Input
-                  id="end-date"
-                  type="date"
-                  value={dateRange.endDate}
-                  onChange={(e) => handleDateChange("endDate", e.target.value)}
-                />
-              </div>
-            </div>
+            <LedgerFilters
+              selectedParty={selectedParty}
+              dateRange={dateRange}
+              partyOptions={partyOptions}
+              onPartyChange={handlePartyChange}
+              onDateChange={handleDateChange}
+            />
 
             {/* Print Header - Only visible when printing */}
             <div className="hidden print:block mb-8 text-center">
               <h1 className="text-2xl font-bold">Party Ledger</h1>
-              <h2 className="text-xl">{selectedParty ? getPartyName(selectedParty) : ''}</h2>
+              <h2 className="text-xl">{selectedParty ? getPartyName(selectedParty, parties) : ''}</h2>
               <p className="text-sm">
                 From: {format(new Date(dateRange.startDate), "dd/MM/yyyy")} 
                 To: {format(new Date(dateRange.endDate), "dd/MM/yyyy")}
@@ -277,15 +104,10 @@ const Ledger = () => {
             </div>
 
             {selectedParty && (
-              <div className="mb-4 p-4 bg-gray-50 rounded-md border border-gray-200 print:mb-6 print:border-none">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  {getPartyName(selectedParty)}
-                </h3>
-                <p className={`text-lg font-bold ${balance >= 0 ? "text-green-600" : "text-red-600"} print:text-black`}>
-                  Balance: ₹{Math.abs(balance).toLocaleString()}
-                  {balance >= 0 ? " (Credit)" : " (Debit)"}
-                </p>
-              </div>
+              <LedgerSummary 
+                partyName={getPartyName(selectedParty, parties)}
+                balance={balance}
+              />
             )}
 
             {isLoading ? (
@@ -296,68 +118,23 @@ const Ledger = () => {
             ) : (
               <>
                 {selectedParty && filteredTransactions.length > 0 ? (
-                  <div className="border rounded-md overflow-hidden print:border-none">
-                    <Table>
-                      <TableHeader className="bg-gray-100 print:bg-gray-200">
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Reference</TableHead>
-                          <TableHead>Debit</TableHead>
-                          <TableHead>Credit</TableHead>
-                          <TableHead>Balance</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredTransactions.map((transaction, index) => (
-                          <TableRow key={transaction.id}>
-                            <TableCell>
-                              {format(new Date(transaction.date), "dd/MM/yyyy")}
-                            </TableCell>
-                            <TableCell>{transaction.description}</TableCell>
-                            <TableCell>{transaction.reference || "-"}</TableCell>
-                            <TableCell>
-                              {transaction.type === "debit"
-                                ? `₹${transaction.amount.toLocaleString()}`
-                                : "-"}
-                            </TableCell>
-                            <TableCell>
-                              {transaction.type === "credit"
-                                ? `₹${transaction.amount.toLocaleString()}`
-                                : "-"}
-                            </TableCell>
-                            <TableCell
-                              className={
-                                transaction.runningBalance >= 0 ? "text-green-600 print:text-black" : "text-red-600 print:text-black"
-                              }
-                            >
-                              ₹{Math.abs(transaction.runningBalance).toLocaleString()}
-                              {transaction.runningBalance >= 0 ? " Cr" : " Dr"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  <>
+                    <LedgerTable transactions={filteredTransactions} />
+                    <LedgerActions
+                      onPrint={handlePrintLedger}
+                      onExport={handleExportToExcel}
+                    />
+                  </>
                 ) : selectedParty ? (
-                  <p className="text-center py-8 text-gray-500">No transactions found for the selected period.</p>
+                  <p className="text-center py-8 text-gray-500">
+                    No transactions found for the selected period.
+                  </p>
                 ) : (
-                  <p className="text-center py-8 text-gray-500">Please select a party to view their ledger.</p>
+                  <p className="text-center py-8 text-gray-500">
+                    Please select a party to view their ledger.
+                  </p>
                 )}
               </>
-            )}
-
-            {selectedParty && filteredTransactions.length > 0 && (
-              <div className="mt-4 flex justify-end space-x-2 print:hidden">
-                <Button variant="outline" onClick={handlePrintLedger} className="flex items-center gap-2">
-                  <Printer size={16} />
-                  Print
-                </Button>
-                <Button variant="outline" onClick={handleExportToExcel} className="flex items-center gap-2">
-                  <FileSpreadsheet size={16} />
-                  Export to Excel
-                </Button>
-              </div>
             )}
           </CardContent>
         </Card>
