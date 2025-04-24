@@ -15,6 +15,8 @@ const PartyLedger = () => {
     balance,
     loading,
     partyOptions,
+    loadEntities,
+    addParty
   } = usePartyLedger();
 
   return (
@@ -27,6 +29,8 @@ const PartyLedger = () => {
           partyId={partyId}
           setPartyId={setPartyId}
           partyOptions={partyOptions}
+          addParty={addParty}
+          loadEntities={loadEntities}
         />
 
         {partyId && transactions.length > 0 ? (

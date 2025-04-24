@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import { getSuppliers, getCustomers, getBrokers, getTransporters, addSupplier, addCustomer, addBroker, addTransporter } from "@/services/storageService";
+import { getSuppliers, getCustomers, getBrokers, getTransporters, addSupplier, addCustomer, addBroker, addTransporter, saveStorageItem } from "@/services/storageService";
 
 interface AddToMasterProps {
   masterType?: "supplier" | "customer" | "broker" | "transporter" | "item";
@@ -26,70 +26,95 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
   const [additionalFields, setAdditionalFields] = useState<Record<string, string>>({});
   const [currentMasterType, setCurrentMasterType] = useState<string>(props?.masterType || "item");
   const [onConfirmCallback, setOnConfirmCallback] = useState<((value: string) => void) | null>(null);
+  const [nameError, setNameError] = useState("");
 
   // Define schema that only requires name
   const commonSchema = z.object({
     name: z.string().min(1, "Name is required"),
   });
 
-  // Add item to appropriate master list
+  // Add item to appropriate master list - ensure proper saving
   const addToMasterList = (masterType: string, itemData: any) => {
     try {
-      if (masterType === "supplier") {
+      if (masterType === "supplier" || masterType === "party") {
         const suppliers = getSuppliers() || [];
         // Check for duplicates
         if (suppliers.some((s) => s.name.toLowerCase() === itemData.name.toLowerCase())) {
+          setNameError("Supplier with this name already exists");
           toast.error("Supplier with this name already exists");
           return false;
         }
-        addSupplier({
+        
+        const newSupplier = {
           id: `supplier-${uuidv4()}`,
           name: itemData.name,
           address: itemData.address || "",
           contacts: itemData.contacts || [],
           balance: 0,
           isDeleted: false,
-        });
+        };
+        
+        suppliers.push(newSupplier);
+        saveStorageItem('suppliers', suppliers);
+        return true;
       } 
       else if (masterType === "customer") {
         const customers = getCustomers() || [];
         if (customers.some((c) => c.name.toLowerCase() === itemData.name.toLowerCase())) {
+          setNameError("Customer with this name already exists");
           toast.error("Customer with this name already exists");
           return false;
         }
-        addCustomer({
+        
+        const newCustomer = {
           id: `customer-${uuidv4()}`,
           name: itemData.name,
           address: itemData.address || "",
           contacts: itemData.contacts || [],
           balance: 0,
           isDeleted: false,
-        });
+        };
+        
+        customers.push(newCustomer);
+        saveStorageItem('customers', customers);
+        return true;
       } 
       else if (masterType === "broker") {
         const brokers = getBrokers() || [];
         if (brokers.some((b) => b.name.toLowerCase() === itemData.name.toLowerCase())) {
+          setNameError("Broker with this name already exists");
           toast.error("Broker with this name already exists");
           return false;
         }
-        addBroker({
+        
+        const newBroker = {
           id: `broker-${uuidv4()}`,
           name: itemData.name,
           commissionRate: parseFloat(itemData.commissionRate || "1"),
           isDeleted: false,
-        });
+        };
+        
+        brokers.push(newBroker);
+        saveStorageItem('brokers', brokers);
+        return true;
       } 
       else if (masterType === "transporter") {
         const transporters = getTransporters() || [];
         if (transporters.some((t) => t.name.toLowerCase() === itemData.name.toLowerCase())) {
+          setNameError("Transporter with this name already exists");
           toast.error("Transporter with this name already exists");
           return false;
         }
-        addTransporter({
+        
+        const newTransporter = {
           id: `transporter-${uuidv4()}`,
           name: itemData.name,
           isDeleted: false,
-        });
+        };
+        
+        transporters.push(newTransporter);
+        saveStorageItem('transporters', transporters);
+        return true;
       }
       
       toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
@@ -104,9 +129,13 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
   // Confirm adding item to master
   const handleConfirmAdd = () => {
     try {
+      // Reset error state
+      setNameError("");
+      
       const validation = commonSchema.safeParse({ name: newItemName.trim() });
       
       if (!validation.success) {
+        setNameError(validation.error.errors[0].message);
         toast.error(validation.error.errors[0].message);
         return;
       }
@@ -121,12 +150,13 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
       if (success && onConfirmCallback) {
         // Return the name as the value (used by searchable dropdowns)
         onConfirmCallback(newItemName.trim());
+        
+        // Close dialog and reset state
+        setIsDialogOpen(false);
+        setNewItemName("");
+        setAdditionalFields({});
+        setNameError("");
       }
-      
-      // Close dialog and reset state
-      setIsDialogOpen(false);
-      setNewItemName("");
-      setAdditionalFields({});
     } catch (error) {
       console.error("Error adding to master:", error);
       toast.error("Error adding item");
@@ -137,6 +167,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
   const confirmAddToMaster = (itemName: string, onConfirm: (value: string) => void, masterType?: string) => {
     setNewItemName(itemName);
     setOnConfirmCallback(() => onConfirm);
+    setNameError("");
     
     if (masterType) {
       setCurrentMasterType(masterType);
@@ -187,19 +218,26 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         <DialogHeader>
           <DialogTitle>Add {currentMasterType}</DialogTitle>
           <DialogDescription>
-            Add a new {currentMasterType} to the master list. Only the name is required.
+            Add a new {currentMasterType} to the master list. Fields marked with * are required.
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="mb-4">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">
+              Name <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
+              className={nameError ? "border-red-500" : ""}
               value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
+              onChange={(e) => {
+                setNewItemName(e.target.value);
+                if (e.target.value.trim()) setNameError("");
+              }}
               placeholder={`Enter ${currentMasterType} name`}
             />
+            {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
           </div>
           
           {getAdditionalFields()}

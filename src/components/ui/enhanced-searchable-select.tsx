@@ -2,7 +2,6 @@
 import * as React from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fuzzyMatch } from "@/lib/fuzzy-match";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -22,7 +21,7 @@ interface EnhancedSearchableSelectProps {
   options: SelectOption[];
   value?: string;
   onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => void;
+  onAddNew?: (value: string) => string | null;
   placeholder?: string;
   emptyMessage?: string;
   label?: string;
@@ -30,6 +29,33 @@ interface EnhancedSearchableSelectProps {
   className?: string;
   masterType?: string;
 }
+
+// Improved fuzzy match function
+const improvedFuzzyMatch = (search: string, text: string): boolean => {
+  if (!search || !text) return false;
+  
+  const searchLower = search.toLowerCase().trim();
+  const textLower = text.toLowerCase().trim();
+  
+  // Exact match
+  if (textLower === searchLower) return true;
+  
+  // Contains match
+  if (textLower.includes(searchLower)) return true;
+  
+  // Fuzzy match - check if characters appear in order
+  let searchIndex = 0;
+  let textIndex = 0;
+  
+  while (searchIndex < searchLower.length && textIndex < textLower.length) {
+    if (searchLower[searchIndex] === textLower[textIndex]) {
+      searchIndex++;
+    }
+    textIndex++;
+  }
+  
+  return searchIndex === searchLower.length;
+};
 
 // Optimize performance with React.memo and useCallback
 export const EnhancedSearchableSelect = React.memo(({
@@ -64,22 +90,33 @@ export const EnhancedSearchableSelect = React.memo(({
     
     // Find exact and fuzzy matches
     const matches = options.filter(option => 
-      fuzzyMatch(searchTerm, option.label) || 
-      fuzzyMatch(searchTerm, option.value)
+      improvedFuzzyMatch(searchTerm, option.label) || 
+      improvedFuzzyMatch(searchTerm, option.value)
     );
     
     // Look for best fuzzy match for suggestion
     if (matches.length === 0 && searchTerm.length >= 2) {
-      const bestMatch = options.find(option => {
-        const cleanInput = searchTerm.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-        const cleanOption = option.label.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-        return cleanOption.startsWith(cleanInput.charAt(0)) && 
-               (cleanOption.includes(cleanInput) || 
-                cleanInput.length >= 2 && cleanOption.substring(0, 2) === cleanInput.substring(0, 2));
+      // Find potential suggestions for typos
+      const suggestions = options.filter(option => {
+        // Check for possible typos by calculating string similarity
+        const optionLower = option.label.toLowerCase();
+        const searchLower = searchTerm.toLowerCase();
+        
+        // Simple check: First character matches and at least 60% of characters are the same
+        if (optionLower[0] === searchLower[0]) {
+          let matchCount = 0;
+          for (let i = 0; i < searchLower.length; i++) {
+            if (optionLower.includes(searchLower[i])) {
+              matchCount++;
+            }
+          }
+          return matchCount / searchLower.length >= 0.6;
+        }
+        return false;
       });
       
-      if (bestMatch) {
-        setSuggestedMatch(bestMatch.label);
+      if (suggestions.length > 0) {
+        setSuggestedMatch(suggestions[0].label);
       } else {
         setSuggestedMatch(null);
       }
@@ -116,15 +153,21 @@ export const EnhancedSearchableSelect = React.memo(({
   const handleAddNewItem = React.useCallback(() => {
     if (searchTerm.trim() && !inputMatchesOption) {
       if (onAddNew) {
-        onAddNew(searchTerm.trim());
+        const newPartyId = onAddNew(searchTerm.trim());
+        if (newPartyId) {
+          // If we got a valid ID back, we already selected it in the parent component
+          setOpen(false);
+          setSearchTerm("");
+          return;
+        }
       } else {
         confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
           onValueChange(confirmedValue);
-        });
+        }, masterType);
       }
       setOpen(false);
     }
-  }, [searchTerm, inputMatchesOption, onAddNew, confirmAddToMaster, onValueChange]);
+  }, [searchTerm, inputMatchesOption, onAddNew, confirmAddToMaster, onValueChange, masterType]);
 
   const useSuggestedMatch = React.useCallback(() => {
     if (suggestedMatch) {
