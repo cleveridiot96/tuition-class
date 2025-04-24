@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,10 +9,11 @@ import { getInventory, updateInventoryAfterTransfer } from "@/services/storageSe
 import { getStorageItem } from '@/services/core/storageCore';
 
 export interface TransferFormProps {
-  onSubmit: () => void;
+  onTransferComplete: () => void;
+  onSubmit?: () => void;
 }
 
-const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
+const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete, onSubmit }) => {
   const [items, setItems] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<string>("");
   const [fromLocation, setFromLocation] = useState<string>("");
@@ -24,32 +24,28 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
   const [locations, setLocations] = useState<string[]>([]);
   const [availableQuantity, setAvailableQuantity] = useState<number>(0);
 
-  // Load initial data
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
     setDate(today);
 
-    // Get inventory
     const inventory = getInventory();
     setItems(inventory.filter(item => !item.isSoldOut && item.remainingQuantity > 0));
 
-    // Get locations
     const locationList = getStorageItem<string[]>('locations') || [];
     setLocations(locationList.length > 0 ? locationList : ["Mumbai", "Sawantwadi", "Chiplun"]);
   }, []);
 
-  // Update available quantity when item or from location changes
   useEffect(() => {
     if (selectedItem && fromLocation) {
       const item = items.find(i => i.id === selectedItem);
       if (item) {
-        // Check if the item has locationQuantities
         if (item.locationQuantities && item.locationQuantities[fromLocation]) {
           setAvailableQuantity(item.locationQuantities[fromLocation]);
         } else {
-          // Fall back to overall remaining quantity if location-specific quantity isn't available
           setAvailableQuantity(item.remainingQuantity || 0);
         }
+      } else {
+        setAvailableQuantity(0);
       }
     } else {
       setAvailableQuantity(0);
@@ -59,7 +55,6 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validation
     if (!selectedItem) {
       toast.error("Please select an item to transfer");
       return;
@@ -85,28 +80,22 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
       return;
     }
 
-    // Find the item to transfer
     const itemToTransfer = items.find(i => i.id === selectedItem);
     if (!itemToTransfer) {
       toast.error("Selected item not found");
       return;
     }
 
-    // Create updated inventory
     const updatedInventory = items.map(item => {
       if (item.id === selectedItem) {
-        // Initialize locationQuantities if it doesn't exist
         const locationQuantities = item.locationQuantities || {};
         
-        // Update source location quantity
         const sourceQty = locationQuantities[fromLocation] || item.remainingQuantity;
         const updatedSourceQty = sourceQty - Number(quantity);
         
-        // Update destination location quantity
         const destQty = locationQuantities[toLocation] || 0;
         const updatedDestQty = destQty + Number(quantity);
         
-        // Create updated item with new location quantities
         return {
           ...item,
           locationQuantities: {
@@ -119,12 +108,9 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
       return item;
     });
 
-    // Save the transfer
     try {
-      // Save updated inventory
       updateInventoryAfterTransfer(updatedInventory);
       
-      // Create transfer record
       const transferRecord = {
         id: Date.now().toString(),
         date,
@@ -137,28 +123,24 @@ const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
         timestamp: new Date().toISOString()
       };
       
-      // Get existing transfers and add new one
       const existingTransfers = getStorageItem<any[]>('locationTransfers') || [];
       const updatedTransfers = [...existingTransfers, transferRecord];
       
-      // Save transfers
       localStorage.setItem('locationTransfers', JSON.stringify(updatedTransfers));
       
       toast.success("Inventory transfer completed successfully");
       
-      // Reset form
       setSelectedItem("");
       setFromLocation("");
       setToLocation("");
       setQuantity("");
       setNotes("");
       
-      // Reload items
       const refreshedInventory = getInventory();
       setItems(refreshedInventory.filter(item => !item.isSoldOut && item.remainingQuantity > 0));
       
-      // Notify parent component
-      onSubmit();
+      onTransferComplete();
+      if (onSubmit) onSubmit();
     } catch (error) {
       console.error("Error during transfer:", error);
       toast.error("Failed to complete transfer. Please try again.");

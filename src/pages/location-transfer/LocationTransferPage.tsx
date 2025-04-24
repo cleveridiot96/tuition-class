@@ -63,7 +63,7 @@ const LocationTransferPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-medium mb-4">New Inventory Transfer</h3>
                 <TransferForm 
-                  onTransferComplete={handleTransferComplete} 
+                  onTransferComplete={handleTransferComplete}
                 />
               </div>
             )}
