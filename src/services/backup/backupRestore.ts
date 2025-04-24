@@ -1,53 +1,9 @@
 
-import { Purchase, Sale, InventoryItem, Payment, Receipt } from '../types';
-import { getStorageItem, saveStorageItem } from '../storageUtils';
-import { getPayments, getReceipts } from '../paymentService';
-import { exportDataBackup as exportBackupFromFile } from './exportBackup';
-
-// Function to clear all data
-export const clearAllData = () => {
-  try {
-    localStorage.clear();
-    window.dispatchEvent(new Event('storage'));
-    return true;
-  } catch (error) {
-    console.error("Clear all data error:", error);
-    return false;
-  }
-};
-
-// Function to clear all master data
-export const clearAllMasterData = () => {
-  try {
-    localStorage.removeItem('agents');
-    localStorage.removeItem('suppliers');
-    localStorage.removeItem('customers');
-    localStorage.removeItem('brokers');
-    localStorage.removeItem('transporters');
-    localStorage.removeItem('locations');
-    window.dispatchEvent(new Event('storage'));
-    return true;
-  } catch (error) {
-    console.error("Clear master data error:", error);
-    return false;
-  }
-};
-
-// Function to seed initial data
-export const seedInitialData = (force?: boolean) => {
-  try {
-    if (force || !getStorageItem('locations')) {
-      saveStorageItem('locations', ["Mumbai", "Chiplun", "Sawantwadi"]);
-    }
-    return true;
-  } catch (error) {
-    console.error("Seed initial data error:", error);
-    return false;
-  }
-};
-
-// Direct export of exportDataBackup from exportBackup.ts
-export const exportDataBackup = exportBackupFromFile;
+import { toast } from "sonner";
+import { clearAllData } from './dataClear';
+import { seedInitialData } from './seedData';
+import { exportDataBackup } from './exportBackup';
+import { saveStorageItem } from '../storageUtils';
 
 // Complete format of all data with backup
 export const completeFormatAllData = async (): Promise<boolean> => {
@@ -55,27 +11,39 @@ export const completeFormatAllData = async (): Promise<boolean> => {
     // Create a backup first
     const backup = exportDataBackup(true);
     
-    // If the backup was created successfully, clear all data
-    if (backup) {
-      // Save backup timestamp
-      saveStorageItem('lastBackupTime', new Date().toISOString());
-      
-      // Create a backup file (in a real app, this would download or store the backup)
-      console.log("Data backup created before format");
-      
-      // Clear all data
-      const clearSuccess = clearAllData();
-      
-      // Seed initial data
-      if (clearSuccess) {
-        seedInitialData(true);
-        return true;
-      }
+    if (!backup) {
+      toast.error("Failed to create backup before format");
+      return false;
     }
     
-    return false;
+    // Save backup timestamp
+    saveStorageItem('lastBackupTime', new Date().toISOString());
+    
+    // Clear all data
+    const clearSuccess = clearAllData();
+    
+    if (!clearSuccess) {
+      toast.error("Failed to clear existing data");
+      return false;
+    }
+    
+    // Seed initial data
+    const seedSuccess = seedInitialData(true);
+    
+    if (!seedSuccess) {
+      toast.error("Failed to seed initial data");
+      return false;
+    }
+    
+    toast.success("Format completed successfully");
+    return true;
   } catch (error) {
     console.error("Complete format error:", error);
+    toast.error("Format operation failed");
     return false;
   }
 };
+
+// Re-export necessary functions
+export { clearAllData, clearAllMasterData } from './dataClear';
+export { seedInitialData } from './seedData';
