@@ -2,8 +2,7 @@
 import { Purchase, Sale, InventoryItem, Payment, Receipt } from '../types';
 import { getStorageItem, saveStorageItem } from '../storageUtils';
 import { getPayments, getReceipts } from '../paymentService';
-import { exportDataBackup } from './exportBackup';
-import { importDataBackup } from './importBackup';
+import { exportDataBackup as exportBackupFromFile } from './exportBackup';
 
 // Function to clear all data
 export const clearAllData = () => {
@@ -46,6 +45,9 @@ export const seedInitialData = (force?: boolean) => {
     return false;
   }
 };
+
+// Direct export of exportDataBackup from exportBackup.ts
+export const exportDataBackup = exportBackupFromFile;
 
 // Complete format of all data with backup
 export const completeFormatAllData = async (): Promise<boolean> => {
