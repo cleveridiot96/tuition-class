@@ -65,8 +65,8 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     }
   };
 
-  const handleAddNewToMaster = (value: string) => {
-    if (!value.trim()) return;
+  const handleAddNewToMaster = (value: string): string => {
+    if (!value.trim()) return "";
     
     const newParty = {
       id: `supplier-${uuidv4()}`,
@@ -79,9 +79,11 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
       loadSuppliers();
       form.setValue("party", value.trim());
       toast.success("New party added successfully");
+      return value.trim();
     } catch (error) {
       console.error("Error adding new party:", error);
       toast.error("Failed to add new party. Please try again.");
+      return "";
     }
   };
   

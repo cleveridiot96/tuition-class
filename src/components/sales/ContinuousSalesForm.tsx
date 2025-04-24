@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -85,20 +84,17 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
 
     loadData();
     
-    // Set cut bill state if there's an initial billAmount
     if (initialSale?.billAmount !== null && initialSale?.billAmount !== undefined) {
       setIsCutBill(true);
     }
   }, [initialSale]);
 
-  // Handle lot selection
   const handleLotChange = (lotNumber: string) => {
     const selected = inventory.find((item) => item.lotNumber === lotNumber);
     if (selected) {
       setSelectedLot(selected);
       setMaxQuantity(selected.remainingQuantity);
       
-      // Reset quantity and calculate default netWeight
       const quantity = Math.min(form.getValues("quantity") || 0, selected.remainingQuantity);
       form.setValue("quantity", quantity);
       
@@ -112,7 +108,6 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
     }
   };
 
-  // Handle broker selection
   const handleBrokerChange = (brokerId: string) => {
     const selectedBroker = brokers.find((b) => b.id === brokerId);
     setSelectedBroker(selectedBroker);
@@ -127,7 +122,6 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
     }
   };
 
-  // Update brokerage amount when quantity or rate changes
   useEffect(() => {
     const subscription = form.watch(({ quantity, rate }) => {
       if (selectedBroker && quantity && rate) {
@@ -140,21 +134,18 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
     return () => subscription.unsubscribe();
   }, [form, selectedBroker]);
 
-  // Update weight when bags/quantity changes (50kg per bag default)
   useEffect(() => {
     const subscription = form.watch(({ quantity }) => {
       if (quantity && quantity > 0) {
-        // Only update if netWeight wasn't manually set
         const currentNetWeight = form.getValues("netWeight");
         if (!currentNetWeight || currentNetWeight === 0) {
-          form.setValue("netWeight", quantity * 50); // Default 50kg per bag
+          form.setValue("netWeight", quantity * 50);
         }
       }
     });
     return () => subscription.unsubscribe();
   }, [form]);
 
-  // Validation: Either customer or broker must be specified
   const handleFormSubmit = (data: SalesFormValues) => {
     if (!data.customerId && !data.brokerId) {
       form.setError("customerId", {
@@ -168,7 +159,6 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
       return;
     }
 
-    // Final data preparation
     const subtotal = data.quantity * data.rate;
     const totalAmount = subtotal + (data.transportCost || 0) + (data.brokerageAmount || 0);
     const billAmount = data.billAmount !== null ? data.billAmount : totalAmount;
@@ -211,7 +201,17 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
     return subtotal + transportCost + brokerageAmount;
   };
 
-  // Prepare options for searchable dropdowns
+  const handleAddNewToMaster = (value: string): string => {
+    if (!value.trim()) return "";
+    
+    if (value) {
+      console.log(`Adding new item with value: ${value}`);
+      return value.trim();
+    }
+    
+    return "";
+  };
+
   const inventoryOptions = inventory.map(item => ({
     value: item.lotNumber,
     label: `${item.lotNumber} (${item.remainingQuantity} bags)`
@@ -353,10 +353,7 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
                           onValueChange={field.onChange}
                           placeholder="Select customer"
                           className="w-full"
-                          onAddNew={(value) => {
-                            // Add to customer master list functionality can be added here
-                            console.log(`Adding new customer: ${value}`);
-                          }}
+                          onAddNew={handleAddNewToMaster}
                           masterType="customer"
                         />
                       </FormControl>
@@ -407,7 +404,6 @@ const ContinuousSalesForm: React.FC<ContinuousSalesFormProps> = ({
                           type="number" 
                           {...field}
                           value={field.value || ''}
-                          // Allow manual override of weight
                           onChange={(e) => {
                             const value = parseFloat(e.target.value) || 0;
                             field.onChange(value);
