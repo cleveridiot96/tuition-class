@@ -23,8 +23,8 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [transporters, setTransporters] = useState<any[]>([]);
   const [agents, setAgents] = useState<any[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
-  const [showBrokerage, setShowBrokerage] = useState<boolean>(true);
+  const [locations, setLocations] = useState<string[]>(['Mumbai', 'Chiplun', 'Sawantwadi']); // Default locations
+  const [showBrokerage, setShowBrokerage] = useState<boolean>(false); // Default to hidden
   const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
   const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
   const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
@@ -55,10 +55,15 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
 
   // Load entities data
   const loadData = () => {
-    setSuppliers(getSuppliers());
-    setTransporters(getTransporters());
-    setAgents(getAgents());
-    setLocations(getLocations());
+    setSuppliers(getSuppliers() || []);
+    setTransporters(getTransporters() || []);
+    setAgents(getAgents() || []);
+    
+    // Set default locations if none are found
+    const storedLocations = getLocations();
+    if (storedLocations && storedLocations.length > 0) {
+      setLocations(storedLocations);
+    }
   };
 
   // Setup party management
@@ -73,34 +78,53 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   // Load initial data
   useEffect(() => {
     loadData();
-    if (initialData?.agentId) setShowBrokerage(true);
+    // Only show brokerage when agent is selected
+    const agentId = form.watch("agentId");
+    setShowBrokerage(!!agentId);
   }, [initialData]);
 
-  // Extract bags from lot number
+  // Toggle brokerage visibility based on agent selection
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'agentId') {
+        setShowBrokerage(!!value.agentId);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form.watch]);
+
+  // Extract bags from lot number and calculate weight
   useEffect(() => {
     const lotNumber = form.watch("lotNumber");
     if (lotNumber) {
       const extractedBags = extractBagsFromLotNumber(lotNumber);
       if (extractedBags) {
         form.setValue("bags", extractedBags);
+        
+        // Default weight calculation (50kg per bag)
+        const currentNetWeight = form.getValues("netWeight");
+        if (!currentNetWeight || currentNetWeight === 0) {
+          form.setValue("netWeight", extractedBags * 50);
+        }
       }
     }
-    // eslint-disable-next-line
   }, [form.watch("lotNumber")]);
 
-  // Calculate transport cost
+  // Update net weight when bags change (50kg per bag default)
   useEffect(() => {
-    const transportRate = form.watch("transportRate");
+    const bags = form.watch("bags");
     const netWeight = form.watch("netWeight");
-    if (transportRate > 0 && netWeight > 0) {
-      const transportCost = transportRate * netWeight;
-      console.log(`Transport cost calculated: ${transportCost} = ${transportRate} * ${netWeight}`);
+    
+    // Only update if netWeight is not manually set
+    if (bags > 0 && (!netWeight || netWeight === 0)) {
+      form.setValue("netWeight", bags * 50);
     }
-    // eslint-disable-next-line
-  }, [form.watch("transportRate"), form.watch("netWeight")]);
+  }, [form.watch("bags")]);
 
   // Form submission handler
   const handleFormSubmit = (data: PurchaseFormData) => {
+    // Check if either Party OR Agent is specified (not both required)
     if (!data.party && !data.agentId) {
       form.setError("party", {
         type: "manual",

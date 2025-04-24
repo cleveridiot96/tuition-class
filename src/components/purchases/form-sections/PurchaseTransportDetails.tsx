@@ -15,9 +15,17 @@ interface PurchaseTransportDetailsProps {
   form: any;
 }
 
-const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({ form }) => {
+const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
+  form,
+}) => {
   const transporters = getTransporters() || [];
   
+  // Convert to options format for searchable select
+  const transporterOptions = [
+    { value: "", label: "None" },
+    ...transporters.map(t => ({ value: t.id, label: t.name }))
+  ];
+
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
       <h3 className="text-lg font-medium mb-4 text-blue-800">Transport Details</h3>
@@ -27,17 +35,15 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({ for
           name="transporterId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Transporter</FormLabel>
+              <FormLabel optional>Transporter</FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect
-                  options={transporters.map(transporter => ({ 
-                    value: transporter.id, 
-                    label: transporter.name 
-                  }))}
-                  value={field.value}
+                  options={transporterOptions}
+                  value={field.value || ""}
                   onValueChange={field.onChange}
                   placeholder="Select transporter"
                   className="w-full"
+                  masterType="transporter"
                 />
               </FormControl>
               <FormMessage />
@@ -50,33 +56,13 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({ for
           name="transportRate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Transport Rate (₹/kg)</FormLabel>
+              <FormLabel optional>Transport Rate (per kg)</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
+                <Input 
+                  type="number" 
+                  step="0.01" 
                   {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="expenses"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Other Expenses (₹)</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...field}
-                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                  placeholder="Optional"
+                  value={field.value || ''}
                 />
               </FormControl>
               <FormMessage />

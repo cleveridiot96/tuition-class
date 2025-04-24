@@ -1,103 +1,216 @@
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
-import { addCustomer, addSupplier, addBroker, addTransporter, addAgent } from '@/services/storageService';
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+import { z } from "zod";
+import { getSuppliers, getCustomers, getBrokers, getTransporters, addSupplier, addCustomer, addBroker, addTransporter } from "@/services/storageService";
 
-export function useAddToMaster() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [itemName, setItemName] = useState('');
-  const [itemType, setItemType] = useState<'customer' | 'supplier' | 'broker' | 'transporter' | 'agent'>('customer');
-  const [callback, setCallback] = useState<((value: string) => void) | null>(null);
+interface AddToMasterProps {
+  masterType?: "supplier" | "customer" | "broker" | "transporter" | "item";
+}
 
-  const confirmAddToMaster = (
-    name: string,
-    onConfirm: (value: string) => void,
-    type: 'customer' | 'supplier' | 'broker' | 'transporter' | 'agent' = 'customer'
-  ) => {
-    setItemName(name);
-    setItemType(type);
-    setCallback(() => onConfirm);
-    setIsOpen(true);
-  };
+export const useAddToMaster = (props?: AddToMasterProps) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newItemName, setNewItemName] = useState("");
+  const [additionalFields, setAdditionalFields] = useState<Record<string, string>>({});
+  const [currentMasterType, setCurrentMasterType] = useState<string>(props?.masterType || "item");
+  const [onConfirmCallback, setOnConfirmCallback] = useState<((value: string) => void) | null>(null);
 
-  const handleAddItem = () => {
-    if (!itemName.trim()) {
-      toast.error('Name cannot be empty');
-      return;
-    }
+  // Define schema that only requires name
+  const commonSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+  });
 
+  // Add item to appropriate master list
+  const addToMasterList = (masterType: string, itemData: any) => {
     try {
-      const newId = `${itemType}-${Date.now()}`;
-      const newItem = {
-        id: newId,
-        name: itemName,
-      };
-
-      // Add to appropriate storage
-      switch (itemType) {
-        case 'customer':
-          addCustomer(newItem);
-          break;
-        case 'supplier':
-          addSupplier(newItem);
-          break;
-        case 'broker':
-          addBroker({...newItem, commissionRate: 1}); // Default commission rate
-          break;
-        case 'transporter':
-          addTransporter(newItem);
-          break;
-        case 'agent':
-          addAgent(newItem);
-          break;
+      if (masterType === "supplier") {
+        const suppliers = getSuppliers() || [];
+        // Check for duplicates
+        if (suppliers.some((s) => s.name.toLowerCase() === itemData.name.toLowerCase())) {
+          toast.error("Supplier with this name already exists");
+          return false;
+        }
+        addSupplier({
+          id: `supplier-${uuidv4()}`,
+          name: itemData.name,
+          address: itemData.address || "",
+          contacts: itemData.contacts || [],
+          balance: 0,
+          isDeleted: false,
+        });
+      } 
+      else if (masterType === "customer") {
+        const customers = getCustomers() || [];
+        if (customers.some((c) => c.name.toLowerCase() === itemData.name.toLowerCase())) {
+          toast.error("Customer with this name already exists");
+          return false;
+        }
+        addCustomer({
+          id: `customer-${uuidv4()}`,
+          name: itemData.name,
+          address: itemData.address || "",
+          contacts: itemData.contacts || [],
+          balance: 0,
+          isDeleted: false,
+        });
+      } 
+      else if (masterType === "broker") {
+        const brokers = getBrokers() || [];
+        if (brokers.some((b) => b.name.toLowerCase() === itemData.name.toLowerCase())) {
+          toast.error("Broker with this name already exists");
+          return false;
+        }
+        addBroker({
+          id: `broker-${uuidv4()}`,
+          name: itemData.name,
+          commissionRate: parseFloat(itemData.commissionRate || "1"),
+          isDeleted: false,
+        });
+      } 
+      else if (masterType === "transporter") {
+        const transporters = getTransporters() || [];
+        if (transporters.some((t) => t.name.toLowerCase() === itemData.name.toLowerCase())) {
+          toast.error("Transporter with this name already exists");
+          return false;
+        }
+        addTransporter({
+          id: `transporter-${uuidv4()}`,
+          name: itemData.name,
+          isDeleted: false,
+        });
       }
-
-      toast.success(`${itemType.charAt(0).toUpperCase() + itemType.slice(1)} added successfully`);
       
-      // Call the callback with the new ID
-      if (callback) {
-        callback(newId);
-      }
-      
-      setIsOpen(false);
+      toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
+      return true;
     } catch (error) {
-      console.error('Error adding item:', error);
-      toast.error(`Failed to add ${itemType}`);
+      console.error(`Error adding ${masterType}:`, error);
+      toast.error(`Failed to add ${masterType}`);
+      return false;
     }
   };
 
-  const AddToMasterDialog = () => (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New {itemType.charAt(0).toUpperCase() + itemType.slice(1)}</DialogTitle>
-        </DialogHeader>
-        <div className="py-4">
-          <Label htmlFor="name">Name</Label>
+  // Confirm adding item to master
+  const handleConfirmAdd = () => {
+    try {
+      const validation = commonSchema.safeParse({ name: newItemName.trim() });
+      
+      if (!validation.success) {
+        toast.error(validation.error.errors[0].message);
+        return;
+      }
+      
+      const itemData = {
+        name: newItemName.trim(),
+        ...additionalFields,
+      };
+      
+      const success = addToMasterList(currentMasterType, itemData);
+      
+      if (success && onConfirmCallback) {
+        // Return the name as the value (used by searchable dropdowns)
+        onConfirmCallback(newItemName.trim());
+      }
+      
+      // Close dialog and reset state
+      setIsDialogOpen(false);
+      setNewItemName("");
+      setAdditionalFields({});
+    } catch (error) {
+      console.error("Error adding to master:", error);
+      toast.error("Error adding item");
+    }
+  };
+
+  // Open dialog to confirm adding a new item
+  const confirmAddToMaster = (itemName: string, onConfirm: (value: string) => void, masterType?: string) => {
+    setNewItemName(itemName);
+    setOnConfirmCallback(() => onConfirm);
+    
+    if (masterType) {
+      setCurrentMasterType(masterType);
+    }
+    
+    setIsDialogOpen(true);
+  };
+
+  // Additional fields for different master types
+  const getAdditionalFields = () => {
+    if (currentMasterType === "broker") {
+      return (
+        <div className="mb-4">
+          <Label htmlFor="commissionRate">Commission Rate (%)</Label>
           <Input
-            id="name"
-            value={itemName}
-            onChange={(e) => setItemName(e.target.value)}
-            className="mt-2"
-            autoFocus
+            id="commissionRate"
+            type="number"
+            step="0.01"
+            value={additionalFields.commissionRate || "1"}
+            onChange={(e) => setAdditionalFields({ ...additionalFields, commissionRate: e.target.value })}
+            placeholder="Enter commission rate"
           />
         </div>
+      );
+    }
+    
+    if (currentMasterType === "supplier" || currentMasterType === "customer") {
+      return (
+        <div className="mb-4">
+          <Label htmlFor="address">Address (Optional)</Label>
+          <Input
+            id="address"
+            value={additionalFields.address || ""}
+            onChange={(e) => setAdditionalFields({ ...additionalFields, address: e.target.value })}
+            placeholder="Enter address"
+          />
+        </div>
+      );
+    }
+    
+    return null;
+  };
+  
+  // Dialog component to add to master
+  const AddToMasterDialog = () => (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogContent className="bg-white">
+        <DialogHeader>
+          <DialogTitle>Add {currentMasterType}</DialogTitle>
+          <DialogDescription>
+            Add a new {currentMasterType} to the master list. Only the name is required.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          <div className="mb-4">
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              placeholder={`Enter ${currentMasterType} name`}
+            />
+          </div>
+          
+          {getAdditionalFields()}
+        </div>
+        
         <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
+          <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleAddItem}>
-            Add {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
+          <Button onClick={handleConfirmAdd}>
+            Add {currentMasterType}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -108,4 +221,4 @@ export function useAddToMaster() {
     confirmAddToMaster,
     AddToMasterDialog,
   };
-}
+};

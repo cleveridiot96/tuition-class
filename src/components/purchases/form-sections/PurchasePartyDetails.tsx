@@ -20,6 +20,20 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
 }) => {
   const { suppliers = [], agents = [] } = partyManagement || {};
 
+  // Convert to options for searchable selects
+  const supplierOptions = suppliers.map(supplier => ({ 
+    value: supplier.name, 
+    label: supplier.name 
+  }));
+  
+  const agentOptions = [
+    { value: "", label: "None" },
+    ...agents.map(agent => ({ 
+      value: agent.id, 
+      label: agent.name 
+    }))
+  ];
+
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
       <h3 className="text-lg font-medium mb-4 text-blue-800">Party Details</h3>
@@ -32,11 +46,12 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               <FormLabel>Party Name</FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect
-                  options={suppliers.map(supplier => ({ value: supplier.name, label: supplier.name }))}
+                  options={supplierOptions}
                   value={field.value}
                   onValueChange={field.onChange}
                   placeholder="Select or enter party name"
                   className="w-full"
+                  masterType="supplier"
                 />
               </FormControl>
               <FormMessage />
@@ -52,11 +67,12 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               <FormLabel>Agent</FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect
-                  options={agents.map(agent => ({ value: agent.id, label: agent.name }))}
+                  options={agentOptions}
                   value={field.value}
                   onValueChange={field.onChange}
                   placeholder="Select agent"
                   className="w-full"
+                  masterType="agent"
                 />
               </FormControl>
               <FormMessage />

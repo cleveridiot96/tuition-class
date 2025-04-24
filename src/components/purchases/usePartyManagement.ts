@@ -1,40 +1,58 @@
 
-import { useDialogStates } from "./hooks/useDialogStates";
-import { useNewEntityStates } from "./hooks/useNewEntityStates";
-import { useSimilarPartyCheck } from "./hooks/useSimilarPartyCheck";
-import { useEntityManagement } from "./hooks/useEntityManagement";
-import { UseFormReturn } from "react-hook-form";
-import { PurchaseFormData } from "./PurchaseFormSchema";
+import { useState, useEffect } from "react";
+import { getSuppliers, getAgents } from "@/services/storageService";
 
 interface UsePartyManagementProps {
-  form: UseFormReturn<PurchaseFormData>;
+  form: any;
   loadData: () => void;
 }
 
 export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) => {
-  const dialogStates = useDialogStates();
-  const entityStates = useNewEntityStates();
-  const similarPartyStates = useSimilarPartyCheck();
-  const entityManagement = useEntityManagement({
-    loadData,
-    form,
-    ...dialogStates,
-    ...entityStates
-  });
-
-  const useSuggestedParty = () => {
-    if (similarPartyStates.similarParty && similarPartyStates.similarParty.name) {
-      form.setValue("party", similarPartyStates.similarParty.name);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [agents, setAgents] = useState<any[]>([]);
+  
+  // Load party data
+  useEffect(() => {
+    const loadPartyData = () => {
+      try {
+        setSuppliers(getSuppliers() || []);
+        setAgents(getAgents() || []);
+      } catch (error) {
+        console.error("Error loading party data:", error);
+      }
+    };
+    
+    loadPartyData();
+  }, []);
+  
+  // Add new party
+  const addParty = (partyData: any) => {
+    try {
+      // Implementation depends on addSupplier function
+      // This is a placeholder
+      console.log("Adding party:", partyData);
+      loadData();
+    } catch (error) {
+      console.error("Error adding party:", error);
     }
-    dialogStates.setShowSimilarPartyDialog(false);
-    similarPartyStates.resetSimilarPartyState();
   };
-
+  
+  // Add new agent
+  const addAgent = (agentData: any) => {
+    try {
+      // Implementation depends on addAgent function
+      // This is a placeholder
+      console.log("Adding agent:", agentData);
+      loadData();
+    } catch (error) {
+      console.error("Error adding agent:", error);
+    }
+  };
+  
   return {
-    ...dialogStates,
-    ...entityStates,
-    ...similarPartyStates,
-    ...entityManagement,
-    useSuggestedParty
+    suppliers,
+    agents,
+    addParty,
+    addAgent
   };
 };

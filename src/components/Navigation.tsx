@@ -19,7 +19,7 @@ interface NavigationProps {
   showFormatButton?: boolean;
   onFormatClick?: () => void;
   showHomeButton?: boolean;
-  className?: string; // Add className prop
+  className?: string; // Custom className for styling
 }
 
 const Navigation: React.FC<NavigationProps> = ({
@@ -30,10 +30,21 @@ const Navigation: React.FC<NavigationProps> = ({
   showFormatButton = false,
   onFormatClick,
   showHomeButton = true,
-  className = '' // Default to empty string
+  className = ''
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Route-based styles - default to blue gradient
+  const getRouteBasedStyles = () => {
+    const path = location.pathname;
+    if (path.includes('/purchases')) return 'bg-gradient-to-r from-blue-600 to-blue-800';
+    if (path.includes('/sales')) return 'bg-gradient-to-r from-purple-600 to-purple-800';
+    if (path.includes('/stock') || path.includes('/inventory')) return 'bg-gradient-to-r from-green-600 to-green-800';
+    if (path.includes('/party-ledger')) return 'bg-gradient-to-r from-amber-600 to-amber-800';
+    // Use default blue for dashboard or any other route
+    return 'bg-gradient-to-r from-blue-600 to-purple-600';
+  };
   
   const handleBack = () => {
     if (onBack) {
@@ -47,7 +58,8 @@ const Navigation: React.FC<NavigationProps> = ({
     navigate('/');
   };
   
-  const headerClasses = `sticky top-0 z-10 w-full bg-gradient-to-r from-blue-600 to-purple-600 shadow-md ${className}`;
+  // Combine route-based styles with custom class + sticky positioning
+  const headerClasses = `sticky top-0 z-50 w-full shadow-md ${getRouteBasedStyles()} ${className}`;
   
   return (
     <div className={headerClasses}>
@@ -65,7 +77,6 @@ const Navigation: React.FC<NavigationProps> = ({
                   <h2 className="text-xl font-bold">Kirana Retail</h2>
                 </div>
                 <div className="p-0">
-                  {/* iOS style list menu with icons */}
                   <ul className="divide-y">
                     {menuItems.map((item) => (
                       <li key={item.title}>
