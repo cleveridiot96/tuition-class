@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Purchase } from "@/services/types";
@@ -65,7 +64,8 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
       };
 
       if (initialValues) {
-        updatePurchase(purchaseData);
+        // Fix line 68 - pass the ID and the purchase data to updatePurchase
+        updatePurchase(purchaseData.id, purchaseData);
         toast({
           title: "Purchase Updated",
           description: `Purchase ${purchaseData.lotNumber} has been updated.`

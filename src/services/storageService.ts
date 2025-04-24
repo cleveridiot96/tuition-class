@@ -3,6 +3,7 @@ import { getStorageItem, saveStorageItem, removeStorageItem } from './core/stora
 import { exportDataBackup } from './backup/exportBackup';
 import { importDataBackup } from './backup/importBackup';
 import { completeFormatAllData, clearAllData } from './backup/backupRestore';
+import { Purchase, Sale } from './types';
 
 // Re-export core storage functions
 export { 
@@ -117,9 +118,37 @@ export const updateInventoryAfterSale = (updatedInventory: any[]) => {
   saveStorageItem('inventory', updatedInventory);
 };
 
-// Add missing function for purchases
-export const savePurchases = (purchases: any[]) => {
+// Purchase-related functions
+export const savePurchases = (purchases: Purchase[]) => {
   saveStorageItem('purchases', purchases);
+};
+
+export const addPurchase = (purchase: Purchase) => {
+  const purchases = getPurchases();
+  purchases.push(purchase);
+  saveStorageItem('purchases', purchases);
+};
+
+export const getPurchases = (): Purchase[] => {
+  return getStorageItem<Purchase[]>('purchases') || [];
+};
+
+export const updatePurchase = (purchaseId: string, updatedPurchase: Purchase) => {
+  const purchases = getPurchases();
+  const index = purchases.findIndex(p => p.id === purchaseId);
+  if (index !== -1) {
+    purchases[index] = updatedPurchase;
+    saveStorageItem('purchases', purchases);
+  }
+};
+
+export const deletePurchase = (purchaseId: string) => {
+  const purchases = getPurchases();
+  const index = purchases.findIndex(p => p.id === purchaseId);
+  if (index !== -1) {
+    purchases[index] = { ...purchases[index], isDeleted: true };
+    saveStorageItem('purchases', purchases);
+  }
 };
 
 // Add missing transactions function
@@ -158,12 +187,8 @@ export const getBackupList = (): string[] => {
 };
 
 // Purchase and Sale Related
-export const getSales = () => {
-  return getStorageItem<any[]>('sales') || [];
-};
-
-export const getPurchases = () => {
-  return getStorageItem<any[]>('purchases') || [];
+export const getSales = (): Sale[] => {
+  return getStorageItem<Sale[]>('sales') || [];
 };
 
 // Payment and Receipt Related
@@ -205,31 +230,6 @@ export const getNextReceiptNumber = () => {
   return `RCP-${receipts.length + 1}`;
 };
 
-// Add missing CRUD operations
-export const updatePurchase = (purchaseId: string, updatedPurchase: any) => {
-  const purchases = getPurchases();
-  const index = purchases.findIndex(p => p.id === purchaseId);
-  if (index !== -1) {
-    purchases[index] = updatedPurchase;
-    saveStorageItem('purchases', purchases);
-  }
-};
-
-export const deletePurchase = (purchaseId: string) => {
-  const purchases = getPurchases();
-  const index = purchases.findIndex(p => p.id === purchaseId);
-  if (index !== -1) {
-    purchases[index] = { ...purchases[index], isDeleted: true };
-    saveStorageItem('purchases', purchases);
-  }
-};
-
-export const addInventoryItem = (item: any) => {
-  const inventory = getInventory();
-  inventory.push(item);
-  saveStorageItem('inventory', inventory);
-};
-
 export const checkDuplicateLot = (lotNumber: string): boolean => {
   const purchases = getPurchases();
   return purchases.some(p => p.lotNumber === lotNumber && !p.isDeleted);
@@ -258,12 +258,6 @@ export const addTransporter = (transporter: any) => {
   const transporters = getTransporters();
   transporters.push(transporter);
   saveStorageItem('transporters', transporters);
-};
-
-export const addPurchase = (purchase: any) => {
-  const purchases = getPurchases();
-  purchases.push(purchase);
-  saveStorageItem('purchases', purchases);
 };
 
 // Helper function for getting parties

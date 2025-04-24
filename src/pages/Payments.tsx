@@ -35,8 +35,8 @@ const Payments = () => {
     setShowForm(false);
   };
 
-  const handleUpdatePayment = (payment: any) => {
-    updatePayment(payment);
+  const handleUpdatePayment = (paymentId: string, updatedPayment: any) => {
+    updatePayment(paymentId, updatedPayment);
     loadPayments();
     setEditingPayment(null);
     setShowForm(false);
