@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -55,19 +56,19 @@ const PartyLedger = () => {
   const loadTransactions = () => {
     setLoading(true);
     try {
-      // Get all transactions
-      const allTransactions = getTransactions() || [];
+      // Looking at the function signature in storageService.ts, it needs partyId, startDate, and endDate
+      // We'll use an empty string for start date and current date for end date as defaults
+      const startDate = "";
+      const endDate = format(new Date(), "yyyy-MM-dd");
       
-      // Filter transactions for the selected party
-      const partyTransactions = allTransactions.filter(transaction => 
-        transaction.partyId === partyId
-      );
+      // Get transactions for the selected party
+      const allTransactions = getTransactions(partyId, startDate, endDate) || [];
       
-      setTransactions(partyTransactions);
+      setTransactions(allTransactions);
       
       // Calculate balance
       let partyBalance = 0;
-      partyTransactions.forEach((transaction) => {
+      allTransactions.forEach((transaction) => {
         if (transaction.type === "purchase") {
           partyBalance -= transaction.amount;
         } else if (transaction.type === "sale") {
