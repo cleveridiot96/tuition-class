@@ -1,18 +1,18 @@
-import { useState, useCallback, useEffect } from 'react';
-import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
-import { Purchase, Agent, Supplier, Transporter, Broker, InventoryItem } from '@/services/types';
+
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
-  getAgents,
-  getSuppliers,
+  getPurchases, 
+  updatePurchase, 
+  deletePurchase, 
+  getAgents, 
+  getBrokers, 
+  getSuppliers, 
   getTransporters,
-  getBrokers,
-  getPurchases,
-  addPurchase,
-  updatePurchase,
-  deletePurchase,
-  addInventoryItem
+  getInventory,
+  saveInventory
 } from '@/services/storageService';
+import { Purchase, Agent, Broker, Supplier, Transporter, InventoryItem } from '@/services/types';
+import { toast } from 'sonner';
 
 export const usePurchaseList = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -20,214 +20,154 @@ export const usePurchaseList = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [transporters, setTransporters] = useState<Transporter[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [entityToDelete, setEntityToDelete] = useState<string | null>(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [entityToEdit, setEntityToEdit] = useState<Purchase | null>(null);
-  const [filterLocation, setFilterLocation] = useState('');
-  const [filterAgent, setFilterAgent] = useState('');
-  const [dateRange, setDateRange] = useState<any>({
-    from: null,
-    to: null,
-  });
-  const [isAddingToInventory, setIsAddingToInventory] = useState(false);
-  const [sortColumn, setSortColumn] = useState<keyof Purchase | null>('date');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [filterText, setFilterText] = useState<string>('');
+  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedDateRange, setSelectedDateRange] = useState<[Date | null, Date | null]>([null, null]);
 
-  const loadData = useCallback(() => {
-    setPurchases(getPurchases());
-    setAgents(getAgents());
-    setSuppliers(getSuppliers());
-    setTransporters(getTransporters());
-    setBrokers(getBrokers());
+  // Load purchases and related data
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      
+      // Get purchases and convert any data type issues
+      let purchasesData = getPurchases();
+      purchasesData = purchasesData.filter(p => !p.isDeleted);
+      
+      // Load related data
+      const agentsData = getAgents();
+      const suppliersData = getSuppliers();
+      const transportersData = getTransporters();
+      const brokersData = getBrokers();
+      
+      // Update state
+      setPurchases(purchasesData);
+      setAgents(agentsData);
+      setSuppliers(suppliersData);
+      setTransporters(transportersData);
+      setBrokers(brokersData);
+    } catch (err: any) {
+      console.error('Error loading purchase data:', err);
+      setError(err instanceof Error ? err : new Error(err?.message || 'Unknown error'));
+      toast.error('Failed to load purchase data');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     loadData();
-    
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === null || e.key.includes('purchases')) {
-        loadData();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('focus', loadData);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', loadData);
-    };
   }, [loadData]);
 
-  const filterEntities = (purchases: Purchase[]) => {
-    let filtered = [...purchases];
-
-    if (dateRange.from && dateRange.to) {
-      filtered = filtered.filter(purchase => {
-        const purchaseDate = new Date(purchase.date);
-        const fromDate = new Date(dateRange.from);
-        const toDate = new Date(dateRange.to);
-        return purchaseDate >= fromDate && purchaseDate <= toDate;
-      });
-    }
+  // Filter purchases based on filter criteria
+  const filteredPurchases = useMemo(() => {
+    if (!purchases) return [];
     
-    if (searchTerm) {
-      filtered = filtered.filter(purchase => 
-        purchase.lotNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (purchase.party && purchase.party.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (purchase.agent && purchase.agent.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (purchase.transporter && purchase.transporter.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (purchase.broker && purchase.broker.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
-    }
-    
-    if (filterLocation) {
-      filtered = filtered.filter(purchase => purchase.location === filterLocation);
-    }
-    
-    if (filterAgent) {
-      filtered = filtered.filter(purchase => purchase.agentId === filterAgent);
-    }
-
-    return filtered;
-  };
-
-  const getSortedPurchases = (purchases: Purchase[]) => {
-    if (!sortColumn) return purchases;
-
-    return [...purchases].sort((a, b) => {
-      const aValue = a[sortColumn] || '';
-      const bValue = b[sortColumn] || '';
-
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  };
-
-  const handleSort = (column: keyof Purchase) => {
-    if (column === sortColumn) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
-
-  const handleDelete = () => {
-    if (!entityToDelete) return;
-
-    deletePurchase(entityToDelete);
-    loadData();
-    toast.success(`Purchase deleted successfully`);
-    setShowDeleteDialog(false);
-    setEntityToDelete(null);
-  };
-
-  const handleAdd = (data: Purchase) => {
-    addPurchase({
-      ...data,
-      id: uuidv4(),
-    });
-
-    loadData();
-    setIsAddDialogOpen(false);
-    toast.success(`Purchase added successfully`);
-  };
-
-  const handleUpdate = (data: Purchase) => {
-    if (!entityToEdit) return;
-
-    const updatedPurchase = {
-      ...entityToEdit,
-      ...data,
-    };
-
-    updatePurchase(updatedPurchase.id, updatedPurchase);
-    loadData();
-    toast.success(`Purchase updated successfully`);
-    setIsEditDialogOpen(false);
-    setEntityToEdit(null);
-  };
-
-  const handleAddToInventory = (purchase: Purchase) => {
-    const inventoryItem: InventoryItem = {
-      id: uuidv4(),
-      purchaseId: purchase.id,
-      lotNumber: purchase.lotNumber,
-      quantity: purchase.quantity || 0,
-      location: purchase.location,
-      dateAdded: new Date().toISOString(),
-      netWeight: purchase.netWeight,
-      remainingQuantity: purchase.quantity || 0,
-      purchaseRate: purchase.rate,
-      finalCost: purchase.totalAfterExpenses,
-      agentId: purchase.agentId || '',
-      agentName: purchase.agent || '',
-      date: purchase.date,
-      rate: purchase.rate,
-      ratePerKgAfterExpenses: purchase.totalAfterExpenses / purchase.netWeight,
-      supplier: purchase.party || '',
-      isDeleted: false,
-      isSoldOut: false
-    };
-
-    addInventoryItem(inventoryItem);
-  };
-
-  const handleBulkAddToInventory = async (selectedPurchases: Purchase[]) => {
-    setIsAddingToInventory(true);
-    try {
-      for (const purchase of selectedPurchases) {
-        handleAddToInventory(purchase);
+    return purchases.filter(purchase => {
+      // Filter by text
+      const textLower = filterText.toLowerCase();
+      const matchText = !filterText || 
+        (purchase.lotNumber?.toLowerCase().includes(textLower)) ||
+        (purchase.party?.toLowerCase().includes(textLower)) || 
+        (purchase.brokerName?.toLowerCase().includes(textLower));
+      
+      // Filter by location
+      const matchLocation = selectedLocation === 'all' || purchase.location === selectedLocation;
+      
+      // Filter by status
+      let matchStatus = true;
+      if (selectedStatus === 'inventorized') {
+        matchStatus = !!purchase.isInventorized;
+      } else if (selectedStatus === 'not-inventorized') {
+        matchStatus = !purchase.isInventorized;
       }
-      toast.success(`${selectedPurchases.length} purchases added to inventory successfully`);
-    } catch (error) {
-      console.error("Error adding to inventory:", error);
-      toast.error("Error adding purchases to inventory");
-    } finally {
-      setIsAddingToInventory(false);
-    }
-  };
+      
+      // Filter by date range
+      let matchDate = true;
+      if (selectedDateRange[0] && selectedDateRange[1]) {
+        const purchaseDate = new Date(purchase.date);
+        const startDate = selectedDateRange[0];
+        const endDate = selectedDateRange[1];
+        matchDate = purchaseDate >= startDate && purchaseDate <= endDate;
+      }
+      
+      return matchText && matchLocation && matchStatus && matchDate;
+    });
+  }, [purchases, filterText, selectedLocation, selectedStatus, selectedDateRange]);
 
-  const filteredPurchases = filterEntities(purchases);
-  const sortedPurchases = getSortedPurchases(filteredPurchases);
+  // Handle adding purchase to inventory
+  const handleAddToInventory = useCallback((purchase: Purchase) => {
+    try {
+      // Get current inventory
+      const currentInventory = getInventory() || [];
+      
+      // Check if already in inventory
+      if (purchase.isInventorized) {
+        toast.error('This purchase is already in inventory');
+        return;
+      }
+      
+      // Create inventory item
+      const inventoryItem: InventoryItem = {
+        id: `inv-${purchase.id}`,
+        purchaseId: purchase.id,
+        date: purchase.date,
+        lotNumber: purchase.lotNumber,
+        productType: purchase.items[0]?.name || 'Unknown',
+        quantity: purchase.quantity,
+        remainingQuantity: purchase.quantity,
+        isSoldOut: false,
+        purchaseRate: purchase.rate,
+        finalCost: purchase.totalAfterExpenses,
+        location: purchase.location || 'Unknown',
+        purchaseDate: purchase.date,
+        createdAt: new Date().toISOString(),
+        // Add location quantities
+        locationQuantities: {
+          [purchase.location || 'Unknown']: purchase.quantity
+        }
+      };
+      
+      // Add to inventory
+      const updatedInventory = [...currentInventory, inventoryItem];
+      saveInventory(updatedInventory);
+      
+      // Update purchase status
+      const updatedPurchase = { ...purchase, isInventorized: true };
+      updatePurchase(purchase.id, updatedPurchase);
+      
+      // Update local state
+      setPurchases(prev => prev.map(p => p.id === purchase.id ? updatedPurchase : p));
+      
+      toast.success('Added to inventory successfully');
+    } catch (err: any) {
+      console.error('Error adding to inventory:', err);
+      toast.error('Failed to add to inventory');
+    }
+  }, []);
 
   return {
-    purchases: sortedPurchases,
+    purchases,
+    filteredPurchases,
     agents,
     suppliers,
     transporters,
     brokers,
-    searchTerm,
-    setSearchTerm,
-    filterLocation,
-    setFilterLocation,
-    filterAgent,
-    setFilterAgent,
-    dateRange,
-    setDateRange,
-    isAddingToInventory,
-    sortColumn,
-    sortDirection,
-    handleSort,
-    entityToDelete,
-    setEntityToDelete,
-    showDeleteDialog,
-    setShowDeleteDialog,
-    isAddDialogOpen,
-    setIsAddDialogOpen,
-    isEditDialogOpen,
-    setIsEditDialogOpen,
-    entityToEdit,
-    setEntityToEdit,
-    handleDelete,
-    handleAdd,
-    handleUpdate,
-    handleBulkAddToInventory,
-    loadData
+    loading,
+    error,
+    filterText,
+    setFilterText,
+    selectedLocation,
+    setSelectedLocation,
+    selectedStatus, 
+    setSelectedStatus,
+    selectedDateRange,
+    setSelectedDateRange,
+    refreshData: loadData,
+    handleAddToInventory,
+    updatePurchase,
+    deletePurchase
   };
 };

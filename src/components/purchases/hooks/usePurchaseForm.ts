@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { Purchase } from "@/services/types";
@@ -64,7 +65,7 @@ export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProp
       };
 
       if (initialValues) {
-        // Fix line 68 - pass the ID and the purchase data to updatePurchase
+        // Fix line 68 - pass both the ID and purchase data to updatePurchase
         updatePurchase(purchaseData.id, purchaseData);
         toast({
           title: "Purchase Updated",

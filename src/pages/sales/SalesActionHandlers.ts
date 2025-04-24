@@ -1,6 +1,7 @@
+
 import { toast } from "sonner";
-import { deleteSale, savePurchases, updateSale } from "@/services/storageService";
-import { InventoryItem, Sale } from "@/services/types";
+import { deleteSale, updateSale } from "@/services/storageService";
+import { InventoryItem, Sale, Purchase } from "@/services/types";
 
 export const handlePrintSale = (sale: Sale) => {
   window.print();
@@ -53,7 +54,10 @@ export const handleUpdateInventoryAfterSale = (
   });
 
   setInventory(updatedInventory);
-  savePurchases([sale]);
+  
+  // Fix: Don't try to save a Sale as a Purchase
+  // Instead, just update the inventory
+  localStorage.setItem('inventory', JSON.stringify(updatedInventory));
   toast.success("Inventory updated after sale!");
 };
 
@@ -100,7 +104,7 @@ export const handleSaleSubmit = (
     toast.success("Sale updated successfully!");
   } else {
     const newSale = { ...sale, id: Date.now().toString() };
-    updateSale(sale.id, sale);
+    updateSale(newSale.id, newSale);
     setSales([...sales, newSale]);
     toast.success("Sale added successfully!");
   }
@@ -108,4 +112,14 @@ export const handleSaleSubmit = (
   setIsAdding(false);
   setEditingSale(null);
   handleUpdateInventoryAfterSale(sale, inventory, setInventory);
+};
+
+export const useSalesActionHandlers = () => {
+  return {
+    handlePrintSale,
+    handleEditSale,
+    handleDeleteSale,
+    handleUpdateInventoryAfterSale,
+    handleSaleSubmit
+  };
 };

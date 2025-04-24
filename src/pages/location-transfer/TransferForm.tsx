@@ -1,241 +1,287 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { toast } from "sonner";
-import { saveTransferHistory } from "@/services/transferService";
-import DashboardCard from "@/components/dashboard/DashboardCard";
-import TransferHistory from "./TransferHistory";
+import { getInventory, updateInventoryAfterTransfer } from "@/services/storageService";
+import { getStorageItem } from '@/services/core/storageCore';
 
-// Define form schema with validation
-const transferFormSchema = z.object({
-  date: z.string().min(1, "Date is required"),
-  lotNumber: z.string().min(1, "Lot number is required"),
-  fromLocation: z.string().min(1, "Source location is required"),
-  toLocation: z.string().min(1, "Destination location is required"),
-  bags: z.coerce.number().int().positive("Number of bags must be positive"),
-  weight: z.coerce.number().positive("Weight must be positive"),
-  notes: z.string().optional(),
-});
+export interface TransferFormProps {
+  onSubmit: () => void;
+}
 
-type TransferFormValues = z.infer<typeof transferFormSchema>;
+const TransferForm: React.FC<TransferFormProps> = ({ onSubmit }) => {
+  const [items, setItems] = useState<any[]>([]);
+  const [selectedItem, setSelectedItem] = useState<string>("");
+  const [fromLocation, setFromLocation] = useState<string>("");
+  const [toLocation, setToLocation] = useState<string>("");
+  const [quantity, setQuantity] = useState<number | "">("");
+  const [date, setDate] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [locations, setLocations] = useState<string[]>([]);
+  const [availableQuantity, setAvailableQuantity] = useState<number>(0);
 
-const TransferForm = () => {
-  const [showHistory, setShowHistory] = useState(false);
-  const locations = ["Mumbai", "Chiplun", "Sawantwadi"];
-  
-  // Initialize the form
-  const form = useForm<TransferFormValues>({
-    resolver: zodResolver(transferFormSchema),
-    defaultValues: {
-      date: new Date().toISOString().split('T')[0],
-      lotNumber: "",
-      fromLocation: "",
-      toLocation: "",
-      bags: 0,
-      weight: 0,
-      notes: "",
-    },
-  });
-  
-  const onSubmit = (data: TransferFormValues) => {
-    // Validate that from and to locations are different
-    if (data.fromLocation === data.toLocation) {
+  // Load initial data
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setDate(today);
+
+    // Get inventory
+    const inventory = getInventory();
+    setItems(inventory.filter(item => !item.isSoldOut && item.remainingQuantity > 0));
+
+    // Get locations
+    const locationList = getStorageItem<string[]>('locations') || [];
+    setLocations(locationList.length > 0 ? locationList : ["Mumbai", "Sawantwadi", "Chiplun"]);
+  }, []);
+
+  // Update available quantity when item or from location changes
+  useEffect(() => {
+    if (selectedItem && fromLocation) {
+      const item = items.find(i => i.id === selectedItem);
+      if (item) {
+        // Check if the item has locationQuantities
+        if (item.locationQuantities && item.locationQuantities[fromLocation]) {
+          setAvailableQuantity(item.locationQuantities[fromLocation]);
+        } else {
+          // Fall back to overall remaining quantity if location-specific quantity isn't available
+          setAvailableQuantity(item.remainingQuantity || 0);
+        }
+      }
+    } else {
+      setAvailableQuantity(0);
+    }
+  }, [selectedItem, fromLocation, items]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (!selectedItem) {
+      toast.error("Please select an item to transfer");
+      return;
+    }
+    if (!fromLocation) {
+      toast.error("Please select a source location");
+      return;
+    }
+    if (!toLocation) {
+      toast.error("Please select a destination location");
+      return;
+    }
+    if (fromLocation === toLocation) {
       toast.error("Source and destination locations cannot be the same");
       return;
     }
-    
-    // Create transfer record
-    const transferRecord = {
-      id: `transfer-${Date.now()}`,
-      date: data.date,
-      lotNumber: data.lotNumber,
-      fromLocation: data.fromLocation,
-      toLocation: data.toLocation,
-      bags: data.bags,
-      weight: data.weight,
-      notes: data.notes,
-      createdAt: new Date().toISOString(),
-    };
-    
-    // Save the transfer
-    saveTransferHistory(transferRecord);
-    
-    // Show success message
-    toast.success("Transfer recorded successfully");
-    
-    // Reset the form
-    form.reset({
-      date: new Date().toISOString().split('T')[0],
-      lotNumber: "",
-      fromLocation: "",
-      toLocation: "",
-      bags: 0,
-      weight: 0,
-      notes: "",
+    if (!quantity || quantity <= 0) {
+      toast.error("Please enter a valid quantity");
+      return;
+    }
+    if (quantity > availableQuantity) {
+      toast.error(`Cannot transfer more than available quantity (${availableQuantity})`);
+      return;
+    }
+
+    // Find the item to transfer
+    const itemToTransfer = items.find(i => i.id === selectedItem);
+    if (!itemToTransfer) {
+      toast.error("Selected item not found");
+      return;
+    }
+
+    // Create updated inventory
+    const updatedInventory = items.map(item => {
+      if (item.id === selectedItem) {
+        // Initialize locationQuantities if it doesn't exist
+        const locationQuantities = item.locationQuantities || {};
+        
+        // Update source location quantity
+        const sourceQty = locationQuantities[fromLocation] || item.remainingQuantity;
+        const updatedSourceQty = sourceQty - Number(quantity);
+        
+        // Update destination location quantity
+        const destQty = locationQuantities[toLocation] || 0;
+        const updatedDestQty = destQty + Number(quantity);
+        
+        // Create updated item with new location quantities
+        return {
+          ...item,
+          locationQuantities: {
+            ...locationQuantities,
+            [fromLocation]: updatedSourceQty,
+            [toLocation]: updatedDestQty
+          }
+        };
+      }
+      return item;
     });
-  };
-  
-  return (
-    <div className="space-y-8">
-      <Card className="bg-gradient-to-r from-purple-100 to-blue-100 border-purple-200 shadow-md">
-        <CardHeader>
-          <CardTitle className="text-center text-purple-800">Transfer Stock Between Locations</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Date</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="lotNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Lot Number</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter lot number" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="fromLocation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>From Location</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select source location" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {locations.map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="toLocation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>To Location</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select destination location" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {locations.map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="bags"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Number of Bags</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} placeholder="Enter number of bags" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="weight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Weight (kg)</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} placeholder="Enter weight in kg" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Notes</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="Additional notes (optional)" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="flex justify-end space-x-4">
-                <Button variant="outline" type="button" onClick={() => setShowHistory(!showHistory)}>
-                  {showHistory ? "Hide History" : "View Transfer History"}
-                </Button>
-                <Button type="submit" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                  Submit Transfer
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+
+    // Save the transfer
+    try {
+      // Save updated inventory
+      updateInventoryAfterTransfer(updatedInventory);
       
-      {showHistory && (
-        <DashboardCard title="Transfer History" className="bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-100">
-          <TransferHistory />
-        </DashboardCard>
-      )}
-    </div>
+      // Create transfer record
+      const transferRecord = {
+        id: Date.now().toString(),
+        date,
+        itemId: selectedItem,
+        itemName: itemToTransfer.lotNumber || "Unknown",
+        fromLocation,
+        toLocation,
+        quantity: Number(quantity),
+        notes,
+        timestamp: new Date().toISOString()
+      };
+      
+      // Get existing transfers and add new one
+      const existingTransfers = getStorageItem<any[]>('locationTransfers') || [];
+      const updatedTransfers = [...existingTransfers, transferRecord];
+      
+      // Save transfers
+      localStorage.setItem('locationTransfers', JSON.stringify(updatedTransfers));
+      
+      toast.success("Inventory transfer completed successfully");
+      
+      // Reset form
+      setSelectedItem("");
+      setFromLocation("");
+      setToLocation("");
+      setQuantity("");
+      setNotes("");
+      
+      // Reload items
+      const refreshedInventory = getInventory();
+      setItems(refreshedInventory.filter(item => !item.isSoldOut && item.remainingQuantity > 0));
+      
+      // Notify parent component
+      onSubmit();
+    } catch (error) {
+      console.error("Error during transfer:", error);
+      toast.error("Failed to complete transfer. Please try again.");
+    }
+  };
+
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    
+    if (value === "") {
+      setQuantity("");
+      return;
+    }
+    
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue)) {
+      setQuantity(numValue);
+    }
+  };
+
+  return (
+    <Card>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="space-y-4 pt-6">
+          <div className="space-y-2">
+            <Label htmlFor="item">Select Item</Label>
+            <Select value={selectedItem} onValueChange={setSelectedItem}>
+              <SelectTrigger id="item">
+                <SelectValue placeholder="Select an item to transfer" />
+              </SelectTrigger>
+              <SelectContent>
+                {items.map(item => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.lotNumber} - {item.productType} ({item.remainingQuantity} kg)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fromLocation">From Location</Label>
+              <Select value={fromLocation} onValueChange={setFromLocation}>
+                <SelectTrigger id="fromLocation">
+                  <SelectValue placeholder="Source location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map(location => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="toLocation">To Location</Label>
+              <Select value={toLocation} onValueChange={setToLocation}>
+                <SelectTrigger id="toLocation">
+                  <SelectValue placeholder="Destination location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {locations.map(location => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">
+                Quantity (kg) {availableQuantity > 0 && `- Available: ${availableQuantity} kg`}
+              </Label>
+              <Input
+                id="quantity"
+                type="number"
+                min="0.01"
+                step="0.01"
+                max={availableQuantity.toString()}
+                value={quantity}
+                onChange={handleQuantityChange}
+                placeholder="Enter quantity to transfer"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Input
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add any additional notes..."
+            />
+          </div>
+        </CardContent>
+        
+        <CardFooter className="flex justify-between">
+          <Button type="button" variant="outline" onClick={() => onSubmit()}>
+            Cancel
+          </Button>
+          <Button type="submit">
+            Complete Transfer
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   );
 };
 

@@ -31,7 +31,7 @@ export function StorageDebugger() {
     setShowBackupConfirm,
     storageStats,
     handleDebugClick,
-    getTotalEntries,
+    getTotalEntries
   } = useStorageDebug();
 
   const handleExport = () => {
@@ -109,10 +109,10 @@ export function StorageDebugger() {
   const filteredStorageData = useMemo(() => {
     try {
       if ((!searchTerm.trim() && filterType === 'all') || !storageData) {
-        return storageData;
+        return JSON.stringify(storageData, null, 2);
       }
 
-      const data = JSON.parse(storageData);
+      const data = storageData;
       const filteredData: Record<string, any> = {};
       
       Object.keys(data).forEach(key => {
@@ -131,7 +131,7 @@ export function StorageDebugger() {
       
       return JSON.stringify(filteredData, null, 2);
     } catch (e) {
-      return storageData;
+      return JSON.stringify(storageData, null, 2);
     }
   }, [storageData, searchTerm, filterType]);
 

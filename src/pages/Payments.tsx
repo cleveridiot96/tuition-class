@@ -1,3 +1,4 @@
+
 import React from "react";
 import Navigation from "@/components/Navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,13 @@ const Payments = () => {
     addPayment(payment);
     loadPayments();
     setShowForm(false);
+  };
+
+  // Create a wrapper function to match the expected signature
+  const handleUpdatePaymentWrapper = (updatedPayment: any) => {
+    if (editingPayment && editingPayment.id) {
+      handleUpdatePayment(editingPayment.id, updatedPayment);
+    }
   };
 
   const handleUpdatePayment = (paymentId: string, updatedPayment: any) => {
@@ -86,7 +94,7 @@ const Payments = () => {
           <CardContent>
             {showForm ? (
               <PaymentForm
-                onSubmit={editingPayment ? handleUpdatePayment : handleAddPayment}
+                onSubmit={editingPayment ? handleUpdatePaymentWrapper : handleAddPayment}
                 onCancel={() => { setShowForm(false); setEditingPayment(null); }}
                 initialData={editingPayment}
               />
