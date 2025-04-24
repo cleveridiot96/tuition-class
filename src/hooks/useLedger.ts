@@ -13,12 +13,12 @@ export const getPartyName = (partyId: string, parties: Party[] = []): string => 
 
 // Helper function to get parties
 export const getParties = (): Party[] => {
-  return getStorageItem<Party[]>('parties') || [];
+  return getStorageItem<Party[]>('parties');
 };
 
 // Helper function to get transactions
 export const getTransactions = (partyId: string, startDate: string, endDate: string) => {
-  const allTransactions = getStorageItem('transactions') || [];
+  const allTransactions = getStorageItem<any[]>('transactions');
   return allTransactions.filter((t: any) => 
     t.partyId === partyId && 
     t.date >= startDate && 

@@ -37,11 +37,11 @@ export const usePurchaseList = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const loadData = useCallback(() => {
-    setPurchases(getPurchases() || []);
-    setAgents(getAgents() || []);
-    setSuppliers(getSuppliers() || []);
-    setTransporters(getTransporters() || []);
-    setBrokers(getBrokers() || []);
+    setPurchases(getPurchases());
+    setAgents(getAgents());
+    setSuppliers(getSuppliers());
+    setTransporters(getTransporters());
+    setBrokers(getBrokers());
   }, []);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export const usePurchaseList = () => {
       ...data,
     };
 
-    updatePurchase(updatedPurchase);
+    updatePurchase(updatedPurchase.id, updatedPurchase);
     loadData();
     toast.success(`Purchase updated successfully`);
     setIsEditDialogOpen(false);

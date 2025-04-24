@@ -42,8 +42,13 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summaryData }) => {
       setTotalSales(getTotalSalesValue());
       setTotalPurchases(getTotalPurchaseValue());
       setTotalInventory(getTotalInventoryValue());
-      setLastBackup(getLastBackupTime());
-      setBackupList(getBackupList());
+      
+      // Type assertions to handle null/unknown return types
+      const backupTime = getLastBackupTime();
+      setLastBackup(backupTime as string);
+      
+      const backups = getBackupList();
+      setBackupList(backups as string[]);
     } finally {
       setIsRefreshing(false);
     }
@@ -54,8 +59,12 @@ const DashboardSummary: React.FC<DashboardSummaryProps> = ({ summaryData }) => {
     try {
       const backupResult = createCompleteBackup();
       if (backupResult) {
-        setLastBackup(getLastBackupTime());
-        setBackupList(getBackupList());
+        const backupTime = getLastBackupTime();
+        setLastBackup(backupTime as string);
+        
+        const backups = getBackupList();
+        setBackupList(backups as string[]);
+        
         toast.success("Backup Created", {
           description: `Backup created successfully on ${format(new Date(), 'MMM dd, yyyy hh:mm a')}.`
         });

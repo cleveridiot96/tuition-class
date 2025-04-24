@@ -13,27 +13,27 @@ export {
 
 // Export utility functions for getting collections
 export const getAgents = () => {
-  return getStorageItem('agents') || [];
+  return getStorageItem<any[]>('agents');
 };
 
 export const getBrokers = () => {
-  return getStorageItem('brokers') || [];
+  return getStorageItem<any[]>('brokers');
 };
 
 export const getCustomers = () => {
-  return getStorageItem('customers') || [];
+  return getStorageItem<any[]>('customers');
 };
 
 export const getSuppliers = () => {
-  return getStorageItem('suppliers') || [];
+  return getStorageItem<any[]>('suppliers');
 };
 
 export const getTransporters = () => {
-  return getStorageItem('transporters') || [];
+  return getStorageItem<any[]>('transporters');
 };
 
 export const getLocations = () => {
-  return getStorageItem('locations') || ['Mumbai', 'Chiplun', 'Sawantwadi'];
+  return getStorageItem<string[]>('locations') || ['Mumbai', 'Chiplun', 'Sawantwadi'];
 };
 
 // Add Agents function that was missing
@@ -52,7 +52,7 @@ export {
 
 // Inventory and Transaction Related
 export const getInventory = () => {
-  return getStorageItem('inventory') || [];
+  return getStorageItem<any[]>('inventory');
 };
 
 export const saveInventory = (inventory: any[]) => {
@@ -66,49 +66,54 @@ export const updateInventoryAfterTransfer = (updatedInventory: any[]) => {
 // Add missing functions for transaction handling
 export const getTransactions = (partyId: string, startDate: string, endDate: string): any[] => {
   // Placeholder implementation - you'll need to customize this
-  return [];
+  const allTransactions = getStorageItem<any[]>('transactions');
+  return allTransactions.filter(t => 
+    t.partyId === partyId && 
+    t.date >= startDate && 
+    t.date <= endDate
+  );
 };
 
 // Dashboard Related Functions (placeholders)
-export const getTotalSalesValue = () => {
-  const sales = getStorageItem('sales') || [];
+export const getTotalSalesValue = (): number => {
+  const sales = getStorageItem<any[]>('sales');
   return sales.reduce((total, sale) => total + (sale.totalAmount || 0), 0);
 };
 
-export const getTotalPurchaseValue = () => {
-  const purchases = getStorageItem('purchases') || [];
+export const getTotalPurchaseValue = (): number => {
+  const purchases = getStorageItem<any[]>('purchases');
   return purchases.reduce((total, purchase) => total + (purchase.totalAmount || 0), 0);
 };
 
-export const getTotalInventoryValue = () => {
-  const inventory = getStorageItem('inventory') || [];
+export const getTotalInventoryValue = (): number => {
+  const inventory = getStorageItem<any[]>('inventory');
   return inventory.reduce((total, item) => total + (item.finalCost || 0), 0);
 };
 
-export const getLastBackupTime = () => {
-  return getStorageItem('lastBackupTime') || null;
+export const getLastBackupTime = (): string | null => {
+  return getStorageItem<string>('lastBackupTime');
 };
 
-export const getBackupList = () => {
-  return getStorageItem('backupList') || [];
+export const getBackupList = (): string[] => {
+  return getStorageItem<string[]>('backupList');
 };
 
 // Purchase and Sale Related
 export const getSales = () => {
-  return getStorageItem('sales') || [];
+  return getStorageItem<any[]>('sales');
 };
 
 export const getPurchases = () => {
-  return getStorageItem('purchases') || [];
+  return getStorageItem<any[]>('purchases');
 };
 
 // Payment and Receipt Related
 export const getPayments = () => {
-  return getStorageItem('payments') || [];
+  return getStorageItem<any[]>('payments');
 };
 
 export const getReceipts = () => {
-  return getStorageItem('receipts') || [];
+  return getStorageItem<any[]>('receipts');
 };
 
 export const addPayment = (payment: any) => {

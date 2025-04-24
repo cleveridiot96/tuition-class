@@ -13,12 +13,12 @@ const formatAmount = (amount: string | number | undefined): string => {
     return amount.toFixed(2);
   }
   // If it's a string but can be parsed as a number
-  const parsed = parseFloat(amount);
+  const parsed = parseFloat(amount.toString());
   if (!isNaN(parsed)) {
     return parsed.toFixed(2);
   }
   // For non-numeric strings
-  return amount;
+  return amount.toString();
 };
 
 export default function SalesTable({
