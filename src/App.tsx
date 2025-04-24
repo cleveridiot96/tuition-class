@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -19,9 +20,8 @@ import Transport from '@/pages/Transport';
 import NotFound from '@/pages/NotFound';
 import LocationTransferPage from '@/pages/location-transfer/LocationTransferPage';
 import RippleProvider from '@/components/RippleProvider';
-import './App.css';
-import { KeyboardShortcutsProvider } from '@/components/KeyboardShortcutsProvider';
 import { optimizedStorage } from '@/services/core/storage-core';
+import './App.css';
 
 const App = () => {
   React.useEffect(() => {
@@ -36,8 +36,8 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       <ErrorBoundary>
-        <div className="min-h-screen w-full flex flex-col">
-          <Router>
+        <Router>
+          <div className="min-h-screen w-full flex flex-col">
             <RippleProvider>
               <div className="flex-1 overflow-auto">
                 <Routes>
@@ -59,9 +59,9 @@ const App = () => {
                 </Routes>
               </div>
             </RippleProvider>
-          </Router>
-          <Toaster />
-        </div>
+            <Toaster />
+          </div>
+        </Router>
       </ErrorBoundary>
     </ThemeProvider>
   );
