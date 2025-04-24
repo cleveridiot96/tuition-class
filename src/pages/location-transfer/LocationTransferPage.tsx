@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TransferForm from './TransferForm';
 import TransferHistory from './TransferHistory';
-import { ArrowLeftRight, History } from 'lucide-react';
+import { ArrowLeftRight } from 'lucide-react';
 
 const LocationTransferPage: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
@@ -14,10 +14,6 @@ const LocationTransferPage: React.FC = () => {
 
   const handleAddTransfer = () => {
     setIsAdding(true);
-  };
-
-  const handleCancel = () => {
-    setIsAdding(false);
   };
 
   const handleTransferComplete = () => {
@@ -55,7 +51,7 @@ const LocationTransferPage: React.FC = () => {
                   </TabsList>
                   
                   <TabsContent value="transfers">
-                    <TransferHistory limit={10} />
+                    <TransferHistory />
                   </TabsContent>
                   
                   <TabsContent value="history">
@@ -67,7 +63,7 @@ const LocationTransferPage: React.FC = () => {
               <div>
                 <h3 className="text-lg font-medium mb-4">New Inventory Transfer</h3>
                 <TransferForm 
-                  onSubmit={handleTransferComplete} 
+                  onTransferComplete={handleTransferComplete} 
                 />
               </div>
             )}

@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getInventory, saveInventory } from "@/services/storageService";
 import { InventoryItem } from "@/services/types";
@@ -106,6 +107,11 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete }) => {
     toast.success('Inventory transferred successfully!');
   };
 
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuantity(value === '' ? '' : Number(value));
+  };
+
   const filteredInventory = inventory.filter((item) => item.location === fromLocation);
   const filteredItems = filteredInventory || [];
 
@@ -162,7 +168,7 @@ const TransferForm: React.FC<TransferFormProps> = ({ onTransferComplete }) => {
           type="number"
           id="quantity"
           value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
+          onChange={handleQuantityChange}
           placeholder="Enter quantity"
         />
       </div>

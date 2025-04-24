@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { format } from 'date-fns';
@@ -104,7 +105,7 @@ const Receipts = () => {
       setEditingReceiptId(id);
       setDate(receiptToEdit.date);
       setAmount(receiptToEdit.amount.toString());
-      setPaymentMethod(receiptToEdit.paymentMethod);
+      setPaymentMethod(receiptToEdit.paymentMethod as 'cash' | 'bank');
       setReference(receiptToEdit.reference || '');
       setNotes(receiptToEdit.notes || '');
       setCustomerId(receiptToEdit.customerId || '');
@@ -139,6 +140,12 @@ const Receipts = () => {
     setPartyName('');
   };
 
+  const handlePaymentMethodChange = (value: string) => {
+    if (value === 'cash' || value === 'bank') {
+      setPaymentMethod(value);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       <Navigation title="Receipts" showBackButton />
@@ -171,7 +178,10 @@ const Receipts = () => {
               </div>
               <div>
                 <Label htmlFor="paymentMethod">Payment Method</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <Select 
+                  value={paymentMethod} 
+                  onValueChange={handlePaymentMethodChange}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select payment method" />
                   </SelectTrigger>

@@ -44,6 +44,14 @@ const Sales = () => {
     }
   };
 
+  const handleRestoreSale = (id: string) => {
+    const updatedSales = sales.map(sale => 
+      sale.id === id ? { ...sale, isDeleted: false } : sale
+    );
+    setSales(updatedSales);
+    // You would typically also update storage here
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
       <Navigation title="Sales" showBackButton />
@@ -79,7 +87,7 @@ const Sales = () => {
                     setInventory
                   );
                 }}
-                initialValues={editingSale}
+                initialSale={editingSale}
               />
             ) : (
               <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab}>
@@ -100,7 +108,10 @@ const Sales = () => {
                   />
                 </TabsContent>
                 <TabsContent value="deleted">
-                  <DeletedSalesTable sales={filterSales(sales)} />
+                  <DeletedSalesTable 
+                    deletedSales={filterSales(sales)} 
+                    onRestore={handleRestoreSale} 
+                  />
                 </TabsContent>
               </Tabs>
             )}

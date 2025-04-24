@@ -34,6 +34,8 @@ export interface BasePurchase {
 
 export interface Purchase extends BasePurchase {
   partyId?: string;
+  brokerName?: string;
+  isInventorized?: boolean;
 }
 
 export interface SaleItem {
@@ -98,6 +100,7 @@ export interface InventoryItem {
   purchaseRate: number;
   finalCost: number;
   dateAdded: string;
+  productType?: string;
 }
 
 export interface Payment {
