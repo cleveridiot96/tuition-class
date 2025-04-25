@@ -26,6 +26,9 @@ export const useBagWeightCalculation = ({
   // Watch for changes in the number of bags
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
+      // Only proceed if we have values to work with
+      if (!value) return;
+      
       if (name === bagFieldName && type === 'change') {
         const bagCount = parseInt(value[bagFieldName]) || 0;
         
@@ -47,14 +50,31 @@ export const useBagWeightCalculation = ({
         setLastBagCount(bagCount);
       } else if (name === weightFieldName && type === 'change') {
         // If user manually edits the weight field, mark it as manually edited
-        const expectedWeight = lastBagCount * defaultWeightPerBag;
+        const bagCount = parseInt(value[bagFieldName]) || 0;
+        const expectedWeight = bagCount * defaultWeightPerBag;
         const currentWeight = parseFloat(value[weightFieldName]) || 0;
         
-        if (Math.abs(currentWeight - expectedWeight) > 0.001) {
+        if (Math.abs(currentWeight - expectedWeight) > 0.001 && currentWeight !== 0) {
           setIsWeightManuallyEdited(true);
         }
       }
     });
+    
+    // Initialize with current values
+    const currentValues = form.getValues();
+    if (currentValues) {
+      const bagCount = parseInt(currentValues[bagFieldName]) || 0;
+      if (bagCount > 0) {
+        const expectedWeight = bagCount * defaultWeightPerBag;
+        // Only set if weight is empty or zero
+        const currentWeight = parseFloat(currentValues[weightFieldName]) || 0;
+        if (currentWeight === 0) {
+          form.setValue(weightFieldName, expectedWeight);
+        }
+        setLastBagCount(bagCount);
+        setLastCalculatedWeight(expectedWeight);
+      }
+    }
     
     return () => subscription.unsubscribe();
   }, [form, bagFieldName, weightFieldName, defaultWeightPerBag, isWeightManuallyEdited, lastBagCount]);

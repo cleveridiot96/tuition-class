@@ -6,13 +6,23 @@ export const useEnhancedSelect = (options: SelectOption[], value: string) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [optionsCache, setOptionsCache] = useState<SelectOption[]>(options);
+  const [cachedValue, setCachedValue] = useState<string>(value);
 
   // Update options cache when options change
   useEffect(() => {
-    if (JSON.stringify(options) !== JSON.stringify(optionsCache)) {
+    const optionsChanged = JSON.stringify(options) !== JSON.stringify(optionsCache);
+    if (optionsChanged) {
       setOptionsCache(options);
     }
   }, [options, optionsCache]);
+
+  // Reset search when value changes externally
+  useEffect(() => {
+    if (value !== cachedValue) {
+      setSearchTerm("");
+      setCachedValue(value);
+    }
+  }, [value, cachedValue]);
 
   const filteredOptions = useMemo(() => {
     if (!searchTerm) return options;

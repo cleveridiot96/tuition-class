@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getMasters, getSuppliers, getCustomers, getBrokers, getTransporters, getAgents } from "@/services/storageService";
+import { getMasters } from "@/services/masterService";
 import { MasterForm } from "@/components/master/MasterForm";
 import { MastersList } from "@/components/master/MastersList";
 import Navigation from "@/components/Navigation";
@@ -18,17 +18,15 @@ const Master = () => {
   const [formType, setFormType] = useState<MasterType>("supplier");
   
   const loadData = useCallback(() => {
-    // Load all masters from different sources and categorize them
-    const suppliers = getSuppliers().filter(s => !s.isDeleted).map(s => ({...s, type: "supplier"}));
-    const customers = getCustomers().filter(c => !c.isDeleted).map(c => ({...c, type: "customer"}));
-    const brokers = getBrokers().filter(b => !b.isDeleted).map(b => ({...b, type: "broker"}));
-    const transporters = getTransporters().filter(t => !t.isDeleted).map(t => ({...t, type: "transporter"}));
-    const agents = getAgents().filter(a => !a.isDeleted).map(a => ({...a, type: "agent"}));
-    
-    // Combine all entities
-    const allMasters = [...suppliers, ...customers, ...brokers, ...transporters, ...agents];
-      
-    setMasters(allMasters);
+    try {
+      // Load masters directly from the master service
+      const allMasters = getMasters();
+      // Filter out deleted masters
+      const activeMasters = allMasters.filter(m => !m.isDeleted);
+      setMasters(activeMasters);
+    } catch (error) {
+      console.error("Error loading masters:", error);
+    }
   }, []);
   
   useEffect(() => {
@@ -52,10 +50,11 @@ const Master = () => {
     }
   };
 
-  const getFilteredMasters = () => {
+  // Filter masters by type based on current tab
+  const filteredMasters = useMemo(() => {
     if (currentTab === "all") return masters;
     return masters.filter(master => master.type === currentTab);
-  };
+  }, [currentTab, masters]);
 
   const handleAddMaster = () => {
     // Set the form type based on current tab (if not on "all" tab)
@@ -63,6 +62,12 @@ const Master = () => {
       setFormType(currentTab);
     }
     setShowForm(true);
+  };
+
+  const handleFormSave = () => {
+    setShowForm(false);
+    // Immediately load data after save to show the new master
+    loadData();
   };
 
   return (
@@ -84,7 +89,7 @@ const Master = () => {
             {showForm && (
               <MasterForm
                 onClose={() => setShowForm(false)}
-                onSaved={loadData}
+                onSaved={handleFormSave}
                 initialType={formType}
               />
             )}
@@ -100,7 +105,7 @@ const Master = () => {
               </TabsList>
               
               <TabsContent value={currentTab}>
-                <MastersList masters={getFilteredMasters()} onUpdate={loadData} />
+                <MastersList masters={filteredMasters} onUpdate={loadData} />
               </TabsContent>
             </Tabs>
           </CardContent>

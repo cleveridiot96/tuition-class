@@ -16,6 +16,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MasterType } from "@/types/master.types";
 
 interface Master {
   id: string;
@@ -33,38 +35,39 @@ interface MastersListProps {
 export const MastersList: React.FC<MastersListProps> = ({ masters, onUpdate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState<string>("");
+  const [editType, setEditType] = useState<MasterType>("supplier");
   const [editCommissionRate, setEditCommissionRate] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [masterToDelete, setMasterToDelete] = useState<Master | null>(null);
 
-  // Remove duplicates by ID
-  const uniqueMasters = masters.reduce((acc: Master[], current) => {
-    const x = acc.find(item => item.id === current.id);
-    if (!x) {
-      return acc.concat([current]);
-    } else {
-      return acc;
-    }
-  }, []);
+  // Remove duplicates by ID and filter out deleted items
+  const uniqueMasters = masters
+    .filter(m => !m.isDeleted)
+    .reduce((acc: Master[], current) => {
+      const isDuplicate = acc.find(item => item.id === current.id);
+      return isDuplicate ? acc : [...acc, current];
+    }, []);
 
   const handleEditClick = (master: Master) => {
     setEditingId(master.id);
     setEditName(master.name);
+    setEditType(master.type as MasterType || "supplier");
     setEditCommissionRate(master.commissionRate?.toString() || "1");
   };
 
-  const handleSaveEdit = (masterId: string, type?: string) => {
+  const handleSaveEdit = (masterId: string) => {
     if (!editName.trim()) {
       toast.error("Name cannot be empty");
       return;
     }
 
     const updatedMaster: Partial<Master> = {
-      name: editName.trim()
+      name: editName.trim(),
+      type: editType
     };
 
     // Only add commission rate for broker or agent types
-    if ((type === "broker" || type === "agent") && editCommissionRate) {
+    if ((editType === "broker" || editType === "agent") && editCommissionRate) {
       updatedMaster.commissionRate = parseFloat(editCommissionRate);
     }
 
@@ -72,6 +75,7 @@ export const MastersList: React.FC<MastersListProps> = ({ masters, onUpdate }) =
     
     setEditingId(null);
     setEditName("");
+    setEditType("supplier");
     setEditCommissionRate("");
     
     toast.success("Master updated successfully");
@@ -81,6 +85,7 @@ export const MastersList: React.FC<MastersListProps> = ({ masters, onUpdate }) =
   const handleCancelEdit = () => {
     setEditingId(null);
     setEditName("");
+    setEditType("supplier");
     setEditCommissionRate("");
   };
 
@@ -119,7 +124,23 @@ export const MastersList: React.FC<MastersListProps> = ({ masters, onUpdate }) =
                     placeholder="Enter name"
                   />
                   
-                  {(master.type === "broker" || master.type === "agent") && (
+                  <Select 
+                    value={editType} 
+                    onValueChange={(value) => setEditType(value as MasterType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      <SelectItem value="supplier">Supplier</SelectItem>
+                      <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="broker">Broker</SelectItem>
+                      <SelectItem value="agent">Agent</SelectItem>
+                      <SelectItem value="transporter">Transporter</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {(editType === "broker" || editType === "agent") && (
                     <Input
                       type="number"
                       value={editCommissionRate}
@@ -134,7 +155,7 @@ export const MastersList: React.FC<MastersListProps> = ({ masters, onUpdate }) =
                     <Button 
                       size="sm" 
                       className="flex items-center" 
-                      onClick={() => handleSaveEdit(master.id, master.type)}
+                      onClick={() => handleSaveEdit(master.id)}
                     >
                       <Check className="h-4 w-4 mr-1" /> Save
                     </Button>

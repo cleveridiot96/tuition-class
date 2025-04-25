@@ -24,6 +24,18 @@ export const getMasters = (): Master[] => {
 export const addMaster = (master: Master): void => {
   try {
     const existing = getMasters();
+    // Filter duplicates before adding
+    const isDuplicate = existing.some(
+      m => m.name.toLowerCase() === master.name.toLowerCase() && 
+           m.type === master.type && 
+           !m.isDeleted
+    );
+    
+    if (isDuplicate) {
+      console.error("Duplicate master not added:", master.name);
+      return;
+    }
+    
     existing.push(master);
     saveStorageItem('masters', existing);
   } catch (err) {
@@ -35,15 +47,10 @@ export const deleteMaster = (masterId: string): void => {
   try {
     const existing = getMasters();
     
-    // Instead of filtering, mark as deleted or fully remove
-    const updatedMasters = existing.map(m => {
-      if (m.id === masterId) {
-        return { ...m, isDeleted: true };
-      }
-      return m;
-    });
+    // Completely remove the item instead of just marking as deleted
+    const filteredMasters = existing.filter(m => m.id !== masterId);
     
-    saveStorageItem('masters', updatedMasters);
+    saveStorageItem('masters', filteredMasters);
   } catch (err) {
     console.error("Failed to delete master", err);
   }

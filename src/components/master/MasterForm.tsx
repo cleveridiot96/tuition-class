@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { addMaster } from "@/services/storageService";
+import { addMaster } from "@/services/masterService";
 import { MasterType } from "@/types/master.types";
 import { useMasterValidation } from "@/hooks/master/useMasterValidation";
 import { NumericInput } from "@/components/ui/numeric-input";
@@ -28,6 +28,7 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initia
   const [type, setType] = useState<MasterType>(initialType);
   const [commissionRate, setCommissionRate] = useState("1");
   const { nameError, setNameError, validateMaster } = useMasterValidation();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Update type when initialType prop changes
   useEffect(() => {
@@ -45,8 +46,10 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initia
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     if (!validateForm()) {
+      setIsSubmitting(false);
       return;
     }
 
@@ -68,10 +71,11 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initia
 
       // Trigger immediate reload of data
       onSaved(); 
-      onClose(); 
     } catch (error) {
       console.error("Error saving master:", error);
       toast.error(`Failed to save ${type}. Please try again.`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -91,6 +95,7 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initia
             if (e.target.value.trim()) setNameError("");
           }}
           className={nameError ? "border-red-500" : ""}
+          required
         />
         {nameError && <p className="text-red-500 text-sm">{nameError}</p>}
       </div>
@@ -102,6 +107,7 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initia
         <Select 
           value={type} 
           onValueChange={(value) => setType(value as MasterType)}
+          required
         >
           <SelectTrigger>
             <SelectValue placeholder="Select type" />
@@ -118,7 +124,9 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initia
       
       {(type === "broker" || type === "agent") && (
         <div className="space-y-2">
-          <Label htmlFor="commissionRate">Commission Rate (%) <span className="text-red-500 ml-1">*</span></Label>
+          <Label htmlFor="commissionRate" className="flex items-center">
+            Commission Rate (%) <span className="text-red-500 ml-1">*</span>
+          </Label>
           <NumericInput
             id="commissionRate"
             value={commissionRate}
@@ -127,17 +135,25 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initia
             min={0}
             max={100}
             placeholder="Enter commission rate"
+            required
           />
         </div>
       )}
       
       <div className="flex space-x-2">
-        <Button type="submit" className="w-full">Save {type.charAt(0).toUpperCase() + type.slice(1)}</Button>
+        <Button 
+          type="submit" 
+          className="w-full"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Saving...' : `Save ${type.charAt(0).toUpperCase() + type.slice(1)}`}
+        </Button>
         <Button 
           type="button" 
           variant="outline" 
           className="w-full" 
           onClick={onClose}
+          disabled={isSubmitting}
         >
           Cancel
         </Button>
