@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,10 +11,10 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
-import { EnhancedSearchableSelectProps, SelectOption } from "./types";
-import { useEnhancedSelect } from "./use-enhanced-select";
-import { EnhancedSelectOption } from "./enhanced-select-option";
-import { EnhancedSelectSuggestion } from "./enhanced-select-suggestion";
+import { EnhancedSearchableSelectProps, SelectOption } from "./enhanced-select/types";
+import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
+import { EnhancedSelectOption } from "./enhanced-select/enhanced-select-option";
+import { EnhancedSelectSuggestion } from "./enhanced-select/enhanced-select-suggestion";
 
 export const EnhancedSearchableSelect = React.memo(({
   options = [],
@@ -25,7 +26,7 @@ export const EnhancedSearchableSelect = React.memo(({
   label,
   disabled = false,
   className,
-  masterType = "item"
+  masterType = "supplier"
 }: EnhancedSearchableSelectProps) => {
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
 

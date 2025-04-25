@@ -26,7 +26,7 @@ export const EnhancedSearchableSelect = React.memo(({
   label,
   disabled = false,
   className,
-  masterType = "item"
+  masterType = "supplier"
 }: EnhancedSearchableSelectProps) => {
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
 

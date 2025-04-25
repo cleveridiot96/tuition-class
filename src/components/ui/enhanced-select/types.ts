@@ -13,7 +13,7 @@ export interface EnhancedSearchableSelectProps {
   onValueChange: (value: string) => void;
   onAddNew?: (value: string) => string; 
   placeholder?: string;
-  emptyMessage?: string;  // Add this property
+  emptyMessage?: string;
   disabled?: boolean;
   className?: string;
   label?: string;
