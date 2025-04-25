@@ -31,6 +31,14 @@ interface AddToMasterProps {
   masterType?: "supplier" | "customer" | "broker" | "transporter" | "item" | "party";
 }
 
+// Extended Master interface with the type property
+interface Master {
+  id: string;
+  name: string;
+  isDeleted?: boolean;
+  type?: string;
+}
+
 export const useAddToMaster = (props?: AddToMasterProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
@@ -55,7 +63,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
           return "";
         }
         
-        const newSupplier = {
+        const newSupplier: Master = {
           id: `supplier-${uuidv4()}`,
           name: itemData.name,
           isDeleted: false,
@@ -83,7 +91,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
           return "";
         }
         
-        const newCustomer = {
+        const newCustomer: Master = {
           id: `customer-${uuidv4()}`,
           name: itemData.name,
           isDeleted: false,
@@ -111,7 +119,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
           return "";
         }
         
-        const newBroker = {
+        const newBroker: Master = {
           id: `broker-${uuidv4()}`,
           name: itemData.name,
           commissionRate: parseFloat(itemData.commissionRate || "1"),
@@ -140,7 +148,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
           return "";
         }
         
-        const newTransporter = {
+        const newTransporter: Master = {
           id: `transporter-${uuidv4()}`,
           name: itemData.name,
           isDeleted: false,

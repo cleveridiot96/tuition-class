@@ -22,8 +22,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
   const handleFormatConfirm = async () => {
     try {
       console.log("Format operation starting...");
-      toast({
-        title: "Format in progress",
+      toast("Format in progress", {
         description: "Creating backup and resetting data...",
       });
       
@@ -35,8 +34,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
       
       if (formatSuccess) {
         // Show success message
-        toast({
-          title: "Data Formatted Successfully",
+        toast("Data Formatted Successfully", {
           description: "All data has been completely reset. A backup was created automatically.",
         });
         
@@ -49,8 +47,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
       }
     } catch (error) {
       console.error("Error during formatting:", error);
-      toast({
-        title: "Format Error",
+      toast("Format Error", {
         description: "There was a problem formatting the data. Please try again.",
       });
     } finally {
