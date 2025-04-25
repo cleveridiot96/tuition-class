@@ -1,183 +1,167 @@
-
-import { useState, useCallback, useEffect, useRef } from "react";
-import { CheckIcon, ChevronsUpDown, PlusCircle } from "lucide-react";
+import * as React from "react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { MasterType } from "@/types/master.types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
+import { EnhancedSearchableSelectProps, SelectOption } from "./types";
+import { useEnhancedSelect } from "./use-enhanced-select";
+import { EnhancedSelectOption } from "./enhanced-select-option";
+import { EnhancedSelectSuggestion } from "./enhanced-select-suggestion";
 
-export interface Option {
-  value: string;
-  label: string;
-}
-
-interface EnhancedSearchableSelectProps {
-  options: Option[];
-  value: string;
-  onValueChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-  masterType?: MasterType;
-  onAddNew?: (value: string) => string;
-}
-
-export function EnhancedSearchableSelect({
-  options,
+export const EnhancedSearchableSelect = React.memo(({
+  options = [],
   value,
   onValueChange,
-  placeholder = "Select an option",
-  className,
-  masterType,
   onAddNew,
-}: EnhancedSearchableSelectProps) {
-  const [open, setOpen] = useState(false);
-  const [inputValue, setInputValue] = useState("");
+  placeholder = "Select an option",
+  emptyMessage = "No results found.",
+  label,
+  disabled = false,
+  className,
+  masterType = "item"
+}: EnhancedSearchableSelectProps) => {
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
-  const popoverRef = useRef<HTMLDivElement>(null);
 
-  // Find the option that matches the current value
-  const selectedOption = options.find((option) => option.value === value);
+  const {
+    open,
+    setOpen,
+    searchTerm,
+    setSearchTerm,
+    suggestedMatch,
+    filteredOptions,
+    inputMatchesOption,
+    selectedOption
+  } = useEnhancedSelect(options, value);
 
-  useEffect(() => {
-    // Reset input value when popover closes
-    if (!open) {
-      setInputValue("");
-    }
-  }, [open]);
+  // Handler functions
+  const handleSelect = React.useCallback((currentValue: string) => {
+    onValueChange(currentValue);
+    setOpen(false);
+    setSearchTerm("");
+  }, [onValueChange, setOpen, setSearchTerm]);
 
-  const handleSelect = useCallback(
-    (currentValue: string) => {
-      onValueChange(currentValue === value ? "" : currentValue);
+  const handleAddNewItem = React.useCallback(() => {
+    if (searchTerm.trim() && !inputMatchesOption) {
+      if (onAddNew) {
+        onAddNew(searchTerm.trim());
+      } else {
+        confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
+          onValueChange(confirmedValue);
+        });
+      }
       setOpen(false);
-    },
-    [value, onValueChange]
-  );
+    }
+  }, [searchTerm, inputMatchesOption, onAddNew, confirmAddToMaster, onValueChange, setOpen]);
 
-  const handleInputChange = useCallback((newInputValue: string) => {
-    setInputValue(newInputValue);
-  }, []);
-
-  const handleAddNewItem = useCallback(() => {
-    if (!inputValue.trim()) return;
-    
-    if (masterType) {
-      // Use Add to Master dialog with type awareness
-      confirmAddToMaster(inputValue, (newValue) => {
-        if (newValue) {
-          onValueChange(newValue);
-          setOpen(false);
-        }
-      }, masterType);
-    } else if (onAddNew) {
-      // Use direct onAddNew function if provided
-      const newValue = onAddNew(inputValue);
-      if (newValue) {
-        onValueChange(newValue);
-        setOpen(false);
+  const useSuggestedMatch = React.useCallback(() => {
+    if (suggestedMatch) {
+      const matchingOption = options.find(option => option.label === suggestedMatch);
+      if (matchingOption) {
+        handleSelect(matchingOption.value);
       }
     }
-  }, [inputValue, masterType, confirmAddToMaster, onValueChange, onAddNew]);
+  }, [suggestedMatch, options, handleSelect]);
 
-  // Filter options based on input
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(inputValue.toLowerCase())
-  );
-
-  // Determine if we should show the "Add new item" button
-  const shouldShowAddNew = Boolean(
-    (masterType || onAddNew) && 
-    inputValue && 
-    !options.some(option => 
-      option.label.toLowerCase() === inputValue.toLowerCase()
-    )
-  );
+  const handleInputKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredOptions.length === 1) {
+        // If there's only one option, select it
+        handleSelect(filteredOptions[0].value);
+      } else if (!inputMatchesOption && searchTerm.trim()) {
+        // If input doesn't match any option and we can add new items
+        handleAddNewItem();
+      }
+    }
+  }, [filteredOptions, handleSelect, inputMatchesOption, searchTerm, handleAddNewItem]);
 
   return (
-    <div className="relative">
-      <Popover open={open} onOpenChange={setOpen}>
+    <>
+      <Popover 
+        open={disabled ? false : open} 
+        onOpenChange={disabled ? undefined : setOpen}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="outline"
             role="combobox"
             aria-expanded={open}
             className={cn(
-              "w-full justify-between bg-white",
+              "w-full justify-between bg-white shadow-sm border-gray-300",
               !value && "text-muted-foreground",
               className
             )}
-            onClick={() => setOpen(!open)}
+            disabled={disabled}
+            onClick={() => !disabled && setOpen(!open)}
           >
-            <span className="truncate">
-              {selectedOption ? selectedOption.label : placeholder}
-            </span>
+            {selectedOption ? selectedOption.label : placeholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent 
-          className="p-0 w-full min-w-[200px] max-w-[400px] bg-white" 
-          ref={popoverRef}
+          className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
+          align="start"
+          style={{ pointerEvents: 'auto' }}
         >
-          <Command>
-            <CommandInput 
-              placeholder="Search..." 
-              value={inputValue}
-              onValueChange={handleInputChange}
+          <div className="flex items-center border-b px-3">
+            <Input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+              placeholder={`Search ${placeholder.toLowerCase()}...`}
+              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
             />
-            <CommandList>
-              <CommandEmpty>
-                {inputValue ? "No match found." : "No options available."}
-              </CommandEmpty>
-              <CommandGroup>
+          </div>
+          <ScrollArea className="max-h-60">
+            {filteredOptions.length === 0 ? (
+              <EnhancedSelectSuggestion 
+                suggestedMatch={suggestedMatch}
+                onUseSuggestion={useSuggestedMatch}
+                searchTerm={searchTerm}
+                onAddNewItem={handleAddNewItem}
+                masterType={masterType}
+                showAddOption={Boolean(onAddNew || confirmAddToMaster)}
+              />
+            ) : (
+              <div role="listbox">
                 {filteredOptions.map((option) => (
-                  <CommandItem
+                  <EnhancedSelectOption
                     key={option.value}
                     value={option.value}
-                    onSelect={handleSelect}
-                  >
-                    <CheckIcon
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === option.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </CommandItem>
+                    label={option.label}
+                    isSelected={value === option.value}
+                    onSelect={() => handleSelect(option.value)}
+                  />
                 ))}
-              </CommandGroup>
-              {shouldShowAddNew && (
-                <>
-                  <CommandSeparator />
-                  <CommandGroup>
-                    <CommandItem
-                      onSelect={handleAddNewItem}
-                      className="text-blue-600 cursor-pointer"
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4" />
-                      Add "{inputValue}"
-                    </CommandItem>
-                  </CommandGroup>
-                </>
-              )}
-            </CommandList>
-          </Command>
+
+                {searchTerm.trim() && !inputMatchesOption && (onAddNew || confirmAddToMaster) && (
+                  <div
+                    className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground border-t"
+                    onClick={handleAddNewItem}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add "{searchTerm}" to {masterType} master
+                  </div>
+                )}
+              </div>
+            )}
+          </ScrollArea>
         </PopoverContent>
       </Popover>
-      
+
       <AddToMasterDialog />
-    </div>
+    </>
   );
-}
+});
+
+EnhancedSearchableSelect.displayName = "EnhancedSearchableSelect";
