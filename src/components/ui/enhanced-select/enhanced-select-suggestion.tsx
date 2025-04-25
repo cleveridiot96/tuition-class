@@ -41,7 +41,7 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
 
       {showAddOption && (
         <div
-          className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground border-t mt-2"
+          className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground bg-green-50 text-green-700 border border-green-200 mt-2"
           onClick={onAddNewItem}
         >
           <Plus className="mr-2 h-4 w-4" />

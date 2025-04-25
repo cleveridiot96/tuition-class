@@ -19,15 +19,14 @@ const Master = () => {
   
   const loadData = useCallback(() => {
     // Load all masters from different sources and categorize them
-    const suppliers = getSuppliers().map(s => ({...s, type: "supplier"}));
-    const customers = getCustomers().map(c => ({...c, type: "customer"}));
-    const brokers = getBrokers().map(b => ({...b, type: "broker"}));
-    const transporters = getTransporters().map(t => ({...t, type: "transporter"}));
-    const agents = getAgents().map(a => ({...a, type: "agent"}));
+    const suppliers = getSuppliers().filter(s => !s.isDeleted).map(s => ({...s, type: "supplier"}));
+    const customers = getCustomers().filter(c => !c.isDeleted).map(c => ({...c, type: "customer"}));
+    const brokers = getBrokers().filter(b => !b.isDeleted).map(b => ({...b, type: "broker"}));
+    const transporters = getTransporters().filter(t => !t.isDeleted).map(t => ({...t, type: "transporter"}));
+    const agents = getAgents().filter(a => !a.isDeleted).map(a => ({...a, type: "agent"}));
     
     // Combine all entities
-    const allMasters = [...suppliers, ...customers, ...brokers, ...transporters, ...agents]
-      .filter(m => !m.isDeleted);
+    const allMasters = [...suppliers, ...customers, ...brokers, ...transporters, ...agents];
       
     setMasters(allMasters);
   }, []);

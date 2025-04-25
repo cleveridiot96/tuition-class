@@ -37,6 +37,16 @@ export const MastersList: React.FC<MastersListProps> = ({ masters, onUpdate }) =
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [masterToDelete, setMasterToDelete] = useState<Master | null>(null);
 
+  // Remove duplicates by ID
+  const uniqueMasters = masters.reduce((acc: Master[], current) => {
+    const x = acc.find(item => item.id === current.id);
+    if (!x) {
+      return acc.concat([current]);
+    } else {
+      return acc;
+    }
+  }, []);
+
   const handleEditClick = (master: Master) => {
     setEditingId(master.id);
     setEditName(master.name);
@@ -91,11 +101,11 @@ export const MastersList: React.FC<MastersListProps> = ({ masters, onUpdate }) =
 
   return (
     <div className="space-y-4">
-      {masters.length === 0 ? (
+      {uniqueMasters.length === 0 ? (
         <p className="text-gray-500">No masters saved yet.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {masters.map((master) => (
+          {uniqueMasters.map((master) => (
             <Card
               key={master.id}
               className="p-4 bg-white shadow-sm hover:shadow-md transition-shadow"

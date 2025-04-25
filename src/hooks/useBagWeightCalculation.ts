@@ -17,7 +17,7 @@ export const useBagWeightCalculation = ({
   form,
   bagFieldName = 'bags', 
   weightFieldName = 'netWeight',
-  defaultWeightPerBag = 50
+  defaultWeightPerBag = 50  // Default is 50kg per bag
 }: UseBagWeightCalculationProps) => {
   const [isWeightManuallyEdited, setIsWeightManuallyEdited] = useState(false);
   const [lastBagCount, setLastBagCount] = useState(0);
@@ -27,11 +27,11 @@ export const useBagWeightCalculation = ({
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
       if (name === bagFieldName && type === 'change') {
-        const bagCount = value[bagFieldName] || 0;
+        const bagCount = parseInt(value[bagFieldName]) || 0;
         
         // If the current weight matches what would have been calculated previously,
         // it's likely not manually edited
-        const currentWeight = value[weightFieldName] || 0;
+        const currentWeight = parseFloat(value[weightFieldName]) || 0;
         const previousCalculatedWeight = lastBagCount * defaultWeightPerBag;
         
         // Check if the weight is still in sync with auto-calculation
@@ -45,6 +45,14 @@ export const useBagWeightCalculation = ({
         }
         
         setLastBagCount(bagCount);
+      } else if (name === weightFieldName && type === 'change') {
+        // If user manually edits the weight field, mark it as manually edited
+        const expectedWeight = lastBagCount * defaultWeightPerBag;
+        const currentWeight = parseFloat(value[weightFieldName]) || 0;
+        
+        if (Math.abs(currentWeight - expectedWeight) > 0.001) {
+          setIsWeightManuallyEdited(true);
+        }
       }
     });
     
@@ -59,7 +67,7 @@ export const useBagWeightCalculation = ({
   
   // Function to reset to automatic calculation
   const resetToAutoCalculation = () => {
-    const bagCount = form.getValues(bagFieldName) || 0;
+    const bagCount = parseInt(form.getValues(bagFieldName)) || 0;
     const newWeight = bagCount * defaultWeightPerBag;
     form.setValue(weightFieldName, newWeight);
     setIsWeightManuallyEdited(false);

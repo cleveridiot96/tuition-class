@@ -34,7 +34,15 @@ export const addMaster = (master: Master): void => {
 export const deleteMaster = (masterId: string): void => {
   try {
     const existing = getMasters();
-    const updatedMasters = existing.filter(m => m.id !== masterId);
+    
+    // Instead of filtering, mark as deleted or fully remove
+    const updatedMasters = existing.map(m => {
+      if (m.id === masterId) {
+        return { ...m, isDeleted: true };
+      }
+      return m;
+    });
+    
     saveStorageItem('masters', updatedMasters);
   } catch (err) {
     console.error("Failed to delete master", err);

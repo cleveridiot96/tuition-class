@@ -1,5 +1,5 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   FormField,
   FormItem,
@@ -8,6 +8,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Calculator } from "lucide-react";
+import { useBagWeightCalculation } from "@/hooks/useBagWeightCalculation";
 
 interface PurchaseQuantityDetailsProps {
   form: any;
@@ -18,19 +21,37 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
   form,
   extractBagsFromLotNumber
 }) => {
-  // Handle the weight calculation when bags change
-  const handleBagsChange = (value: number) => {
-    form.setValue("bags", value);
+  const [avgBagWeight, setAvgBagWeight] = useState('50');
+  const DEFAULT_WEIGHT_PER_BAG = 50; // Default 50kg per bag
+  
+  // Use the bag weight calculation hook
+  const { 
+    isWeightManuallyEdited,
+    resetToAutoCalculation
+  } = useBagWeightCalculation({
+    form,
+    defaultWeightPerBag: DEFAULT_WEIGHT_PER_BAG
+  });
+
+  // Calculate average bag weight when weight or bags change
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      const bags = parseInt(value.bags) || 0;
+      const weight = parseFloat(value.netWeight) || 0;
+      
+      if (bags > 0 && weight > 0) {
+        setAvgBagWeight((weight / bags).toFixed(2));
+      } else {
+        setAvgBagWeight('50.00');
+      }
+    });
     
-    // Only auto-calculate weight if it hasn't been manually edited
-    const currentWeight = form.getValues("netWeight");
-    const autoCalculatedWeight = value * 50; // Default 50kg per bag
-    
-    // Check if the current weight matches the previous auto-calculated weight
-    // or if it's 0/undefined, suggesting it hasn't been manually set
-    if (!currentWeight) {
-      form.setValue("netWeight", autoCalculatedWeight);
-    }
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Reset to automatic calculation
+  const handleResetCalculation = () => {
+    resetToAutoCalculation();
   };
 
   return (
@@ -42,14 +63,13 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
           name="bags"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Number of Bags</FormLabel>
+              <FormLabel>Number of Bags <span className="text-red-500">*</span></FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
                   {...field}
                   onChange={(e) => {
                     const value = parseInt(e.target.value, 10) || 0;
-                    handleBagsChange(value);
                     field.onChange(value);
                   }}
                   value={field.value || ''}
@@ -65,19 +85,35 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
           name="netWeight"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Net Weight (kg)</FormLabel>
+              <FormLabel className="flex justify-between items-center">
+                <span>Net Weight (kg) <span className="text-red-500">*</span></span>
+                {isWeightManuallyEdited && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 px-2 text-xs"
+                    onClick={handleResetCalculation}
+                  >
+                    <Calculator className="w-3 h-3 mr-1" /> Auto
+                  </Button>
+                )}
+              </FormLabel>
               <FormControl>
                 <Input 
                   type="number" 
                   {...field}
                   value={field.value || ''}
-                  // Allow manual override of weight
                   onChange={(e) => {
                     const value = parseFloat(e.target.value) || 0;
                     field.onChange(value);
                   }}
                 />
               </FormControl>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Avg. Bag Weight: {avgBagWeight} kg</span>
+                <span>Default: {DEFAULT_WEIGHT_PER_BAG}kg per bag</span>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -88,7 +124,7 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
           name="rate"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Rate (₹/kg)</FormLabel>
+              <FormLabel>Rate (₹/kg) <span className="text-red-500">*</span></FormLabel>
               <FormControl>
                 <Input 
                   type="number" 

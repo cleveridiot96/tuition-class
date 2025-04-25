@@ -31,7 +31,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
   const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
 
-  // Form setup
+  // Form setup with default values to avoid undefined
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseFormSchema),
     defaultValues: {
@@ -50,16 +50,16 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
       notes: initialData?.notes || "",
       agentId: initialData?.agentId || "",
       billNumber: initialData?.billNumber || "",
-      billAmount: initialData?.billAmount || undefined,
+      billAmount: initialData?.billAmount || 0,
     },
     mode: "onChange"
   });
 
   // Load entities data
   const loadData = () => {
-    setSuppliers(getSuppliers() || []);
-    setTransporters(getTransporters() || []);
-    setAgents(getAgents() || []);
+    setSuppliers(getSuppliers().filter(s => !s.isDeleted) || []);
+    setTransporters(getTransporters().filter(t => !t.isDeleted) || []);
+    setAgents(getAgents().filter(a => !a.isDeleted) || []);
     
     // Set default locations if none are found
     const storedLocations = getLocations();
