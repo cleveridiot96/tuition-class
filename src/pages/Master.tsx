@@ -7,13 +7,15 @@ import { MasterForm } from "@/components/master/MasterForm";
 import { MastersList } from "@/components/master/MastersList";
 import Navigation from "@/components/Navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MasterType } from "@/types/master.types";
 
 const AUTO_REFRESH_INTERVAL = 1000; // 1 second refresh interval
 
 const Master = () => {
   const [showForm, setShowForm] = useState(false);
-  const [currentTab, setCurrentTab] = useState("all");
+  const [currentTab, setCurrentTab] = useState<"all" | MasterType>("all");
   const [masters, setMasters] = useState<any[]>([]);
+  const [formType, setFormType] = useState<MasterType>("supplier");
   
   const loadData = useCallback(() => {
     // Load all masters from different sources and categorize them
@@ -42,9 +44,26 @@ const Master = () => {
     return () => clearInterval(refreshInterval);
   }, [loadData]);
 
+  const handleTabChange = (value: string) => {
+    setCurrentTab(value as "all" | MasterType);
+    
+    // Set form type based on the selected tab (except for "all")
+    if (value !== "all") {
+      setFormType(value as MasterType);
+    }
+  };
+
   const getFilteredMasters = () => {
     if (currentTab === "all") return masters;
     return masters.filter(master => master.type === currentTab);
+  };
+
+  const handleAddMaster = () => {
+    // Set the form type based on current tab (if not on "all" tab)
+    if (currentTab !== "all") {
+      setFormType(currentTab);
+    }
+    setShowForm(true);
   };
 
   return (
@@ -57,7 +76,7 @@ const Master = () => {
           </CardHeader>
           <CardContent>
             <Button 
-              onClick={() => setShowForm(true)} 
+              onClick={handleAddMaster} 
               className="mb-4 bg-indigo-600 hover:bg-indigo-700"
             >
               + Add Master
@@ -67,10 +86,11 @@ const Master = () => {
               <MasterForm
                 onClose={() => setShowForm(false)}
                 onSaved={loadData}
+                initialType={formType}
               />
             )}
 
-            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+            <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
               <TabsList className="grid grid-cols-6 mb-4">
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="supplier">Suppliers</TabsTrigger>

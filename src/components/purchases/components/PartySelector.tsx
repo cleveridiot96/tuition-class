@@ -18,7 +18,7 @@ import { getSuppliers, addSupplier } from "@/services/storageService";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
-import { EnhancedSearchableSelect } from "@/components/ui/enhanced-select";
+import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 
 const AUTO_REFRESH_INTERVAL = 1000; // 1 second
 
@@ -37,15 +37,14 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
   
   const loadSuppliers = useCallback(() => {
     const supplierData = getSuppliers() || [];
-    setSuppliers(supplierData.filter(s => !s.isDeleted));
+    const activeSuppliers = supplierData.filter(s => !s.isDeleted);
+    setSuppliers(activeSuppliers);
     
     // Update options list whenever suppliers change
-    const options = supplierData
-      .filter(supplier => !supplier.isDeleted)
-      .map(supplier => ({
-        value: supplier.name,
-        label: supplier.name
-      }));
+    const options = activeSuppliers.map(supplier => ({
+      value: supplier.name,
+      label: supplier.name
+    }));
     
     setSupplierOptions(options);
   }, []);
@@ -68,7 +67,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     }
     
     // Check for duplicates
-    if (suppliers.some(s => s.name.toLowerCase() === newPartyName.trim().toLowerCase())) {
+    if (suppliers.some(s => s.name && s.name.toLowerCase() === newPartyName.trim().toLowerCase())) {
       setErrorMessage("Party with this name already exists");
       return;
     }
@@ -76,13 +75,13 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     const newParty = {
       id: `supplier-${uuidv4()}`,
       name: newPartyName.trim(),
-      balance: 0,
+      type: "supplier", 
       isDeleted: false
     };
     
     try {
       addSupplier(newParty);
-      loadSuppliers(); // Refresh the list
+      loadSuppliers(); // Refresh the list immediately
       form.setValue("party", newPartyName.trim());
       setShowAddPartyDialog(false);
       toast.success("New party added successfully");
@@ -99,7 +98,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     if (!value.trim()) return "";
     
     // Check for duplicates
-    if (suppliers.some(s => s.name.toLowerCase() === value.trim().toLowerCase())) {
+    if (suppliers.some(s => s.name && s.name.toLowerCase() === value.trim().toLowerCase())) {
       toast.error("Party with this name already exists");
       return "";
     }
@@ -107,7 +106,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     const newParty = {
       id: `supplier-${uuidv4()}`,
       name: value.trim(),
-      balance: 0,
+      type: "supplier",
       isDeleted: false
     };
     

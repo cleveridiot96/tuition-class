@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,29 +14,33 @@ import {
 import { toast } from "sonner";
 import { addMaster } from "@/services/storageService";
 import { MasterType } from "@/types/master.types";
+import { useMasterValidation } from "@/hooks/master/useMasterValidation";
+import { NumericInput } from "@/components/ui/numeric-input";
 
 interface MasterFormProps {
   onClose: () => void;
   onSaved: () => void;
+  initialType?: MasterType;
 }
 
-export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
+export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved, initialType = "supplier" }) => {
   const [name, setName] = useState("");
-  const [type, setType] = useState<MasterType>("supplier");
+  const [type, setType] = useState<MasterType>(initialType);
   const [commissionRate, setCommissionRate] = useState("1");
-  const [nameError, setNameError] = useState("");
+  const { nameError, setNameError, validateMaster } = useMasterValidation();
+
+  // Update type when initialType prop changes
+  useEffect(() => {
+    setType(initialType);
+  }, [initialType]);
 
   const validateForm = () => {
-    let isValid = true;
-    
     if (!name.trim()) {
       setNameError("Name is required");
-      isValid = false;
-    } else {
-      setNameError("");
+      return false;
     }
-    
-    return isValid;
+
+    return validateMaster(name.trim(), type);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -47,7 +51,7 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
     }
 
     const newMaster = {
-      id: `master-${uuid()}`,
+      id: `${type}-${uuid()}`,
       name: name.trim(),
       isDeleted: false,
       type,
@@ -56,10 +60,10 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
 
     try {
       addMaster(newMaster);
-      toast.success("Master saved successfully.");
+      toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} saved successfully.`);
 
       setName("");
-      setType("supplier");
+      setType(initialType);
       setCommissionRate("1");
 
       // Trigger immediate reload of data
@@ -67,12 +71,12 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
       onClose(); 
     } catch (error) {
       console.error("Error saving master:", error);
-      toast.error("Failed to save master. Please try again.");
+      toast.error(`Failed to save ${type}. Please try again.`);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-lg shadow">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-lg shadow mb-4">
       <div className="space-y-2">
         <Label htmlFor="name" className="flex items-center">
           Name <span className="text-red-500 ml-1">*</span>
@@ -114,20 +118,21 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
       
       {(type === "broker" || type === "agent") && (
         <div className="space-y-2">
-          <Label htmlFor="commissionRate">Commission Rate (%)</Label>
-          <Input
+          <Label htmlFor="commissionRate">Commission Rate (%) <span className="text-red-500 ml-1">*</span></Label>
+          <NumericInput
             id="commissionRate"
-            type="number"
-            step="0.01"
-            placeholder="Enter commission rate"
             value={commissionRate}
-            onChange={(e) => setCommissionRate(e.target.value)}
+            onChange={(value) => setCommissionRate(value.toString())}
+            step="0.01"
+            min={0}
+            max={100}
+            placeholder="Enter commission rate"
           />
         </div>
       )}
       
       <div className="flex space-x-2">
-        <Button type="submit" className="w-full">Save Master</Button>
+        <Button type="submit" className="w-full">Save {type.charAt(0).toUpperCase() + type.slice(1)}</Button>
         <Button 
           type="button" 
           variant="outline" 

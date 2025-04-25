@@ -1,114 +1,118 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MasterType, AddToMasterProps } from "@/types/master.types";
-import { useAddToMasterDialog } from "./master/useAddToMasterDialog";
-import { useMasterValidation } from "./master/useMasterValidation";
+import { NumericInput } from "@/components/ui/numeric-input";
+import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
 import { addToMasterList } from "@/services/masterOperations";
+import { MasterType } from "@/types/master.types";
+import { useMasterValidation } from "@/hooks/master/useMasterValidation";
 
-export const useAddToMaster = (props?: AddToMasterProps) => {
-  const [newItemName, setNewItemName] = useState("");
-  const [commissionRate, setCommissionRate] = useState("1");
-  const [currentMasterType, setCurrentMasterType] = useState<MasterType>(props?.masterType || "supplier");
-  const { dialogState, openDialog, closeDialog } = useAddToMasterDialog();
-  const { nameError, setNameError, validateMaster } = useMasterValidation();
+export const useAddToMaster = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [itemName, setItemName] = useState("");
+  const [commissionRate, setCommissionRate] = useState<string>("1");
+  const [masterType, setMasterType] = useState<MasterType>("supplier");
+  const [onConfirm, setOnConfirm] = useState<((value: string) => void) | null>(null);
+  const { nameError, validateMaster } = useMasterValidation();
 
-  const handleConfirmAdd = () => {
-    if (!validateMaster(newItemName.trim())) {
-      return "";
-    }
-
-    const itemData = {
-      name: newItemName.trim(),
-      commissionRate: currentMasterType === "broker" || currentMasterType === "agent" 
-        ? parseFloat(commissionRate) || 1 
-        : undefined,
-      type: currentMasterType
-    };
-    
-    const addedValue = addToMasterList(currentMasterType, itemData);
-    
-    if (addedValue && dialogState.onConfirm) {
-      dialogState.onConfirm(addedValue);
-      closeDialog();
-      setNewItemName("");
-      setCommissionRate("1");
-      setNameError("");
-    }
-    
-    return addedValue;
+  const confirmAddToMaster = (
+    name: string,
+    callback: (value: string) => void,
+    type: MasterType = "supplier"
+  ) => {
+    setItemName(name);
+    setMasterType(type);
+    setOnConfirm(() => callback);
+    setIsDialogOpen(true);
   };
 
-  const confirmAddToMaster = (itemName: string, onConfirm: (value: string) => void, masterType?: MasterType) => {
-    setNewItemName(itemName);
-    setNameError("");
-    
-    if (masterType) {
-      setCurrentMasterType(masterType);
+  const handleConfirm = () => {
+    // Don't proceed if validation fails
+    if (!validateMaster(itemName, masterType)) {
+      return;
     }
-    
-    openDialog(itemName, onConfirm, masterType);
+
+    // Convert commission rate to number if needed
+    const commissionRateNum = ["broker", "agent"].includes(masterType) 
+      ? parseFloat(commissionRate) 
+      : undefined;
+
+    // Add to master list with appropriate data
+    const result = addToMasterList(masterType, {
+      name: itemName,
+      commissionRate: commissionRateNum,
+      type: masterType
+    });
+
+    // If successful and callback exists, call it
+    if (result && onConfirm) {
+      onConfirm(result);
+    }
+
+    // Close dialog and reset state
+    setIsDialogOpen(false);
+    setItemName("");
+    setCommissionRate("1");
   };
-  
+
   const AddToMasterDialog = () => (
-    <Dialog open={dialogState.isOpen} onOpenChange={closeDialog}>
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogContent className="bg-white">
         <DialogHeader>
-          <DialogTitle>Add {currentMasterType}</DialogTitle>
-          <DialogDescription>
-            Add a new {currentMasterType} to the master list. Fields marked with * are required.
-          </DialogDescription>
+          <DialogTitle>Add to {masterType.charAt(0).toUpperCase() + masterType.slice(1)} Master</DialogTitle>
         </DialogHeader>
-        
-        <div className="space-y-4 py-4">
-          <div className="mb-4">
-            <Label htmlFor="name">
-              Name <span className="text-red-500">*</span>
+        <div className="space-y-4 py-2">
+          <div>
+            <Label htmlFor="itemName" className="flex items-center">
+              Name <span className="text-red-500 ml-1">*</span>
             </Label>
             <Input
-              id="name"
-              className={nameError ? "border-red-500" : ""}
-              value={newItemName}
-              onChange={(e) => {
-                setNewItemName(e.target.value);
-                if (e.target.value.trim()) setNameError("");
-              }}
-              placeholder={`Enter ${currentMasterType} name`}
+              id="itemName"
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              placeholder={`Enter ${masterType} name`}
+              className="mt-1"
             />
             {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
           </div>
-          
-          {(currentMasterType === "broker" || currentMasterType === "agent") && (
-            <div className="mb-4">
-              <Label htmlFor="commissionRate">Commission Rate (%)</Label>
-              <Input
+
+          {(masterType === "broker" || masterType === "agent") && (
+            <div>
+              <Label htmlFor="commissionRate" className="flex items-center">
+                Commission Rate (%) <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <NumericInput
                 id="commissionRate"
-                type="number"
-                step="0.01"
-                placeholder="Enter commission rate"
                 value={commissionRate}
-                onChange={(e) => setCommissionRate(e.target.value)}
+                onChange={(value) => setCommissionRate(value.toString())}
+                className="mt-1"
+                step="0.01"
+                min={0}
+                max={100}
+                placeholder="Enter commission rate"
               />
             </div>
           )}
         </div>
-        
         <DialogFooter>
-          <Button variant="outline" onClick={closeDialog}>
+          <Button
+            variant="outline"
+            onClick={() => setIsDialogOpen(false)}
+          >
             Cancel
           </Button>
-          <Button onClick={handleConfirmAdd}>
-            Add {currentMasterType}
+          <Button onClick={handleConfirm}>
+            Add {masterType.charAt(0).toUpperCase() + masterType.slice(1)}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -7,13 +7,6 @@ import {
   FormControl,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { UseFormReturn } from "react-hook-form";
@@ -24,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { getAgents, addAgent } from "@/services/storageService";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
+import { useAddToMaster } from "@/hooks/useAddToMaster";
+import { EnhancedSearchableSelect } from "@/components/ui/enhanced-select";
 
 const AUTO_REFRESH_INTERVAL = 1000; // 1 second refresh
 
@@ -34,14 +29,25 @@ interface BrokerSelectorProps {
 
 const BrokerSelector: React.FC<BrokerSelectorProps> = ({ form, partyManagement }) => {
   const [agents, setAgents] = useState<any[]>([]);
+  const [agentOptions, setAgentOptions] = useState<any[]>([]);
   const [showAddAgentDialog, setShowAddAgentDialog] = useState<boolean>(false);
   const [newAgentName, setNewAgentName] = useState<string>("");
   const [newAgentCommission, setNewAgentCommission] = useState<string>("1");
   const [nameError, setNameError] = useState<string>("");
+  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
   
   const loadAgents = useCallback(() => {
     const agentData = getAgents() || [];
-    setAgents(agentData.filter(a => !a.isDeleted));
+    const activeAgents = agentData.filter(a => !a.isDeleted);
+    setAgents(activeAgents);
+    
+    // Convert to options for select
+    const options = activeAgents.map(agent => ({
+      value: agent.id,
+      label: `${agent.name}${agent.commissionRate ? ` (${agent.commissionRate}%)` : ''}`
+    }));
+    
+    setAgentOptions(options);
   }, []);
   
   useEffect(() => {
@@ -71,7 +77,7 @@ const BrokerSelector: React.FC<BrokerSelectorProps> = ({ form, partyManagement }
       id: `agent-${uuidv4()}`,
       name: newAgentName.trim(),
       commissionRate: parseFloat(newAgentCommission) || 1,
-      balance: 0,
+      type: "agent",
       isDeleted: false
     };
     
@@ -88,6 +94,25 @@ const BrokerSelector: React.FC<BrokerSelectorProps> = ({ form, partyManagement }
       console.error("Error adding new agent:", error);
       toast.error("Failed to add new agent. Please try again.");
     }
+  };
+
+  // Handle adding new agent directly from select
+  const handleAddNewToMaster = (value: string): string => {
+    if (!value.trim()) return "";
+    
+    // For agents, we need to open the dialog to collect commission rate
+    confirmAddToMaster(value.trim(), (confirmedName) => {
+      // After confirmation and adding in the dialog, refresh the list
+      loadAgents();
+      
+      // Find the newly added agent
+      const newAgent = agents.find(a => a.name && a.name.toLowerCase() === confirmedName.toLowerCase());
+      if (newAgent) {
+        form.setValue("agentId", newAgent.id);
+      }
+    }, "agent");
+    
+    return ""; // Return empty since we're using the dialog
   };
   
   return (
@@ -110,25 +135,15 @@ const BrokerSelector: React.FC<BrokerSelectorProps> = ({ form, partyManagement }
               </Button>
             </div>
             <FormControl>
-              <Select
+              <EnhancedSearchableSelect
+                options={agentOptions}
                 value={field.value || ""}
                 onValueChange={field.onChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select broker or agent" />
-                </SelectTrigger>
-                <SelectContent className="bg-white max-h-[300px]">
-                  {agents.length === 0 ? (
-                    <div className="px-2 py-1 text-sm text-gray-500">No agents found</div>
-                  ) : (
-                    agents.map((agent: any) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name} {agent.commissionRate && `(${agent.commissionRate}%)`}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
+                placeholder="Select broker or agent"
+                onAddNew={handleAddNewToMaster}
+                masterType="agent"
+                emptyMessage="No agents found"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -175,6 +190,8 @@ const BrokerSelector: React.FC<BrokerSelectorProps> = ({ form, partyManagement }
           </div>
         </DialogContent>
       </Dialog>
+      
+      <AddToMasterDialog />
     </>
   );
 };

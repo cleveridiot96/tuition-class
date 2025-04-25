@@ -11,10 +11,23 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
-import { EnhancedSearchableSelectProps, SelectOption } from "./enhanced-select/types";
-import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
+import { SelectOption } from "./enhanced-select/types";
 import { EnhancedSelectOption } from "./enhanced-select/enhanced-select-option";
 import { EnhancedSelectSuggestion } from "./enhanced-select/enhanced-select-suggestion";
+import { MasterType } from "@/types/master.types";
+
+export interface EnhancedSearchableSelectProps {
+  options: SelectOption[];
+  value: string;
+  onValueChange: (value: string) => void;
+  onAddNew?: (value: string) => string;
+  placeholder?: string;
+  emptyMessage?: string;
+  label?: string;
+  disabled?: boolean;
+  className?: string;
+  masterType?: MasterType | string;
+}
 
 export const EnhancedSearchableSelect = React.memo(({
   options = [],
@@ -29,24 +42,68 @@ export const EnhancedSearchableSelect = React.memo(({
   masterType = "supplier"
 }: EnhancedSearchableSelectProps) => {
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
-
-  const {
-    open,
-    setOpen,
-    searchTerm,
-    setSearchTerm,
-    suggestedMatch,
-    filteredOptions,
-    inputMatchesOption,
-    selectedOption
-  } = useEnhancedSelect(options, value);
+  
+  // State for searchable functionality
+  const [open, setOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [suggestedMatch, setSuggestedMatch] = React.useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = React.useState<SelectOption | null>(null);
+  
+  // Update the selected option whenever value or options change
+  React.useEffect(() => {
+    const selected = options.find(option => option.value === value);
+    setSelectedOption(selected || null);
+  }, [value, options]);
+  
+  // Filter options based on search term
+  const filteredOptions = React.useMemo(() => {
+    if (!searchTerm) return options;
+    
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    const filtered = options.filter(option => 
+      option.label.toLowerCase().includes(lowerSearchTerm)
+    );
+    
+    // Find suggested match
+    if (filtered.length === 0) {
+      // Find closest match for suggestion
+      let bestMatch = null;
+      let bestMatchScore = -1;
+      
+      for (const option of options) {
+        const label = option.label.toLowerCase();
+        if (label.startsWith(lowerSearchTerm)) {
+          // Prefer options that start with the search term
+          const score = lowerSearchTerm.length / label.length;
+          if (score > bestMatchScore) {
+            bestMatch = option.label;
+            bestMatchScore = score;
+          }
+        }
+      }
+      
+      setSuggestedMatch(bestMatch);
+    } else {
+      setSuggestedMatch(null);
+    }
+    
+    return filtered;
+  }, [options, searchTerm]);
+  
+  // Check if input matches an existing option
+  const inputMatchesOption = React.useMemo(() => {
+    if (!searchTerm) return false;
+    return options.some(option => 
+      option.label.toLowerCase() === searchTerm.toLowerCase()
+    );
+  }, [searchTerm, options]);
 
   // Handler functions
   const handleSelect = React.useCallback((currentValue: string) => {
     onValueChange(currentValue);
     setOpen(false);
     setSearchTerm("");
-  }, [onValueChange, setOpen, setSearchTerm]);
+  }, [onValueChange]);
 
   const handleAddNewItem = React.useCallback(() => {
     if (searchTerm.trim() && !inputMatchesOption) {
@@ -55,11 +112,11 @@ export const EnhancedSearchableSelect = React.memo(({
       } else {
         confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
           onValueChange(confirmedValue);
-        });
+        }, masterType as MasterType);
       }
       setOpen(false);
     }
-  }, [searchTerm, inputMatchesOption, onAddNew, confirmAddToMaster, onValueChange, setOpen]);
+  }, [searchTerm, inputMatchesOption, onAddNew, confirmAddToMaster, onValueChange, masterType]);
 
   const useSuggestedMatch = React.useCallback(() => {
     if (suggestedMatch) {

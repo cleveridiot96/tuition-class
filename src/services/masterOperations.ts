@@ -9,28 +9,43 @@ import {
   getTransporters,
   getAgents,
   saveStorageItem,
-  getMasters
+  addSupplier as addSupplierToStorage,
+  addCustomer as addCustomerToStorage,
+  addBroker as addBrokerToStorage,
+  addAgent as addAgentToStorage,
+  addTransporter as addTransporterToStorage
 } from "@/services/storageService";
 
 export const addToMasterList = (masterType: MasterType, itemData: { name: string; commissionRate?: number; type: MasterType }): string => {
   try {
+    if (!itemData.name || itemData.name.trim() === '') {
+      toast.error('Name is required');
+      return '';
+    }
+    
+    // Ensure the name doesn't already exist across any master type
+    if (isDuplicate(itemData.name, masterType)) {
+      toast.error(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} with this name already exists`);
+      return '';
+    }
+
     // Handle different master types
     switch (masterType) {
       case "supplier":
       case "party":
-        return addSupplier(masterType, itemData);
+        return addSupplier(itemData);
       
       case "customer":
-        return addCustomer(masterType, itemData);
+        return addCustomer(itemData);
       
       case "broker":
-        return addBroker(masterType, itemData);
+        return addBroker(itemData);
       
       case "agent":
-        return addAgent(masterType, itemData);
+        return addAgent(itemData);
       
       case "transporter":
-        return addTransporter(masterType, itemData);
+        return addTransporter(itemData);
       
       default:
         toast.error(`Unknown master type: ${masterType}`);
@@ -43,122 +58,97 @@ export const addToMasterList = (masterType: MasterType, itemData: { name: string
   }
 };
 
-const addSupplier = (masterType: MasterType, itemData: { name: string; type: MasterType }): string => {
-  const suppliers = getSuppliers() || [];
-  if (suppliers.some((s) => s.name && s.name.toLowerCase() === itemData.name.toLowerCase())) {
-    toast.error("Supplier with this name already exists");
-    return "";
-  }
+// Check if a master with this name already exists in the specific type
+const isDuplicate = (name: string, type: MasterType): boolean => {
+  const nameLower = name.trim().toLowerCase();
   
+  switch (type) {
+    case "supplier":
+    case "party":
+      return getSuppliers().some(s => s.name && s.name.toLowerCase() === nameLower && !s.isDeleted);
+    
+    case "customer":
+      return getCustomers().some(c => c.name && c.name.toLowerCase() === nameLower && !c.isDeleted);
+    
+    case "broker":
+      return getBrokers().some(b => b.name && b.name.toLowerCase() === nameLower && !b.isDeleted);
+    
+    case "agent":
+      return getAgents().some(a => a.name && a.name.toLowerCase() === nameLower && !a.isDeleted);
+    
+    case "transporter":
+      return getTransporters().some(t => t.name && t.name.toLowerCase() === nameLower && !t.isDeleted);
+    
+    default:
+      return false;
+  }
+};
+
+const addSupplier = (itemData: { name: string; type: MasterType }): string => {
   const newSupplier: Master = {
     id: `supplier-${uuidv4()}`,
-    name: itemData.name,
+    name: itemData.name.trim(),
     isDeleted: false,
-    type: masterType
+    type: "supplier"
   };
   
-  suppliers.push(newSupplier);
-  saveStorageItem('suppliers', suppliers);
-  updateMastersList(newSupplier);
-  
-  toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
+  addSupplierToStorage(newSupplier);
+  toast.success("Supplier added successfully");
   return itemData.name;
 };
 
-const addCustomer = (masterType: MasterType, itemData: { name: string; type: MasterType }): string => {
-  const customers = getCustomers() || [];
-  if (customers.some((c) => c.name && c.name.toLowerCase() === itemData.name.toLowerCase())) {
-    toast.error("Customer with this name already exists");
-    return "";
-  }
-  
+const addCustomer = (itemData: { name: string; type: MasterType }): string => {
   const newCustomer: Master = {
     id: `customer-${uuidv4()}`,
-    name: itemData.name,
+    name: itemData.name.trim(),
     isDeleted: false,
-    type: masterType
+    type: "customer"
   };
   
-  customers.push(newCustomer);
-  saveStorageItem('customers', customers);
-  updateMastersList(newCustomer);
-  
-  toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
+  addCustomerToStorage(newCustomer);
+  toast.success("Customer added successfully");
   return itemData.name;
 };
 
-const addBroker = (masterType: MasterType, itemData: { name: string; commissionRate?: number; type: MasterType }): string => {
-  const brokers = getBrokers() || [];
-  if (brokers.some((b) => b.name && b.name.toLowerCase() === itemData.name.toLowerCase())) {
-    toast.error("Broker with this name already exists");
-    return "";
-  }
-  
+const addBroker = (itemData: { name: string; commissionRate?: number; type: MasterType }): string => {
   const newBroker: Master = {
     id: `broker-${uuidv4()}`,
-    name: itemData.name,
+    name: itemData.name.trim(),
     commissionRate: itemData.commissionRate || 1,
     isDeleted: false,
-    type: masterType
+    type: "broker"
   };
   
-  brokers.push(newBroker);
-  saveStorageItem('brokers', brokers);
-  updateMastersList(newBroker);
-  
-  toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
+  addBrokerToStorage(newBroker);
+  toast.success("Broker added successfully");
   return itemData.name;
 };
 
-const addAgent = (masterType: MasterType, itemData: { name: string; commissionRate?: number; type: MasterType }): string => {
-  const agents = getAgents() || [];
-  if (agents.some((a) => a.name && a.name.toLowerCase() === itemData.name.toLowerCase())) {
-    toast.error("Agent with this name already exists");
-    return "";
-  }
-  
+const addAgent = (itemData: { name: string; commissionRate?: number; type: MasterType }): string => {
   const newAgent: Master = {
     id: `agent-${uuidv4()}`,
-    name: itemData.name,
+    name: itemData.name.trim(),
     commissionRate: itemData.commissionRate || 1,
     isDeleted: false,
-    type: masterType
+    type: "agent"
   };
   
-  agents.push(newAgent);
-  saveStorageItem('agents', agents);
-  updateMastersList(newAgent);
-  
-  toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
+  addAgentToStorage(newAgent);
+  toast.success("Agent added successfully");
   return itemData.name;
 };
 
-const addTransporter = (masterType: MasterType, itemData: { name: string; type: MasterType }): string => {
-  const transporters = getTransporters() || [];
-  if (transporters.some((t) => t.name && t.name.toLowerCase() === itemData.name.toLowerCase())) {
-    toast.error("Transporter with this name already exists");
-    return "";
-  }
-  
+const addTransporter = (itemData: { name: string; type: MasterType }): string => {
   const newTransporter: Master = {
     id: `transporter-${uuidv4()}`,
-    name: itemData.name,
+    name: itemData.name.trim(),
     isDeleted: false,
-    type: masterType
+    type: "transporter"
   };
   
-  transporters.push(newTransporter);
-  saveStorageItem('transporters', transporters);
-  updateMastersList(newTransporter);
-  
-  toast.success(`${masterType.charAt(0).toUpperCase() + masterType.slice(1)} added successfully`);
+  addTransporterToStorage(newTransporter);
+  toast.success("Transporter added successfully");
   return itemData.name;
-};
-
-const updateMastersList = (newMaster: Master) => {
-  const masters = getMasters() || [];
-  masters.push(newMaster);
-  saveStorageItem('masters', masters);
 };
 
 // Export these functions for direct use

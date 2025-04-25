@@ -2,35 +2,24 @@
 import React from "react";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface EnhancedSelectOptionProps {
-  value: string;
-  label: string;
-  isSelected: boolean;
-  onSelect: () => void;
-}
+import { EnhancedSelectOptionProps } from "./types";
 
 export const EnhancedSelectOption: React.FC<EnhancedSelectOptionProps> = ({
   value,
   label,
   isSelected,
-  onSelect
+  onSelect,
 }) => {
   return (
     <div
       className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-        isSelected ? "bg-accent text-accent-foreground" : ""
+        "relative flex cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
+        isSelected && "bg-accent text-accent-foreground"
       )}
       onClick={onSelect}
     >
-      <Check
-        className={cn(
-          "mr-2 h-4 w-4",
-          isSelected ? "opacity-100" : "opacity-0"
-        )}
-      />
-      {label}
+      <span className="flex-1 truncate">{label}</span>
+      {isSelected && <Check className="h-4 w-4 ml-2" />}
     </div>
   );
 };
