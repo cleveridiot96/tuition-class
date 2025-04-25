@@ -31,12 +31,13 @@ interface AddToMasterProps {
   masterType?: "supplier" | "customer" | "broker" | "transporter" | "item" | "party";
 }
 
-// Extended Master interface with the type property
+// Extended Master interface with the type property and all required fields
 interface Master {
   id: string;
   name: string;
   isDeleted?: boolean;
   type?: string;
+  commissionRate?: number;
 }
 
 export const useAddToMaster = (props?: AddToMasterProps) => {

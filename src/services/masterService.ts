@@ -4,8 +4,11 @@ import { getStorageItem, saveStorageItem } from './storageUtils';
 interface Master {
   id: string;
   name: string;
-  phone: string;
-  address: string;
+  phone?: string;
+  address?: string;
+  isDeleted?: boolean;
+  type?: string;
+  commissionRate?: number;
 }
 
 export const getMasters = (): Master[] => {
