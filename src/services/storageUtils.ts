@@ -3,7 +3,7 @@
 export * from './core/storageCore';
 export * from './core/yearSpecificStorage';
 
-// Re-export data management functions
+// Re-export data management functions from backupRestore
 export {
   clearAllData,
   clearAllMasterData,

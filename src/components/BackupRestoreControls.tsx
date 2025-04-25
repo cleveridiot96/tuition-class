@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Download, Upload, AlertTriangle } from 'lucide-react';
 import { toast } from "sonner";
-import { exportDataBackup, importDataBackup } from '@/services/storageService';
+import { exportDataBackup, importDataBackup } from '@/services/backup/backupRestore';
 import { useHotkeys, showAvailableShortcuts } from '@/hooks/useHotkeys';
 
 interface BackupRestoreControlsProps {
@@ -25,21 +24,12 @@ const BackupRestoreControls: React.FC<BackupRestoreControlsProps> = ({
     if (onRefresh) onRefresh();
   };
 
-  const handleBackup = () => {
+  const handleBackup = async () => {
     toast.info("Creating backup...");
     try {
-      const backup = exportDataBackup();
+      const fileName = `backup-${new Date().toISOString().split('T')[0]}.json`;
+      const backup = await exportDataBackup(fileName);
       if (backup) {
-        const blob = new Blob([backup], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
         toast.success("Backup created successfully", { 
           description: "Your data has been exported to a file." 
         });
@@ -63,38 +53,30 @@ const BackupRestoreControls: React.FC<BackupRestoreControlsProps> = ({
         
         if (target.files && target.files.length) {
           const file = target.files[0];
-          const reader = new FileReader();
           
-          reader.onload = (event) => {
-            if (event.target) {
-              try {
-                toast.info("Restoring data from backup...");
-                const contents = event.target.result as string;
-                const success = importDataBackup(contents);
+          toast.info("Restoring data from backup...");
+          importDataBackup(file)
+            .then(success => {
+              if (success) {
+                toast.success("Data restored successfully", {
+                  description: "Your data has been restored from backup."
+                });
                 
-                if (success) {
-                  toast.success("Data restored successfully", {
-                    description: "Your data has been restored from backup."
-                  });
-                  
-                  if (onRefresh) {
-                    setTimeout(() => onRefresh(), 500);
-                  }
-                } else {
-                  toast.error("Failed to restore data", {
-                    description: "The backup file format is not valid."
-                  });
+                if (onRefresh) {
+                  setTimeout(() => onRefresh(), 500);
                 }
-              } catch (error) {
-                console.error('Error restoring data:', error);
+              } else {
                 toast.error("Failed to restore data", {
-                  description: "An error occurred while processing the backup file."
+                  description: "The backup file format is not valid."
                 });
               }
-            }
-          };
-          
-          reader.readAsText(file);
+            })
+            .catch(error => {
+              console.error('Error restoring data:', error);
+              toast.error("Failed to restore data", {
+                description: "An error occurred while processing the backup file."
+              });
+            });
         }
       };
       

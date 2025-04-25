@@ -3,8 +3,9 @@ import React, { useState } from 'react';
 import FormatConfirmationDialog from "@/components/FormatConfirmationDialog";
 import { 
   completeFormatAllData,
-  exportDataBackup
-} from "@/services/storageService";
+  exportDataBackup,
+  createCompleteBackup
+} from "@/services/backup/backupRestore";
 import { toast } from "sonner";
 import FormatEventConnector from './FormatEventConnector';
 
@@ -26,8 +27,9 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
         description: "Creating backup and resetting data...",
       });
       
-      // Create a backup first
-      await exportDataBackup(`backup-before-format-${new Date().toISOString()}.json`, true);
+      // Create a backup first with timestamp in filename
+      const backupFilename = `backup-before-format-${new Date().toISOString()}.json`;
+      await exportDataBackup(backupFilename, true);
       
       // Use our improved format function that properly clears all data
       const formatSuccess = await completeFormatAllData();

@@ -2,9 +2,9 @@
 import { exportDataBackup, importDataBackup } from '../backup/backupRestore';
 
 // Function to perform auto-save (for USB drive ejection scenarios)
-export const performAutoSave = () => {
+export const performAutoSave = async () => {
   try {
-    const backupData = exportDataBackup(true);
+    const backupData = await exportDataBackup(true) as string;
     if (backupData) {
       sessionStorage.setItem('autoSaveBackup', backupData);
       sessionStorage.setItem('autoSaveTimestamp', new Date().toISOString());

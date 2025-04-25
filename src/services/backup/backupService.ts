@@ -4,12 +4,12 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 // Creates a complete backup of all data in JSON format
-export const createCompleteBackup = () => {
+export const createCompleteBackup = async (filename?: string): Promise<string | boolean> => {
   try {
-    return exportDataBackup();
+    return await exportDataBackup(filename || true, true);
   } catch (error) {
     console.error("Error creating backup:", error);
-    return null;
+    return false;
   }
 };
 
@@ -17,7 +17,7 @@ export const createCompleteBackup = () => {
 export const createPortableVersion = async () => {
   try {
     // Create a backup of data
-    const dataBackup = exportDataBackup();
+    const dataBackup = await exportDataBackup(true) as string;
     if (!dataBackup) {
       return { success: false, message: "Failed to create data backup" };
     }

@@ -1,12 +1,12 @@
 
 import { exportDataBackup, importDataBackup } from '../backup/backupRestore';
-import { seedInitialData } from '../core/dataManagement';
+import { seedInitialData } from '../backup/backupRestore';
 
 // Function to properly reset all data including receipts
 export const completeFormatAllData = async () => {
   try {
     // First create a backup
-    const backupData = exportDataBackup(true);
+    const backupData = await exportDataBackup(true) as string;
     
     // Save backup to localStorage before formatting
     if (backupData) {

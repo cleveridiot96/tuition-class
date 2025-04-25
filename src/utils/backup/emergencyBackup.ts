@@ -1,11 +1,11 @@
 
-import { exportDataBackup, importDataBackup } from '@/services/storageService';
+import { exportDataBackup, importDataBackup } from '@/services/backup/backupRestore';
 
 // Perform an emergency backup
-export const emergencyBackup = (): boolean => {
+export const emergencyBackup = async (): Promise<boolean> => {
   try {
     // Create backup data
-    const backupData = exportDataBackup(true);
+    const backupData = await exportDataBackup(true) as string;
     if (!backupData) {
       console.error("Failed to create emergency backup");
       return false;

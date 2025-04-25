@@ -1,8 +1,20 @@
 
 import { toast } from '@/hooks/use-toast';
 
-export const exportDataBackup = (silent: boolean = false): string | null => {
+/**
+ * Export data backup
+ * @param filenameOrSilent Filename or silent mode flag
+ * @param silent Whether to suppress toast notifications
+ * @returns The exported JSON data or null on failure
+ */
+export const exportDataBackup = (filenameOrSilent?: string | boolean, silent: boolean = false): string | null => {
   try {
+    // Handle case where first parameter is a boolean (backwards compatibility)
+    if (typeof filenameOrSilent === 'boolean') {
+      silent = filenameOrSilent;
+      filenameOrSilent = undefined;
+    }
+    
     const data: Record<string, any> = {};
     
     for (let i = 0; i < localStorage.length; i++) {

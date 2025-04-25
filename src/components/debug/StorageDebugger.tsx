@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Database } from "lucide-react";
@@ -13,7 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { exportDataBackup, importDataBackup } from '@/services/storageService';
+import { exportDataBackup, importDataBackup } from '@/services/backup/backupRestore';
 import { useStorageDebug } from '@/hooks/useStorageDebug';
 import { BackupConfirmDialog } from './BackupConfirmDialog';
 import { StorageDataView } from './StorageDataView';
@@ -34,21 +33,12 @@ export function StorageDebugger() {
     getTotalEntries
   } = useStorageDebug();
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
       toast.info("Preparing data backup...");
-      const backup = exportDataBackup();
+      const filename = `backup-${new Date().toISOString().split('T')[0]}.json`;
+      const backup = await exportDataBackup(filename);
       if (backup) {
-        const blob = new Blob([backup], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
         toast.success("Data backup exported successfully", {
           description: "Your backup file has been downloaded."
         });
@@ -61,7 +51,7 @@ export function StorageDebugger() {
     }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     try {
       if (!importData.trim()) {
         toast.error("Please paste backup data first", {
@@ -73,7 +63,7 @@ export function StorageDebugger() {
       toast.info("Importing data...");
       
       if (window.confirm('Importing data will replace all existing data. Continue?')) {
-        const success = importDataBackup(importData);
+        const success = await importDataBackup(importData);
         
         if (success) {
           toast.success("Data imported successfully", {
@@ -94,9 +84,9 @@ export function StorageDebugger() {
     }
   };
 
-  const proceedWithDataClear = (shouldBackup: boolean) => {
+  const proceedWithDataClear = async (shouldBackup: boolean) => {
     if (shouldBackup) {
-      handleExport();
+      await handleExport();
     }
     localStorage.clear();
     handleDebugClick();
@@ -135,7 +125,6 @@ export function StorageDebugger() {
     }
   }, [storageData, searchTerm, filterType]);
 
-  // Helper functions to categorize data
   const isMasterData = (key: string): boolean => {
     return ['agents', 'customers', 'suppliers', 'brokers', 'transporters', 'locations'].includes(key);
   };

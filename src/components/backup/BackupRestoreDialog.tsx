@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import {
   Dialog,
@@ -10,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { importDataBackup } from "@/services/storageService";
+import { importDataBackup } from "@/services/backup/backupRestore";
 import { toast } from "sonner";
 
 interface BackupRestoreDialogProps {
