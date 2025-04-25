@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { getStorageItem } from '@/services/storageService';
+import { getStorageItem } from '@/services/core/storageCore';
 import { Party } from '@/services/types';
 
 // Export the getPartyName function for use in other components

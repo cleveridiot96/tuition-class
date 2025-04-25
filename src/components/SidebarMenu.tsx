@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
+  Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -19,7 +20,6 @@ import {
   Menu,
   ShoppingBasket
 } from "lucide-react";
-import { Sheet } from "@radix-ui/react-dialog";
 import { cn } from "@/lib/utils";
 
 interface NavItemProps {

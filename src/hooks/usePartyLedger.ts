@@ -1,15 +1,17 @@
-
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { getTransactions, getSuppliers, getCustomers, saveStorageItem } from "@/services/storageService";
+import { getTransactions } from "./useLedger";
+import { getStorageItem, saveStorageItem } from "@/services/core/storageCore";
+import { getSuppliers, getCustomers } from "@/services/storageService";
 import { toast } from "sonner";
+import { MasterType } from "@/types/master.types";
 
 export const usePartyLedger = () => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [partyId, setPartyId] = useState<string>("");
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [partyType, setPartyType] = useState<string>("supplier");
+  const [partyType, setPartyType] = useState<MasterType>("supplier");
   const [balance, setBalance] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
 

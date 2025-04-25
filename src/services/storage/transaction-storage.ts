@@ -59,3 +59,6 @@ export const deleteSale = (saleId: string) => {
 export const saveSales = (sales: Sale[]) => {
   saveStorageItem('sales', sales);
 };
+
+// Re-export inventory functions for backward compatibility
+export { getInventory, saveInventory, updateInventoryAfterTransfer, updateInventoryAfterSale } from './inventory-storage';

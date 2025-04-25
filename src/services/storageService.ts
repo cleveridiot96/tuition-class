@@ -32,6 +32,9 @@ export {
   updateMaster
 } from './masterService';
 
+// Re-export storage core functions
+export { getStorageItem, saveStorageItem } from './core/storageCore';
+
 // Re-export debug functions
 export const debugStorage = {
   getAllData: () => {
@@ -58,25 +61,13 @@ export const debugStorage = {
   }
 };
 
-// Import necessary functions for re-export
-import { 
-  getSales, 
-  getPurchases, 
-  getInventory,
-  saveSales,
-  savePurchases,
-  saveInventory,
-  addPurchase,
-  updatePurchase
-} from './storage/transaction-storage';
-
 // Re-export backup operations
 export { 
   exportDataBackup,
   importDataBackup,
   completeFormatAllData,
   exportToExcel
-} from './backup/backupRestore';
+} from './storageUtils';
 
 // Dashboard-related functions
 export const getTotalSalesValue = (): number => {
