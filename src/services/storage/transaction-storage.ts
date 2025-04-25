@@ -10,26 +10,41 @@ export const savePurchases = (purchases: Purchase[]) => {
 };
 
 export const addPurchase = (purchase: Purchase) => {
-  const purchases = getPurchases();
-  purchases.push(purchase);
-  saveStorageItem('purchases', purchases);
+  try {
+    const purchases = getPurchases();
+    purchases.push(purchase);
+    saveStorageItem('purchases', purchases);
+  } catch (error) {
+    console.error("Error adding purchase:", error);
+    throw error; // Re-throw to allow UI error handling
+  }
 };
 
 export const updatePurchase = (purchaseId: string, updatedPurchase: Purchase) => {
-  const purchases = getPurchases();
-  const index = purchases.findIndex(p => p.id === purchaseId);
-  if (index !== -1) {
-    purchases[index] = updatedPurchase;
-    saveStorageItem('purchases', purchases);
+  try {
+    const purchases = getPurchases();
+    const index = purchases.findIndex(p => p.id === purchaseId);
+    if (index !== -1) {
+      purchases[index] = updatedPurchase;
+      saveStorageItem('purchases', purchases);
+    }
+  } catch (error) {
+    console.error("Error updating purchase:", error);
+    throw error;
   }
 };
 
 export const deletePurchase = (purchaseId: string) => {
-  const purchases = getPurchases();
-  const index = purchases.findIndex(p => p.id === purchaseId);
-  if (index !== -1) {
-    purchases[index] = { ...purchases[index], isDeleted: true };
-    saveStorageItem('purchases', purchases);
+  try {
+    const purchases = getPurchases();
+    const index = purchases.findIndex(p => p.id === purchaseId);
+    if (index !== -1) {
+      purchases[index] = { ...purchases[index], isDeleted: true };
+      saveStorageItem('purchases', purchases);
+    }
+  } catch (error) {
+    console.error("Error deleting purchase:", error);
+    throw error;
   }
 };
 
@@ -37,23 +52,38 @@ export const deletePurchase = (purchaseId: string) => {
 export const getSales = (): Sale[] => getStorageItem<Sale[]>('sales') || [];
 
 export const addSale = (sale: any) => {
-  const sales = getSales();
-  sales.push(sale);
-  saveStorageItem('sales', sales);
+  try {
+    const sales = getSales();
+    sales.push(sale);
+    saveStorageItem('sales', sales);
+  } catch (error) {
+    console.error("Error adding sale:", error);
+    throw error;
+  }
 };
 
 export const updateSale = (saleId: string, updatedSale: any) => {
-  const sales = getSales();
-  const index = sales.findIndex(s => s.id === saleId);
-  if (index !== -1) {
-    sales[index] = updatedSale;
-    saveStorageItem('sales', sales);
+  try {
+    const sales = getSales();
+    const index = sales.findIndex(s => s.id === saleId);
+    if (index !== -1) {
+      sales[index] = updatedSale;
+      saveStorageItem('sales', sales);
+    }
+  } catch (error) {
+    console.error("Error updating sale:", error);
+    throw error;
   }
 };
 
 export const deleteSale = (saleId: string) => {
-  const sales = getSales().filter(s => s.id !== saleId);
-  saveStorageItem('sales', sales);
+  try {
+    const sales = getSales().filter(s => s.id !== saleId);
+    saveStorageItem('sales', sales);
+  } catch (error) {
+    console.error("Error deleting sale:", error);
+    throw error;
+  }
 };
 
 export const saveSales = (sales: Sale[]) => {

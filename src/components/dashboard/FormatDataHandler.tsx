@@ -178,4 +178,4 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
   );
 };
 
-export { FormatDataHandler, type FormatDataHandlerProps };
+export default FormatDataHandler;

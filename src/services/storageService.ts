@@ -89,3 +89,23 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
   const purchases = getPurchases();
   return purchases.some(p => p.lotNumber === lotNumber && !p.isDeleted);
 };
+
+// Add backup management functions
+export const getLastBackupTime = (): string | null => {
+  try {
+    return localStorage.getItem('lastBackupTime');
+  } catch (error) {
+    console.error("Error getting last backup time:", error);
+    return null;
+  }
+};
+
+export const getBackupList = (): string[] => {
+  try {
+    const backupList = localStorage.getItem('backupList');
+    return backupList ? JSON.parse(backupList) : [];
+  } catch (error) {
+    console.error("Error getting backup list:", error);
+    return [];
+  }
+};
