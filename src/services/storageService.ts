@@ -85,3 +85,9 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
   const purchases = getPurchases();
   return purchases.some(p => p.lotNumber === lotNumber && !p.isDeleted);
 };
+
+// Import necessary functions to fix the references
+import { getSales } from './storage/transaction-storage';
+import { getPurchases } from './storage/transaction-storage';
+import { getInventory } from './storage/inventory-storage';
+

@@ -55,3 +55,7 @@ export const deleteSale = (saleId: string) => {
   const sales = getSales().filter(s => s.id !== saleId);
   saveStorageItem('sales', sales);
 };
+
+export const saveSales = (sales: Sale[]) => {
+  saveStorageItem('sales', sales);
+};
