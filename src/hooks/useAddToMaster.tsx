@@ -23,7 +23,8 @@ import {
   addCustomer, 
   addBroker, 
   addTransporter, 
-  saveStorageItem 
+  saveStorageItem,
+  getMasters
 } from "@/services/storageService";
 
 interface AddToMasterProps {
@@ -33,10 +34,9 @@ interface AddToMasterProps {
 export const useAddToMaster = (props?: AddToMasterProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newItemName, setNewItemName] = useState("");
-  const [additionalFields, setAdditionalFields] = useState<Record<string, string>>({});
+  const [nameError, setNameError] = useState("");
   const [currentMasterType, setCurrentMasterType] = useState<string>(props?.masterType || "item");
   const [onConfirmCallback, setOnConfirmCallback] = useState<((value: string) => void) | null>(null);
-  const [nameError, setNameError] = useState("");
 
   // Define schema that only requires name
   const commonSchema = z.object({
@@ -58,14 +58,21 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         const newSupplier = {
           id: `supplier-${uuidv4()}`,
           name: itemData.name,
-          address: itemData.address || "",
-          contacts: itemData.contacts || [],
-          balance: 0,
           isDeleted: false,
+          type: "supplier"
         };
         
         suppliers.push(newSupplier);
         saveStorageItem('suppliers', suppliers);
+        
+        // Also add to masters list for unified management
+        const masters = getMasters() || [];
+        masters.push({
+          ...newSupplier,
+          type: "supplier"
+        });
+        saveStorageItem('masters', masters);
+        
         return itemData.name; // Return the name
       } 
       else if (masterType === "customer") {
@@ -79,14 +86,21 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         const newCustomer = {
           id: `customer-${uuidv4()}`,
           name: itemData.name,
-          address: itemData.address || "",
-          contacts: itemData.contacts || [],
-          balance: 0,
           isDeleted: false,
+          type: "customer"
         };
         
         customers.push(newCustomer);
         saveStorageItem('customers', customers);
+        
+        // Also add to masters list for unified management
+        const masters = getMasters() || [];
+        masters.push({
+          ...newCustomer,
+          type: "customer"
+        });
+        saveStorageItem('masters', masters);
+        
         return itemData.name; // Return the name
       } 
       else if (masterType === "broker") {
@@ -102,10 +116,20 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
           name: itemData.name,
           commissionRate: parseFloat(itemData.commissionRate || "1"),
           isDeleted: false,
+          type: "broker"
         };
         
         brokers.push(newBroker);
         saveStorageItem('brokers', brokers);
+        
+        // Also add to masters list for unified management
+        const masters = getMasters() || [];
+        masters.push({
+          ...newBroker,
+          type: "broker"
+        });
+        saveStorageItem('masters', masters);
+        
         return itemData.name; // Return the name
       } 
       else if (masterType === "transporter") {
@@ -120,10 +144,20 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
           id: `transporter-${uuidv4()}`,
           name: itemData.name,
           isDeleted: false,
+          type: "transporter"
         };
         
         transporters.push(newTransporter);
         saveStorageItem('transporters', transporters);
+        
+        // Also add to masters list for unified management
+        const masters = getMasters() || [];
+        masters.push({
+          ...newTransporter,
+          type: "transporter"
+        });
+        saveStorageItem('masters', masters);
+        
         return itemData.name; // Return the name
       }
       
@@ -151,8 +185,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
       }
       
       const itemData = {
-        name: newItemName.trim(),
-        ...additionalFields,
+        name: newItemName.trim()
       };
       
       const addedValue = addToMasterList(currentMasterType, itemData);
@@ -164,7 +197,6 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
         // Close dialog and reset state
         setIsDialogOpen(false);
         setNewItemName("");
-        setAdditionalFields({});
         setNameError("");
       }
       
@@ -187,41 +219,6 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
     }
     
     setIsDialogOpen(true);
-  };
-
-  // Additional fields for different master types
-  const getAdditionalFields = () => {
-    if (currentMasterType === "broker") {
-      return (
-        <div className="mb-4">
-          <Label htmlFor="commissionRate">Commission Rate (%)</Label>
-          <Input
-            id="commissionRate"
-            type="number"
-            step="0.01"
-            value={additionalFields.commissionRate || "1"}
-            onChange={(e) => setAdditionalFields({ ...additionalFields, commissionRate: e.target.value })}
-            placeholder="Enter commission rate"
-          />
-        </div>
-      );
-    }
-    
-    if (currentMasterType === "supplier" || currentMasterType === "customer" || currentMasterType === "party") {
-      return (
-        <div className="mb-4">
-          <Label htmlFor="address">Address (Optional)</Label>
-          <Input
-            id="address"
-            value={additionalFields.address || ""}
-            onChange={(e) => setAdditionalFields({ ...additionalFields, address: e.target.value })}
-            placeholder="Enter address"
-          />
-        </div>
-      );
-    }
-    
-    return null;
   };
   
   // Dialog component to add to master
@@ -253,7 +250,18 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
             {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
           </div>
           
-          {getAdditionalFields()}
+          {currentMasterType === "broker" && (
+            <div className="mb-4">
+              <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+              <Input
+                id="commissionRate"
+                type="number"
+                step="0.01"
+                placeholder="Enter commission rate"
+                defaultValue="1"
+              />
+            </div>
+          )}
         </div>
         
         <DialogFooter>

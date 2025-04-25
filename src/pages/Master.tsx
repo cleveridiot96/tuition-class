@@ -1,19 +1,40 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getMasters } from "@/services/storageService";
+import { getMasters, getSuppliers, getCustomers, getBrokers, getTransporters, getAgents } from "@/services/storageService";
 import { MasterForm } from "@/components/master/MasterForm";
 import { MastersList } from "@/components/master/MastersList";
 import Navigation from "@/components/Navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Master = () => {
-  const [masters, setMasters] = useState(getMasters());
   const [showForm, setShowForm] = useState(false);
-
+  const [currentTab, setCurrentTab] = useState("all");
+  const [masters, setMasters] = useState<any[]>([]);
+  
   const loadData = () => {
-    const data = getMasters();
-    setMasters(data);
+    // Load all masters from different sources and categorize them
+    const suppliers = getSuppliers().map(s => ({...s, type: "supplier"}));
+    const customers = getCustomers().map(c => ({...c, type: "customer"}));
+    const brokers = getBrokers().map(b => ({...b, type: "broker"}));
+    const transporters = getTransporters().map(t => ({...t, type: "transporter"}));
+    const agents = getAgents().map(a => ({...a, type: "agent"}));
+    
+    // Combine all entities
+    const allMasters = [...suppliers, ...customers, ...brokers, ...transporters, ...agents]
+      .filter(m => !m.isDeleted);
+      
+    setMasters(allMasters);
+  };
+  
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const getFilteredMasters = () => {
+    if (currentTab === "all") return masters;
+    return masters.filter(master => master.type === currentTab);
   };
 
   return (
@@ -39,7 +60,20 @@ const Master = () => {
               />
             )}
 
-            <MastersList masters={masters} />
+            <Tabs value={currentTab} onValueChange={setCurrentTab} className="w-full">
+              <TabsList className="grid grid-cols-6 mb-4">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="supplier">Suppliers</TabsTrigger>
+                <TabsTrigger value="customer">Customers</TabsTrigger>
+                <TabsTrigger value="broker">Brokers</TabsTrigger>
+                <TabsTrigger value="agent">Agents</TabsTrigger>
+                <TabsTrigger value="transporter">Transporters</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value={currentTab}>
+                <MastersList masters={getFilteredMasters()} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>

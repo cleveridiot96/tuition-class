@@ -5,7 +5,7 @@ import {
   completeFormatAllData,
   exportDataBackup
 } from "@/services/storageService";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import FormatEventConnector from './FormatEventConnector';
 
 interface FormatDataHandlerProps {
@@ -26,6 +26,9 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
         title: "Format in progress",
         description: "Creating backup and resetting data...",
       });
+      
+      // Create a backup first
+      await exportDataBackup(`backup-before-format-${new Date().toISOString()}.json`);
       
       // Use our improved format function that properly clears all data
       const formatSuccess = await completeFormatAllData();
@@ -49,7 +52,6 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
       toast({
         title: "Format Error",
         description: "There was a problem formatting the data. Please try again.",
-        variant: "destructive",
       });
     } finally {
       setIsFormatDialogOpen(false);

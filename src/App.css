@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -101,4 +100,36 @@ body.font-size-large {
 
 body.font-size-x-large {
   font-size: 1.25rem;
+}
+
+/* Add styling for input fields to have placeholder text in gray */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #9ca3af; /* Tailwind's gray-400 */
+  opacity: 1;
+}
+
+/* Update Party Ledger tile color */
+.party-ledger-tile {
+  background-color: #9b87f5; /* Purple color for Party Ledger */
+  color: white;
+  border-color: #7E69AB; /* Darker border */
+}
+
+.party-ledger-tile:hover {
+  background-color: #7E69AB; /* Slightly darker on hover */
+}
+
+/* Style for dashboard menu icons to match tile colors */
+.dashboard-menu-icon {
+  color: currentColor;
+}
+
+/* When input is focused, ensure text color is proper */
+input:focus,
+textarea:focus,
+select:focus {
+  color: #1f2937; /* Tailwind's gray-800 */
+  background-color: white;
 }
