@@ -24,12 +24,25 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
   const [name, setName] = useState("");
   const [type, setType] = useState<MasterType>("supplier");
   const [commissionRate, setCommissionRate] = useState("1");
+  const [nameError, setNameError] = useState("");
+
+  const validateForm = () => {
+    let isValid = true;
+    
+    if (!name.trim()) {
+      setNameError("Name is required");
+      isValid = false;
+    } else {
+      setNameError("");
+    }
+    
+    return isValid;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim()) {
-      toast.error("Please enter a name.");
+    if (!validateForm()) {
       return;
     }
 
@@ -41,32 +54,47 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
       commissionRate: ["broker", "agent"].includes(type) ? parseFloat(commissionRate) : undefined
     };
 
-    addMaster(newMaster);
-    toast.success("Master saved successfully.");
+    try {
+      addMaster(newMaster);
+      toast.success("Master saved successfully.");
 
-    setName("");
-    setType("supplier");
-    setCommissionRate("1");
+      setName("");
+      setType("supplier");
+      setCommissionRate("1");
 
-    onSaved(); // reload master list
-    onClose(); // close form/modal
+      // Trigger immediate reload of data
+      onSaved(); 
+      onClose(); 
+    } catch (error) {
+      console.error("Error saving master:", error);
+      toast.error("Failed to save master. Please try again.");
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4">
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 bg-white rounded-lg shadow">
       <div className="space-y-2">
-        <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
+        <Label htmlFor="name" className="flex items-center">
+          Name <span className="text-red-500 ml-1">*</span>
+        </Label>
         <Input
           id="name"
           type="text"
           placeholder="Enter name"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            if (e.target.value.trim()) setNameError("");
+          }}
+          className={nameError ? "border-red-500" : ""}
         />
+        {nameError && <p className="text-red-500 text-sm">{nameError}</p>}
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="type">Type <span className="text-red-500">*</span></Label>
+        <Label htmlFor="type" className="flex items-center">
+          Type <span className="text-red-500 ml-1">*</span>
+        </Label>
         <Select 
           value={type} 
           onValueChange={(value) => setType(value as MasterType)}

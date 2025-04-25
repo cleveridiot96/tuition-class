@@ -18,6 +18,8 @@ import { usePurchaseValidation } from "./hooks/usePurchaseValidation";
 import { usePartyManagement } from "./usePartyManagement";
 import PurchaseFormContent from "./PurchaseFormContent";
 
+const AUTO_REFRESH_INTERVAL = 1000; // 1 second
+
 const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initialData }) => {
   // State
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -66,6 +68,17 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
     }
   };
 
+  // Setup auto-refresh for data
+  useEffect(() => {
+    loadData(); // Initial load
+    
+    const refreshInterval = setInterval(() => {
+      loadData();
+    }, AUTO_REFRESH_INTERVAL);
+    
+    return () => clearInterval(refreshInterval);
+  }, []);
+
   // Setup party management
   const partyManagement = usePartyManagement({ form, loadData });
 
@@ -77,11 +90,10 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
 
   // Load initial data
   useEffect(() => {
-    loadData();
     // Only show brokerage when agent is selected
     const agentId = form.watch("agentId");
     setShowBrokerage(!!agentId);
-  }, [initialData]);
+  }, [initialData, form]);
 
   // Toggle brokerage visibility based on agent selection
   useEffect(() => {
@@ -109,18 +121,18 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
         }
       }
     }
-  }, [form.watch("lotNumber")]);
+  }, [form.watch("lotNumber"), form, extractBagsFromLotNumber]);
 
-  // Update net weight when bags change (50kg per bag default)
+  // Fix: Update net weight when bags change (50kg per bag default)
   useEffect(() => {
     const bags = form.watch("bags");
-    const netWeight = form.watch("netWeight");
+    const netWeight = form.getValues("netWeight");
     
-    // Only update if netWeight is not manually set
+    // Only update if netWeight is not manually set or is 0
     if (bags > 0 && (!netWeight || netWeight === 0)) {
       form.setValue("netWeight", bags * 50);
     }
-  }, [form.watch("bags")]);
+  }, [form.watch("bags"), form]);
 
   // Form submission handler
   const handleFormSubmit = (data: PurchaseFormData) => {
@@ -138,19 +150,29 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
       return;
     }
 
-    const validation = validatePurchaseForm(data, !!initialData);
+    // Fix: Ensure expenses is a valid number
+    const expenses = typeof data.expenses === 'string' ? 
+      parseFloat(data.expenses) || 0 : 
+      data.expenses || 0;
+
+    const dataWithFixedExpenses = {
+      ...data,
+      expenses
+    };
+
+    const validation = validatePurchaseForm(dataWithFixedExpenses, !!initialData);
 
     if (!validation.isValid) {
       if (validation.duplicatePurchase) {
         setDuplicateLotInfo(validation.duplicatePurchase);
         setShowDuplicateLotDialog(true);
-        setPendingSubmitData(data);
+        setPendingSubmitData(dataWithFixedExpenses);
         return;
       }
       return;
     }
 
-    submitData(data);
+    submitData(dataWithFixedExpenses);
   };
 
   const handleContinueDespiteDuplicate = () => {
@@ -162,8 +184,14 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   };
 
   const submitData = (data: PurchaseFormData) => {
+    // Ensure expenses is a number
+    const expenses = typeof data.expenses === 'string' ? 
+      parseFloat(data.expenses) || 0 : 
+      data.expenses || 0;
+      
     const submitData = {
       ...data,
+      expenses,  // Use the validated expenses value
       totalAmount: totalAmount,
       transportCost: transportCost,
       brokerageAmount: showBrokerage ? brokerageAmount : 0,

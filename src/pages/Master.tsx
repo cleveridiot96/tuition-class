@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getMasters, getSuppliers, getCustomers, getBrokers, getTransporters, getAgents } from "@/services/storageService";
@@ -8,12 +8,14 @@ import { MastersList } from "@/components/master/MastersList";
 import Navigation from "@/components/Navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const AUTO_REFRESH_INTERVAL = 1000; // 1 second refresh interval
+
 const Master = () => {
   const [showForm, setShowForm] = useState(false);
   const [currentTab, setCurrentTab] = useState("all");
   const [masters, setMasters] = useState<any[]>([]);
   
-  const loadData = () => {
+  const loadData = useCallback(() => {
     // Load all masters from different sources and categorize them
     const suppliers = getSuppliers().map(s => ({...s, type: "supplier"}));
     const customers = getCustomers().map(c => ({...c, type: "customer"}));
@@ -26,11 +28,19 @@ const Master = () => {
       .filter(m => !m.isDeleted);
       
     setMasters(allMasters);
-  };
+  }, []);
   
   useEffect(() => {
     loadData();
-  }, []);
+    
+    // Set up auto-refresh interval
+    const refreshInterval = setInterval(() => {
+      loadData();
+    }, AUTO_REFRESH_INTERVAL);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(refreshInterval);
+  }, [loadData]);
 
   const getFilteredMasters = () => {
     if (currentTab === "all") return masters;
@@ -71,7 +81,7 @@ const Master = () => {
               </TabsList>
               
               <TabsContent value={currentTab}>
-                <MastersList masters={getFilteredMasters()} />
+                <MastersList masters={getFilteredMasters()} onUpdate={loadData} />
               </TabsContent>
             </Tabs>
           </CardContent>

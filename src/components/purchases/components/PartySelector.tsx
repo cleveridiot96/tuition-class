@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   FormField,
   FormItem,
@@ -18,7 +18,9 @@ import { getSuppliers, addSupplier } from "@/services/storageService";
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from "sonner";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
-import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
+import { EnhancedSearchableSelect } from "@/components/ui/enhanced-select";
+
+const AUTO_REFRESH_INTERVAL = 1000; // 1 second
 
 interface PartySelectorProps {
   form: UseFormReturn<PurchaseFormData>;
@@ -27,57 +29,91 @@ interface PartySelectorProps {
 
 const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [supplierOptions, setSupplierOptions] = useState<any[]>([]);
   const [showAddPartyDialog, setShowAddPartyDialog] = useState<boolean>(false);
   const [newPartyName, setNewPartyName] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>("");
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
+  
+  const loadSuppliers = useCallback(() => {
+    const supplierData = getSuppliers() || [];
+    setSuppliers(supplierData.filter(s => !s.isDeleted));
+    
+    // Update options list whenever suppliers change
+    const options = supplierData
+      .filter(supplier => !supplier.isDeleted)
+      .map(supplier => ({
+        value: supplier.name,
+        label: supplier.name
+      }));
+    
+    setSupplierOptions(options);
+  }, []);
   
   useEffect(() => {
     loadSuppliers();
-  }, []);
-  
-  const loadSuppliers = () => {
-    const supplierData = getSuppliers() || [];
-    setSuppliers(supplierData);
-  };
+    
+    // Set up auto-refresh
+    const refreshInterval = setInterval(() => {
+      loadSuppliers();
+    }, AUTO_REFRESH_INTERVAL);
+    
+    return () => clearInterval(refreshInterval);
+  }, [loadSuppliers]);
   
   const handleAddNewParty = () => {
     if (!newPartyName.trim()) {
-      toast.error("Party name is required");
+      setErrorMessage("Party name is required");
+      return;
+    }
+    
+    // Check for duplicates
+    if (suppliers.some(s => s.name.toLowerCase() === newPartyName.trim().toLowerCase())) {
+      setErrorMessage("Party with this name already exists");
       return;
     }
     
     const newParty = {
       id: `supplier-${uuidv4()}`,
       name: newPartyName.trim(),
-      balance: 0
+      balance: 0,
+      isDeleted: false
     };
     
     try {
       addSupplier(newParty);
-      loadSuppliers();
+      loadSuppliers(); // Refresh the list
       form.setValue("party", newPartyName.trim());
       setShowAddPartyDialog(false);
       toast.success("New party added successfully");
       setNewPartyName("");
+      setErrorMessage("");
     } catch (error) {
       console.error("Error adding new party:", error);
       toast.error("Failed to add new party. Please try again.");
     }
   };
 
-  // Fix: Make sure this function returns the value string as required by EnhancedSearchableSelect
+  // Handle adding new party directly from the enhanced select
   const handleAddNewToMaster = (value: string): string => {
     if (!value.trim()) return "";
+    
+    // Check for duplicates
+    if (suppliers.some(s => s.name.toLowerCase() === value.trim().toLowerCase())) {
+      toast.error("Party with this name already exists");
+      return "";
+    }
     
     const newParty = {
       id: `supplier-${uuidv4()}`,
       name: value.trim(),
-      balance: 0
+      balance: 0,
+      isDeleted: false
     };
     
     try {
       addSupplier(newParty);
-      loadSuppliers();
+      loadSuppliers(); // Refresh the list immediately
       
       // Set the value in the form
       form.setValue("party", value.trim());
@@ -91,11 +127,6 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
       return "";
     }
   };
-  
-  const supplierOptions = suppliers.map(supplier => ({
-    value: supplier.name,
-    label: supplier.name
-  }));
   
   return (
     <>
@@ -123,7 +154,8 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
                 onValueChange={field.onChange}
                 placeholder="Select party"
                 onAddNew={handleAddNewToMaster}
-                masterType="party"
+                masterType="supplier"
+                emptyMessage="No suppliers found"
               />
             </FormControl>
             <FormMessage />
@@ -138,14 +170,23 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="newPartyName">Party Name <span className="text-red-500">*</span></Label>
+              <Label htmlFor="newPartyName">
+                Party Name <span className="text-red-500">*</span>
+              </Label>
               <Input 
                 id="newPartyName"
                 value={newPartyName}
-                onChange={(e) => setNewPartyName(e.target.value)}
+                onChange={(e) => {
+                  setNewPartyName(e.target.value);
+                  if (e.target.value.trim()) setErrorMessage("");
+                }}
+                className={errorMessage ? "border-red-500" : ""}
                 placeholder="Enter party name"
                 autoComplete="off"
               />
+              {errorMessage && (
+                <p className="text-red-500 text-sm mt-1">{errorMessage}</p>
+              )}
             </div>
             <div className="flex justify-end space-x-2">
               <Button variant="outline" onClick={() => setShowAddPartyDialog(false)}>Cancel</Button>
