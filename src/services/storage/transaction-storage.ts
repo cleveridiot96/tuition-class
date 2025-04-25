@@ -1,6 +1,7 @@
 
 import { getStorageItem, saveStorageItem } from '../core/storageCore';
 import { Purchase, Sale } from '../types';
+import { getInventory, saveInventory, updateInventoryAfterTransfer, updateInventoryAfterSale } from './inventory-storage';
 
 // Purchases
 export const getPurchases = (): Purchase[] => getStorageItem<Purchase[]>('purchases') || [];

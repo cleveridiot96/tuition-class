@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/Navigation';
 import DashboardMenu from '@/components/DashboardMenu';
 import BackupRestoreControls from '@/components/BackupRestoreControls';
-import { FormatDataHandler } from '@/components/dashboard/FormatDataHandler';
+import FormatDataHandler from '@/components/dashboard/FormatDataHandler';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import ProfitSection from '@/components/dashboard/ProfitSection';
 import MonthSelector from '@/components/dashboard/MonthSelector';

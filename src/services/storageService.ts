@@ -69,6 +69,10 @@ export {
   exportToExcel
 } from './storageUtils';
 
+// Import necessary functions from transaction-storage
+import { getPurchases, getSales } from './storage/transaction-storage';
+import { getInventory } from './storage/inventory-storage';
+
 // Dashboard-related functions
 export const getTotalSalesValue = (): number => {
   const sales = getSales();

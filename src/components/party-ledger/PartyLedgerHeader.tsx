@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
+import { MasterType } from "@/types/master.types";
 
 interface PartyLedgerHeaderProps {
   partyType: string;
@@ -127,7 +128,7 @@ export const PartyLedgerHeader: React.FC<PartyLedgerHeaderProps> = ({
                 placeholder={`Select ${partyType === "supplier" ? "supplier" : "customer"}`}
                 emptyMessage="No parties found"
                 onAddNew={handleAddNewToMaster}
-                masterType={partyType}
+                masterType={partyType as MasterType}
               />
               {!partyId && (
                 <p className="text-sm text-purple-800 opacity-80 mt-1">

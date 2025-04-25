@@ -2,7 +2,7 @@
 import Navigation from "@/components/Navigation";
 import DashboardSummary from "@/components/DashboardSummary";
 import { DashboardTile } from "@/components/DashboardTile";
-import { FormatDataHandler } from "@/components/dashboard/FormatDataHandler";
+import FormatDataHandler from "@/components/dashboard/FormatDataHandler";
 import { useEffect, useState } from "react";
 import { getSuppliers, getCustomers, getPurchases, getSales, getInventory } from "@/services/storageService";
 import { User, Users, ShoppingBag, Truck, CalendarDays, Calendar, CircleDot, ShoppingBasket } from "lucide-react";
