@@ -58,11 +58,24 @@ export const debugStorage = {
   }
 };
 
+// Import necessary functions for re-export
+import { 
+  getSales, 
+  getPurchases, 
+  getInventory,
+  saveSales,
+  savePurchases,
+  saveInventory,
+  addPurchase,
+  updatePurchase
+} from './storage/transaction-storage';
+
 // Re-export backup operations
 export { 
   exportDataBackup,
   importDataBackup,
-  completeFormatAllData 
+  completeFormatAllData,
+  exportToExcel
 } from './backup/backupRestore';
 
 // Dashboard-related functions
@@ -85,9 +98,3 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
   const purchases = getPurchases();
   return purchases.some(p => p.lotNumber === lotNumber && !p.isDeleted);
 };
-
-// Import necessary functions to fix the references
-import { getSales } from './storage/transaction-storage';
-import { getPurchases } from './storage/transaction-storage';
-import { getInventory } from './storage/inventory-storage';
-

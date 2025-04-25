@@ -11,14 +11,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { AddToMasterProps } from "@/types/master.types";
+import { MasterType, AddToMasterProps } from "@/types/master.types";
 import { useAddToMasterDialog } from "./master/useAddToMasterDialog";
 import { useMasterValidation } from "./master/useMasterValidation";
 import { addToMasterList } from "@/services/masterOperations";
 
 export const useAddToMaster = (props?: AddToMasterProps) => {
   const [newItemName, setNewItemName] = useState("");
-  const [currentMasterType, setCurrentMasterType] = useState<string>(props?.masterType || "item");
+  const [commissionRate, setCommissionRate] = useState("1");
+  const [currentMasterType, setCurrentMasterType] = useState<MasterType>(props?.masterType || "supplier");
   const { dialogState, openDialog, closeDialog } = useAddToMasterDialog();
   const { nameError, setNameError, validateMaster } = useMasterValidation();
 
@@ -28,7 +29,11 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
     }
 
     const itemData = {
-      name: newItemName.trim()
+      name: newItemName.trim(),
+      commissionRate: currentMasterType === "broker" || currentMasterType === "agent" 
+        ? parseFloat(commissionRate) || 1 
+        : undefined,
+      type: currentMasterType
     };
     
     const addedValue = addToMasterList(currentMasterType, itemData);
@@ -37,13 +42,14 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
       dialogState.onConfirm(addedValue);
       closeDialog();
       setNewItemName("");
+      setCommissionRate("1");
       setNameError("");
     }
     
     return addedValue;
   };
 
-  const confirmAddToMaster = (itemName: string, onConfirm: (value: string) => void, masterType?: string) => {
+  const confirmAddToMaster = (itemName: string, onConfirm: (value: string) => void, masterType?: MasterType) => {
     setNewItemName(itemName);
     setNameError("");
     
@@ -82,7 +88,7 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
             {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
           </div>
           
-          {currentMasterType === "broker" && (
+          {(currentMasterType === "broker" || currentMasterType === "agent") && (
             <div className="mb-4">
               <Label htmlFor="commissionRate">Commission Rate (%)</Label>
               <Input
@@ -90,7 +96,8 @@ export const useAddToMaster = (props?: AddToMasterProps) => {
                 type="number"
                 step="0.01"
                 placeholder="Enter commission rate"
-                defaultValue="1"
+                value={commissionRate}
+                onChange={(e) => setCommissionRate(e.target.value)}
               />
             </div>
           )}

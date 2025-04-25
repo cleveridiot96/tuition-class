@@ -7,7 +7,9 @@ export * from './core/yearSpecificStorage';
 export {
   clearAllData,
   clearAllMasterData,
-  seedInitialData
+  seedInitialData,
+  completeFormatAllData,
+  exportToExcel
 } from './backup/backupRestore';
 
 // Re-export debug functionality

@@ -4,8 +4,16 @@ import { v4 as uuid } from "uuid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { addMaster } from "@/services/storageService";
+import { MasterType } from "@/types/master.types";
 
 interface MasterFormProps {
   onClose: () => void;
@@ -14,30 +22,31 @@ interface MasterFormProps {
 
 export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [type, setType] = useState<MasterType>("supplier");
+  const [commissionRate, setCommissionRate] = useState("1");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !phone.trim() || !address.trim()) {
-      toast.error("Please fill all fields.");
+    if (!name.trim()) {
+      toast.error("Please enter a name.");
       return;
     }
 
     const newMaster = {
       id: `master-${uuid()}`,
       name: name.trim(),
-      phone: phone.trim(),
-      address: address.trim(),
+      isDeleted: false,
+      type,
+      commissionRate: ["broker", "agent"].includes(type) ? parseFloat(commissionRate) : undefined
     };
 
     addMaster(newMaster);
     toast.success("Master saved successfully.");
 
     setName("");
-    setPhone("");
-    setAddress("");
+    setType("supplier");
+    setCommissionRate("1");
 
     onSaved(); // reload master list
     onClose(); // close form/modal
@@ -46,7 +55,7 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
       <div className="space-y-2">
-        <Label htmlFor="name">Name</Label>
+        <Label htmlFor="name">Name <span className="text-red-500">*</span></Label>
         <Input
           id="name"
           type="text"
@@ -55,26 +64,40 @@ export const MasterForm: React.FC<MasterFormProps> = ({ onClose, onSaved }) => {
           onChange={(e) => setName(e.target.value)}
         />
       </div>
+      
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone</Label>
-        <Input
-          id="phone"
-          type="tel"
-          placeholder="Enter phone number"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-        />
+        <Label htmlFor="type">Type <span className="text-red-500">*</span></Label>
+        <Select 
+          value={type} 
+          onValueChange={(value) => setType(value as MasterType)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select type" />
+          </SelectTrigger>
+          <SelectContent className="bg-white">
+            <SelectItem value="supplier">Supplier</SelectItem>
+            <SelectItem value="customer">Customer</SelectItem>
+            <SelectItem value="broker">Broker</SelectItem>
+            <SelectItem value="agent">Agent</SelectItem>
+            <SelectItem value="transporter">Transporter</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="address">Address</Label>
-        <Input
-          id="address"
-          type="text"
-          placeholder="Enter address"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-        />
-      </div>
+      
+      {(type === "broker" || type === "agent") && (
+        <div className="space-y-2">
+          <Label htmlFor="commissionRate">Commission Rate (%)</Label>
+          <Input
+            id="commissionRate"
+            type="number"
+            step="0.01"
+            placeholder="Enter commission rate"
+            value={commissionRate}
+            onChange={(e) => setCommissionRate(e.target.value)}
+          />
+        </div>
+      )}
+      
       <div className="flex space-x-2">
         <Button type="submit" className="w-full">Save Master</Button>
         <Button 

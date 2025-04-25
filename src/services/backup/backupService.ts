@@ -1,12 +1,12 @@
 
-import { exportDataBackup, importDataBackup } from './backupRestore';
+import { exportDataBackup, importDataBackup } from '../storageUtils';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 // Creates a complete backup of all data in JSON format
 export const createCompleteBackup = async (filename?: string): Promise<string | boolean> => {
   try {
-    return await exportDataBackup(filename || true, true);
+    return await exportDataBackup(filename || undefined, true);
   } catch (error) {
     console.error("Error creating backup:", error);
     return false;

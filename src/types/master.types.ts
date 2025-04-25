@@ -1,14 +1,17 @@
 
+export type MasterType = "supplier" | "customer" | "broker" | "agent" | "transporter" | "party";
+
 export interface Master {
   id: string;
   name: string;
   isDeleted?: boolean;
-  type?: string;
+  type: MasterType;
   commissionRate?: number;
+  // Removed phone and address as requested
 }
 
 export interface AddToMasterProps {
-  masterType?: "supplier" | "customer" | "broker" | "transporter" | "item" | "party";
+  masterType?: MasterType;
 }
 
 export interface DialogState {
@@ -16,4 +19,10 @@ export interface DialogState {
   itemName: string;
   onConfirm?: (value: string) => void;
   masterType?: string;
+}
+
+export interface MasterFormValues {
+  name: string;
+  commissionRate?: number;
+  type: MasterType;
 }

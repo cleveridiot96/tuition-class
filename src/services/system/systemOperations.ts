@@ -1,5 +1,5 @@
 
-import { exportDataBackup, importDataBackup } from '../backup/backupRestore';
+import { exportDataBackup, importDataBackup } from '../storageUtils';
 import { seedInitialData } from '../backup/backupRestore';
 
 // Function to properly reset all data including receipts
@@ -40,7 +40,7 @@ export const attemptDataRecovery = () => {
     if (preFormatBackup) {
       return { 
         available: true, 
-        restore: () => importDataBackup(preFormatBackup) 
+        restore: async () => await importDataBackup(preFormatBackup) 
       };
     }
     
