@@ -27,7 +27,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
       });
       
       // Create a backup first
-      await exportDataBackup(`backup-before-format-${new Date().toISOString()}.json`);
+      await exportDataBackup(`backup-before-format-${new Date().toISOString()}.json`, true);
       
       // Use our improved format function that properly clears all data
       const formatSuccess = await completeFormatAllData();
