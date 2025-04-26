@@ -1,116 +1,115 @@
 
-import { useState, useCallback } from 'react';
-import { useToast } from "@/hooks/use-toast";
-import { Purchase } from "@/services/types";
-import { addPurchase, updatePurchase } from "@/services/storageService";
-import { useFormState } from './useFormState';
-import { useItemManagement } from './useItemManagement';
-import { useFormCalculations } from './useFormCalculations';
-import { useBrokerageSettings } from './useBrokerageSettings';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
+import { purchaseFormSchema } from '../PurchaseFormSchema';
+import { PurchaseFormData, PurchaseFormProps } from '../types/PurchaseTypes';
+import { usePurchaseCalculations } from './usePurchaseCalculations';
+import { useBagExtractor } from './useBagExtractor';
+import { usePurchaseValidation } from './usePurchaseValidation';
 
-interface UsePurchaseFormProps {
-  onSubmit: (purchase: Purchase) => void;
-  initialValues?: Purchase;
-}
+export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFormProps) => {
+  const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
+  const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
+  const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
+  const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
 
-export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProps) => {
-  const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { formState, setFormState, handleInputChange, handleSelectChange } = useFormState(initialValues);
-  const { handleItemChange, handleAddItem, handleRemoveItem } = useItemManagement(setFormState);
-  const { calculateSubtotal, calculateTotal, totalAmount, transportCost, brokerageAmount, totalAfterExpenses, ratePerKgAfterExpenses } = useFormCalculations(formState);
-  const { updateBrokerageSettings, calculateBrokerageAmount } = useBrokerageSettings(setFormState);
+  const form = useForm<PurchaseFormData>({
+    resolver: zodResolver(purchaseFormSchema),
+    defaultValues: {
+      date: initialData?.date || format(new Date(), 'yyyy-MM-dd'),
+      lotNumber: initialData?.lotNumber || '',
+      bags: initialData?.bags || 0,
+      party: initialData?.party || '',
+      location: initialData?.location || '',
+      netWeight: initialData?.netWeight || 0,
+      rate: initialData?.rate || 0,
+      transporterId: initialData?.transporterId || '',
+      transportRate: initialData?.transportRate || 0,
+      expenses: initialData?.expenses || 0,
+      brokerageType: initialData?.brokerageType || 'percentage',
+      brokerageValue: initialData?.brokerageValue || 1,
+      notes: initialData?.notes || '',
+      agentId: initialData?.agentId || '',
+      billNumber: initialData?.billNumber || '',
+      billAmount: initialData?.billAmount || 0,
+    },
+    mode: 'onSubmit'
+  });
 
-  // Calculate brokerage amount for UI display
-  const brokerageAmountCalculated = calculateBrokerageAmount(formState.brokerageType, formState.brokerageRate, calculateSubtotal());
-  
-  // Expose brokerage type and rate for component usage
-  const brokerageType = formState.brokerageType;
-  const brokerageRate = formState.brokerageRate;
+  const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } =
+    usePurchaseCalculations({ form, showBrokerage, initialData });
+  const { extractBagsFromLotNumber } = useBagExtractor({ form });
+  const { validatePurchaseForm } = usePurchaseValidation();
 
-  const handleSubmit = useCallback(async (event: React.FormEvent) => {
-    event.preventDefault();
-    setIsSubmitting(true);
+  // Handle form submission
+  const handleFormSubmit = (data: PurchaseFormData) => {
+    const expenses = typeof data.expenses === 'string' 
+      ? parseFloat(data.expenses) || 0 
+      : data.expenses || 0;
 
-    try {
-      // Calculate the final brokerage amount
-      const finalBrokerageAmount = calculateBrokerageAmount(
-        formState.brokerageType, 
-        formState.brokerageRate,
-        calculateSubtotal()
-      );
-      
-      const purchaseData: Purchase = {
-        id: initialValues?.id || Date.now().toString(),
-        ...formState,
-        // Add missing Purchase properties
-        quantity: formState.items.reduce((total, item) => total + item.quantity, 0),
-        netWeight: formState.items.reduce((total, item) => total + (item.quantity * item.rate), 0) / (formState.items[0]?.rate || 1),
-        rate: formState.items[0]?.rate || 0,
-        totalAmount: calculateSubtotal(),
-        totalAfterExpenses: calculateTotal(),
-        brokerageAmount: finalBrokerageAmount,
-        // Ensure these are included for type safety and consistent property names
-        transportAmount: parseFloat(formState.transportCost || '0'),
-        transportCost: parseFloat(formState.transportCost || '0'), 
-        transportRate: initialValues?.transportRate || 0,
-        brokerageValue: formState.brokerageRate, // Map brokerageRate to brokerageValue for consistency
-        brokerageRate: formState.brokerageRate, // Keep both properties for backward compatibility
-        location: formState.location,
-        // Add bags property to Purchase
-        bags: formState.bags || 0,
-        // Add party since it's required in Purchase type
-        party: initialValues?.party || '',
-        partyId: initialValues?.partyId || undefined
-      };
+    const dataWithFixedExpenses = {
+      ...data,
+      expenses: Number(expenses)
+    };
 
-      if (initialValues) {
-        // Fix line 68 - pass both the ID and purchase data to updatePurchase
-        updatePurchase(purchaseData.id, purchaseData);
-        toast({
-          title: "Purchase Updated",
-          description: `Purchase ${purchaseData.lotNumber} has been updated.`
-        });
-      } else {
-        addPurchase(purchaseData);
-        toast({
-          title: "Purchase Added",
-          description: `Purchase ${purchaseData.lotNumber} has been added.`
-        });
+    const validation = validatePurchaseForm(dataWithFixedExpenses, !!initialData);
+
+    if (!validation.isValid) {
+      if (validation.duplicatePurchase) {
+        setDuplicateLotInfo(validation.duplicatePurchase);
+        setShowDuplicateLotDialog(true);
+        setPendingSubmitData(dataWithFixedExpenses);
+        return;
       }
-
-      onSubmit(purchaseData);
-    } catch (error) {
-      console.error("Error submitting form:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save purchase. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      return;
     }
-  }, [formState, initialValues, calculateSubtotal, calculateTotal, calculateBrokerageAmount, onSubmit, toast]);
+
+    submitData(dataWithFixedExpenses);
+  };
+
+  const handleContinueDespiteDuplicate = () => {
+    if (pendingSubmitData) {
+      submitData(pendingSubmitData);
+      setPendingSubmitData(null);
+    }
+    setShowDuplicateLotDialog(false);
+  };
+
+  const submitData = (data: PurchaseFormData) => {
+    const expenses = Number(data.expenses || 0);
+      
+    const submitData = {
+      ...data,
+      expenses,
+      totalAmount,
+      transportCost,
+      brokerageAmount: showBrokerage ? brokerageAmount : 0,
+      totalAfterExpenses,
+      ratePerKgAfterExpenses,
+      id: initialData?.id || Date.now().toString()
+    };
+
+    onSubmit(submitData);
+    toast.success(initialData ? "Purchase updated successfully" : "Purchase added successfully");
+  };
 
   return {
-    formState,
-    setFormState,
-    isSubmitting,
-    brokerageAmount: brokerageAmountCalculated,
-    brokerageType,
-    brokerageRate,
+    form,
+    showBrokerage,
+    setShowBrokerage,
+    showDuplicateLotDialog,
+    setShowDuplicateLotDialog,
+    duplicateLotInfo,
+    handleFormSubmit,
+    handleContinueDespiteDuplicate,
     totalAmount,
     transportCost,
+    brokerageAmount,
     totalAfterExpenses,
     ratePerKgAfterExpenses,
-    handleInputChange,
-    handleSelectChange,
-    handleItemChange,
-    handleAddItem,
-    handleRemoveItem,
-    calculateSubtotal,
-    calculateTotal,
-    handleSubmit,
-    updateBrokerageSettings
+    extractBagsFromLotNumber
   };
 };
