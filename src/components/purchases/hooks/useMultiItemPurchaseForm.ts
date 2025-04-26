@@ -14,19 +14,19 @@ interface UseMultiItemPurchaseFormProps {
 
 export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiItemPurchaseFormProps) => {
   // Form state with proper initial values
-  const defaultValues = initialValues || {
-    lotNumber: '',
-    date: new Date().toISOString().split('T')[0],
-    location: '',
-    agentId: '',
-    transporterId: '',
-    transportCost: '',
-    items: [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
-    notes: '',
-    expenses: 0,
-    brokerageType: 'percentage',
-    brokerageRate: 1,
-    bags: 0
+  const defaultValues: Partial<PurchaseFormState> = {
+    lotNumber: initialValues?.lotNumber || '',
+    date: initialValues?.date || new Date().toISOString().split('T')[0],
+    location: initialValues?.location || '',
+    agentId: initialValues?.agentId || '',
+    transporterId: initialValues?.transporterId || '',
+    transportCost: initialValues?.transportCost?.toString() || '',
+    items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    notes: initialValues?.notes || '',
+    expenses: initialValues?.expenses || 0,
+    brokerageType: initialValues?.brokerageType || 'percentage',
+    brokerageRate: initialValues?.brokerageRate || 1,
+    bags: initialValues?.bags || 0
   };
 
   // Form state
@@ -127,11 +127,12 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
 
   const handleSubmit = form.handleSubmit((data) => {
     // Process form data before submission
-    const processedData = {
+    const processedData: Purchase = {
       ...data,
+      id: initialValues?.id || Date.now().toString(),
       expenses: Number(data.expenses || 0),
+      transportCost: parseFloat(data.transportCost || '0'),
       totalAmount,
-      transportCost,
       brokerageAmount,
       totalAfterExpenses,
       ratePerKgAfterExpenses
