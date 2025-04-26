@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { getStorageItem } from '@/services/core/storageCore';
 import { Party } from '@/services/types';
+import { debugStorageOperations } from '@/utils/storage';
 
 // Export the getPartyName function for use in other components
 export const getPartyName = (partyId: string, parties: Party[] = []): string => {
@@ -11,7 +12,7 @@ export const getPartyName = (partyId: string, parties: Party[] = []): string => 
   return party ? party.name : "Unknown";
 };
 
-// Helper function to get parties from all possible sources
+// Helper function to get parties from all possible sources with proper deduplication
 export const getParties = (): Party[] => {
   // Get data from all potential sources
   const customers = getStorageItem<Party[]>('customers') || [];
@@ -20,14 +21,52 @@ export const getParties = (): Party[] => {
   const agents = getStorageItem<Party[]>('agents') || [];
   const parties = getStorageItem<Party[]>('parties') || [];
   
-  // Combine all sources and deduplicate by ID
-  const allParties = [...customers, ...suppliers, ...brokers, ...agents, ...parties];
-  const uniqueParties = allParties.reduce((acc, party) => {
-    if (!acc.find(p => p.id === party.id)) {
-      acc.push(party);
+  // Log for debugging
+  console.log("Raw party data:", {
+    customers: customers.length,
+    suppliers: suppliers.length,
+    brokers: brokers.length,
+    agents: agents.length,
+    parties: parties.length
+  });
+  
+  // Filter out deleted entities first
+  const activeCustomers = customers.filter(c => !c.isDeleted);
+  const activeSuppliers = suppliers.filter(s => !s.isDeleted);
+  const activeBrokers = brokers.filter(b => !b.isDeleted);
+  const activeAgents = agents.filter(a => !a.isDeleted);
+  const activeParties = parties.filter(p => !p.isDeleted);
+  
+  // Combine all sources
+  const allParties = [...activeCustomers, ...activeSuppliers, ...activeBrokers, ...activeAgents, ...activeParties];
+  
+  // Deduplicate by ID
+  const idMap = new Map();
+  
+  // Add by ID first (this handles duplicates with same ID)
+  allParties.forEach(party => {
+    if (party.id) {
+      idMap.set(party.id, party);
     }
-    return acc;
-  }, [] as Party[]);
+  });
+  
+  // Then deduplicate by name (in case same names but different IDs)
+  const nameMap = new Map();
+  
+  Array.from(idMap.values()).forEach(party => {
+    if (party.name) {
+      // Convert name to lowercase for case-insensitive comparison
+      const lowerName = party.name.toLowerCase();
+      if (!nameMap.has(lowerName)) {
+        nameMap.set(lowerName, party);
+      }
+    }
+  });
+  
+  // Convert back to array
+  const uniqueParties = Array.from(nameMap.values());
+  
+  console.log("Deduplicated parties:", uniqueParties.length);
   
   return uniqueParties;
 };

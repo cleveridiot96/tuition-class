@@ -1,202 +1,109 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useForm } from 'react-hook-form';
-import { Purchase } from "@/services/types";
-import { getAgents, getTransporters, getLocations } from "@/services/storageService";
-import { PurchaseFormState } from '../types/PurchaseFormTypes';
-import { useFormCalculations } from './useFormCalculations';
+import { Purchase } from '@/services/types';
 
-interface UseMultiItemPurchaseFormProps {
-  onSubmit: (purchase: Purchase) => void;
-  initialValues?: Purchase;
+export interface PurchaseFormState {
+  lotNumber: string;
+  date: string;
+  location: string;
+  agentId: string;
+  transporterId: string;
+  transportCost: string;
+  items: { id: any; name: string; quantity: number; rate: number; }[];
+  notes: string;
+  expenses: number;
+  totalAfterExpenses: number;
+  brokerageType: string;
+  brokerageRate: number;
+  bags: number;
+  party: string;
 }
 
-export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiItemPurchaseFormProps) => {
-  // Form state with proper initial values and type conversions
-  const defaultValues: PurchaseFormState = {
+export const useMultiItemPurchaseForm = (initialValues?: Purchase) => {
+  const currentDate = new Date().toISOString().split('T')[0];
+
+  const [formState, setFormState] = useState<PurchaseFormState>({
     lotNumber: initialValues?.lotNumber || '',
-    date: initialValues?.date || new Date().toISOString().split('T')[0],
+    date: initialValues?.date || currentDate,
     location: initialValues?.location || '',
     agentId: initialValues?.agentId || '',
     transporterId: initialValues?.transporterId || '',
-    transportCost: initialValues?.transportCost?.toString() || '', // Convert to string for form
-    items: initialValues?.items?.map(item => ({
-      ...item,
-      id: item.id || uuidv4() // Ensure every item has an id
-    })) || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    transportCost: initialValues?.transportCost?.toString() || '0',
+    items: initialValues?.items ?
+      initialValues.items.map(item => ({
+        id: item.id || uuidv4(),
+        name: item.name,
+        quantity: item.quantity,
+        rate: item.rate
+      })) :
+      [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
     notes: initialValues?.notes || '',
     expenses: initialValues?.expenses || 0,
+    totalAfterExpenses: initialValues?.totalAfterExpenses || 0,
     brokerageType: initialValues?.brokerageType || 'percentage',
     brokerageRate: initialValues?.brokerageRate || 1,
     bags: initialValues?.bags || 0,
-    party: initialValues?.party || ''  // Added party field which was missing
-  };
-
-  // Form state
-  const form = useForm<PurchaseFormState>({
-    defaultValues,
-    mode: 'onSubmit' // Only validate on submit to avoid red UI elements
+    party: initialValues?.party || '',
   });
 
-  // Entity data states
-  const [agents, setAgents] = useState([]);
-  const [transporters, setTransporters] = useState([]);
-  const [locations, setLocations] = useState<string[]>([]);
-  const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
-  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
 
-  // Get form values for calculations
-  const formState = form.getValues() as PurchaseFormState;
-  
-  // Use the calculations hook to compute values based on form state
-  const {
-    totalAmount,
-    transportCost,
-    brokerageAmount,
-    totalAfterExpenses,
-    ratePerKgAfterExpenses,
-    calculateSubtotal,
-    calculateTotal
-  } = useFormCalculations(formState);
-
-  useEffect(() => {
-    loadInitialData();
+    setFormState(prev => {
+      if (name === 'expenses' || name === 'brokerageRate') {
+        return { ...prev, [name]: parseFloat(value) || 0 };
+      }
+      return { ...prev, [name]: value };
+    });
   }, []);
 
-  const loadInitialData = () => {
-    try {
-      console.log('Loading initial data for purchase form...');
-      const allAgents = getAgents();
-      console.log('Agents loaded:', allAgents);
-      setAgents(allAgents);
+  const handleSelectChange = useCallback((name: string, value: string) => {
+    setFormState(prev => ({ ...prev, [name]: value }));
+  }, []);
 
-      const allTransporters = getTransporters();
-      console.log('Transporters loaded:', allTransporters);
-      setTransporters(allTransporters);
+  const handleItemChange = useCallback((index: number, field: string, value: any) => {
+    setFormState(prev => {
+      const newItems = [...prev.items];
+      newItems[index] = { ...newItems[index], [field]: value };
+      return { ...prev, items: newItems };
+    });
+  }, []);
 
-      const allLocations = getLocations() || ['Chiplun', 'Mumbai', 'Sawantwadi'];
-      console.log('Locations loaded:', allLocations);
-      setLocations(allLocations);
-    } catch (error) {
-      console.error("Error loading initial data:", error);
-    }
-  };
+  const handleRemoveItem = useCallback((index: number) => {
+    setFormState(prev => {
+      const newItems = prev.items.filter((_, i) => i !== index);
+      return { ...prev, items: newItems };
+    });
+  }, []);
 
-  // Form event handlers
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = event.target;
-    const parsedValue = type === 'number' ? parseFloat(value) : value;
-    form.setValue(name as any, parsedValue);
-  };
+  const handleAddItem = useCallback(() => {
+    setFormState(prev => ({
+      ...prev,
+      items: [...prev.items, { id: uuidv4(), name: '', quantity: 0, rate: 0 }]
+    }));
+  }, []);
 
-  const handleSelectChange = (name: string, value: string) => {
-    form.setValue(name as any, value);
-  };
+  const calculateSubtotal = useCallback(() => {
+    return formState.items.reduce((acc, item) => acc + (item.quantity * item.rate), 0);
+  }, [formState.items]);
 
-  const handleItemChange = (index: number, field: string, value: any) => {
-    const items = [...form.getValues('items') || []];
-    items[index] = { ...items[index], [field]: value };
-    form.setValue('items', items);
-  };
-
-  const handleRemoveItem = (index: number) => {
-    const items = [...form.getValues('items') || []];
-    if (items.length > 1) {
-      items.splice(index, 1);
-      form.setValue('items', items);
-    }
-  };
-
-  const handleAddItem = () => {
-    const items = [...form.getValues('items') || []];
-    items.push({ id: uuidv4(), name: '', quantity: 0, rate: 0 });
-    form.setValue('items', items);
-  };
-
-  const handleAgentAdded = (newAgent: any) => {
-    setAgents(prevAgents => [...prevAgents, newAgent]);
-    handleSelectChange('agentId', newAgent.id);
-    setShowAddAgentDialog(false);
-  };
-
-  const handleTransporterAdded = (newTransporter: any) => {
-    setTransporters(prevTransporters => [...prevTransporters, newTransporter]);
-    handleSelectChange('transporterId', newTransporter.id);
-    setShowAddTransporterDialog(false);
-  };
-
-  const handleBrokerageTypeChange = (type: string) => {
-    form.setValue('brokerageType', type);
-  };
-
-  const handleBrokerageRateChange = (value: number) => {
-    form.setValue('brokerageRate', value);
-  };
-
-  const handleSubmit = form.handleSubmit((data) => {
-    // Calculate total quantity/weight from all items
-    const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
-    
-    // Calculate average rate if needed
-    const totalValue = data.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
-    const avgRate = totalQuantity > 0 ? totalValue / totalQuantity : 0;
-
-    // Process form data before submission
-    const processedData: Purchase = {
-      ...data,
-      id: initialValues?.id || Date.now().toString(),
-      date: data.date || new Date().toISOString().split('T')[0], // Ensure date is always provided
-      expenses: Number(data.expenses || 0),
-      transportCost: parseFloat(data.transportCost || '0'),
-      totalAmount,
-      brokerageAmount,
-      totalAfterExpenses,
-      ratePerKgAfterExpenses,
-      // Add required fields for Purchase type
-      party: data.party || initialValues?.party || '',
-      netWeight: totalQuantity,
-      rate: avgRate,
-      quantity: totalQuantity,
-      // Other required fields from Purchase type
-      location: data.location || '',
-      bags: data.bags || 0,
-      lotNumber: data.lotNumber || ''
-    };
-    
-    console.log('Submitting purchase with data:', processedData);
-    onSubmit(processedData);
-  });
-
-  const isSubmitting = form.formState.isSubmitting;
+  const calculateTotal = useCallback(() => {
+    const subtotal = calculateSubtotal();
+    const brokerageAmount = formState.brokerageType === 'percentage' ?
+      (subtotal * formState.brokerageRate) / 100 :
+      formState.brokerageRate;
+    return subtotal + parseFloat(formState.transportCost || '0') + formState.expenses + brokerageAmount;
+  }, [formState.brokerageRate, formState.brokerageType, calculateSubtotal, formState.expenses, formState.transportCost]);
 
   return {
-    formState: formState as PurchaseFormState,
-    isSubmitting,
-    brokerageAmount,
-    handleSubmit,
-    form,
-    formMethods: {
-      handleInputChange,
-      handleSelectChange,
-      handleItemChange,
-      handleRemoveItem,
-      handleAddItem,
-      calculateSubtotal,
-      calculateTotal
-    },
-    formUtils: {
-      agents,
-      transporters,
-      locations,
-      showAddAgentDialog,
-      setShowAddAgentDialog,
-      showAddTransporterDialog,
-      setShowAddTransporterDialog,
-      handleAgentAdded,
-      handleTransporterAdded,
-      handleBrokerageTypeChange,
-      handleBrokerageRateChange
-    }
+    formState,
+    setFormState,
+    handleInputChange,
+    handleSelectChange,
+    handleItemChange,
+    handleRemoveItem,
+    handleAddItem,
+    calculateSubtotal,
+    calculateTotal
   };
 };
