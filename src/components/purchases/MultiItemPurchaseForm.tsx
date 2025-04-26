@@ -9,7 +9,6 @@ import BrokerageSection from './components/BrokerageSection';
 import ItemsSection from './components/ItemsSection';
 import NotesAndSummary from './components/NotesAndSummary';
 import { useMultiItemPurchaseForm } from './hooks/useMultiItemPurchaseForm';
-import { PurchaseFormState } from './types/PurchaseFormTypes';
 
 interface MultiItemPurchaseFormProps {
   onCancel: () => void;
@@ -29,7 +28,10 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
     handleSubmit,
     formMethods,
     formUtils
-  } = useMultiItemPurchaseForm({ onSubmit, initialValues });
+  } = useMultiItemPurchaseForm({ 
+    onSubmit, 
+    initialValues 
+  });
 
   return (
     <div className="w-full max-h-[calc(100vh-100px)] px-2 sm:px-4 md:px-6 mx-auto overflow-y-auto pb-8">
