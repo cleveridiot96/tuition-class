@@ -51,7 +51,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
       billNumber: initialData?.billNumber || "",
       billAmount: initialData?.billAmount || 0,
     },
-    mode: "onSubmit" // Changed from onChange to onSubmit
+    mode: "onSubmit"
   });
 
   // Load entities data
@@ -141,28 +141,14 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
 
   // Form submission handler
   const handleFormSubmit = (data: PurchaseFormData) => {
-    // Check if either Party OR Agent is specified (not both required)
-    if (!data.party && !data.agentId) {
-      form.setError("party", {
-        type: "manual",
-        message: "Either Party Name or Agent must be specified"
-      });
-      form.setError("agentId", {
-        type: "manual",
-        message: "Either Party Name or Agent must be specified"
-      });
-      toast.error("Either Party Name or Agent must be specified");
-      return;
-    }
-
-    // Fix: Ensure expenses is a valid number
-    const expenses = typeof data.expenses === 'string' ? 
-      parseFloat(data.expenses) || 0 : 
-      data.expenses || 0;
+    // Explicit type conversion for expenses
+    const expenses = typeof data.expenses === 'string' 
+      ? parseFloat(data.expenses) || 0 
+      : data.expenses || 0;
 
     const dataWithFixedExpenses = {
       ...data,
-      expenses
+      expenses: Number(expenses)
     };
 
     const validation = validatePurchaseForm(dataWithFixedExpenses, !!initialData);
@@ -190,13 +176,11 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
 
   const submitData = (data: PurchaseFormData) => {
     // Ensure expenses is a number
-    const expenses = typeof data.expenses === 'string' ? 
-      parseFloat(data.expenses) || 0 : 
-      data.expenses || 0;
+    const expenses = Number(data.expenses || 0);
       
     const submitData = {
       ...data,
-      expenses,  // Use the validated expenses value
+      expenses,  // Use the converted number value
       totalAmount: totalAmount,
       transportCost: transportCost,
       brokerageAmount: showBrokerage ? brokerageAmount : 0,
