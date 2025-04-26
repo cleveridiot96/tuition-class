@@ -19,6 +19,12 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
     loadData: entityData.loadData 
   });
 
+  // Ensure expenses is always a string for the view
+  const formExpenses = purchaseForm.form.watch("expenses");
+  const expensesDisplay = formExpenses !== undefined 
+    ? String(formExpenses) 
+    : '0';
+
   return (
     <PurchaseFormContent
       form={purchaseForm.form}
@@ -34,7 +40,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
       extractBagsFromLotNumber={purchaseForm.extractBagsFromLotNumber}
       showBrokerage={purchaseForm.showBrokerage}
       initialData={initialData}
-      expenses={purchaseForm.form.watch("expenses") || 0}
+      expenses={expensesDisplay}
       showDuplicateLotDialog={purchaseForm.showDuplicateLotDialog}
       setShowDuplicateLotDialog={purchaseForm.setShowDuplicateLotDialog}
       duplicateLotInfo={purchaseForm.duplicateLotInfo}
