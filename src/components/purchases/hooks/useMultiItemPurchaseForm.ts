@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useForm } from 'react-hook-form';
@@ -12,14 +13,14 @@ interface UseMultiItemPurchaseFormProps {
 }
 
 export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiItemPurchaseFormProps) => {
-  // Form state with proper initial values
-  const defaultValues: Partial<PurchaseFormState> = {
+  // Form state with proper initial values and type conversions
+  const defaultValues: PurchaseFormState = {
     lotNumber: initialValues?.lotNumber || '',
     date: initialValues?.date || new Date().toISOString().split('T')[0],
     location: initialValues?.location || '',
     agentId: initialValues?.agentId || '',
     transporterId: initialValues?.transporterId || '',
-    transportCost: initialValues?.transportCost?.toString() || '',
+    transportCost: initialValues?.transportCost?.toString() || '', // Convert to string for form
     items: initialValues?.items?.map(item => ({
       ...item,
       id: item.id || uuidv4() // Ensure every item has an id
@@ -28,12 +29,14 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
     expenses: initialValues?.expenses || 0,
     brokerageType: initialValues?.brokerageType || 'percentage',
     brokerageRate: initialValues?.brokerageRate || 1,
-    bags: initialValues?.bags || 0
+    bags: initialValues?.bags || 0,
+    party: initialValues?.party || ''  // Added party field which was missing
   };
 
   // Form state
-  const form = useForm({
-    defaultValues
+  const form = useForm<PurchaseFormState>({
+    defaultValues,
+    mode: 'onSubmit' // Only validate on submit to avoid red UI elements
   });
 
   // Entity data states
@@ -63,13 +66,17 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
 
   const loadInitialData = () => {
     try {
+      console.log('Loading initial data for purchase form...');
       const allAgents = getAgents();
+      console.log('Agents loaded:', allAgents);
       setAgents(allAgents);
 
       const allTransporters = getTransporters();
+      console.log('Transporters loaded:', allTransporters);
       setTransporters(allTransporters);
 
       const allLocations = getLocations() || ['Chiplun', 'Mumbai', 'Sawantwadi'];
+      console.log('Locations loaded:', allLocations);
       setLocations(allLocations);
     } catch (error) {
       console.error("Error loading initial data:", error);
@@ -147,7 +154,7 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
       totalAfterExpenses,
       ratePerKgAfterExpenses,
       // Add required fields for Purchase type
-      party: initialValues?.party || '',
+      party: data.party || initialValues?.party || '',
       netWeight: totalQuantity,
       rate: avgRate,
       quantity: totalQuantity,
@@ -156,6 +163,8 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
       bags: data.bags || 0,
       lotNumber: data.lotNumber || ''
     };
+    
+    console.log('Submitting purchase with data:', processedData);
     onSubmit(processedData);
   });
 

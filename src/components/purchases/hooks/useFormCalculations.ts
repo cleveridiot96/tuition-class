@@ -16,7 +16,11 @@ export const useFormCalculations = (formState: PurchaseFormState) => {
   const calculateTotal = useCallback(() => {
     const subtotal = calculateSubtotal();
     const transportCostValue = parseFloat(formState.transportCost || '0');
-    const expenses = parseFloat(formState.expenses?.toString() || '0');
+    // Ensure expenses is always a number
+    const expenses = typeof formState.expenses === 'number' 
+      ? formState.expenses 
+      : parseFloat(String(formState.expenses || '0'));
+      
     return subtotal + transportCostValue + expenses;
   }, [formState.items, formState.transportCost, formState.expenses, calculateSubtotal]);
 
@@ -28,6 +32,11 @@ export const useFormCalculations = (formState: PurchaseFormState) => {
     const transportCostValue = parseFloat(formState.transportCost || '0');
     setTransportCost(transportCostValue);
 
+    // Ensure expenses is always a number
+    const expenses = typeof formState.expenses === 'number' 
+      ? formState.expenses 
+      : parseFloat(String(formState.expenses || '0'));
+
     // Calculate brokerage based on type and rate
     let brokerage = 0;
     if (formState.brokerageType === 'percentage') {
@@ -37,7 +46,6 @@ export const useFormCalculations = (formState: PurchaseFormState) => {
     }
     setBrokerageAmount(brokerage);
 
-    const expenses = parseFloat(formState.expenses?.toString() || '0');
     const total = subtotal + transportCostValue + expenses + brokerage;
     setTotalAfterExpenses(total);
 
