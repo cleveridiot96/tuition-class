@@ -21,7 +21,10 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
     agentId: initialValues?.agentId || '',
     transporterId: initialValues?.transporterId || '',
     transportCost: initialValues?.transportCost?.toString() || '',
-    items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    items: initialValues?.items?.map(item => ({
+      ...item,
+      id: item.id || uuidv4() // Ensure every item has an id
+    })) || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
     notes: initialValues?.notes || '',
     expenses: initialValues?.expenses || 0,
     brokerageType: initialValues?.brokerageType || 'percentage',
@@ -126,6 +129,13 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
   };
 
   const handleSubmit = form.handleSubmit((data) => {
+    // Calculate total quantity/weight from all items
+    const totalQuantity = data.items.reduce((sum, item) => sum + item.quantity, 0);
+    
+    // Calculate average rate if needed
+    const totalValue = data.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
+    const avgRate = totalQuantity > 0 ? totalValue / totalQuantity : 0;
+
     // Process form data before submission
     const processedData: Purchase = {
       ...data,
@@ -135,7 +145,13 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
       totalAmount,
       brokerageAmount,
       totalAfterExpenses,
-      ratePerKgAfterExpenses
+      ratePerKgAfterExpenses,
+      // Add required fields for Purchase type
+      party: initialValues?.party || '',
+      netWeight: totalQuantity,
+      rate: avgRate,
+      quantity: totalQuantity,
+      // If there are other required fields, add them here with defaults
     };
     onSubmit(processedData);
   });
