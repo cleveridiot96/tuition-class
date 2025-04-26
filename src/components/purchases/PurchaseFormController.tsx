@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +30,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
   const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
 
-  // Form setup with default values to avoid undefined
+  // Form setup with default values and changed mode
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseFormSchema),
     defaultValues: {
@@ -46,13 +45,13 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
       transportRate: initialData?.transportRate || 0,
       expenses: initialData?.expenses || 0,
       brokerageType: initialData?.brokerageType || "percentage",
-      brokerageValue: initialData?.brokerageValue || 1, // Default 1%
+      brokerageValue: initialData?.brokerageValue || 1,
       notes: initialData?.notes || "",
       agentId: initialData?.agentId || "",
       billNumber: initialData?.billNumber || "",
       billAmount: initialData?.billAmount || 0,
     },
-    mode: "onChange"
+    mode: "onSubmit" // Changed from onChange to onSubmit
   });
 
   // Load entities data
@@ -123,16 +122,22 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
     }
   }, [form.watch("lotNumber"), form, extractBagsFromLotNumber]);
 
-  // Fix: Update net weight when bags change (50kg per bag default)
+  // Update bag weight calculation
   useEffect(() => {
-    const bags = form.watch("bags");
-    const netWeight = form.getValues("netWeight");
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'bags') {
+        const bags = parseInt(value.bags as string) || 0;
+        const currentNetWeight = form.getValues('netWeight');
+        
+        // Only update net weight if it hasn't been manually set
+        if (!currentNetWeight || currentNetWeight === 0) {
+          form.setValue('netWeight', bags * 50); // Default 50kg per bag
+        }
+      }
+    });
     
-    // Only update if netWeight is not manually set or is 0
-    if (bags > 0 && (!netWeight || netWeight === 0)) {
-      form.setValue("netWeight", bags * 50);
-    }
-  }, [form.watch("bags"), form]);
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   // Form submission handler
   const handleFormSubmit = (data: PurchaseFormData) => {

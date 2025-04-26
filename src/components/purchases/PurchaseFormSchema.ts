@@ -1,24 +1,26 @@
 
 import { z } from 'zod';
 
-// Schema for validation
 export const purchaseFormSchema = z.object({
   date: z.string().min(1, { message: "Date is required" }),
   lotNumber: z.string().min(1, { message: "Lot Number is required" }),
-  bags: z.number().optional().default(0),
-  party: z.string().optional().default(""),
-  location: z.string().optional().default(""),
-  netWeight: z.number().optional().default(0),
-  rate: z.number().optional().default(0),
-  transporterId: z.string().optional().default(""),
-  transportRate: z.number().optional().default(0),
-  expenses: z.number().optional().default(0), // Make expenses optional
+  bags: z.number().min(1, { message: "Number of bags must be greater than 0" }),
+  party: z.string().optional(),
+  location: z.string().min(1, { message: "Location is required" }),
+  netWeight: z.number().min(1, { message: "Net weight must be greater than 0" }),
+  rate: z.number().min(0.01, { message: "Rate must be greater than 0" }),
+  transporterId: z.string().optional(),
+  transportRate: z.number().min(0, { message: "Transport rate cannot be negative" }),
+  expenses: z.number().min(0, { message: "Expenses cannot be negative" }).optional().default(0),
   brokerageType: z.enum(["percentage", "fixed"]).default("percentage"),
-  brokerageValue: z.number().optional().default(0),
-  notes: z.string().optional().default(""),
-  agentId: z.string().optional().default(""),
-  billNumber: z.string().optional().default(""),
-  billAmount: z.number().optional().nullable(),
+  brokerageValue: z.number().min(0, { message: "Brokerage value cannot be negative" }),
+  notes: z.string().optional(),
+  agentId: z.string().optional(),
+  billNumber: z.string().optional(),
+  billAmount: z.number().nullable().optional(),
+}).refine((data) => data.party || data.agentId, {
+  message: "Either Party Name or Agent must be specified",
+  path: ["party"]
 });
 
 export type PurchaseFormData = z.infer<typeof purchaseFormSchema>;

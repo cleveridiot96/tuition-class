@@ -22,9 +22,8 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
   extractBagsFromLotNumber
 }) => {
   const [avgBagWeight, setAvgBagWeight] = useState('50');
-  const DEFAULT_WEIGHT_PER_BAG = 50; // Default 50kg per bag
+  const DEFAULT_WEIGHT_PER_BAG = 50;
   
-  // Use the bag weight calculation hook
   const { 
     isWeightManuallyEdited,
     resetToAutoCalculation
@@ -33,9 +32,8 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
     defaultWeightPerBag: DEFAULT_WEIGHT_PER_BAG
   });
 
-  // Calculate average bag weight when weight or bags change
   useEffect(() => {
-    const subscription = form.watch((value) => {
+    const subscription = form.watch((value: any) => {
       const bags = parseInt(value.bags) || 0;
       const weight = parseFloat(value.netWeight) || 0;
       
@@ -48,11 +46,6 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
     
     return () => subscription.unsubscribe();
   }, [form]);
-
-  // Reset to automatic calculation
-  const handleResetCalculation = () => {
-    resetToAutoCalculation();
-  };
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
@@ -85,15 +78,15 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
           name="netWeight"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="flex justify-between items-center">
-                <span>Net Weight (kg) <span className="text-red-500">*</span></span>
+              <FormLabel>
+                Net Weight (kg) <span className="text-red-500">*</span>
                 {isWeightManuallyEdited && (
                   <Button 
                     type="button" 
                     variant="ghost" 
                     size="sm" 
-                    className="h-6 px-2 text-xs"
-                    onClick={handleResetCalculation}
+                    className="h-6 px-2 text-xs ml-2"
+                    onClick={resetToAutoCalculation}
                   >
                     <Calculator className="w-3 h-3 mr-1" /> Auto
                   </Button>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import {
   FormField,
@@ -20,8 +19,6 @@ import { toast } from "sonner";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 
-const AUTO_REFRESH_INTERVAL = 1000; // 1 second
-
 interface PartySelectorProps {
   form: UseFormReturn<PurchaseFormData>;
   partyManagement: any;
@@ -40,7 +37,6 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     const activeSuppliers = supplierData.filter(s => !s.isDeleted);
     setSuppliers(activeSuppliers);
     
-    // Update options list whenever suppliers change
     const options = activeSuppliers.map(supplier => ({
       value: supplier.name,
       label: supplier.name
@@ -51,13 +47,11 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
   
   useEffect(() => {
     loadSuppliers();
-    
-    // Set up auto-refresh
-    const refreshInterval = setInterval(() => {
-      loadSuppliers();
-    }, AUTO_REFRESH_INTERVAL);
-    
-    return () => clearInterval(refreshInterval);
+  }, []);
+  
+  useEffect(() => {
+    const intervalId = setInterval(loadSuppliers, 1000);
+    return () => clearInterval(intervalId);
   }, [loadSuppliers]);
   
   const handleAddNewParty = () => {
@@ -66,7 +60,6 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
       return;
     }
     
-    // Check for duplicates
     if (suppliers.some(s => s.name && s.name.toLowerCase() === newPartyName.trim().toLowerCase())) {
       setErrorMessage("Party with this name already exists");
       return;
@@ -81,7 +74,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     
     try {
       addSupplier(newParty);
-      loadSuppliers(); // Refresh the list immediately
+      loadSuppliers();
       form.setValue("party", newPartyName.trim());
       setShowAddPartyDialog(false);
       toast.success("New party added successfully");
@@ -93,11 +86,9 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     }
   };
 
-  // Handle adding new party directly from the enhanced select
   const handleAddNewToMaster = (value: string): string => {
     if (!value.trim()) return "";
     
-    // Check for duplicates
     if (suppliers.some(s => s.name && s.name.toLowerCase() === value.trim().toLowerCase())) {
       toast.error("Party with this name already exists");
       return "";
@@ -112,13 +103,9 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
     
     try {
       addSupplier(newParty);
-      loadSuppliers(); // Refresh the list immediately
-      
-      // Set the value in the form
+      loadSuppliers();
       form.setValue("party", value.trim());
       toast.success("New party added successfully");
-      
-      // Return the value to update the select component
       return value.trim();
     } catch (error) {
       console.error("Error adding new party:", error);
@@ -134,7 +121,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
         name="party"
         render={({ field }) => (
           <FormItem>
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center">
               <FormLabel>Party Name <span className="text-red-500">*</span></FormLabel>
               <Button
                 type="button"
@@ -151,7 +138,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
                 options={supplierOptions}
                 value={field.value || ""}
                 onValueChange={field.onChange}
-                placeholder="Select party"
+                placeholder="Select or enter party name"
                 onAddNew={handleAddNewToMaster}
                 masterType="supplier"
                 emptyMessage="No suppliers found"
