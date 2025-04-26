@@ -26,17 +26,29 @@ export const useMultiItemPurchaseForm = ({
     agentId: initialValues?.agentId || '',
     transporterId: initialValues?.transporterId || '',
     transportCost: initialValues?.transportCost?.toString() || '0',
-    items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    items: initialValues?.items ? 
+      initialValues.items.map(item => ({ 
+        id: item.id || uuidv4(), // Ensure id is always defined
+        name: item.name, 
+        quantity: item.quantity, 
+        rate: item.rate 
+      })) : 
+      [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
     notes: initialValues?.notes || '',
     expenses: initialValues?.expenses || 0,
     totalAfterExpenses: initialValues?.totalAfterExpenses || 0,
     brokerageType: initialValues?.brokerageType || 'percentage',
     brokerageRate: initialValues?.brokerageRate || 1,
+    bags: initialValues?.bags || 0,
     party: initialValues?.party || ''
   });
 
   // Load entity data
   const { agents, transporters, locations, loadData } = useEntityData();
+  
+  // Add dialog state
+  const [showAddAgentDialog, setShowAddAgentDialog] = useState<boolean>(false);
+  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState<boolean>(false);
   
   // Handle input changes
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,8 +155,10 @@ export const useMultiItemPurchaseForm = ({
     agents,
     transporters,
     locations,
-    setShowAddAgentDialog: () => {}, // Implement if needed
-    setShowAddTransporterDialog: () => {}, // Implement if needed
+    showAddAgentDialog,
+    setShowAddAgentDialog,
+    showAddTransporterDialog,
+    setShowAddTransporterDialog,
     handleAgentAdded: () => loadData(),
     handleTransporterAdded: () => loadData(),
     handleBrokerageTypeChange: (type: string) => {

@@ -19,8 +19,8 @@ export interface FormUtils {
   setShowAddAgentDialog: (show: boolean) => void;
   showAddTransporterDialog: boolean;
   setShowAddTransporterDialog: (show: boolean) => void;
-  handleAgentAdded: (agent: Agent) => void;
-  handleTransporterAdded: (transporter: Transporter) => void;
+  handleAgentAdded: (agent?: Agent) => void;
+  handleTransporterAdded: (transporter?: Transporter) => void;
   handleBrokerageTypeChange: (type: string) => void;
   handleBrokerageRateChange: (value: number) => void;
 }
@@ -39,5 +39,5 @@ export interface PurchaseFormState {
   brokerageType: string;
   brokerageRate: number;
   bags: number;
-  party: string; // Add the party property
+  party: string;
 }
