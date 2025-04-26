@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useForm } from 'react-hook-form';
@@ -140,6 +139,7 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
     const processedData: Purchase = {
       ...data,
       id: initialValues?.id || Date.now().toString(),
+      date: data.date || new Date().toISOString().split('T')[0], // Ensure date is always provided
       expenses: Number(data.expenses || 0),
       transportCost: parseFloat(data.transportCost || '0'),
       totalAmount,
@@ -151,7 +151,10 @@ export const useMultiItemPurchaseForm = ({ onSubmit, initialValues }: UseMultiIt
       netWeight: totalQuantity,
       rate: avgRate,
       quantity: totalQuantity,
-      // If there are other required fields, add them here with defaults
+      // Other required fields from Purchase type
+      location: data.location || '',
+      bags: data.bags || 0,
+      lotNumber: data.lotNumber || ''
     };
     onSubmit(processedData);
   });
