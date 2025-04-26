@@ -6,6 +6,7 @@ import { FormMethods, FormUtils, PurchaseFormState } from '../types/PurchaseForm
 import { useFormCalculations } from './useFormCalculations';
 import { useEntityData } from './useEntityData';
 import { useItemManagement } from './useItemManagement';
+import { toast } from 'sonner';
 
 export const useMultiItemPurchaseForm = ({ 
   onSubmit, 
@@ -15,6 +16,7 @@ export const useMultiItemPurchaseForm = ({
   initialValues?: Purchase 
 }) => {
   const currentDate = new Date().toISOString().split('T')[0];
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initialize form state with default values or initial values
   const [formState, setFormState] = useState<PurchaseFormState>({
@@ -24,44 +26,33 @@ export const useMultiItemPurchaseForm = ({
     agentId: initialValues?.agentId || '',
     transporterId: initialValues?.transporterId || '',
     transportCost: initialValues?.transportCost?.toString() || '0',
-    items: initialValues?.items ?
-      initialValues.items.map(item => ({
-        id: item.id || uuidv4(),
-        name: item.name,
-        quantity: item.quantity,
-        rate: item.rate
-      })) :
-      [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
     notes: initialValues?.notes || '',
     expenses: initialValues?.expenses || 0,
     totalAfterExpenses: initialValues?.totalAfterExpenses || 0,
     brokerageType: initialValues?.brokerageType || 'percentage',
     brokerageRate: initialValues?.brokerageRate || 1,
-    bags: initialValues?.bags || 0,
-    party: initialValues?.party || '',
+    party: initialValues?.party || ''
   });
 
-  // Track submission state
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  
   // Load entity data
   const { agents, transporters, locations, loadData } = useEntityData();
   
   // Handle input changes
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
-
-    setFormState(prev => {
-      if (name === 'expenses' || name === 'brokerageRate') {
-        return { ...prev, [name]: parseFloat(value) || 0 };
-      }
-      return { ...prev, [name]: value };
-    });
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
   }, []);
 
   // Handle select changes
   const handleSelectChange = useCallback((name: string, value: string) => {
-    setFormState(prev => ({ ...prev, [name]: value }));
+    setFormState(prev => ({
+      ...prev,
+      [name]: value
+    }));
   }, []);
 
   // Item management
@@ -75,22 +66,24 @@ export const useMultiItemPurchaseForm = ({
   // Calculate total
   const calculateTotal = useCallback(() => {
     const subtotal = calculateSubtotal();
+    const transportCost = parseFloat(formState.transportCost || '0');
     const brokerageAmount = formState.brokerageType === 'percentage' ?
       (subtotal * formState.brokerageRate) / 100 :
       formState.brokerageRate;
-    return subtotal + parseFloat(formState.transportCost || '0') + formState.expenses + brokerageAmount;
-  }, [formState.brokerageRate, formState.brokerageType, calculateSubtotal, formState.expenses, formState.transportCost]);
-
-  // Dialog states
-  const [showAddAgentDialog, setShowAddAgentDialog] = useState<boolean>(false);
-  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState<boolean>(false);
+    return subtotal + transportCost + formState.expenses + brokerageAmount;
+  }, [formState, calculateSubtotal]);
 
   // Handle form submission
-  const handleSubmit = useCallback((e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
+      // Calculate total quantities and amount
+      const totalQuantity = formState.items.reduce((sum, item) => sum + item.quantity, 0);
+      const totalAmount = calculateSubtotal();
+      const weightedAverageRate = totalQuantity > 0 ? totalAmount / totalQuantity : 0;
+
       const purchaseData: Purchase = {
         id: initialValues?.id || uuidv4(),
         lotNumber: formState.lotNumber,
@@ -99,47 +92,41 @@ export const useMultiItemPurchaseForm = ({
         agentId: formState.agentId,
         transporterId: formState.transporterId,
         transportCost: parseFloat(formState.transportCost || '0'),
-        items: formState.items,
+        items: formState.items.map(item => ({
+          id: item.id || uuidv4(),
+          name: item.name,
+          quantity: item.quantity,
+          rate: item.rate
+        })),
         notes: formState.notes,
         expenses: formState.expenses,
-        totalAfterExpenses: calculateTotal(),
         brokerageType: formState.brokerageType,
         brokerageRate: formState.brokerageRate,
-        bags: formState.bags,
         party: formState.party,
+        // Required fields from Purchase type
+        netWeight: totalQuantity,
+        rate: weightedAverageRate,
+        quantity: totalQuantity,
+        totalAmount: totalAmount,
+        totalAfterExpenses: calculateTotal(),
+        bags: formState.items.reduce((sum, item) => sum + Math.ceil(item.quantity / 50), 0) // Assuming 50kg per bag
       };
 
-      onSubmit(purchaseData);
+      await onSubmit(purchaseData);
+      toast.success(initialValues ? 'Purchase updated successfully' : 'Purchase added successfully');
     } catch (error) {
       console.error('Error submitting purchase:', error);
+      toast.error('Failed to save purchase. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [formState, initialValues, onSubmit, calculateTotal]);
-
-  // Handle entity additions
-  const handleAgentAdded = useCallback((agent: any) => {
-    loadData();
-  }, [loadData]);
-
-  const handleTransporterAdded = useCallback((transporter: any) => {
-    loadData();
-  }, [loadData]);
-
-  // Handle brokerage changes
-  const handleBrokerageTypeChange = useCallback((type: string) => {
-    setFormState(prev => ({ ...prev, brokerageType: type }));
-  }, []);
-
-  const handleBrokerageRateChange = useCallback((value: number) => {
-    setFormState(prev => ({ ...prev, brokerageRate: value }));
-  }, []);
+  };
 
   // Calculate brokerage amount
   const brokerageAmount = formState.brokerageType === 'percentage'
     ? (calculateSubtotal() * formState.brokerageRate) / 100
     : formState.brokerageRate;
-  
+
   // Form methods for child components
   const formMethods: FormMethods = {
     handleInputChange,
@@ -156,30 +143,24 @@ export const useMultiItemPurchaseForm = ({
     agents,
     transporters,
     locations,
-    showAddAgentDialog,
-    setShowAddAgentDialog,
-    showAddTransporterDialog,
-    setShowAddTransporterDialog,
-    handleAgentAdded,
-    handleTransporterAdded,
-    handleBrokerageTypeChange,
-    handleBrokerageRateChange,
+    setShowAddAgentDialog: () => {}, // Implement if needed
+    setShowAddTransporterDialog: () => {}, // Implement if needed
+    handleAgentAdded: () => loadData(),
+    handleTransporterAdded: () => loadData(),
+    handleBrokerageTypeChange: (type: string) => {
+      setFormState(prev => ({ ...prev, brokerageType: type }));
+    },
+    handleBrokerageRateChange: (value: number) => {
+      setFormState(prev => ({ ...prev, brokerageRate: value }));
+    },
   };
 
   return {
     formState,
-    setFormState,
     isSubmitting,
     brokerageAmount,
     handleSubmit,
     formMethods,
-    formUtils,
-    handleInputChange,
-    handleSelectChange,
-    handleItemChange,
-    handleRemoveItem,
-    handleAddItem,
-    calculateSubtotal,
-    calculateTotal
+    formUtils
   };
 };
