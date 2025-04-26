@@ -16,7 +16,8 @@ export interface PurchaseFormState {
   totalAfterExpenses: number;
   brokerageType: string;
   brokerageRate: number;
-  bags: number; // Add bags property
+  bags: number;
+  party: string; // Added party property to match the interface
 }
 
 export const useFormState = (initialValues?: Purchase) => {
@@ -40,7 +41,8 @@ export const useFormState = (initialValues?: Purchase) => {
     totalAfterExpenses: initialValues?.totalAfterExpenses || 0,
     brokerageType: initialValues?.brokerageType || 'percentage',
     brokerageRate: initialValues?.brokerageRate || 1,
-    bags: initialValues?.bags || 0, // Initialize bags
+    bags: initialValues?.bags || 0,
+    party: initialValues?.party || '', // Initialize party with empty string if not provided
   });
 
   const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
