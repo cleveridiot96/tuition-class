@@ -17,16 +17,23 @@ export const useEnhancedSelect = (options: SelectOption[], value?: string) => {
   const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return options;
     
-    return options.filter(option => 
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return options.filter(option => {
+      // Add null/undefined check for option.label
+      const label = option.label || '';
+      const search = searchTerm.toLowerCase();
+      return label.toLowerCase().includes(search);
+    });
   }, [options, searchTerm]);
 
   // Check if input matches any option exactly
   const inputMatchesOption = React.useMemo(() => {
-    return options.some(option => 
-      option.label.toLowerCase() === searchTerm.toLowerCase()
-    );
+    if (!searchTerm) return false;
+    
+    return options.some(option => {
+      // Add null/undefined check for option.label
+      const label = option.label || '';
+      return label.toLowerCase() === searchTerm.toLowerCase();
+    });
   }, [options, searchTerm]);
 
   // Find similar options for suggestion
@@ -39,7 +46,7 @@ export const useEnhancedSelect = (options: SelectOption[], value?: string) => {
           option,
           similarity: stringSimilarity.compareTwoStrings(
             searchTerm.toLowerCase(),
-            option.label.toLowerCase()
+            (option.label || '').toLowerCase()
           )
         }));
         
