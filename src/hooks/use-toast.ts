@@ -1,16 +1,15 @@
 
-import { Toast, ToasterToast } from './toast/types';
-import { toast, dismissToast } from './toast/toast-utils';
-import { memoryState } from './toast/reducer';
-  
-export const useToast = () => {
+// Use toast from the toast module
+import { toast, dismiss } from './toast';
+
+// Extend the useToast hook to include the toast function
+export function useToast() {
   return {
     toast,
-    dismiss: dismissToast,
-    toasts: memoryState.toasts,
+    dismiss,
+    toasts: []
   };
-};
+}
 
-export { toast } from './toast/toast-utils';
-export { dismissToast as dismiss } from './toast/toast-utils';
-export { ToastProvider } from './toast/toast-context';
+// Re-export toast for convenience
+export { toast, dismiss };

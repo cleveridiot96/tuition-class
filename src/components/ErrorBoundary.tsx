@@ -40,6 +40,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Check for specific common errors
       const isToFixedError = this.state.error?.message.includes('toFixed is not a function');
+      const isTypeError = this.state.error instanceof TypeError;
 
       return (
         <div className="p-4 border border-red-300 rounded-md bg-red-50 text-red-800">
