@@ -19,7 +19,7 @@ export const useEntityData = () => {
       const formattedSuppliers = suppliersData.map(supplier => ({
         id: supplier.id,
         name: supplier.name,
-        value: supplier.name,
+        value: supplier.id,  // Changed from supplier.name to supplier.id for consistency
         label: supplier.name
       }));
       
@@ -50,8 +50,8 @@ export const useEntityData = () => {
     // Load data initially
     loadData();
     
-    // Set up an interval to refresh data every second
-    const refreshInterval = setInterval(loadData, 1000);
+    // Set up an interval to refresh data every 3 seconds (increased from 1 second)
+    const refreshInterval = setInterval(loadData, 3000);
     
     // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);
