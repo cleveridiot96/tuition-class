@@ -23,18 +23,6 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
 
-  // Transform suppliers array to options format required by EnhancedSearchableSelect
-  const supplierOptions = partyManagement.suppliers.map(supplier => ({
-    value: supplier.name,
-    label: supplier.name
-  }));
-
-  // Transform agents array to options format required by EnhancedSearchableSelect
-  const agentOptions = partyManagement.agents.map(agent => ({
-    value: agent.id,
-    label: agent.name
-  }));
-
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
       <h3 className="text-lg font-medium mb-4 text-blue-800">Party Details</h3>
@@ -58,7 +46,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
-                  options={supplierOptions}
+                  options={partyManagement.suppliers}
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
@@ -94,7 +82,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
-                  options={agentOptions}
+                  options={partyManagement.agents}
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : ""}

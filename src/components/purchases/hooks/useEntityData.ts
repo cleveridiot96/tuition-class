@@ -15,10 +15,32 @@ export const useEntityData = () => {
       const transportersData = getTransporters().filter(t => !t.isDeleted) || [];
       const agentsData = getAgents().filter(a => !a.isDeleted) || [];
       
-      // Update state with fetched data
-      setSuppliers(suppliersData);
-      setTransporters(transportersData);
-      setAgents(agentsData);
+      // Format data to match EnhancedSearchableSelect requirements
+      const formattedSuppliers = suppliersData.map(supplier => ({
+        id: supplier.id,
+        name: supplier.name,
+        value: supplier.name,
+        label: supplier.name
+      }));
+      
+      const formattedTransporters = transportersData.map(transporter => ({
+        id: transporter.id,
+        name: transporter.name,
+        value: transporter.id,
+        label: transporter.name
+      }));
+      
+      const formattedAgents = agentsData.map(agent => ({
+        id: agent.id,
+        name: agent.name,
+        value: agent.id,
+        label: agent.name
+      }));
+      
+      // Update state with formatted data
+      setSuppliers(formattedSuppliers);
+      setTransporters(formattedTransporters);
+      setAgents(formattedAgents);
     } catch (error) {
       console.error("Error loading entity data:", error);
     }
