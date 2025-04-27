@@ -23,11 +23,13 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
 
+  // Transform suppliers array to options format required by EnhancedSearchableSelect
   const supplierOptions = partyManagement.suppliers.map(supplier => ({
     value: supplier.name,
     label: supplier.name
   }));
 
+  // Transform agents array to options format required by EnhancedSearchableSelect
   const agentOptions = partyManagement.agents.map(agent => ({
     value: agent.id,
     label: agent.name
@@ -57,7 +59,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               <FormControl>
                 <EnhancedSearchableSelect 
                   options={supplierOptions}
-                  {...field}
+                  value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
                   placeholder="Select or add party"
@@ -93,7 +95,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               <FormControl>
                 <EnhancedSearchableSelect 
                   options={agentOptions}
-                  {...field}
+                  value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
                   placeholder="Select or add agent"

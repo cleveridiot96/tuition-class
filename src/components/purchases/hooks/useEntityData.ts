@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { getSuppliers, getTransporters, getAgents, getLocations } from '@/services/storageService';
+import { getSuppliers, getTransporters, getAgents } from '@/services/storageService';
 
 export const useEntityData = () => {
   const [suppliers, setSuppliers] = useState<any[]>([]);
@@ -9,16 +9,29 @@ export const useEntityData = () => {
   const [locations] = useState<string[]>(['Mumbai', 'Chiplun', 'Sawantwadi']);
 
   const loadData = () => {
-    // Only include non-deleted entities
-    setSuppliers(getSuppliers().filter(s => !s.isDeleted) || []);
-    setTransporters(getTransporters().filter(t => !t.isDeleted) || []);
-    setAgents(getAgents().filter(a => !a.isDeleted) || []);
+    try {
+      // Get master data and filter out deleted entities
+      const suppliersData = getSuppliers().filter(s => !s.isDeleted) || [];
+      const transportersData = getTransporters().filter(t => !t.isDeleted) || [];
+      const agentsData = getAgents().filter(a => !a.isDeleted) || [];
+      
+      // Update state with fetched data
+      setSuppliers(suppliersData);
+      setTransporters(transportersData);
+      setAgents(agentsData);
+    } catch (error) {
+      console.error("Error loading entity data:", error);
+    }
   };
 
   useEffect(() => {
+    // Load data initially
     loadData();
-    // Refresh data every second to catch updates from master data
+    
+    // Set up an interval to refresh data every second
     const refreshInterval = setInterval(loadData, 1000);
+    
+    // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);
   }, []);
 
