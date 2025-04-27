@@ -1,82 +1,73 @@
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import * as React from "react";
 import { SelectOption } from "./types";
-import { calculateSimilarity } from "./utils";
+import { stringSimilarity } from 'string-similarity';
 
-export const useEnhancedSelect = (options: SelectOption[], value: string) => {
-  const [open, setOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [optionsCache, setOptionsCache] = useState<SelectOption[]>(options);
-  const [cachedValue, setCachedValue] = useState<string>(value);
+export const useEnhancedSelect = (options: SelectOption[], value?: string) => {
+  const [open, setOpen] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState("");
+  const [suggestedMatch, setSuggestedMatch] = React.useState<string | null>(null);
 
-  // Update options cache when options change
-  useEffect(() => {
-    const optionsChanged = JSON.stringify(options) !== JSON.stringify(optionsCache);
-    if (optionsChanged) {
-      setOptionsCache(options);
-    }
-  }, [options, optionsCache]);
+  // Find the currently selected option
+  const selectedOption = React.useMemo(() => {
+    return options.find(option => option.value === value);
+  }, [options, value]);
 
-  // Reset search when value changes externally
-  useEffect(() => {
-    if (value !== cachedValue) {
-      setSearchTerm("");
-      setCachedValue(value);
-    }
-  }, [value, cachedValue]);
-
-  const filteredOptions = useMemo(() => {
+  // Filter options based on search term
+  const filteredOptions = React.useMemo(() => {
     if (!searchTerm) return options;
     
-    const lowerSearchTerm = searchTerm.toLowerCase();
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(lowerSearchTerm)
+    return options.filter(option => 
+      option.label.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [options, searchTerm]);
 
-  const inputMatchesOption = useMemo(() => {
-    if (!searchTerm) return false;
-    return options.some(
-      (option) => option.label.toLowerCase() === searchTerm.toLowerCase()
+  // Check if input matches any option exactly
+  const inputMatchesOption = React.useMemo(() => {
+    return options.some(option => 
+      option.label.toLowerCase() === searchTerm.toLowerCase()
     );
   }, [options, searchTerm]);
 
-  const suggestedMatch = useMemo(() => {
-    if (!searchTerm || inputMatchesOption || filteredOptions.length > 0) return null;
-    
-    const mostSimilarOption = options.reduce(
-      (closest, current) => {
-        const currentSimilarity = calculateSimilarity(
-          searchTerm.toLowerCase(),
-          current.label.toLowerCase()
-        );
-        if (currentSimilarity > closest.similarity) {
-          return { option: current, similarity: currentSimilarity };
+  // Find similar options for suggestion
+  React.useEffect(() => {
+    // Only suggest if there are no exact matches and the search term is at least 2 chars
+    if (searchTerm.length > 1 && !inputMatchesOption && options.length > 0) {
+      try {
+        // Find the closest match
+        const matches = options.map(option => ({
+          option,
+          similarity: stringSimilarity.compareTwoStrings(
+            searchTerm.toLowerCase(),
+            option.label.toLowerCase()
+          )
+        }));
+        
+        const bestMatch = matches.sort((a, b) => b.similarity - a.similarity)[0];
+        
+        // Only suggest if the similarity is above a threshold
+        if (bestMatch && bestMatch.similarity > 0.4) {
+          setSuggestedMatch(bestMatch.option.label);
+        } else {
+          setSuggestedMatch(null);
         }
-        return closest;
-      },
-      { option: null as SelectOption | null, similarity: 0 }
-    );
-
-    if (mostSimilarOption.similarity > 0.6) {
-      return mostSimilarOption.option?.label || null;
+      } catch (error) {
+        console.error("Error calculating string similarity:", error);
+        setSuggestedMatch(null);
+      }
+    } else {
+      setSuggestedMatch(null);
     }
-    
-    return null;
-  }, [searchTerm, inputMatchesOption, filteredOptions, options]);
-
-  const selectedOption = useMemo(() => {
-    return options.find((option) => option.value === value);
-  }, [options, value]);
+  }, [searchTerm, options, inputMatchesOption]);
 
   return {
     open,
     setOpen,
     searchTerm,
     setSearchTerm,
-    filteredOptions,
     suggestedMatch,
+    filteredOptions,
     inputMatchesOption,
-    selectedOption,
+    selectedOption
   };
 };

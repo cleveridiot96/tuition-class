@@ -1,10 +1,12 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card } from "@/components/ui/card";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import SalesFormContent from "./sales-form/SalesFormContent";
 import { useSalesFormLogic } from "./sales-form/useSalesFormLogic";
 import { toast } from "sonner";
+import { safeNumber } from "@/lib/utils";
 
 // This component only handles the callback and manages separation of logic/content
 interface SalesFormProps {
@@ -13,7 +15,7 @@ interface SalesFormProps {
   onPrint?: () => void;
 }
 
-const SalesForm: React.FC<SalesFormProps> = ({ onSubmit, initialData, onPrint }) => {
+const SalesFormInner: React.FC<SalesFormProps> = ({ onSubmit, initialData, onPrint }) => {
   const {
     form,
     inventory,
@@ -33,21 +35,41 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSubmit, initialData, onPrint })
 
   // Submission is delegated here, then calls parent with data:
   const handleFormSubmit = (formData: any) => {
-    const subtotal = formData.quantity * formData.rate;
-    const totalAmount = subtotal + formData.transportCost + formData.brokerageAmount;
-    const billAmount = formData.billAmount !== null ? formData.billAmount : totalAmount;
-    const salesData = {
-      ...formData,
-      id: initialData?.id || `sale-${Date.now()}`,
-      totalAmount,
-      billAmount,
-      customer: customers.find((c) => c.id === formData.customerId)?.name,
-      broker: brokers.find((b) => b.id === formData.brokerId)?.name,
-      transporter: transporters.find((t) => t.id === formData.transporterId)?.name
-    };
-    
-    toast.success(initialData ? "Sale updated successfully" : "Sale added successfully");
-    onSubmit(salesData);
+    try {
+      // Safely convert all values to numbers to prevent NaN errors
+      const quantity = safeNumber(formData.quantity);
+      const rate = safeNumber(formData.rate);
+      const transportCost = safeNumber(formData.transportCost, 0);
+      const brokerageAmount = safeNumber(formData.brokerageAmount, 0);
+      
+      const subtotal = quantity * rate;
+      const totalAmount = subtotal + transportCost + brokerageAmount;
+      const billAmount = formData.billAmount !== null ? safeNumber(formData.billAmount) : totalAmount;
+      
+      const salesData = {
+        ...formData,
+        // Ensure all numeric fields are proper numbers
+        quantity: quantity,
+        rate: rate,
+        netWeight: safeNumber(formData.netWeight),
+        transportCost: transportCost,
+        brokerageAmount: brokerageAmount,
+        totalAmount: totalAmount,
+        billAmount: billAmount,
+        // Add required fields
+        id: initialData?.id || `sale-${Date.now()}`,
+        customer: customers.find((c) => c.id === formData.customerId)?.name || "Unknown Customer",
+        broker: brokers.find((b) => b.id === formData.brokerId)?.name || null,
+        transporter: transporters.find((t) => t.id === formData.transporterId)?.name || null,
+        salesBroker: brokers.find((b) => b.id === formData.brokerId)?.name || null
+      };
+      
+      toast.success(initialData ? "Sale updated successfully" : "Sale added successfully");
+      onSubmit(salesData);
+    } catch (error) {
+      console.error("Error processing form data:", error);
+      toast.error("Error processing sale data. Please check your inputs.");
+    }
   };
 
   return (
@@ -80,6 +102,28 @@ const SalesForm: React.FC<SalesFormProps> = ({ onSubmit, initialData, onPrint })
         </div>
       </ScrollArea>
     </Card>
+  );
+};
+
+// Wrap the form with an error boundary
+const SalesForm: React.FC<SalesFormProps> = (props) => {
+  return (
+    <ErrorBoundary 
+      fallback={
+        <div className="p-6 bg-white rounded-lg border border-red-200">
+          <h3 className="text-lg font-medium text-red-600">Something went wrong</h3>
+          <p className="mt-2 text-gray-600">There was an error loading the sales form. Please try again.</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Reload
+          </button>
+        </div>
+      }
+    >
+      <SalesFormInner {...props} />
+    </ErrorBoundary>
   );
 };
 

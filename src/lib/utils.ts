@@ -118,3 +118,48 @@ export const safeArrayUtils = {
     }
   }
 };
+
+/**
+ * Safe number formatter to prevent toFixed() errors
+ */
+export function safeNumberFormat(value: any, decimals = 2, fallback = '0.00'): string {
+  // Check if value is a valid number
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  
+  // Convert to number if it's a string
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  // Check if it's a valid number after conversion
+  if (isNaN(numValue) || typeof numValue !== 'number') {
+    return fallback;
+  }
+  
+  try {
+    return numValue.toFixed(decimals);
+  } catch (e) {
+    console.error("Error formatting number:", e);
+    return fallback;
+  }
+}
+
+/**
+ * Safe number conversion for calculations
+ */
+export function safeNumber(value: any, fallback = 0): number {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  
+  if (typeof value === 'number' && !isNaN(value)) {
+    return value;
+  }
+  
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? fallback : parsed;
+  }
+  
+  return fallback;
+}

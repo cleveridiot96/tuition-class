@@ -67,7 +67,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
     { value: "", label: "None" },
     ...brokers.map(b => ({ 
       value: b.id, 
-      label: `${b.name} (${b.commissionRate}%)` 
+      label: `${b.name} (${b.commissionRate || 0}%)` 
     }))
   ];
 
@@ -159,7 +159,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
                   max={maxQuantity}
                   onChange={(e) => {
                     const value = parseInt(e.target.value, 10) || 0;
-                    const limitedValue = Math.min(value, maxQuantity || 0);
+                    const limitedValue = Math.min(value, maxQuantity || Infinity);
                     field.onChange(limitedValue);
 
                     if (selectedLot) {
@@ -167,6 +167,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
                       form.setValue("netWeight", limitedValue * weightPerUnit);
                     }
                   }}
+                  value={field.value || 0}
                 />
               </FormControl>
               <FormMessage />
@@ -180,7 +181,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
             <FormItem>
               <FormLabel>Net Weight (kg)</FormLabel>
               <FormControl>
-                <Input type="number" {...field} readOnly />
+                <Input type="number" {...field} readOnly value={field.value || 0} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -193,7 +194,12 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
             <FormItem>
               <FormLabel>Rate (per kg)</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" {...field} />
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  {...field} 
+                  value={field.value || 0} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -220,7 +226,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
           <FormItem>
             <FormLabel>Notes</FormLabel>
             <FormControl>
-              <Input {...field} />
+              <Input {...field} value={field.value || ""} />
             </FormControl>
             <FormMessage />
           </FormItem>

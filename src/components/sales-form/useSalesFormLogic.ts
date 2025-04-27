@@ -1,44 +1,35 @@
 
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+import { z } from "zod";
+import { toast } from "sonner";
 import { getInventory, getCustomers, getBrokers, getTransporters } from "@/services/storageService";
 
-// Define form schema
+// Define the schema with validation rules
 const salesFormSchema = z.object({
   date: z.string().min(1, "Date is required"),
   lotNumber: z.string().min(1, "Lot number is required"),
   customerId: z.string().min(1, "Customer is required"),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  netWeight: z.coerce.number().min(1, "Net weight is required"),
-  rate: z.coerce.number().min(1, "Rate is required"),
+  quantity: z.number().min(1, "Quantity must be at least 1"),
+  netWeight: z.number().min(0, "Net weight is required"),
+  rate: z.number().min(0, "Rate is required"),
   transporterId: z.string().optional(),
-  transportCost: z.coerce.number().default(0),
+  transportCost: z.union([z.number(), z.string()]).optional(),
   brokerId: z.string().optional(),
-  brokerageAmount: z.coerce.number().default(0),
-  notes: z.string().optional(),
+  brokerageAmount: z.union([z.number(), z.string(), z.null()]).optional(),
   billNumber: z.string().optional(),
-  billAmount: z.coerce.number().nullable().optional(),
+  billAmount: z.union([z.number(), z.string(), z.null()]).optional(),
+  notes: z.string().optional()
 });
 
-type SalesFormData = z.infer<typeof salesFormSchema>;
-
-export const useSalesFormLogic = (initialData?: any) => {
-  const [inventory, setInventory] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [brokers, setBrokers] = useState<any[]>([]);
-  const [transporters, setTransporters] = useState<any[]>([]);
-  const [selectedLot, setSelectedLot] = useState<any>(null);
-  const [selectedBroker, setSelectedBroker] = useState<any>(null);
-  const [maxQuantity, setMaxQuantity] = useState<number>(0);
-  const [isCutBill, setIsCutBill] = useState<boolean>(false);
-
-  const form = useForm<SalesFormData>({
+export const useSalesFormLogic = (initialData: any) => {
+  // Setup form with default values
+  const form = useForm({
     resolver: zodResolver(salesFormSchema),
+    mode: "onSubmit", // Only validate on submit, not on change
     defaultValues: {
-      date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
+      date: initialData?.date || new Date().toISOString().split("T")[0],
       lotNumber: initialData?.lotNumber || "",
       customerId: initialData?.customerId || "",
       quantity: initialData?.quantity || 0,
@@ -48,135 +39,103 @@ export const useSalesFormLogic = (initialData?: any) => {
       transportCost: initialData?.transportCost || 0,
       brokerId: initialData?.brokerId || "",
       brokerageAmount: initialData?.brokerageAmount || 0,
-      notes: initialData?.notes || "",
       billNumber: initialData?.billNumber || "",
       billAmount: initialData?.billAmount || null,
-    },
+      notes: initialData?.notes || ""
+    }
   });
 
-  useEffect(() => {
-    const loadInventory = () => {
-      const inventoryData = getInventory() || [];
-      const availableItems = inventoryData.filter(
-        (item) => !item.isDeleted && item.remainingQuantity > 0
-      );
-      setInventory(availableItems);
-    };
-
-    const loadCustomers = () => {
-      const customersData = getCustomers() || [];
-      setCustomers(customersData);
-    };
-
-    const loadBrokers = () => {
-      const brokersData = getBrokers() || [];
-      setBrokers(brokersData);
-    };
-
-    const loadTransporters = () => {
-      const transportersData = getTransporters() || [];
-      setTransporters(transportersData);
-    };
-
-    loadInventory();
-    loadCustomers();
-    loadBrokers();
-    loadTransporters();
-
-    if (initialData?.lotNumber) {
-      const lot = getInventory()?.find(
-        (item) => item.lotNumber === initialData.lotNumber
-      );
-      if (lot) {
-        setSelectedLot(lot);
-        setMaxQuantity(lot.remainingQuantity + (initialData.quantity || 0));
-      }
-    }
-
-    if (initialData?.brokerId) {
-      const broker = getBrokers()?.find(
-        (b) => b.id === initialData.brokerId
-      );
-      if (broker) {
-        setSelectedBroker(broker);
-      }
-    }
-    if (initialData?.billAmount) {
-      setIsCutBill(true);
-    }
-  }, [initialData]);
-
-  useEffect(() => {
-    if (!selectedLot) return;
-    form.setValue("netWeight", form.getValues("quantity") * (selectedLot.netWeight / selectedLot.quantity));
-    if (!initialData || form.getValues("rate") === 0) {
-      form.setValue("rate", selectedLot.rate || 0);
-    }
-    // eslint-disable-next-line
-  }, [selectedLot, form.watch("quantity")]);
-
-  useEffect(() => {
-    const quantity = form.watch("quantity");
-    const rate = form.watch("rate");
-    const transportCost = form.watch("transportCost");
-    const brokerageAmount = form.watch("brokerageAmount");
-    const totalAmount = (quantity * rate) + transportCost + brokerageAmount;
-    if (!isCutBill && form.getValues("billAmount") !== totalAmount) {
-      form.setValue("billAmount", totalAmount);
-    }
-    // eslint-disable-next-line
-  }, [
-    form.watch("quantity"),
-    form.watch("rate"),
-    form.watch("transportCost"),
-    form.watch("brokerageAmount"),
-    isCutBill
-  ]);
+  // State for data and selected items
+  const [inventory, setInventory] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [brokers, setBrokers] = useState<any[]>([]);
+  const [transporters, setTransporters] = useState<any[]>([]);
+  const [selectedLot, setSelectedLot] = useState<any>(null);
+  const [selectedBroker, setSelectedBroker] = useState<any>(null);
+  const [maxQuantity, setMaxQuantity] = useState<number>(0);
+  const [isCutBill, setIsCutBill] = useState<boolean>(initialData?.billAmount !== null && initialData?.billAmount !== undefined);
   
+  // Load data on mount
   useEffect(() => {
-    if (selectedBroker) {
-      const subtotal = form.getValues("quantity") * form.getValues("rate");
-      const brokerageAmount = (subtotal * selectedBroker.commissionRate) / 100;
+    try {
+      const loadedInventory = getInventory() || [];
+      const loadedCustomers = getCustomers() || [];
+      const loadedBrokers = getBrokers() || [];
+      const loadedTransporters = getTransporters() || [];
+      
+      setInventory(loadedInventory);
+      setCustomers(loadedCustomers);
+      setBrokers(loadedBrokers);
+      setTransporters(loadedTransporters);
+      
+      // If initialData exists, set selected items
+      if (initialData) {
+        if (initialData.lotNumber) {
+          const lot = loadedInventory.find(i => i.lotNumber === initialData.lotNumber);
+          if (lot) {
+            setSelectedLot(lot);
+            setMaxQuantity(initialData.quantity || lot.remainingQuantity);
+          }
+        }
+        
+        if (initialData.brokerId) {
+          const broker = loadedBrokers.find(b => b.id === initialData.brokerId);
+          if (broker) {
+            setSelectedBroker(broker);
+            form.setValue("brokerageAmount", initialData.brokerageAmount || 0);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      toast.error("Failed to load data. Please refresh the page.");
+    }
+  }, []);
+  
+  // Handle lot change
+  const handleLotChange = (lotNumber: string) => {
+    form.setValue("lotNumber", lotNumber);
+    
+    const lot = inventory.find(item => item.lotNumber === lotNumber);
+    if (lot) {
+      setSelectedLot(lot);
+      setMaxQuantity(lot.remainingQuantity);
+      form.setValue("quantity", Math.min(form.getValues("quantity") || 0, lot.remainingQuantity));
+      form.setValue("netWeight", lot.netWeightPerUnit ? (lot.netWeightPerUnit * form.getValues("quantity")) : 0);
+    } else {
+      setSelectedLot(null);
+      setMaxQuantity(0);
+      form.setValue("netWeight", 0);
+    }
+  };
+  
+  // Handle broker change
+  const handleBrokerChange = (brokerId: string) => {
+    form.setValue("brokerId", brokerId);
+    
+    const broker = brokers.find(b => b.id === brokerId);
+    setSelectedBroker(broker || null);
+    
+    if (broker && broker.commissionRate) {
+      const subtotal = (form.getValues("quantity") || 0) * (form.getValues("rate") || 0);
+      const brokerageAmount = (subtotal * broker.commissionRate) / 100;
       form.setValue("brokerageAmount", brokerageAmount);
     } else {
       form.setValue("brokerageAmount", 0);
     }
-    // eslint-disable-next-line
-  }, [selectedBroker, form.watch("quantity"), form.watch("rate")]);
-
-  const handleLotChange = (lotNumber: string) => {
-    const lot = inventory.find((item) => item.lotNumber === lotNumber);
-    if (lot) {
-      setSelectedLot(lot);
-      setMaxQuantity(lot.remainingQuantity);
-      form.setValue("lotNumber", lotNumber);
-      const newQuantity = Math.min(1, lot.remainingQuantity);
-      form.setValue("quantity", newQuantity);
-      const weightPerUnit = lot.netWeight / lot.quantity;
-      form.setValue("netWeight", newQuantity * weightPerUnit);
-    }
   };
-
-  const handleBrokerChange = (brokerId: string) => {
-    form.setValue("brokerId", brokerId);
-    if (brokerId) {
-      const broker = brokers.find((b) => b.id === brokerId);
-      setSelectedBroker(broker);
-    } else {
-      setSelectedBroker(null);
-      form.setValue("brokerageAmount", 0);
-    }
-  };
-
-  const handleBillAmountToggle = (enableCustomAmount: boolean) => {
-    setIsCutBill(enableCustomAmount);
-    if (!enableCustomAmount) {
-      const quantity = form.getValues("quantity");
-      const rate = form.getValues("rate");
-      const transportCost = form.getValues("transportCost");
-      const brokerageAmount = form.getValues("brokerageAmount");
-      const calculatedTotal = (quantity * rate) + transportCost + brokerageAmount;
-      form.setValue("billAmount", calculatedTotal);
+  
+  // Handle bill amount toggle
+  const handleBillAmountToggle = (enabled: boolean) => {
+    setIsCutBill(enabled);
+    if (!enabled) {
+      form.setValue("billAmount", null);
+    } else if (enabled && !form.getValues("billAmount")) {
+      // If enabling cut bill and no amount is set, default to calculated total
+      const subtotal = (form.getValues("quantity") || 0) * (form.getValues("rate") || 0);
+      const transportCost = form.getValues("transportCost") || 0;
+      const brokerageAmount = form.getValues("brokerageAmount") || 0;
+      form.setValue("billAmount", subtotal + transportCost + brokerageAmount);
     }
   };
 
@@ -193,6 +152,5 @@ export const useSalesFormLogic = (initialData?: any) => {
     handleLotChange,
     handleBrokerChange,
     handleBillAmountToggle,
-    setIsCutBill,
   };
 };
