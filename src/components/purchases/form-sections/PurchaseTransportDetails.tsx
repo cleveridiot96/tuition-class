@@ -1,159 +1,97 @@
 
-import React, { useState } from "react";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import React from "react";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
-import { addToMasterList } from "@/services/masterOperations";
 import { Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
+import { useAddToMaster } from "@/hooks/useAddToMaster";
 
 interface PurchaseTransportDetailsProps {
   form: any;
   formSubmitted?: boolean;
+  partyManagement: any;
 }
 
 const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
   form,
-  formSubmitted = false
+  formSubmitted = false,
+  partyManagement
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
-  const [transporters, setTransporters] = useState<any[]>([]);
-  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
-  const [newTransporterName, setNewTransporterName] = useState('');
-  
-  // Load transporters
-  React.useEffect(() => {
-    const fetchTransporters = async () => {
-      try {
-        // Import using dynamic import to avoid circular dependencies
-        const storageService = await import('@/services/storageService');
-        const data = storageService.getTransporters() || [];
-        setTransporters(data.filter((t: any) => !t.isDeleted));
-      } catch (error) {
-        console.error("Error loading transporters:", error);
-      }
-    };
-    
-    fetchTransporters();
-  }, [showAddTransporterDialog]);
-  
-  const transporterOptions = [
-    { value: "", label: "None" },
-    ...transporters.map(transporter => ({
-      value: transporter.id,
-      label: transporter.name
-    }))
-  ];
-  
-  const handleAddNewTransporter = () => {
-    if (!newTransporterName.trim()) {
-      toast.error('Transporter name is required');
-      return;
-    }
-    
-    const result = addToMasterList('transporter', { 
-      name: newTransporterName.trim(),
-      type: 'transporter'
-    });
-    
-    if (result) {
-      setNewTransporterName('');
-      setShowAddTransporterDialog(false);
-      toast.success('New transporter added successfully');
-    }
+  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
+
+  const handleAddTransporter = () => {
+    confirmAddToMaster('', (value) => {
+      partyManagement.loadData();
+    }, "transporter");
+  };
+
+  const handleTransporterAddNew = (name: string): string => {
+    confirmAddToMaster(name, (value) => {
+      partyManagement.loadData();
+    }, "transporter");
+    return "";
   };
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
-      <h3 className="text-lg font-medium mb-4 text-blue-800">Transport Details</h3>
+      <h3 className="text-lg font-medium mb-4 text-blue-800">Transport Details (Optional)</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
           name="transporterId"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
-              <div className="flex justify-between">
-                <FormLabel>Transporter</FormLabel>
-                <Button
-                  type="button"
-                  variant="ghost"
+              <FormLabel className="flex justify-between items-center">
+                Transporter
+                <Button 
+                  type="button" 
+                  variant="ghost" 
                   size="sm"
-                  onClick={() => setShowAddTransporterDialog(true)}
+                  onClick={handleAddTransporter}
                   className="h-6 px-2 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> Add
                 </Button>
-              </div>
+              </FormLabel>
               <FormControl>
-                <EnhancedSearchableSelect
-                  options={transporterOptions}
+                <EnhancedSearchableSelect 
+                  options={partyManagement.transporters}
                   value={field.value}
                   onValueChange={field.onChange}
-                  placeholder="Select transporter"
-                  className="w-full"
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  placeholder="Select or add transporter"
+                  masterType="transporter"
+                  onAddNew={handleTransporterAddNew}
                 />
               </FormControl>
-              {showErrors && form.formState.errors.transporterId && (
-                <FormMessage>{form.formState.errors.transporterId.message}</FormMessage>
-              )}
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
-
+        
         <FormField
           control={form.control}
-          name="transportRate"
-          render={({ field }) => (
+          name="transportCost"
+          render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Transport Rate (₹/kg)</FormLabel>
+              <FormLabel>Transport Cost (₹)</FormLabel>
               <FormControl>
                 <Input 
-                  type="number" 
-                  {...field}
-                  value={field.value || ''}
+                  type="number"
                   step="0.01"
+                  placeholder="0.00"
+                  {...field}
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
                 />
               </FormControl>
-              {showErrors && form.formState.errors.transportRate && (
-                <FormMessage>{form.formState.errors.transportRate.message}</FormMessage>
-              )}
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
       </div>
-      
-      {/* Add Transporter Dialog */}
-      <Dialog open={showAddTransporterDialog} onOpenChange={setShowAddTransporterDialog}>
-        <DialogContent className="bg-white">
-          <DialogHeader>
-            <DialogTitle>Add New Transporter</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <FormLabel>Transporter Name</FormLabel>
-              <Input
-                value={newTransporterName}
-                onChange={(e) => setNewTransporterName(e.target.value)}
-                placeholder="Enter transporter name"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowAddTransporterDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddNewTransporter}>Add Transporter</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <AddToMasterDialog />
     </div>
   );
 };

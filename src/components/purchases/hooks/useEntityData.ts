@@ -33,7 +33,7 @@ export const useEntityData = () => {
       const formattedAgents = agentsData.map(agent => ({
         id: agent.id,
         name: agent.name,
-        value: agent.name, // Using name for validation like Google Sheets
+        value: agent.id, // Using ID for agents since we need to store agent ID
         label: `${agent.name}${agent.commissionRate ? ` (${agent.commissionRate}%)` : ''}`
       }));
       

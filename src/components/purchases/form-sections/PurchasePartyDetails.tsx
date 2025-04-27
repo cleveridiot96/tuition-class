@@ -4,16 +4,12 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { useAddToMaster } from "@/hooks/useAddToMaster";
 
 interface PurchasePartyDetailsProps {
   form: any;
   formSubmitted?: boolean;
-  partyManagement: {
-    suppliers: any[];
-    agents: any[];
-    handleAddParty: (type: string) => void;
-    handleAddAgent: () => void;
-  };
+  partyManagement: any;
 }
 
 const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
@@ -22,6 +18,41 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
   partyManagement
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
+  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
+
+  const handleAddParty = () => {
+    confirmAddToMaster('', (value) => {
+      if (value) {
+        form.setValue("party", value);
+      }
+    }, "supplier");
+  };
+
+  const handleAddAgent = () => {
+    confirmAddToMaster('', (value) => {
+      // After agent is added, we need to refresh the data and find the new agent's ID
+      if (value) {
+        partyManagement.suppliers.loadData();
+        // The actual agent selection will happen when the data is refreshed
+      }
+    }, "agent");
+  };
+
+  const handleSupplierAddNew = (name: string): string => {
+    confirmAddToMaster(name, (value) => {
+      if (value) {
+        form.setValue("party", value);
+      }
+    }, "supplier");
+    return "";
+  };
+
+  const handleAgentAddNew = (name: string): string => {
+    confirmAddToMaster(name, (value) => {
+      partyManagement.suppliers.loadData();
+    }, "agent");
+    return "";
+  };
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
@@ -38,7 +69,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   type="button" 
                   variant="ghost" 
                   size="sm"
-                  onClick={() => partyManagement.handleAddParty('supplier')}
+                  onClick={handleAddParty}
                   className="h-6 px-2 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> Add
@@ -52,10 +83,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
                   placeholder="Select or add party"
                   masterType="supplier"
-                  onAddNew={(name) => {
-                    partyManagement.handleAddParty('supplier');
-                    return name;
-                  }}
+                  onAddNew={handleSupplierAddNew}
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}
@@ -74,7 +102,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   type="button" 
                   variant="ghost" 
                   size="sm"
-                  onClick={partyManagement.handleAddAgent}
+                  onClick={handleAddAgent}
                   className="h-6 px-2 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> Add
@@ -88,10 +116,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
                   placeholder="Select or add agent"
                   masterType="agent"
-                  onAddNew={(name) => {
-                    partyManagement.handleAddAgent();
-                    return name;
-                  }}
+                  onAddNew={handleAgentAddNew}
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}
@@ -99,6 +124,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           )}
         />
       </div>
+      <AddToMasterDialog />
     </div>
   );
 };

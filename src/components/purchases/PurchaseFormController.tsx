@@ -15,8 +15,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   
   // Setup party management
   const partyManagement = usePartyManagement({ 
-    form: purchaseForm.form, 
-    loadData: entityData.loadData 
+    form: purchaseForm.form
   });
 
   // Ensure expenses is always a string for the view
