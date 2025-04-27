@@ -4,6 +4,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import EnhancedErrorBoundary from "@/components/EnhancedErrorBoundary";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { ContextMenuProvider } from "@/components/custom-context-menu/context-menu-context";
 import Index from '@/pages/Index';
@@ -38,36 +39,38 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
-      <ErrorBoundary>
-        <ContextMenuProvider>
-          <KeyboardShortcutsProvider>
-            <div className="min-h-screen w-full flex flex-col">
-              <RippleProvider>
-                <div className="flex-1 overflow-auto">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/agents" element={<Agents />} />
-                    <Route path="/calculator" element={<Calculator />} />
-                    <Route path="/cash-book" element={<CashBook />} />
-                    <Route path="/inventory" element={<Inventory />} />
-                    <Route path="/location-transfer" element={<LocationTransferPage />} />
-                    <Route path="/ledger" element={<Ledger />} />
-                    <Route path="/master" element={<Master />} />
-                    <Route path="/payments" element={<Payments />} />
-                    <Route path="/purchases" element={<Purchases />} />
-                    <Route path="/receipts" element={<Receipts />} />
-                    <Route path="/sales" element={<Sales />} />
-                    <Route path="/stock" element={<Stock />} />
-                    <Route path="/transport" element={<Transport />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-              </RippleProvider>
-              <Toaster />
-            </div>
-          </KeyboardShortcutsProvider>
-        </ContextMenuProvider>
-      </ErrorBoundary>
+      <EnhancedErrorBoundary>
+        <ErrorBoundary>
+          <ContextMenuProvider>
+            <KeyboardShortcutsProvider>
+              <div className="min-h-screen w-full flex flex-col">
+                <RippleProvider>
+                  <div className="flex-1 overflow-auto">
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/agents" element={<Agents />} />
+                      <Route path="/calculator" element={<Calculator />} />
+                      <Route path="/cash-book" element={<CashBook />} />
+                      <Route path="/inventory" element={<Inventory />} />
+                      <Route path="/location-transfer" element={<LocationTransferPage />} />
+                      <Route path="/ledger" element={<Ledger />} />
+                      <Route path="/master" element={<Master />} />
+                      <Route path="/payments" element={<Payments />} />
+                      <Route path="/purchases" element={<Purchases />} />
+                      <Route path="/receipts" element={<Receipts />} />
+                      <Route path="/sales" element={<Sales />} />
+                      <Route path="/stock" element={<Stock />} />
+                      <Route path="/transport" element={<Transport />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </div>
+                </RippleProvider>
+                <Toaster />
+              </div>
+            </KeyboardShortcutsProvider>
+          </ContextMenuProvider>
+        </ErrorBoundary>
+      </EnhancedErrorBoundary>
     </ThemeProvider>
   );
 };

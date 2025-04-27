@@ -1,3 +1,4 @@
+
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
@@ -38,6 +39,8 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
       errorSource = 'react-router';
     } else if (errorMessage.includes('useState') || errorMessage.includes('useEffect')) {
       errorSource = 'react-hooks';
+    } else if (errorMessage.includes('toFixed is not a function')) {
+      errorSource = 'number-format';
     }
     
     return {
@@ -73,9 +76,10 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
     });
     
     // Force a hard refresh for certain types of errors
-    if (this.state.errorSource === 'react-context' ||
+    if (this.state.errorSource === 'react-context' || 
+        this.state.errorSource === 'number-format' ||
         (this.state.error?.message?.includes("undefined is not iterable") || 
-        this.state.error?.message?.includes("toFixed is not a function"))) {
+         this.state.error?.message?.includes("toFixed is not a function"))) {
       window.location.reload();
     }
   };
@@ -94,6 +98,17 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
       // If a custom fallback is provided, use that
       if (this.props.fallback) {
         return this.props.fallback;
+      }
+
+      // For number formatting errors, show specialized message
+      if (this.state.errorSource === 'number-format') {
+        return (
+          <FallbackError 
+            error={this.state.error as Error} 
+            resetErrorBoundary={this.handleRetry}
+            message="Number Formatting Error: A numeric value is invalid or undefined"
+          />
+        );
       }
 
       // For context-specific errors, show specialized message
@@ -150,7 +165,8 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
                 Try Again
               </Button>
               
-              {this.state.error?.message?.includes("undefined is not iterable") && (
+              {this.state.error?.message?.includes("undefined is not iterable") || 
+               this.state.error?.message?.includes("toFixed is not a function") && (
                 <Button 
                   onClick={this.handleDataReset}
                   variant="destructive"

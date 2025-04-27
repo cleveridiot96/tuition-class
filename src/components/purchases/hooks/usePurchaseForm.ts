@@ -9,6 +9,7 @@ import { PurchaseFormData, PurchaseFormProps } from '../types/PurchaseTypes';
 import { usePurchaseCalculations } from './usePurchaseCalculations';
 import { useBagExtractor } from './useBagExtractor';
 import { usePurchaseValidation } from './usePurchaseValidation';
+import { safeNumber } from '@/lib/utils';
 
 export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFormProps) => {
   const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
@@ -46,13 +47,12 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
 
   // Handle form submission
   const handleFormSubmit = (data: PurchaseFormData) => {
-    const expenses = typeof data.expenses === 'string' 
-      ? parseFloat(data.expenses) || 0 
-      : data.expenses || 0;
+    // Ensure expenses is always a valid number before submission
+    const expenses = safeNumber(data.expenses, 0);
 
     const dataWithFixedExpenses = {
       ...data,
-      expenses: Number(expenses)
+      expenses: expenses
     };
 
     const validation = validatePurchaseForm(dataWithFixedExpenses, !!initialData);
@@ -79,7 +79,7 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
   };
 
   const submitData = (data: PurchaseFormData) => {
-    const expenses = Number(data.expenses || 0);
+    const expenses = safeNumber(data.expenses, 0);
       
     const submitData = {
       ...data,

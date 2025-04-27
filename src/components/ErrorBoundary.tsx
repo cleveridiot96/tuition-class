@@ -38,6 +38,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         return this.props.fallback;
       }
 
+      // Check for specific common errors
+      const isToFixedError = this.state.error?.message.includes('toFixed is not a function');
+
       return (
         <div className="p-4 border border-red-300 rounded-md bg-red-50 text-red-800">
           <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
@@ -45,6 +48,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <p className="text-sm mb-3 font-mono bg-white p-2 rounded border border-red-200 overflow-auto">
             {this.state.error?.toString() || "Unknown error"}
           </p>
+          {isToFixedError && (
+            <p className="text-sm mb-3 italic">
+              This appears to be a number formatting error. Please check that all numeric values are valid.
+            </p>
+          )}
           <button 
             onClick={() => this.setState({ hasError: false, error: null })}
             className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
