@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, FileText, FileBarChart, Package, RefreshCcw, ArrowLeftRight, Users, DollarSign, BookText } from 'lucide-react';
@@ -10,21 +9,21 @@ export const menuItems = [
     path: '/purchases',
     icon: Box,
     description: 'Record and manage purchases',
-    color: 'from-blue-400 to-blue-500',
+    color: 'from-purple-400 to-purple-500',
   },
   {
     title: 'Sales',
     path: '/sales',
     icon: FileBarChart,
     description: 'Create and manage sales',
-    color: 'from-green-400 to-green-500',
+    color: 'from-indigo-400 to-indigo-500',
   },
   {
     title: 'Inventory',
     path: '/inventory',
     icon: Package,
     description: 'View and manage stock',
-    color: 'from-yellow-400 to-yellow-500',
+    color: 'from-teal-400 to-teal-500',
   },
   {
     title: 'Stock Report',
