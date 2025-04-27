@@ -1,112 +1,37 @@
 
-import React, { useState } from "react";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
-import { addToMasterList } from "@/services/masterOperations";
+import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 
 interface PurchasePartyDetailsProps {
   form: any;
-  partyManagement: any;
   formSubmitted?: boolean;
+  partyManagement: {
+    suppliers: any[];
+    agents: any[];
+    handleAddParty: (type: string) => void;
+    handleAddAgent: () => void;
+  };
 }
 
 const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
   form,
-  partyManagement,
   formSubmitted = false,
+  partyManagement
 }) => {
-  const { suppliers = [], agents = [] } = partyManagement || {};
   const showErrors = formSubmitted || form.formState.isSubmitted;
-  const [showAddPartyDialog, setShowAddPartyDialog] = useState(false);
-  const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
-  const [newPartyName, setNewPartyName] = useState('');
-  const [newAgentName, setNewAgentName] = useState('');
-  const [newAgentCommission, setNewAgentCommission] = useState('1');
 
-  // Convert to options for searchable selects
-  const supplierOptions = suppliers.map(supplier => ({ 
-    value: supplier.name, 
-    label: supplier.name 
+  const supplierOptions = partyManagement.suppliers.map(supplier => ({
+    value: supplier.name,
+    label: supplier.name
   }));
-  
-  const agentOptions = [
-    { value: "", label: "None" },
-    ...agents.map(agent => ({ 
-      value: agent.id, 
-      label: agent.name 
-    }))
-  ];
 
-  const handleAddNewParty = () => {
-    if (!newPartyName.trim()) {
-      toast.error('Party name is required');
-      return;
-    }
-    
-    const result = addToMasterList('supplier', { 
-      name: newPartyName.trim(),
-      type: 'supplier'
-    });
-    
-    if (result) {
-      form.setValue('party', newPartyName.trim());
-      partyManagement.loadData && partyManagement.loadData();
-      setNewPartyName('');
-      setShowAddPartyDialog(false);
-      toast.success('New party added successfully');
-    }
-  };
-  
-  const handleAddNewAgent = () => {
-    if (!newAgentName.trim()) {
-      toast.error('Agent name is required');
-      return;
-    }
-    
-    const result = addToMasterList('agent', { 
-      name: newAgentName.trim(),
-      commissionRate: parseFloat(newAgentCommission) || 1,
-      type: 'agent'
-    });
-    
-    if (result) {
-      // Refresh the agents list
-      partyManagement.loadData && partyManagement.loadData();
-      // The agent ID will be different than name, so we can't set it directly
-      // We'll need to find the agent in the refreshed list
-      setNewAgentName('');
-      setNewAgentCommission('1');
-      setShowAddAgentDialog(false);
-      toast.success('New agent added successfully');
-    }
-  };
-  
-  const handleDirectAddParty = (name: string) => {
-    if (!name.trim()) return "";
-    
-    const result = addToMasterList('supplier', { 
-      name: name.trim(),
-      type: 'supplier'
-    });
-    
-    if (result) {
-      partyManagement.loadData && partyManagement.loadData();
-      return name.trim();
-    }
-    
-    return "";
-  };
+  const agentOptions = partyManagement.agents.map(agent => ({
+    value: agent.id,
+    label: agent.name
+  }));
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
@@ -117,60 +42,66 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           name="party"
           render={({ field, fieldState }) => (
             <FormItem>
-              <div className="flex justify-between items-center">
-                <FormLabel>Party Name</FormLabel>
-                <Button
-                  type="button"
-                  variant="ghost"
+              <FormLabel className="flex justify-between items-center">
+                Party Name <span className="text-red-500">*</span>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
                   size="sm"
-                  onClick={() => setShowAddPartyDialog(true)}
+                  onClick={() => partyManagement.handleAddParty('supplier')}
                   className="h-6 px-2 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> Add
                 </Button>
-              </div>
+              </FormLabel>
               <FormControl>
-                <EnhancedSearchableSelect
+                <EnhancedSearchableSelect 
                   options={supplierOptions}
-                  value={field.value}
+                  {...field}
                   onValueChange={field.onChange}
-                  placeholder="Select or enter party name"
-                  className="w-full"
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  placeholder="Select or add party"
                   masterType="supplier"
-                  onAddNew={handleDirectAddParty}
+                  onAddNew={(name) => {
+                    partyManagement.handleAddParty('supplier');
+                    return name;
+                  }}
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="agentId"
           render={({ field, fieldState }) => (
             <FormItem>
-              <div className="flex justify-between">
-                <FormLabel>Agent</FormLabel>
-                <Button
-                  type="button"
-                  variant="ghost"
+              <FormLabel className="flex justify-between items-center">
+                Agent
+                <Button 
+                  type="button" 
+                  variant="ghost" 
                   size="sm"
-                  onClick={() => setShowAddAgentDialog(true)}
+                  onClick={partyManagement.handleAddAgent}
                   className="h-6 px-2 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> Add
                 </Button>
-              </div>
+              </FormLabel>
               <FormControl>
-                <EnhancedSearchableSelect
+                <EnhancedSearchableSelect 
                   options={agentOptions}
-                  value={field.value}
-                  onValueChange={(value) => {
-                    field.onChange(value);
+                  {...field}
+                  onValueChange={field.onChange}
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  placeholder="Select or add agent"
+                  masterType="agent"
+                  onAddNew={(name) => {
+                    partyManagement.handleAddAgent();
+                    return name;
                   }}
-                  placeholder="Select agent"
-                  className="w-full"
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}
@@ -178,66 +109,6 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           )}
         />
       </div>
-      
-      {/* Add Party Dialog */}
-      <Dialog open={showAddPartyDialog} onOpenChange={setShowAddPartyDialog}>
-        <DialogContent className="bg-white">
-          <DialogHeader>
-            <DialogTitle>Add New Party</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <FormLabel>Party Name</FormLabel>
-              <Input
-                value={newPartyName}
-                onChange={(e) => setNewPartyName(e.target.value)}
-                placeholder="Enter party name"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowAddPartyDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddNewParty}>Add Party</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Add Agent Dialog */}
-      <Dialog open={showAddAgentDialog} onOpenChange={setShowAddAgentDialog}>
-        <DialogContent className="bg-white">
-          <DialogHeader>
-            <DialogTitle>Add New Agent</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <FormLabel>Agent Name</FormLabel>
-              <Input
-                value={newAgentName}
-                onChange={(e) => setNewAgentName(e.target.value)}
-                placeholder="Enter agent name"
-              />
-            </div>
-            <div>
-              <FormLabel>Commission Rate (%)</FormLabel>
-              <Input
-                type="number"
-                step="0.01"
-                value={newAgentCommission}
-                onChange={(e) => setNewAgentCommission(e.target.value)}
-                placeholder="Enter commission percentage"
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowAddAgentDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddNewAgent}>Add Agent</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
