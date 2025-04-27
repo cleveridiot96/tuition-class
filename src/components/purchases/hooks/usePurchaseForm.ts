@@ -8,6 +8,7 @@ import { PurchaseFormData, PurchaseFormProps } from '../types/PurchaseTypes';
 import { usePurchaseCalculations } from './usePurchaseCalculations';
 import { useBagExtractor } from './useBagExtractor';
 import { usePurchaseValidation } from './usePurchaseValidation';
+import { usePurchaseValidationRules } from './usePurchaseValidationRules';
 import { safeNumber } from '@/lib/utils';
 
 export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFormProps) => {
@@ -149,7 +150,13 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
     setShowDuplicateLotDialog,
     duplicateLotInfo,
     handleFormSubmit,
-    handleContinueDespiteDuplicate,
+    handleContinueDespiteDuplicate: () => {
+      if (pendingSubmitData) {
+        submitData(pendingSubmitData);
+        setPendingSubmitData(null);
+      }
+      setShowDuplicateLotDialog(false);
+    },
     totalAmount,
     transportCost,
     brokerageAmount,

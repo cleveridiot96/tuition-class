@@ -24,14 +24,14 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
       if (!supplierExists) {
         form.setError('party', {
           type: 'manual',
-          message: 'Party not found in master list'
+          message: 'Party not found in supplier master'
         });
         toast.error("Selected party is not in supplier master");
       } else {
         form.clearErrors('party');
       }
     }
-  }, [watchParty]);
+  }, [watchParty, form]);
 
   useEffect(() => {
     // Validate Agent exists in master
@@ -44,14 +44,14 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
       if (!agentExists) {
         form.setError('agentId', {
           type: 'manual',
-          message: 'Agent not found in master list'
+          message: 'Agent not found in agent master'
         });
         toast.error("Selected agent is not in agent master");
       } else {
         form.clearErrors('agentId');
       }
     }
-  }, [watchAgent]);
+  }, [watchAgent, form]);
 
   useEffect(() => {
     // Validate Bags and Weight ratio
