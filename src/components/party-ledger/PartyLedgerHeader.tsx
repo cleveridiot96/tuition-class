@@ -7,7 +7,6 @@ import { MasterType } from "@/types/master.types";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { PartyForm } from "./PartyForm";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -159,9 +158,4 @@ export const PartyLedgerHeader: React.FC<PartyLedgerHeaderProps> = ({
       </Dialog>
     </Card>
   );
-};
-
-// In case PartyForm component doesn't exist yet, create a stub
-export const PartyForm: React.FC<any> = () => {
-  return <div>Party Form</div>;
 };
