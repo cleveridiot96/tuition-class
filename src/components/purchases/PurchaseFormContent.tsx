@@ -83,6 +83,7 @@ const PurchaseFormContent = ({
             <PurchaseTransportDetails 
               form={form}
               formSubmitted={formSubmitted}
+              partyManagement={partyManagement}
             />
             
             <PurchaseBrokerageDetails 
