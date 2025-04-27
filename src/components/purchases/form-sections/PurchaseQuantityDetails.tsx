@@ -16,11 +16,13 @@ import { safeNumber } from "@/lib/utils";
 interface PurchaseQuantityDetailsProps {
   form: any;
   formSubmitted?: boolean;
+  extractBagsFromLotNumber?: (lotNumber: string) => number | null;
 }
 
 const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
   form,
-  formSubmitted = false
+  formSubmitted = false,
+  extractBagsFromLotNumber
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
   const DEFAULT_WEIGHT_PER_BAG = 50;
