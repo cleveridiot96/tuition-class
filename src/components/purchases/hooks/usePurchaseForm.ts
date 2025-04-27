@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -38,23 +37,21 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
       billNumber: initialData?.billNumber || '',
       billAmount: initialData?.billAmount || 0,
     },
-    mode: 'onSubmit'
+    mode: 'onChange'
   });
 
   const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } =
     usePurchaseCalculations({ form, showBrokerage, initialData });
   const { extractBagsFromLotNumber } = useBagExtractor({ form });
   const { validatePurchaseForm } = usePurchaseValidation();
-  
-  // Watch for agent selection to toggle brokerage section
+  const validationRules = usePurchaseValidationRules(form);
+
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      // Toggle brokerage section based on agent selection
       if (name === 'agentId') {
         setShowBrokerage(!!value.agentId);
       }
       
-      // Auto-extract bags from lot number
       if (name === 'lotNumber') {
         const lotNumber = value.lotNumber as string;
         const extractedBags = extractBagsFromLotNumber(lotNumber);
@@ -63,10 +60,9 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
         }
       }
       
-      // Auto-calculate net weight from bags (if netWeight hasn't been manually set)
       if (name === 'bags' && !value.netWeight) {
         const bags = safeNumber(value.bags, 0);
-        const calculatedWeight = bags * 50; // Default 50kg per bag
+        const calculatedWeight = bags * 50;
         form.setValue('netWeight', calculatedWeight);
       }
     });
@@ -74,11 +70,28 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
     return () => subscription.unsubscribe();
   }, [form, extractBagsFromLotNumber]);
 
-  // Handle form submission
-  const handleFormSubmit = (data: PurchaseFormData) => {
+  const handleFormSubmit = async (data: PurchaseFormData) => {
     setFormSubmitted(true);
     
-    // Ensure expenses is always a valid number before submission
+    const partyValid = await validationRules.validateParty(data.party || '');
+    const agentValid = await validationRules.validateAgent(data.agentId || '');
+    const transporterValid = await validationRules.validateTransporter(data.transporterId || '');
+
+    if (partyValid !== true) {
+      form.setError('party', { type: 'manual', message: partyValid as string });
+      return;
+    }
+
+    if (agentValid !== true) {
+      form.setError('agentId', { type: 'manual', message: agentValid as string });
+      return;
+    }
+
+    if (data.transporterId && transporterValid !== true) {
+      form.setError('transporterId', { type: 'manual', message: transporterValid as string });
+      return;
+    }
+
     const expenses = safeNumber(data.expenses, 0);
 
     const dataWithFixedExpenses = {
