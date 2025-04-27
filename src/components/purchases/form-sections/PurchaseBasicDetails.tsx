@@ -13,12 +13,16 @@ import { EnhancedSearchableSelect } from "@/components/ui/enhanced-select";
 interface PurchaseBasicDetailsProps {
   form: any;
   locations: string[];
+  formSubmitted?: boolean;
 }
 
 const PurchaseBasicDetails: React.FC<PurchaseBasicDetailsProps> = ({
   form,
   locations,
+  formSubmitted = false,
 }) => {
+  const showErrors = formSubmitted || form.formState.isSubmitted;
+  
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
       <h3 className="text-lg font-medium mb-4 text-blue-800">Basic Details</h3>
@@ -26,13 +30,13 @@ const PurchaseBasicDetails: React.FC<PurchaseBasicDetailsProps> = ({
         <FormField
           control={form.control}
           name="date"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Date</FormLabel>
               <FormControl>
                 <Input type="date" {...field} />
               </FormControl>
-              <FormMessage />
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
@@ -40,13 +44,13 @@ const PurchaseBasicDetails: React.FC<PurchaseBasicDetailsProps> = ({
         <FormField
           control={form.control}
           name="lotNumber"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Lot Number</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormMessage />
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
@@ -54,7 +58,7 @@ const PurchaseBasicDetails: React.FC<PurchaseBasicDetailsProps> = ({
         <FormField
           control={form.control}
           name="location"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Location</FormLabel>
               <FormControl>
@@ -66,7 +70,7 @@ const PurchaseBasicDetails: React.FC<PurchaseBasicDetailsProps> = ({
                   className="w-full"
                 />
               </FormControl>
-              <FormMessage />
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />

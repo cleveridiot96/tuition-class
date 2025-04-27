@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
@@ -15,7 +15,8 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
   const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
   const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
   const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
-  const [showBrokerage, setShowBrokerage] = useState<boolean>(false);
+  const [showBrokerage, setShowBrokerage] = useState<boolean>(!!initialData?.agentId);
+  const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseFormSchema),
@@ -44,9 +45,39 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
     usePurchaseCalculations({ form, showBrokerage, initialData });
   const { extractBagsFromLotNumber } = useBagExtractor({ form });
   const { validatePurchaseForm } = usePurchaseValidation();
+  
+  // Watch for agent selection to toggle brokerage section
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      // Toggle brokerage section based on agent selection
+      if (name === 'agentId') {
+        setShowBrokerage(!!value.agentId);
+      }
+      
+      // Auto-extract bags from lot number
+      if (name === 'lotNumber') {
+        const lotNumber = value.lotNumber as string;
+        const extractedBags = extractBagsFromLotNumber(lotNumber);
+        if (extractedBags !== null) {
+          form.setValue('bags', extractedBags);
+        }
+      }
+      
+      // Auto-calculate net weight from bags (if netWeight hasn't been manually set)
+      if (name === 'bags' && !value.netWeight) {
+        const bags = safeNumber(value.bags, 0);
+        const calculatedWeight = bags * 50; // Default 50kg per bag
+        form.setValue('netWeight', calculatedWeight);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, extractBagsFromLotNumber]);
 
   // Handle form submission
   const handleFormSubmit = (data: PurchaseFormData) => {
+    setFormSubmitted(true);
+    
     // Ensure expenses is always a valid number before submission
     const expenses = safeNumber(data.expenses, 0);
 
@@ -98,6 +129,7 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
 
   return {
     form,
+    formSubmitted,
     showBrokerage,
     setShowBrokerage,
     showDuplicateLotDialog,

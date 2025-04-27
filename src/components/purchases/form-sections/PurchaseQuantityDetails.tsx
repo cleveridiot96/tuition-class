@@ -15,14 +15,17 @@ import { useBagWeightCalculation } from "@/hooks/useBagWeightCalculation";
 interface PurchaseQuantityDetailsProps {
   form: any;
   extractBagsFromLotNumber: (lotNumber: string) => number | null;
+  formSubmitted?: boolean;
 }
 
 const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
   form,
-  extractBagsFromLotNumber
+  extractBagsFromLotNumber,
+  formSubmitted = false
 }) => {
   const [avgBagWeight, setAvgBagWeight] = useState('50');
   const DEFAULT_WEIGHT_PER_BAG = 50;
+  const showErrors = formSubmitted || form.formState.isSubmitted;
   
   const { 
     isWeightManuallyEdited,
@@ -31,6 +34,22 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
     form,
     defaultWeightPerBag: DEFAULT_WEIGHT_PER_BAG
   });
+
+  // Auto-extract bags from lot number on initial load
+  useEffect(() => {
+    const lotNumber = form.getValues('lotNumber');
+    if (lotNumber && !form.getValues('bags')) {
+      const extractedBags = extractBagsFromLotNumber(lotNumber);
+      if (extractedBags !== null) {
+        form.setValue('bags', extractedBags);
+        
+        // Auto calculate weight if not already set
+        if (!form.getValues('netWeight')) {
+          form.setValue('netWeight', extractedBags * DEFAULT_WEIGHT_PER_BAG);
+        }
+      }
+    }
+  }, [form, extractBagsFromLotNumber, DEFAULT_WEIGHT_PER_BAG]);
 
   useEffect(() => {
     const subscription = form.watch((value: any) => {
@@ -54,7 +73,7 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
         <FormField
           control={form.control}
           name="bags"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Number of Bags <span className="text-red-500">*</span></FormLabel>
               <FormControl>
@@ -64,11 +83,16 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
                   onChange={(e) => {
                     const value = parseInt(e.target.value, 10) || 0;
                     field.onChange(value);
+                    
+                    // Auto calculate weight if not manually edited
+                    if (!isWeightManuallyEdited) {
+                      form.setValue('netWeight', value * DEFAULT_WEIGHT_PER_BAG);
+                    }
                   }}
                   value={field.value || ''}
                 />
               </FormControl>
-              <FormMessage />
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
@@ -76,7 +100,7 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
         <FormField
           control={form.control}
           name="netWeight"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>
                 Net Weight (kg) <span className="text-red-500">*</span>
@@ -107,7 +131,7 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
                 <span>Avg. Bag Weight: {avgBagWeight} kg</span>
                 <span>Default: {DEFAULT_WEIGHT_PER_BAG}kg per bag</span>
               </div>
-              <FormMessage />
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
@@ -115,7 +139,7 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
         <FormField
           control={form.control}
           name="rate"
-          render={({ field }) => (
+          render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel>Rate (₹/kg) <span className="text-red-500">*</span></FormLabel>
               <FormControl>
@@ -126,7 +150,7 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
                   step="0.01" 
                 />
               </FormControl>
-              <FormMessage />
+              {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />

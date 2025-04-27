@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog } from "@/components/ui/dialog";
-import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 import { AlertCircle } from "lucide-react";
 import PurchaseBasicDetails from "./form-sections/PurchaseBasicDetails";
 import PurchasePartyDetails from "./form-sections/PurchasePartyDetails";
@@ -17,6 +16,7 @@ import DuplicateLotDialog from "./dialogs/DuplicateLotDialog";
 
 const PurchaseFormContent = ({
   form,
+  formSubmitted,
   onCancel,
   isSubmitting,
   isEdit,
@@ -51,7 +51,7 @@ const PurchaseFormContent = ({
           <p className="text-gray-600 text-sm mt-1">Fill in the purchase details</p>
         </div>
 
-        {!hasEitherPartyOrAgent && form.formState.isSubmitted && (
+        {!hasEitherPartyOrAgent && formSubmitted && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -61,20 +61,29 @@ const PurchaseFormContent = ({
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
-            <PurchaseBasicDetails form={form} locations={locations} />
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6" noValidate>
+            <PurchaseBasicDetails 
+              form={form} 
+              locations={locations} 
+              formSubmitted={formSubmitted} 
+            />
             
             <PurchasePartyDetails 
               form={form}
+              formSubmitted={formSubmitted}
               partyManagement={partyManagement}
             />
             
             <PurchaseQuantityDetails 
               form={form}
+              formSubmitted={formSubmitted}
               extractBagsFromLotNumber={extractBagsFromLotNumber}
             />
             
-            <PurchaseTransportDetails form={form} />
+            <PurchaseTransportDetails 
+              form={form}
+              formSubmitted={formSubmitted}
+            />
             
             <PurchaseBrokerageDetails 
               form={form}

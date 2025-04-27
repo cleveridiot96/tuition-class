@@ -28,6 +28,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   return (
     <PurchaseFormContent
       form={purchaseForm.form}
+      formSubmitted={purchaseForm.formSubmitted}
       onCancel={onCancel}
       isSubmitting={purchaseForm.form.formState.isSubmitting}
       isEdit={!!initialData}
