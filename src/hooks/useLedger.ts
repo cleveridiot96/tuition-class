@@ -4,7 +4,6 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { getStorageItem } from '@/services/core/storageCore';
 import { Party } from '@/services/types';
-import { debugStorageOperations } from '@/utils/storage';
 
 // Export the getPartyName function for use in other components
 export const getPartyName = (partyId: string, parties: Party[] = []): string => {
@@ -45,7 +44,7 @@ export const getParties = (): Party[] => {
   
   // Add by ID first (this handles duplicates with same ID)
   allParties.forEach(party => {
-    if (party.id) {
+    if (party?.id) {
       idMap.set(party.id, party);
     }
   });
@@ -54,7 +53,7 @@ export const getParties = (): Party[] => {
   const nameMap = new Map();
   
   Array.from(idMap.values()).forEach(party => {
-    if (party.name) {
+    if (party?.name) {
       // Convert name to lowercase for case-insensitive comparison
       const lowerName = party.name.toLowerCase();
       if (!nameMap.has(lowerName)) {
@@ -73,12 +72,51 @@ export const getParties = (): Party[] => {
 
 // Helper function to get transactions
 export const getTransactions = (partyId: string, startDate: string, endDate: string) => {
-  const allTransactions = getStorageItem<any[]>('transactions') || [];
-  return allTransactions.filter((t: any) => 
-    t.partyId === partyId && 
-    t.date >= startDate && 
-    t.date <= endDate
-  );
+  try {
+    const purchases = getStorageItem<any[]>('purchases') || [];
+    const sales = getStorageItem<any[]>('sales') || [];
+    const payments = getStorageItem<any[]>('payments') || [];
+    
+    const transactions = [];
+    
+    // Add purchases
+    for (const purchase of purchases) {
+      if ((purchase.party === partyId || purchase.partyId === partyId || purchase.agentId === partyId) && !purchase.isDeleted) {
+        transactions.push({
+          ...purchase,
+          type: 'purchase',
+          amount: purchase.totalAmount
+        });
+      }
+    }
+    
+    // Add sales
+    for (const sale of sales) {
+      if ((sale.customerId === partyId || sale.brokerId === partyId) && !sale.isDeleted) {
+        transactions.push({
+          ...sale,
+          type: 'sale',
+          amount: sale.totalAmount
+        });
+      }
+    }
+    
+    // Add payments
+    for (const payment of payments) {
+      if (payment.partyId === partyId && !payment.isDeleted) {
+        transactions.push({
+          ...payment,
+          type: 'payment',
+        });
+      }
+    }
+    
+    // Sort by date
+    return transactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  } catch (error) {
+    console.error("Error getting transactions:", error);
+    return [];
+  }
 };
 
 export const useLedger = () => {
@@ -94,9 +132,17 @@ export const useLedger = () => {
 
   // Load parties on mount
   useEffect(() => {
-    const loadedParties = getParties();
-    setParties(loadedParties);
-    console.log('Loaded parties:', loadedParties); // Debug output
+    const loadParties = () => {
+      const loadedParties = getParties();
+      setParties(loadedParties);
+      console.log('Loaded parties:', loadedParties);
+    };
+    
+    loadParties();
+    
+    // Refresh parties every few seconds
+    const interval = setInterval(loadParties, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   // Load transactions when selectedParty changes
@@ -106,16 +152,34 @@ export const useLedger = () => {
       // Get transactions for the selected party
       const partyTransactions = getTransactions(selectedParty, dateRange.startDate, dateRange.endDate);
       setTransactions(partyTransactions);
+      
+      // Calculate balance
+      let partyBalance = 0;
+      partyTransactions.forEach((transaction) => {
+        if (transaction.type === "purchase") {
+          partyBalance -= transaction.amount || 0;
+        } else if (transaction.type === "sale") {
+          partyBalance += transaction.amount || 0;
+        } else if (transaction.type === "payment") {
+          if (transaction.paymentDirection === "to-party") {
+            partyBalance -= transaction.amount || 0;
+          } else {
+            partyBalance += transaction.amount || 0;
+          }
+        }
+      });
+      setBalance(partyBalance);
       setIsLoading(false);
     } else {
       setTransactions([]);
+      setBalance(0);
     }
   }, [selectedParty, dateRange.startDate, dateRange.endDate]);
 
   const partyOptions = useMemo(() => {
     return parties.map(party => ({
-      value: party.id,
-      label: party.name
+      value: party.id || '',
+      label: party.name || 'Unknown'
     }));
   }, [parties]);
 
