@@ -10,52 +10,32 @@ export const useEntityData = () => {
 
   const loadData = () => {
     try {
-      // Log raw data for debugging
-      console.log("Raw data from storage:", {
-        suppliers: getSuppliers(),
-        transporters: getTransporters(),
-        agents: getAgents()
-      });
-
       // Get master data and filter out deleted entities
       const suppliersData = getSuppliers().filter(s => !s.isDeleted) || [];
       const transportersData = getTransporters().filter(t => !t.isDeleted) || [];
       const agentsData = getAgents().filter(a => !a.isDeleted) || [];
       
-      console.log("Filtered data:", {
-        suppliers: suppliersData.length,
-        transporters: transportersData.length,
-        agents: agentsData.length
-      });
-      
       // Format data to match EnhancedSearchableSelect requirements
       const formattedSuppliers = suppliersData.map(supplier => ({
-        id: supplier.id || `supplier-${Date.now()}-${Math.random()}`,
+        id: supplier.id,
         name: supplier.name,
-        value: supplier.id || `supplier-${Date.now()}-${Math.random()}`,
+        value: supplier.name,
         label: supplier.name
       }));
       
       const formattedTransporters = transportersData.map(transporter => ({
-        id: transporter.id || `transporter-${Date.now()}-${Math.random()}`,
+        id: transporter.id,
         name: transporter.name,
-        value: transporter.id || `transporter-${Date.now()}-${Math.random()}`,
+        value: transporter.id,
         label: transporter.name
       }));
       
       const formattedAgents = agentsData.map(agent => ({
-        id: agent.id || `agent-${Date.now()}-${Math.random()}`,
+        id: agent.id,
         name: agent.name,
-        value: agent.id || `agent-${Date.now()}-${Math.random()}`,
+        value: agent.id,
         label: agent.name
       }));
-      
-      // Log formatted data for debugging
-      console.log("Formatted data:", {
-        suppliers: formattedSuppliers.length,
-        transporters: formattedTransporters.length,
-        agents: formattedAgents.length
-      });
       
       // Update state with formatted data
       setSuppliers(formattedSuppliers);
@@ -67,11 +47,11 @@ export const useEntityData = () => {
   };
 
   useEffect(() => {
-    // Load data initially and set up a refresh interval
+    // Load data initially
     loadData();
     
-    // Set up an interval to refresh data every 3 seconds
-    const refreshInterval = setInterval(loadData, 3000);
+    // Set up an interval to refresh data every second
+    const refreshInterval = setInterval(loadData, 1000);
     
     // Clean up interval on component unmount
     return () => clearInterval(refreshInterval);

@@ -22,10 +22,6 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
   partyManagement
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
-  
-  // Log the actual data being received
-  console.log("Party details - suppliers:", partyManagement.suppliers);
-  console.log("Party details - agents:", partyManagement.agents);
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
