@@ -1,10 +1,11 @@
 
 import React from "react";
+import { safeNumber } from "@/lib/utils";
 
 interface PurchaseSummaryProps {
   totalAmount: number;
   transportCost: number;
-  expenses: number;
+  expenses: number | string | null | undefined;
   brokerageAmount: number;
   totalAfterExpenses: number;
   ratePerKgAfterExpenses: number;
@@ -18,6 +19,9 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
   totalAfterExpenses,
   ratePerKgAfterExpenses,
 }) => {
+  // Safely convert expenses to a number before using toFixed
+  const safeExpenses = safeNumber(expenses, 0);
+  
   return (
     <div className="bg-blue-100/80 p-4 rounded-md shadow-sm">
       <h3 className="text-lg font-medium mb-3 text-blue-800">Summary</h3>
@@ -39,7 +43,7 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
         
         <div className="flex justify-between">
           <span className="text-gray-700">Additional Expenses:</span>
-          <span className="font-medium">₹{expenses.toFixed(2)}</span>
+          <span className="font-medium">₹{safeExpenses.toFixed(2)}</span>
         </div>
         
         <div className="flex justify-between pt-2 border-t border-blue-200">
