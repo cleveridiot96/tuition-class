@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   FormField,
   FormItem,
@@ -11,21 +11,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calculator } from "lucide-react";
 import { useBagWeightCalculation } from "@/hooks/useBagWeightCalculation";
+import { safeNumber } from "@/lib/utils";
 
 interface PurchaseQuantityDetailsProps {
   form: any;
-  extractBagsFromLotNumber: (lotNumber: string) => number | null;
   formSubmitted?: boolean;
 }
 
 const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
   form,
-  extractBagsFromLotNumber,
   formSubmitted = false
 }) => {
-  const [avgBagWeight, setAvgBagWeight] = useState('50');
-  const DEFAULT_WEIGHT_PER_BAG = 50;
   const showErrors = formSubmitted || form.formState.isSubmitted;
+  const DEFAULT_WEIGHT_PER_BAG = 50;
   
   const { 
     isWeightManuallyEdited,
@@ -35,36 +33,10 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
     defaultWeightPerBag: DEFAULT_WEIGHT_PER_BAG
   });
 
-  // Auto-extract bags from lot number on initial load
-  useEffect(() => {
-    const lotNumber = form.getValues('lotNumber');
-    if (lotNumber && !form.getValues('bags')) {
-      const extractedBags = extractBagsFromLotNumber(lotNumber);
-      if (extractedBags !== null) {
-        form.setValue('bags', extractedBags);
-        
-        // Auto calculate weight if not already set
-        if (!form.getValues('netWeight')) {
-          form.setValue('netWeight', extractedBags * DEFAULT_WEIGHT_PER_BAG);
-        }
-      }
-    }
-  }, [form, extractBagsFromLotNumber, DEFAULT_WEIGHT_PER_BAG]);
-
-  useEffect(() => {
-    const subscription = form.watch((value: any) => {
-      const bags = parseInt(value.bags) || 0;
-      const weight = parseFloat(value.netWeight) || 0;
-      
-      if (bags > 0 && weight > 0) {
-        setAvgBagWeight((weight / bags).toFixed(2));
-      } else {
-        setAvgBagWeight('50.00');
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form]);
+  // Calculate average bag weight
+  const bags = safeNumber(form.watch('bags'));
+  const netWeight = safeNumber(form.watch('netWeight'));
+  const avgBagWeight = bags > 0 ? (netWeight / bags).toFixed(2) : DEFAULT_WEIGHT_PER_BAG.toFixed(2);
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
@@ -83,13 +55,8 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
                   onChange={(e) => {
                     const value = parseInt(e.target.value, 10) || 0;
                     field.onChange(value);
-                    
-                    // Auto calculate weight if not manually edited
-                    if (!isWeightManuallyEdited) {
-                      form.setValue('netWeight', value * DEFAULT_WEIGHT_PER_BAG);
-                    }
                   }}
-                  value={field.value || ''}
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}
@@ -120,11 +87,8 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
                 <Input 
                   type="number" 
                   {...field}
-                  value={field.value || ''}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0;
-                    field.onChange(value);
-                  }}
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  step="0.01"
                 />
               </FormControl>
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -146,8 +110,8 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
                 <Input 
                   type="number" 
                   {...field}
-                  value={field.value || ''}
-                  step="0.01" 
+                  step="0.01"
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}

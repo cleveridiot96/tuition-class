@@ -1,10 +1,11 @@
 
 import { useState, useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
+import { safeNumber } from '@/lib/utils';
 
 interface UseBagWeightCalculationProps {
   form: UseFormReturn<any>;
-  defaultWeightPerBag: number;
+  defaultWeightPerBag?: number;
 }
 
 export const useBagWeightCalculation = ({
@@ -14,14 +15,20 @@ export const useBagWeightCalculation = ({
   const [isWeightManuallyEdited, setIsWeightManuallyEdited] = useState(false);
 
   useEffect(() => {
-    // Set up watcher for weight field
     const subscription = form.watch((value, { name }) => {
-      if (name === 'netWeight') {
-        const bags = parseInt(value.bags) || 0;
-        const weight = parseFloat(value.netWeight) || 0;
+      if (name === 'bags') {
+        const bags = safeNumber(value.bags);
+        if (!isWeightManuallyEdited) {
+          const calculatedWeight = bags * defaultWeightPerBag;
+          form.setValue('netWeight', calculatedWeight, { shouldValidate: true });
+        }
+      }
+
+      if (name === 'netWeight' && value.bags) {
+        const bags = safeNumber(value.bags);
+        const weight = safeNumber(value.netWeight);
         const expectedWeight = bags * defaultWeightPerBag;
         
-        // If weight differs from expected, it was manually edited
         if (weight !== expectedWeight && weight !== 0 && bags !== 0) {
           setIsWeightManuallyEdited(true);
         }
@@ -29,10 +36,10 @@ export const useBagWeightCalculation = ({
     });
     
     return () => subscription.unsubscribe();
-  }, [form, defaultWeightPerBag]);
+  }, [form, defaultWeightPerBag, isWeightManuallyEdited]);
   
   const resetToAutoCalculation = () => {
-    const bags = parseInt(form.getValues('bags')) || 0;
+    const bags = safeNumber(form.getValues('bags'));
     const calculatedWeight = bags * defaultWeightPerBag;
     form.setValue('netWeight', calculatedWeight);
     setIsWeightManuallyEdited(false);
