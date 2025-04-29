@@ -6,6 +6,7 @@ import { NumericInput } from "@/components/ui/numeric-input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
+import { safeNumber } from "@/lib/utils";
 
 interface PurchaseTransportDetailsProps {
   form: any;
@@ -82,8 +83,11 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
               <FormLabel>Transport Rate (₹)</FormLabel>
               <FormControl>
                 <NumericInput 
-                  value={field.value ?? 0}
-                  onChange={(value) => field.onChange(value)}
+                  value={safeNumber(field.value, 0)}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    console.log("Transport rate changed:", value);
+                  }}
                   min={0}
                   step="0.01"
                   placeholder="0.00"

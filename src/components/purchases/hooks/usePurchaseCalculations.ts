@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { PurchaseFormData } from "../PurchaseFormSchema";
+import { safeNumber } from "@/lib/utils";
 
 interface UsePurchaseCalculationsProps {
   form: UseFormReturn<PurchaseFormData>;
@@ -22,20 +23,12 @@ export const usePurchaseCalculations = ({
 
   // This effect runs whenever form fields change to recalculate all values
   useEffect(() => {
-    // Safe number conversion function
-    const safeNumber = (value: any): number => {
-      if (value === null || value === undefined || isNaN(parseFloat(value))) {
-        return 0;
-      }
-      return parseFloat(value);
-    };
-
     const subscription = form.watch((value, { name }) => {
       const formValues = form.getValues();
-      const netWeight = safeNumber(formValues.netWeight);
-      const rate = safeNumber(formValues.rate);
-      const expenses = safeNumber(formValues.expenses);
-      const transportRate = safeNumber(formValues.transportRate);
+      const netWeight = safeNumber(formValues.netWeight, 0);
+      const rate = safeNumber(formValues.rate, 0);
+      const expenses = safeNumber(formValues.expenses, 0);
+      const transportRate = safeNumber(formValues.transportRate, 0);
       
       // Calculate transport cost
       const calculatedTransportCost = netWeight * transportRate;
@@ -68,10 +61,10 @@ export const usePurchaseCalculations = ({
 
     // Immediate calculation on component mount
     const formValues = form.getValues();
-    const netWeight = safeNumber(formValues.netWeight);
-    const rate = safeNumber(formValues.rate);
-    const expenses = safeNumber(formValues.expenses);
-    const transportRate = safeNumber(formValues.transportRate);
+    const netWeight = safeNumber(formValues.netWeight, 0);
+    const rate = safeNumber(formValues.rate, 0);
+    const expenses = safeNumber(formValues.expenses, 0);
+    const transportRate = safeNumber(formValues.transportRate, 0);
     
     const calculatedTransportCost = netWeight * transportRate;
     setTransportCost(calculatedTransportCost);

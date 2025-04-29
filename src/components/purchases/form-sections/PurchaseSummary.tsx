@@ -19,15 +19,10 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
   totalAfterExpenses,
   ratePerKgAfterExpenses,
 }) => {
-  // Safely convert expenses to a number before using toFixed
-  const safeExpenses = safeNumber(expenses, 0);
-  
   // Format number with appropriate precision
-  const formatNumber = (value: number): string => {
-    if (isNaN(value) || value === null || value === undefined) {
-      return "0.00";
-    }
-    return value.toFixed(2);
+  const formatNumber = (value: number | string | null | undefined): string => {
+    const numValue = safeNumber(value, 0);
+    return numValue.toFixed(2);
   };
   
   return (
@@ -51,7 +46,7 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
         
         <div className="flex justify-between">
           <span className="text-gray-700">Additional Expenses:</span>
-          <span className="font-medium">₹{formatNumber(safeExpenses)}</span>
+          <span className="font-medium">₹{formatNumber(expenses)}</span>
         </div>
         
         <div className="flex justify-between pt-2 border-t border-blue-200">
