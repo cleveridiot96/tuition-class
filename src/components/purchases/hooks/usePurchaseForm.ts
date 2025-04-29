@@ -19,25 +19,33 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
   const [showBrokerage, setShowBrokerage] = useState<boolean>(!!initialData?.agentId);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
+  // Helper function to ensure numeric values are properly initialized
+  const ensureNumber = (value: any, defaultValue = 0): number => {
+    if (value === null || value === undefined || isNaN(parseFloat(value))) {
+      return defaultValue;
+    }
+    return parseFloat(value);
+  };
+
   const form = useForm<PurchaseFormData>({
     resolver: zodResolver(purchaseFormSchema),
     defaultValues: {
       date: initialData?.date || format(new Date(), 'yyyy-MM-dd'),
       lotNumber: initialData?.lotNumber || '',
-      bags: initialData?.bags || 0,
+      bags: ensureNumber(initialData?.bags, 0),
       party: initialData?.party || '',
       location: initialData?.location || '',
-      netWeight: initialData?.netWeight || 0,
-      rate: initialData?.rate || 0,
+      netWeight: ensureNumber(initialData?.netWeight, 0),
+      rate: ensureNumber(initialData?.rate, 0),
       transporterId: initialData?.transporterId || '',
-      transportRate: initialData?.transportRate || 0,
-      expenses: initialData?.expenses || 0,
+      transportRate: ensureNumber(initialData?.transportRate, 0),
+      expenses: ensureNumber(initialData?.expenses, 0),
       brokerageType: initialData?.brokerageType || 'percentage',
-      brokerageValue: initialData?.brokerageValue || 1,
+      brokerageValue: ensureNumber(initialData?.brokerageValue, 1),
       notes: initialData?.notes || '',
       agentId: initialData?.agentId || '',
       billNumber: initialData?.billNumber || '',
-      billAmount: initialData?.billAmount || 0,
+      billAmount: ensureNumber(initialData?.billAmount, 0),
     },
     mode: 'onChange'
   });
@@ -94,26 +102,31 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
       return;
     }
 
-    const expenses = safeNumber(data.expenses, 0);
-
-    const dataWithFixedExpenses = {
+    // Ensure all numeric fields are properly parsed
+    const dataWithFixedNumbers = {
       ...data,
-      expenses: expenses
+      bags: ensureNumber(data.bags, 0),
+      netWeight: ensureNumber(data.netWeight, 0),
+      rate: ensureNumber(data.rate, 0),
+      transportRate: ensureNumber(data.transportRate, 0),
+      expenses: ensureNumber(data.expenses, 0),
+      brokerageValue: ensureNumber(data.brokerageValue, 1),
+      billAmount: data.billAmount ? ensureNumber(data.billAmount, 0) : null
     };
 
-    const validation = validatePurchaseForm(dataWithFixedExpenses, !!initialData);
+    const validation = validatePurchaseForm(dataWithFixedNumbers, !!initialData);
 
     if (!validation.isValid) {
       if (validation.duplicatePurchase) {
         setDuplicateLotInfo(validation.duplicatePurchase);
         setShowDuplicateLotDialog(true);
-        setPendingSubmitData(dataWithFixedExpenses);
+        setPendingSubmitData(dataWithFixedNumbers);
         return;
       }
       return;
     }
 
-    submitData(dataWithFixedExpenses);
+    submitData(dataWithFixedNumbers);
   };
 
   const handleContinueDespiteDuplicate = () => {
@@ -125,7 +138,7 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
   };
 
   const submitData = (data: PurchaseFormData) => {
-    const expenses = safeNumber(data.expenses, 0);
+    const expenses = ensureNumber(data.expenses, 0);
       
     const submitData = {
       ...data,

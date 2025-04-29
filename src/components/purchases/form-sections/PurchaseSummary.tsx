@@ -22,38 +22,46 @@ const PurchaseSummary: React.FC<PurchaseSummaryProps> = ({
   // Safely convert expenses to a number before using toFixed
   const safeExpenses = safeNumber(expenses, 0);
   
+  // Format number with appropriate precision
+  const formatNumber = (value: number): string => {
+    if (isNaN(value) || value === null || value === undefined) {
+      return "0.00";
+    }
+    return value.toFixed(2);
+  };
+  
   return (
     <div className="bg-blue-100/80 p-4 rounded-md shadow-sm">
       <h3 className="text-lg font-medium mb-3 text-blue-800">Summary</h3>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-700">Total Amount:</span>
-          <span className="font-medium">₹{totalAmount.toFixed(2)}</span>
+          <span className="font-medium">₹{formatNumber(totalAmount)}</span>
         </div>
         
         <div className="flex justify-between">
           <span className="text-gray-700">Transport Cost:</span>
-          <span className="font-medium">₹{transportCost.toFixed(2)}</span>
+          <span className="font-medium">₹{formatNumber(transportCost)}</span>
         </div>
         
         <div className="flex justify-between">
           <span className="text-gray-700">Brokerage Amount:</span>
-          <span className="font-medium">₹{brokerageAmount.toFixed(2)}</span>
+          <span className="font-medium">₹{formatNumber(brokerageAmount)}</span>
         </div>
         
         <div className="flex justify-between">
           <span className="text-gray-700">Additional Expenses:</span>
-          <span className="font-medium">₹{safeExpenses.toFixed(2)}</span>
+          <span className="font-medium">₹{formatNumber(safeExpenses)}</span>
         </div>
         
         <div className="flex justify-between pt-2 border-t border-blue-200">
           <span className="font-medium text-blue-800">Total After Expenses:</span>
-          <span className="font-bold text-blue-800">₹{totalAfterExpenses.toFixed(2)}</span>
+          <span className="font-bold text-blue-800">₹{formatNumber(totalAfterExpenses)}</span>
         </div>
         
         <div className="flex justify-between">
           <span className="text-gray-700">Rate per kg (after expenses):</span>
-          <span className="font-medium">₹{ratePerKgAfterExpenses.toFixed(2)}</span>
+          <span className="font-medium">₹{formatNumber(ratePerKgAfterExpenses)}</span>
         </div>
       </div>
     </div>

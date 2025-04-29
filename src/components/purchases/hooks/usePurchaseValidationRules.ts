@@ -4,6 +4,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 import { PurchaseFormData } from '../PurchaseFormSchema';
 import { getSuppliers, getAgents, getTransporters } from '@/services/storageService';
+import { safeNumber } from '@/lib/utils';
 
 export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>) => {
   // Watch form values for validation
@@ -56,11 +57,16 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
   useEffect(() => {
     // Validate Bags and Weight ratio
     if (watchBags && watchNetWeight) {
-      const avgWeight = watchNetWeight / watchBags;
+      const bags = safeNumber(watchBags, 0);
+      const netWeight = safeNumber(watchNetWeight, 0);
       
-      // Standard bag weight is usually between 45-55 kg
-      if (avgWeight < 45 || avgWeight > 55) {
-        toast.warning(`Average bag weight (${avgWeight.toFixed(2)} kg) seems unusual. Please verify.`);
+      if (bags > 0 && netWeight > 0) {
+        const avgWeight = netWeight / bags;
+        
+        // Standard bag weight is usually between 45-55 kg
+        if (avgWeight < 45 || avgWeight > 55) {
+          toast.warning(`Average bag weight (${avgWeight.toFixed(2)} kg) seems unusual. Please verify.`);
+        }
       }
     }
   }, [watchBags, watchNetWeight]);
@@ -68,8 +74,9 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
   useEffect(() => {
     // Validate Rate is within reasonable range
     if (watchRate) {
+      const rate = safeNumber(watchRate, 0);
       // Example: Warn if rate is outside 50-200 range
-      if (watchRate < 50 || watchRate > 200) {
+      if (rate > 0 && (rate < 50 || rate > 200)) {
         toast.warning("Rate seems unusual. Please verify.");
       }
     }

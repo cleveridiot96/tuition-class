@@ -1,44 +1,36 @@
 
-import React from "react";
-import {
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+import React, { useEffect } from "react";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Calculator } from "lucide-react";
-import { useBagWeightCalculation } from "@/hooks/useBagWeightCalculation";
-import { safeNumber } from "@/lib/utils";
 
 interface PurchaseQuantityDetailsProps {
   form: any;
   formSubmitted?: boolean;
-  extractBagsFromLotNumber?: (lotNumber: string) => number | null;
+  extractBagsFromLotNumber: (lotNumber: string) => number | null;
 }
 
 const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
   form,
   formSubmitted = false,
-  extractBagsFromLotNumber
+  extractBagsFromLotNumber,
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
-  const DEFAULT_WEIGHT_PER_BAG = 50;
-  
-  const { 
-    isWeightManuallyEdited,
-    resetToAutoCalculation
-  } = useBagWeightCalculation({
-    form,
-    defaultWeightPerBag: DEFAULT_WEIGHT_PER_BAG
-  });
+  const bags = form.watch("bags");
+  const netWeight = form.watch("netWeight");
+  const rate = form.watch("rate");
 
-  // Calculate average bag weight
-  const bags = safeNumber(form.watch('bags'));
-  const netWeight = safeNumber(form.watch('netWeight'));
-  const avgBagWeight = bags > 0 ? (netWeight / bags).toFixed(2) : DEFAULT_WEIGHT_PER_BAG.toFixed(2);
+  const avgBagWeight = bags && netWeight ? (netWeight / bags) : 0;
+
+  useEffect(() => {
+    const lotNumber = form.getValues("lotNumber");
+    if (lotNumber) {
+      const extractedBags = extractBagsFromLotNumber(lotNumber);
+      if (extractedBags !== null) {
+        form.setValue("bags", extractedBags);
+      }
+    }
+  }, [form.getValues("lotNumber"), extractBagsFromLotNumber, form]);
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
@@ -49,15 +41,17 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
           name="bags"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Number of Bags <span className="text-red-500">*</span></FormLabel>
+              <FormLabel className="flex justify-between">
+                <span>Number of Bags</span>
+                <span className="text-red-500">*</span>
+              </FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  {...field}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value, 10) || 0;
-                    field.onChange(value);
-                  }}
+                <NumericInput
+                  value={field.value ?? 0}
+                  onChange={(value) => field.onChange(value)}
+                  min={1}
+                  step="1"
+                  placeholder="0"
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
                 />
               </FormControl>
@@ -71,32 +65,26 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
           name="netWeight"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>
-                Net Weight (kg) <span className="text-red-500">*</span>
-                {isWeightManuallyEdited && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 px-2 text-xs ml-2"
-                    onClick={resetToAutoCalculation}
-                  >
-                    <Calculator className="w-3 h-3 mr-1" /> Auto
-                  </Button>
-                )}
+              <FormLabel className="flex justify-between">
+                <span>Net Weight (kg)</span>
+                <span className="text-red-500">*</span>
               </FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  {...field}
-                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                <NumericInput
+                  value={field.value ?? 0}
+                  onChange={(value) => field.onChange(value)}
+                  min={1}
                   step="0.01"
+                  placeholder="0.00"
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
                 />
               </FormControl>
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Avg. Bag Weight: {avgBagWeight} kg</span>
-                <span>Default: {DEFAULT_WEIGHT_PER_BAG}kg per bag</span>
-              </div>
+              {avgBagWeight > 0 && (
+                <FormDescription>
+                  Avg. Bag Weight: {avgBagWeight.toFixed(2)} kg {avgBagWeight < 45 || avgBagWeight > 55 ? "(Warning: Unusual weight)" : ""}
+                  Default: 50kg per bag
+                </FormDescription>
+              )}
               {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
@@ -107,12 +95,17 @@ const PurchaseQuantityDetails: React.FC<PurchaseQuantityDetailsProps> = ({
           name="rate"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Rate (₹/kg) <span className="text-red-500">*</span></FormLabel>
+              <FormLabel className="flex justify-between">
+                <span>Rate (₹/kg)</span>
+                <span className="text-red-500">*</span>
+              </FormLabel>
               <FormControl>
-                <Input 
-                  type="number" 
-                  {...field}
+                <NumericInput
+                  value={field.value ?? 0}
+                  onChange={(value) => field.onChange(value)}
+                  min={0.01}
                   step="0.01"
+                  placeholder="0.00"
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
                 />
               </FormControl>

@@ -2,7 +2,7 @@
 import React from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
-import { Input } from "@/components/ui/input";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
@@ -34,6 +34,9 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
     return "";
   };
 
+  // Get the current transport rate value for display
+  const transportRate = form.watch("transportRate");
+  
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
       <h3 className="text-lg font-medium mb-4 text-blue-800">Transport Details (Optional)</h3>
@@ -78,11 +81,12 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
             <FormItem>
               <FormLabel>Transport Rate (₹)</FormLabel>
               <FormControl>
-                <Input 
-                  type="number"
+                <NumericInput 
+                  value={field.value ?? 0}
+                  onChange={(value) => field.onChange(value)}
+                  min={0}
                   step="0.01"
                   placeholder="0.00"
-                  {...field}
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
                 />
               </FormControl>
