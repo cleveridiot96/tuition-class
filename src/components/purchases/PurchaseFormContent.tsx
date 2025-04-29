@@ -55,7 +55,7 @@ const PurchaseFormContent = ({
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Either Party Name or Agent must be specified
+              Either Supplier Name or Agent must be specified
             </AlertDescription>
           </Alert>
         )}

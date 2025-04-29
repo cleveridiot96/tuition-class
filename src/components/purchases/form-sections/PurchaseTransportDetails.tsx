@@ -73,10 +73,10 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
         
         <FormField
           control={form.control}
-          name="transportCost"
+          name="transportRate"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Transport Cost (₹)</FormLabel>
+              <FormLabel>Transport Rate (₹)</FormLabel>
               <FormControl>
                 <Input 
                   type="number"

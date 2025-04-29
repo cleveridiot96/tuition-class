@@ -20,7 +20,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
   const showErrors = formSubmitted || form.formState.isSubmitted;
   const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
 
-  const handleAddParty = () => {
+  const handleAddSupplier = () => {
     confirmAddToMaster('', (value) => {
       if (value) {
         form.setValue("party", value);
@@ -32,7 +32,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
     confirmAddToMaster('', (value) => {
       // After agent is added, we need to refresh the data and find the new agent's ID
       if (value) {
-        partyManagement.suppliers.loadData();
+        partyManagement.loadData();
         // The actual agent selection will happen when the data is refreshed
       }
     }, "agent");
@@ -49,14 +49,14 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
 
   const handleAgentAddNew = (name: string): string => {
     confirmAddToMaster(name, (value) => {
-      partyManagement.suppliers.loadData();
+      partyManagement.loadData();
     }, "agent");
     return "";
   };
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
-      <h3 className="text-lg font-medium mb-4 text-blue-800">Party Details</h3>
+      <h3 className="text-lg font-medium mb-4 text-blue-800">Supplier Details</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -64,12 +64,12 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           render={({ field, fieldState }) => (
             <FormItem>
               <FormLabel className="flex justify-between items-center">
-                Party Name <span className="text-red-500">*</span>
+                Supplier Name <span className="text-red-500">*</span>
                 <Button 
                   type="button" 
                   variant="ghost" 
                   size="sm"
-                  onClick={handleAddParty}
+                  onClick={handleAddSupplier}
                   className="h-6 px-2 text-xs"
                 >
                   <Plus className="w-3 h-3 mr-1" /> Add
@@ -81,7 +81,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
-                  placeholder="Select or add party"
+                  placeholder="Select or add supplier"
                   masterType="supplier"
                   onAddNew={handleSupplierAddNew}
                 />

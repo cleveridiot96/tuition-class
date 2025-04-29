@@ -7,31 +7,31 @@ import { getSuppliers, getAgents, getTransporters } from '@/services/storageServ
 
 export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>) => {
   // Watch form values for validation
-  const watchParty = form.watch("party");
+  const watchSupplier = form.watch("party");
   const watchAgent = form.watch("agentId");
   const watchBags = form.watch("bags");
   const watchNetWeight = form.watch("netWeight");
   const watchRate = form.watch("rate");
 
   useEffect(() => {
-    // Validate Party exists in master
-    if (watchParty) {
+    // Validate Supplier exists in master
+    if (watchSupplier) {
       const suppliers = getSuppliers();
       const supplierExists = suppliers.some(
-        s => s.name.toLowerCase() === watchParty.toLowerCase() && !s.isDeleted
+        s => s.name.toLowerCase() === watchSupplier.toLowerCase() && !s.isDeleted
       );
       
       if (!supplierExists) {
         form.setError('party', {
           type: 'manual',
-          message: 'Party not found in supplier master'
+          message: 'Supplier not found in supplier master'
         });
-        toast.error("Selected party is not in supplier master");
+        toast.error("Selected supplier is not in supplier master");
       } else {
         form.clearErrors('party');
       }
     }
-  }, [watchParty, form]);
+  }, [watchSupplier, form]);
 
   useEffect(() => {
     // Validate Agent exists in master
@@ -76,11 +76,11 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
   }, [watchRate]);
 
   // Custom validation rules
-  const validateParty = async (value: string) => {
+  const validateSupplier = async (value: string) => {
     if (!value) return true;
     const suppliers = getSuppliers();
     return suppliers.some(s => s.name.toLowerCase() === value.toLowerCase() && !s.isDeleted) || 
-      "Party must exist in supplier master";
+      "Supplier must exist in supplier master";
   };
 
   const validateAgent = async (value: string) => {
@@ -98,7 +98,7 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
   };
 
   return {
-    validateParty,
+    validateSupplier,
     validateAgent,
     validateTransporter
   };

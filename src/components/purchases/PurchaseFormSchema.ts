@@ -35,7 +35,7 @@ export const purchaseFormSchema = z.object({
   message: "Average bag weight should be between 45-55 kg",
   path: ["netWeight"]
 }).refine((data) => data.party || data.agentId, {
-  message: "Either Party Name or Agent must be specified",
+  message: "Either Supplier Name or Agent must be specified",
   path: ["party"]
 });
 

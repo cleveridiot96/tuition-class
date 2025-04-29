@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -74,12 +75,12 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
   const handleFormSubmit = async (data: PurchaseFormData) => {
     setFormSubmitted(true);
     
-    const partyValid = await validationRules.validateParty(data.party || '');
+    const supplierValid = await validationRules.validateSupplier(data.party || '');
     const agentValid = await validationRules.validateAgent(data.agentId || '');
     const transporterValid = await validationRules.validateTransporter(data.transporterId || '');
 
-    if (partyValid !== true) {
-      form.setError('party', { type: 'manual', message: partyValid as string });
+    if (supplierValid !== true) {
+      form.setError('party', { type: 'manual', message: supplierValid as string });
       return;
     }
 
@@ -150,13 +151,7 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
     setShowDuplicateLotDialog,
     duplicateLotInfo,
     handleFormSubmit,
-    handleContinueDespiteDuplicate: () => {
-      if (pendingSubmitData) {
-        submitData(pendingSubmitData);
-        setPendingSubmitData(null);
-      }
-      setShowDuplicateLotDialog(false);
-    },
+    handleContinueDespiteDuplicate,
     totalAmount,
     transportCost,
     brokerageAmount,
