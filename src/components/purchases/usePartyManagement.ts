@@ -1,6 +1,5 @@
 
 import { useState, useEffect, useCallback } from "react";
-import { getTransporters, getSuppliers, getAgents } from "@/services/storageService";
 import { useMasterData } from "@/hooks/useMasterData";
 
 export const usePartyManagement = ({ form }: { form: any }) => {

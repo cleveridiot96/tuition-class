@@ -9,7 +9,13 @@ import { useAddToMaster } from "@/hooks/useAddToMaster";
 interface PurchasePartyDetailsProps {
   form: any;
   formSubmitted?: boolean;
-  partyManagement: any;
+  partyManagement: {
+    suppliers: any[];
+    agents: any[];
+    transporters: any[];
+    loadData: () => void;
+    loading: boolean;
+  };
 }
 
 const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
@@ -24,6 +30,9 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
     confirmAddToMaster('', (value) => {
       if (value) {
         form.setValue("party", value);
+        if (partyManagement && typeof partyManagement.loadData === "function") {
+          partyManagement.loadData();
+        }
       }
     }, "supplier");
   };
@@ -32,7 +41,9 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
     confirmAddToMaster('', (value) => {
       // After agent is added, we need to refresh the data and find the new agent's ID
       if (value) {
-        partyManagement.loadData();
+        if (partyManagement && typeof partyManagement.loadData === "function") {
+          partyManagement.loadData();
+        }
         // The actual agent selection will happen when the data is refreshed
       }
     }, "agent");
@@ -42,6 +53,9 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
     confirmAddToMaster(name, (value) => {
       if (value) {
         form.setValue("party", value);
+        if (partyManagement && typeof partyManagement.loadData === "function") {
+          partyManagement.loadData();
+        }
       }
     }, "supplier");
     return "";
@@ -49,7 +63,9 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
 
   const handleAgentAddNew = (name: string): string => {
     confirmAddToMaster(name, (value) => {
-      partyManagement.loadData();
+      if (partyManagement && typeof partyManagement.loadData === "function") {
+        partyManagement.loadData();
+      }
     }, "agent");
     return "";
   };
@@ -77,7 +93,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
-                  options={partyManagement.suppliers}
+                  options={partyManagement.suppliers || []}
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
@@ -110,7 +126,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
-                  options={partyManagement.agents}
+                  options={partyManagement.agents || []}
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
