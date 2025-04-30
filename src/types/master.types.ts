@@ -7,6 +7,7 @@ export interface Master {
   isDeleted?: boolean;
   type: MasterType;
   commissionRate?: number;
+  isTransporter?: boolean;
   // Removed phone and address as requested
 }
 
