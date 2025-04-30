@@ -8,8 +8,26 @@ export const usePartyManagement = ({ form }: { form: any }) => {
     agents, 
     transporters, 
     refresh, 
-    loading 
+    loading,
+    getByType
   } = useMasterData();
+
+  // Format data for each dropdown
+  const formattedSuppliers = suppliers.map(supplier => ({
+    value: supplier.value,
+    label: supplier.label
+  }));
+
+  const formattedAgents = agents.map(agent => ({
+    value: agent.value,
+    label: agent.label,
+    commissionRate: agent.data?.commissionRate
+  }));
+
+  const formattedTransporters = transporters.map(transporter => ({
+    value: transporter.value,
+    label: transporter.label
+  }));
 
   const loadData = useCallback(() => {
     refresh();
@@ -20,9 +38,9 @@ export const usePartyManagement = ({ form }: { form: any }) => {
   }, [loadData]);
 
   return {
-    suppliers,
-    agents,
-    transporters,
+    suppliers: formattedSuppliers,
+    agents: formattedAgents,
+    transporters: formattedTransporters,
     loadData,
     loading
   };

@@ -10,7 +10,13 @@ import { useAddToMaster } from "@/hooks/useAddToMaster";
 interface PurchaseTransportDetailsProps {
   form: any;
   formSubmitted?: boolean;
-  partyManagement: any;
+  partyManagement: {
+    suppliers: any[];
+    agents: any[];
+    transporters: any[];
+    loadData: () => void;
+    loading: boolean;
+  };
 }
 
 const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
@@ -25,7 +31,9 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
     confirmAddToMaster('', (value) => {
       // After transporter is added, refresh the data
       if (value) {
-        partyManagement.loadData();
+        if (partyManagement && typeof partyManagement.loadData === "function") {
+          partyManagement.loadData();
+        }
         form.setValue("transporterId", value);
       }
     }, "transporter");
@@ -35,6 +43,9 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
     confirmAddToMaster(name, (value) => {
       if (value) {
         form.setValue("transporterId", value);
+        if (partyManagement && typeof partyManagement.loadData === "function") {
+          partyManagement.loadData();
+        }
       }
     }, "transporter");
     return "";
@@ -63,7 +74,7 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
-                  options={partyManagement.transporters}
+                  options={partyManagement.transporters || []}
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : ""}
@@ -102,6 +113,7 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
           )}
         />
       </div>
+      <AddToMasterDialog />
     </div>
   );
 };

@@ -69,11 +69,23 @@ export {
   exportToExcel
 } from './storageUtils';
 
-// Import necessary functions from transaction-storage
+// Import necessary functions from basic-storage
+import { 
+  getSuppliers as fetchSuppliers,
+  getCustomers as fetchCustomers, 
+  getBrokers as fetchBrokers, 
+  getAgents as fetchAgents 
+} from './storage/basic-storage';
+
+// Re-export the functions with their original names
+export const getSuppliers = fetchSuppliers;
+export const getCustomers = fetchCustomers;
+export const getBrokers = fetchBrokers;
+export const getAgents = fetchAgents;
+
+// Import functions from transaction-storage
 import { getPurchases, getSales } from './storage/transaction-storage';
 import { getInventory } from './storage/inventory-storage';
-// Import from basic-storage instead of trying to use undefined functions
-import { getSuppliers, getCustomers, getBrokers, getAgents } from './storage/basic-storage';
 
 // Dashboard-related functions
 export const getTotalSalesValue = (): number => {
@@ -118,10 +130,10 @@ export const getBackupList = (): string[] => {
 
 // Add getParties function to combine suppliers, customers, brokers, and agents
 export const getParties = () => {
-  const suppliers = getSuppliers() || [];
-  const customers = getCustomers() || [];
-  const brokers = getBrokers() || [];
-  const agents = getAgents() || [];
+  const suppliers = fetchSuppliers() || [];
+  const customers = fetchCustomers() || [];
+  const brokers = fetchBrokers() || [];
+  const agents = fetchAgents() || [];
   
   return [...suppliers, ...customers, ...brokers, ...agents];
 };
