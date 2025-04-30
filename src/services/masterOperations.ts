@@ -45,7 +45,8 @@ export const addToMasterList = (masterType: MasterType, itemData: { name: string
         return addAgent(itemData);
       
       case "transporter":
-        return addTransporter(itemData);
+        // Add transporters to agents master as requested
+        return addTransporterAsAgent(itemData);
       
       default:
         toast.error(`Unknown master type: ${masterType}`);
@@ -138,6 +139,35 @@ const addAgent = (itemData: { name: string; commissionRate?: number; type: Maste
   return itemData.name;
 };
 
+// Special function to add transporters as agents as specified in requirements
+const addTransporterAsAgent = (itemData: { name: string; type: MasterType }): string => {
+  // Create an agent record for the transporter
+  const newAgent: Master = {
+    id: `agent-transporter-${uuidv4()}`,
+    name: itemData.name.trim(),
+    commissionRate: 0, // No commission for transporters by default
+    isDeleted: false,
+    type: "agent",
+    isTransporter: true // Mark as transporter for reference
+  };
+  
+  // Add to agents collection
+  addAgentToStorage(newAgent);
+  
+  // Also add to transporters collection for backwards compatibility
+  const newTransporter: Master = {
+    id: newAgent.id, // Use same ID for consistency
+    name: itemData.name.trim(),
+    isDeleted: false,
+    type: "transporter"
+  };
+  
+  addTransporterToStorage(newTransporter);
+  
+  toast.success("Transporter added successfully");
+  return itemData.name;
+};
+
 const addTransporter = (itemData: { name: string; type: MasterType }): string => {
   const newTransporter: Master = {
     id: `transporter-${uuidv4()}`,
@@ -152,4 +182,4 @@ const addTransporter = (itemData: { name: string; type: MasterType }): string =>
 };
 
 // Export these functions for direct use
-export { addSupplier, addCustomer, addBroker, addAgent, addTransporter };
+export { addSupplier, addCustomer, addBroker, addAgent, addTransporter, addTransporterAsAgent };

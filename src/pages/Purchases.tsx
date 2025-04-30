@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { getPurchases, savePurchases, getSuppliers } from "@/services/storageService";
 import { Purchase } from "@/services/types";
-import AddPartyDialog from "@/components/purchases/AddPartyDialog";
+import AddSupplierDialog from "@/components/purchases/AddSupplierDialog";
 import { toast } from "sonner";
 
 const Purchases = () => {
@@ -17,9 +17,9 @@ const Purchases = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
   const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [newPartyName, setNewPartyName] = useState("");
-  const [newPartyAddress, setNewPartyAddress] = useState("");
-  const [showAddPartyDialog, setShowAddPartyDialog] = useState(false);
+  const [newSupplierName, setNewSupplierName] = useState("");
+  const [newSupplierAddress, setNewSupplierAddress] = useState("");
+  const [showAddSupplierDialog, setShowAddSupplierDialog] = useState(false);
   const [sortColumn, setSortColumn] = useState<keyof Purchase | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isMultiItemForm, setIsMultiItemForm] = useState(false);
@@ -36,34 +36,34 @@ const Purchases = () => {
     setSuppliers(storedSuppliers);
   };
 
-  const handleAddNewParty = () => {
-    if (newPartyName.trim() === "") {
-      toast.error("Party name cannot be empty.");
+  const handleAddNewSupplier = () => {
+    if (newSupplierName.trim() === "") {
+      toast.error('Supplier name cannot be empty.');
       return;
     }
 
-    const newParty = {
+    const newSupplier = {
       id: Date.now().toString(),
-      name: newPartyName,
-      address: newPartyAddress,
+      name: newSupplierName,
+      address: newSupplierAddress,
     };
 
-    const updatedSuppliers = [...suppliers, newParty];
+    const updatedSuppliers = [...suppliers, newSupplier];
     setSuppliers(updatedSuppliers);
     // Cannot use saveSuppliers as it doesn't exist, use direct storage operation
     localStorage.setItem('suppliers', JSON.stringify(updatedSuppliers));
 
-    setNewPartyName("");
-    setNewPartyAddress("");
-    setShowAddPartyDialog(false);
+    setNewSupplierName("");
+    setNewSupplierAddress("");
+    setShowAddSupplierDialog(false);
 
-    toast.success("New party added successfully!");
+    toast.success("New supplier added successfully!");
   };
 
   const handlePurchaseSubmit = (purchaseData: Purchase) => {
-    // Validate that either party or agent is filled
+    // Validate that either supplier or agent is filled
     if (!purchaseData.party && !purchaseData.agentId) {
-      toast.error("Either Party Name or Agent must be specified");
+      toast.error("Either Supplier Name or Agent must be specified");
       return;
     }
 
@@ -178,14 +178,14 @@ const Purchases = () => {
         </Card>
       </div>
 
-      <AddPartyDialog
-        open={showAddPartyDialog}
-        onOpenChange={setShowAddPartyDialog}
-        newPartyName={newPartyName}
-        setNewPartyName={setNewPartyName}
-        newPartyAddress={newPartyAddress}
-        setNewPartyAddress={setNewPartyAddress}
-        handleAddNewParty={handleAddNewParty}
+      <AddSupplierDialog
+        open={showAddSupplierDialog}
+        onOpenChange={setShowAddSupplierDialog}
+        newPartyName={newSupplierName}
+        setNewPartyName={setNewSupplierName}
+        newPartyAddress={newSupplierAddress}
+        setNewPartyAddress={setNewSupplierAddress}
+        handleAddNewParty={handleAddNewSupplier}
       />
     </div>
   );

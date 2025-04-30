@@ -1,6 +1,6 @@
 
 import React from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 import { NumericInput } from "@/components/ui/numeric-input";
 import { Button } from "@/components/ui/button";
@@ -64,12 +64,13 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
                   options={partyManagement.transporters}
                   value={field.value}
                   onValueChange={field.onChange}
-                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
                   placeholder="Select or add transporter"
                   masterType="transporter"
                   onAddNew={handleTransporterAddNew}
                 />
               </FormControl>
+              <FormDescription>Optional - Transport provider</FormDescription>
               {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
@@ -91,9 +92,10 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
                   min={0}
                   step="0.01"
                   placeholder="0.00"
-                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
                 />
               </FormControl>
+              <FormDescription>Optional - Cost per kg for transport</FormDescription>
               {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}

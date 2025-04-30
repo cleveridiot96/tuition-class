@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,8 +73,34 @@ export const EnhancedSearchableSelect = React.memo(({
       } else if (!inputMatchesOption && searchTerm.trim() && onAddNew) {
         handleAddNewItem();
       }
+    } else if (e.key === 'ArrowDown' && filteredOptions.length > 0) {
+      // Focus the first item in the list
+      const firstItem = document.querySelector('[role="option"]') as HTMLElement;
+      if (firstItem) firstItem.focus();
     }
   }, [filteredOptions, handleSelect, inputMatchesOption, searchTerm, onAddNew, handleAddNewItem]);
+
+  const handleKeyNavigation = React.useCallback((e: React.KeyboardEvent<HTMLDivElement>, index: number) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextItem = document.querySelectorAll('[role="option"]')[index + 1] as HTMLElement;
+      if (nextItem) nextItem.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (index === 0) {
+        // Focus back on the input
+        const input = document.querySelector(`input[placeholder*="${placeholder.toLowerCase()}"]`) as HTMLElement;
+        if (input) input.focus();
+      } else {
+        const prevItem = document.querySelectorAll('[role="option"]')[index - 1] as HTMLElement;
+        if (prevItem) prevItem.focus();
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const option = filteredOptions[index];
+      if (option) handleSelect(option.value);
+    }
+  }, [filteredOptions, handleSelect, placeholder]);
 
   return (
     <Popover 
@@ -127,15 +153,36 @@ export const EnhancedSearchableSelect = React.memo(({
             />
           ) : (
             <div role="listbox">
-              {filteredOptions.map((option) => (
+              {filteredOptions.map((option, index) => (
                 <EnhancedSelectOption
                   key={option.value}
                   value={option.value}
                   label={option.label}
                   isSelected={value === option.value}
                   onSelect={() => handleSelect(option.value)}
+                  onKeyDown={(e) => handleKeyNavigation(e, index)}
+                  index={index}
                 />
               ))}
+              
+              {/* Add option for new entry if search term doesn't match any existing option */}
+              {searchTerm.trim() && !inputMatchesOption && onAddNew && (
+                <div
+                  role="option"
+                  tabIndex={0}
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground border-t"
+                  onClick={handleAddNewItem}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddNewItem();
+                    }
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add "{searchTerm}" to {masterType} master
+                </div>
+              )}
             </div>
           )}
         </ScrollArea>

@@ -1,42 +1,42 @@
 
-import { z } from 'zod';
+import * as z from "zod";
 
+// Schema for purchase form data with field validation
 export const purchaseFormSchema = z.object({
-  date: z.string().min(1, { message: "Date is required" }),
-  lotNumber: z.string().min(1, { message: "Lot Number is required" }),
-  bags: z.number()
-    .min(1, { message: "Number of bags must be greater than 0" })
-    .max(999, { message: "Number of bags seems too high" }),
+  date: z.string({
+    required_error: "Date is required",
+  }),
+  lotNumber: z.string().optional(),
+  bags: z.union([z.number().int().positive(), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseInt(val) || 0) : val
+  ),
   party: z.string().optional(),
-  location: z.string().min(1, { message: "Location is required" }),
-  netWeight: z.number()
-    .min(1, { message: "Net weight must be greater than 0" })
-    .max(99999, { message: "Net weight seems too high" }),
-  rate: z.number()
-    .min(0.01, { message: "Rate must be greater than 0" })
-    .max(999, { message: "Rate seems too high" }),
+  location: z.string().optional(),
+  netWeight: z.union([z.number().positive(), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ),
+  rate: z.union([z.number().positive(), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ),
   transporterId: z.string().optional(),
-  transportRate: z.number().min(0, { message: "Transport rate cannot be negative" }).optional(),
-  expenses: z.number().min(0, { message: "Expenses cannot be negative" }).optional().default(0),
+  transportRate: z.union([z.number().min(0), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ).optional().default(0),
+  expenses: z.union([z.number().min(0), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ).optional().default(0),
   brokerageType: z.enum(["percentage", "fixed"]).default("percentage"),
-  brokerageValue: z.number().min(0, { message: "Brokerage value cannot be negative" }),
+  brokerageValue: z.union([z.number().min(0), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ).optional().default(1),
   notes: z.string().optional(),
   agentId: z.string().optional(),
   billNumber: z.string().optional(),
-  billAmount: z.number().nullable().optional(),
-}).refine((data) => {
-  // Ensure average bag weight is reasonable (between 45-55 kg)
-  if (data.bags && data.netWeight) {
-    const avgWeight = data.netWeight / data.bags;
-    return avgWeight >= 45 && avgWeight <= 55;
-  }
-  return true;
-}, {
-  message: "Average bag weight should be between 45-55 kg",
-  path: ["netWeight"]
-}).refine((data) => data.party || data.agentId, {
+  billAmount: z.union([z.number().min(0), z.null()]).optional(),
+}).refine(data => data.party || data.agentId, {
   message: "Either Supplier Name or Agent must be specified",
-  path: ["party"]
+  path: ["party"],
 });
 
+// Type definition for purchase form data
 export type PurchaseFormData = z.infer<typeof purchaseFormSchema>;

@@ -80,7 +80,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   options={partyManagement.suppliers}
                   value={field.value}
                   onValueChange={field.onChange}
-                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
                   placeholder="Select or add supplier"
                   masterType="supplier"
                   onAddNew={handleSupplierAddNew}
@@ -113,7 +113,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   options={partyManagement.agents}
                   value={field.value}
                   onValueChange={field.onChange}
-                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
                   placeholder="Select or add agent"
                   masterType="agent"
                   onAddNew={handleAgentAddNew}
