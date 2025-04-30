@@ -47,7 +47,8 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
       billNumber: initialData?.billNumber || '',
       billAmount: ensureNumber(initialData?.billAmount, 0),
     },
-    mode: 'onChange'
+    mode: 'onSubmit', // Changed from onChange to onSubmit
+    reValidateMode: 'onSubmit' // Added to prevent revalidation on change
   });
 
   const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } =
@@ -70,7 +71,8 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
         }
       }
       
-      if (name === 'bags' && !value.netWeight) {
+      // Auto-calculate weight based on bags (50kg per bag)
+      if (name === 'bags') {
         const bags = safeNumber(value.bags, 0);
         const calculatedWeight = bags * 50;
         form.setValue('netWeight', calculatedWeight);

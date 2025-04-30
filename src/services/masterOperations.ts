@@ -85,101 +85,72 @@ const isDuplicate = (name: string, type: MasterType): boolean => {
   }
 };
 
+// Add a new supplier to the master list
 const addSupplier = (itemData: { name: string; type: MasterType }): string => {
   const newSupplier: Master = {
     id: `supplier-${uuidv4()}`,
     name: itemData.name.trim(),
-    isDeleted: false,
-    type: "supplier"
+    type: "supplier",
+    isDeleted: false
   };
   
   addSupplierToStorage(newSupplier);
-  toast.success("Supplier added successfully");
-  return itemData.name;
+  return newSupplier.id;
 };
 
+// Add a new customer to the master list
 const addCustomer = (itemData: { name: string; type: MasterType }): string => {
   const newCustomer: Master = {
     id: `customer-${uuidv4()}`,
     name: itemData.name.trim(),
-    isDeleted: false,
-    type: "customer"
+    type: "customer",
+    isDeleted: false
   };
   
   addCustomerToStorage(newCustomer);
-  toast.success("Customer added successfully");
-  return itemData.name;
+  return newCustomer.id;
 };
 
+// Add a new broker to the master list
 const addBroker = (itemData: { name: string; commissionRate?: number; type: MasterType }): string => {
   const newBroker: Master = {
     id: `broker-${uuidv4()}`,
     name: itemData.name.trim(),
+    type: "broker",
     commissionRate: itemData.commissionRate || 1,
-    isDeleted: false,
-    type: "broker"
+    isDeleted: false
   };
   
   addBrokerToStorage(newBroker);
-  toast.success("Broker added successfully");
-  return itemData.name;
+  return newBroker.id;
 };
 
+// Add a new agent to the master list
 const addAgent = (itemData: { name: string; commissionRate?: number; type: MasterType }): string => {
   const newAgent: Master = {
     id: `agent-${uuidv4()}`,
     name: itemData.name.trim(),
-    commissionRate: itemData.commissionRate || 1,
-    isDeleted: false,
-    type: "agent"
-  };
-  
-  addAgentToStorage(newAgent);
-  toast.success("Agent added successfully");
-  return itemData.name;
-};
-
-// Special function to add transporters as agents as specified in requirements
-const addTransporterAsAgent = (itemData: { name: string; type: MasterType }): string => {
-  // Create an agent record for the transporter
-  const newAgent: Master = {
-    id: `agent-transporter-${uuidv4()}`,
-    name: itemData.name.trim(),
-    commissionRate: 0, // No commission for transporters by default
-    isDeleted: false,
     type: "agent",
-    isTransporter: true // Mark as transporter for reference
+    commissionRate: itemData.commissionRate || 1,
+    isDeleted: false
   };
   
-  // Add to agents collection
   addAgentToStorage(newAgent);
-  
-  // Also add to transporters collection for backwards compatibility
-  const newTransporter: Master = {
-    id: newAgent.id, // Use same ID for consistency
-    name: itemData.name.trim(),
-    isDeleted: false,
-    type: "transporter"
-  };
-  
-  addTransporterToStorage(newTransporter);
-  
-  toast.success("Transporter added successfully");
-  return itemData.name;
+  return newAgent.id;
 };
 
-const addTransporter = (itemData: { name: string; type: MasterType }): string => {
+// Add a transporter as an agent with isTransporter flag
+const addTransporterAsAgent = (itemData: { name: string; type: MasterType }): string => {
   const newTransporter: Master = {
     id: `transporter-${uuidv4()}`,
     name: itemData.name.trim(),
-    isDeleted: false,
-    type: "transporter"
+    type: "agent", // Save as agent type
+    isTransporter: true, // Flag to identify as transporter
+    isDeleted: false
   };
   
+  // Add to both transporters and agents since we're reusing the agent list
   addTransporterToStorage(newTransporter);
-  toast.success("Transporter added successfully");
-  return itemData.name;
+  addAgentToStorage(newTransporter);
+  return newTransporter.id;
 };
-
-// Export these functions for direct use
-export { addSupplier, addCustomer, addBroker, addAgent, addTransporter, addTransporterAsAgent };

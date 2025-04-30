@@ -1,12 +1,11 @@
 
 import React from "react";
-import { FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "@/components/ui/form";
+import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
-import { NumericInput } from "@/components/ui/numeric-input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAddToMaster } from "@/hooks/useAddToMaster";
-import { safeNumber } from "@/lib/utils";
 
 interface PurchaseTransportDetailsProps {
   form: any;
@@ -24,23 +23,26 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
 
   const handleAddTransporter = () => {
     confirmAddToMaster('', (value) => {
-      partyManagement.loadData();
+      // After transporter is added, refresh the data
+      if (value) {
+        partyManagement.loadData();
+        form.setValue("transporterId", value);
+      }
     }, "transporter");
   };
 
   const handleTransporterAddNew = (name: string): string => {
     confirmAddToMaster(name, (value) => {
-      partyManagement.loadData();
+      if (value) {
+        form.setValue("transporterId", value);
+      }
     }, "transporter");
     return "";
   };
 
-  // Get the current transport rate value for display
-  const transportRate = form.watch("transportRate");
-  
   return (
-    <div className="border rounded-md p-4 bg-blue-50/40">
-      <h3 className="text-lg font-medium mb-4 text-blue-800">Transport Details (Optional)</h3>
+    <div className="border rounded-md p-4 bg-gray-50/70">
+      <h3 className="text-lg font-medium mb-4 text-gray-700">Transport Details <span className="text-sm font-normal text-gray-500">(Optional)</span></h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormField
           control={form.control}
@@ -64,44 +66,42 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
                   options={partyManagement.transporters}
                   value={field.value}
                   onValueChange={field.onChange}
-                  className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
                   placeholder="Select or add transporter"
                   masterType="transporter"
                   onAddNew={handleTransporterAddNew}
                 />
               </FormControl>
-              <FormDescription>Optional - Transport provider</FormDescription>
               {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
-        
+
         <FormField
           control={form.control}
           name="transportRate"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel>Transport Rate (₹)</FormLabel>
+              <FormLabel>Transport Rate</FormLabel>
               <FormControl>
-                <NumericInput 
-                  value={safeNumber(field.value, 0)}
-                  onChange={(value) => {
-                    field.onChange(value);
-                    console.log("Transport rate changed:", value);
-                  }}
-                  min={0}
+                <Input
+                  type="number"
                   step="0.01"
                   placeholder="0.00"
-                  className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
+                  className={fieldState.error && showErrors ? "border-red-500" : ""}
+                  {...field}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                    field.onChange(value);
+                  }}
+                  value={field.value || ""}
                 />
               </FormControl>
-              <FormDescription>Optional - Cost per kg for transport</FormDescription>
               {showErrors && fieldState.error && <FormMessage />}
             </FormItem>
           )}
         />
       </div>
-      <AddToMasterDialog />
     </div>
   );
 };
