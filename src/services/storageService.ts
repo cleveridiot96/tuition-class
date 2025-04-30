@@ -113,3 +113,13 @@ export const getBackupList = (): string[] => {
     return [];
   }
 };
+
+// Add getParties function to combine suppliers, customers, brokers, and agents
+export const getParties = () => {
+  const suppliers = getSuppliers() || [];
+  const customers = getCustomers() || [];
+  const brokers = getBrokers() || [];
+  const agents = getAgents() || [];
+  
+  return [...suppliers, ...customers, ...brokers, ...agents];
+};

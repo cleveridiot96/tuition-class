@@ -5,8 +5,7 @@ import {
   getCustomers, 
   getBrokers, 
   getTransporters, 
-  getAgents, 
-  getParties 
+  getAgents
 } from '@/services/storageService';
 import { SelectOption } from '@/components/ui/enhanced-select/types';
 import { Master, MasterType } from '@/types/master.types';
@@ -17,7 +16,7 @@ interface UseMasterDataReturn {
   brokers: SelectOption[];
   agents: SelectOption[];
   transporters: SelectOption[];
-  parties: SelectOption[];
+  parties: SelectOption[]; // We'll create this from all available master data
   loading: boolean;
   refresh: () => void;
   getByType: (type: MasterType) => SelectOption[];
@@ -28,7 +27,7 @@ interface UseMasterDataReturn {
     brokers: Master[];
     agents: Master[];
     transporters: Master[];
-    parties: Master[];
+    parties: Master[]; // Combined data from all types
   };
 }
 
@@ -68,7 +67,14 @@ export const useMasterData = (): UseMasterDataReturn => {
     const rawBrokers = getBrokers() || [];
     const rawAgents = getAgents() || [];
     const rawTransporters = getTransporters() || [];
-    const rawParties = getParties() || [];
+    
+    // Create a combined list of all parties
+    const rawParties = [
+      ...rawSuppliers,
+      ...rawCustomers,
+      ...rawBrokers,
+      ...rawAgents
+    ];
     
     // Store raw data for reference
     setRawData({
@@ -120,8 +126,7 @@ export const useMasterData = (): UseMasterDataReturn => {
       ...rawData.customers,
       ...rawData.brokers,
       ...rawData.agents,
-      ...rawData.transporters,
-      ...rawData.parties
+      ...rawData.transporters
     ];
     return allEntities.find(entity => entity.id === id);
   }, [rawData]);
