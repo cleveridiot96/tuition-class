@@ -72,6 +72,8 @@ export {
 // Import necessary functions from transaction-storage
 import { getPurchases, getSales } from './storage/transaction-storage';
 import { getInventory } from './storage/inventory-storage';
+// Import from basic-storage instead of trying to use undefined functions
+import { getSuppliers, getCustomers, getBrokers, getAgents } from './storage/basic-storage';
 
 // Dashboard-related functions
 export const getTotalSalesValue = (): number => {
