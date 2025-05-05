@@ -96,17 +96,6 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
     }
   };
 
-  // Static method for formatting data from outside the component
-  static formatData = async (password: string = ""): Promise<boolean> => {
-    try {
-      // Use our format function with the provided password
-      return await completeFormatAllData(password);
-    } catch (error) {
-      console.error("Error during formatting:", error);
-      return false;
-    }
-  };
-
   return (
     <>
       <FormatEventConnector 
@@ -191,7 +180,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
   );
 };
 
-// Add the static method
+// Add the static method as a property of the component
 FormatDataHandler.formatData = async (password: string = ""): Promise<boolean> => {
   try {
     // Use our format function with the provided password
