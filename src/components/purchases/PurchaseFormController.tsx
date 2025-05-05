@@ -5,6 +5,7 @@ import { useEntityData } from "./hooks/useEntityData";
 import { usePurchaseForm } from "./hooks/usePurchaseForm";
 import { usePartyManagement } from "./usePartyManagement";
 import PurchaseFormContent from "./PurchaseFormContent";
+import { enhanceFormValidation } from "@/hooks/useFormValidation";
 
 const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initialData }) => {
   // Load entity data
@@ -17,6 +18,9 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
   const partyManagement = usePartyManagement({ 
     form: purchaseForm.form
   });
+
+  // Setup enhanced form validation
+  const formValidation = enhanceFormValidation(purchaseForm.form);
 
   // Ensure expenses is always a string for the view
   const formExpenses = purchaseForm.form.watch("expenses");
@@ -47,6 +51,7 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
       onContinueDespiteDuplicate={purchaseForm.handleContinueDespiteDuplicate}
       handleFormSubmit={purchaseForm.handleFormSubmit}
       partyManagement={partyManagement}
+      formValidation={formValidation}
     />
   );
 };

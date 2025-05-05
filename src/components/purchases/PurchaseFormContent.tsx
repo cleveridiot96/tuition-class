@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import PurchaseTransportDetails from "./form-sections/PurchaseTransportDetails";
 import PurchaseBrokerageDetails from "./form-sections/PurchaseBrokerageDetails";
 import PurchaseSummary from "./form-sections/PurchaseSummary";
 import DuplicateLotDialog from "./dialogs/DuplicateLotDialog";
+import FormDebugger from "../FormDebugger";
 
 const PurchaseFormContent = ({
   form,
@@ -35,14 +36,37 @@ const PurchaseFormContent = ({
   duplicateLotInfo,
   onContinueDespiteDuplicate,
   handleFormSubmit,
-  partyManagement
+  partyManagement,
+  formValidation
 }) => {
   const watchAgentId = form.watch("agentId");
   const watchParty = form.watch("party");
   const hasEitherPartyOrAgent = watchAgentId || watchParty;
 
+  // Clear validation errors when form is submitted
+  useEffect(() => {
+    if (formValidation) {
+      return () => {
+        formValidation.clearErrorHighlights();
+      };
+    }
+  }, [formValidation]);
+
+  // Enhanced form submission with validation
+  const handleSubmitWithValidation = (data) => {
+    if (formValidation) {
+      // Clear previous validations
+      formValidation.clearErrorHighlights();
+    }
+    
+    console.log('Form data before submission:', data);
+    
+    // Proceed with form submission
+    return handleFormSubmit(data);
+  };
+
   return (
-    <Card className="bg-white border-blue-100 shadow-md">
+    <Card className="bg-white border-blue-100 shadow-md relative overflow-hidden">
       <CardContent className="pt-6">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-blue-800">
@@ -61,7 +85,7 @@ const PurchaseFormContent = ({
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6" noValidate>
+          <form onSubmit={form.handleSubmit(handleSubmitWithValidation)} className="space-y-6" noValidate>
             <PurchaseBasicDetails 
               form={form} 
               locations={locations} 
@@ -118,10 +142,19 @@ const PurchaseFormContent = ({
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="md-ripple"
+              >
                 {isSubmitting ? "Saving..." : isEdit ? "Update" : "Save"}
               </Button>
             </div>
+
+            {/* Form Debugger - only shown in development */}
+            {process.env.NODE_ENV !== 'production' && (
+              <FormDebugger form={form} show={true} />
+            )}
           </form>
         </Form>
       </CardContent>

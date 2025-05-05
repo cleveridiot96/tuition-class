@@ -10,6 +10,7 @@ import { usePurchaseCalculations } from './usePurchaseCalculations';
 import { useBagExtractor } from './useBagExtractor';
 import { usePurchaseValidation } from './usePurchaseValidation';
 import { usePurchaseValidationRules } from './usePurchaseValidationRules';
+import { useFormValidation } from '@/hooks/useFormValidation';
 import { safeNumber } from '@/lib/utils';
 
 export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFormProps) => {
@@ -18,6 +19,7 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
   const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
   const [showBrokerage, setShowBrokerage] = useState<boolean>(!!initialData?.agentId);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const formValidation = useFormValidation();
 
   // Helper function to ensure numeric values are properly initialized
   const ensureNumber = (value: any, defaultValue = 0): number => {
@@ -47,8 +49,8 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
       billNumber: initialData?.billNumber || '',
       billAmount: ensureNumber(initialData?.billAmount, 0),
     },
-    mode: 'onSubmit', // Changed from onChange to onSubmit
-    reValidateMode: 'onSubmit' // Added to prevent revalidation on change
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit'
   });
 
   const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } =
@@ -84,24 +86,59 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
 
   const handleFormSubmit = async (data: PurchaseFormData) => {
     setFormSubmitted(true);
+    formValidation.clearErrorHighlights();
     
+    // Validate that either supplier or agent is provided
+    if (!data.party && !data.agentId) {
+      const errors = [
+        {
+          fieldName: 'party',
+          message: 'Either Supplier Name or Agent must be specified'
+        }
+      ];
+      formValidation.highlightErrors(errors, { scrollToError: true, highlightWithRipple: true, showToast: true });
+      return;
+    }
+    
+    // Validate supplier
     const supplierValid = await validationRules.validateSupplier(data.party || '');
-    const agentValid = await validationRules.validateAgent(data.agentId || '');
-    const transporterValid = await validationRules.validateTransporter(data.transporterId || '');
-
     if (supplierValid !== true) {
+      formValidation.highlightErrors([
+        {
+          fieldName: 'party',
+          message: supplierValid as string
+        }
+      ], { scrollToError: true, highlightWithRipple: true, showToast: true });
       form.setError('party', { type: 'manual', message: supplierValid as string });
       return;
     }
 
+    // Validate agent
+    const agentValid = await validationRules.validateAgent(data.agentId || '');
     if (agentValid !== true) {
+      formValidation.highlightErrors([
+        {
+          fieldName: 'agentId',
+          message: agentValid as string
+        }
+      ], { scrollToError: true, highlightWithRipple: true, showToast: true });
       form.setError('agentId', { type: 'manual', message: agentValid as string });
       return;
     }
 
-    if (data.transporterId && transporterValid !== true) {
-      form.setError('transporterId', { type: 'manual', message: transporterValid as string });
-      return;
+    // Validate transporter
+    if (data.transporterId) {
+      const transporterValid = await validationRules.validateTransporter(data.transporterId || '');
+      if (transporterValid !== true) {
+        formValidation.highlightErrors([
+          {
+            fieldName: 'transporterId',
+            message: transporterValid as string
+          }
+        ], { scrollToError: true, highlightWithRipple: true, showToast: true });
+        form.setError('transporterId', { type: 'manual', message: transporterValid as string });
+        return;
+      }
     }
 
     // Ensure all numeric fields are properly parsed
@@ -172,6 +209,7 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
     brokerageAmount,
     totalAfterExpenses,
     ratePerKgAfterExpenses,
-    extractBagsFromLotNumber
+    extractBagsFromLotNumber,
+    formValidation
   };
 };
