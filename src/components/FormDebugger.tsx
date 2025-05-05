@@ -11,6 +11,7 @@ interface FormDebuggerProps {
  * Only renders in development mode when show is true
  */
 const FormDebugger: React.FC<FormDebuggerProps> = ({ form, show = false }) => {
+  // Only show the debugger if explicitly enabled AND in development mode
   if (!show || process.env.NODE_ENV === "production") return null;
 
   const formValues = form.getValues ? form.getValues() : {};

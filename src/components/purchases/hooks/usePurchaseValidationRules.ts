@@ -67,12 +67,14 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
         const avgWeight = netWeight / bags;
         
         // Standard bag weight is usually between 45-55 kg
-        if (avgWeight < 45 || avgWeight > 55) {
+        // Only notify for significant deviations
+        if (avgWeight < 40 || avgWeight > 60) {
           // Use less disruptive toast for this warning - changed from warning to info
-          // and only show for significant deviations
-          if (avgWeight < 40 || avgWeight > 60) {
-            toast.info(`Average bag weight (${avgWeight.toFixed(2)} kg) seems unusual. Please verify.`);
-          }
+          // Only show once per session using a unique toast ID
+          toast.info(`Average bag weight (${avgWeight.toFixed(2)} kg) seems unusual. Please verify.`, {
+            id: `bag-weight-${bags}-${netWeight}`,
+            duration: 3000
+          });
         }
       }
     }
@@ -82,12 +84,15 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
     // Validate Rate is within reasonable range
     if (watchRate) {
       const rate = safeNumber(watchRate, 0);
-      // Increased the threshold and made the warning less intrusive
       // Only warn for extreme values now, using info instead of warning toast
-      if (rate > 0 && (rate < 30 || rate > 300)) {
+      if (rate > 0 && (rate < 20 || rate > 500)) {
         toast.info("Rate seems unusual. Please verify.", {
           duration: 3000, // shorter duration
-          id: "rate-warning" // prevent duplicate toasts
+          id: "rate-warning", // prevent duplicate toasts
+          onDismiss: () => {
+            // Store in session that this warning has been shown
+            sessionStorage.setItem('rate-warning-shown', 'true');
+          }
         });
       }
     }

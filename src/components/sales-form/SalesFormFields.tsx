@@ -54,7 +54,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
   }));
   
   const transporterOptions: SelectOption[] = [
-    { value: "", label: "None" },
+    { value: "none", label: "None" },
     ...transporters.map(t => ({ value: t.id, label: t.name }))
   ];
   
@@ -64,7 +64,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
   }));
   
   const brokerOptions: SelectOption[] = [
-    { value: "", label: "None" },
+    { value: "none", label: "None" },
     ...brokers.map(b => ({ 
       value: b.id, 
       label: `${b.name} (${b.commissionRate || 0}%)` 
@@ -83,7 +83,7 @@ const SalesFormFields: React.FC<SalesFormFieldsProps> = ({
             <FormItem>
               <FormLabel>Bill Number</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -13,7 +13,6 @@ import PurchaseTransportDetails from "./form-sections/PurchaseTransportDetails";
 import PurchaseBrokerageDetails from "./form-sections/PurchaseBrokerageDetails";
 import PurchaseSummary from "./form-sections/PurchaseSummary";
 import DuplicateLotDialog from "./dialogs/DuplicateLotDialog";
-import FormDebugger from "../FormDebugger";
 
 const PurchaseFormContent = ({
   form,
@@ -150,11 +149,6 @@ const PurchaseFormContent = ({
                 {isSubmitting ? "Saving..." : isEdit ? "Update" : "Save"}
               </Button>
             </div>
-
-            {/* Form Debugger - only shown in development */}
-            {process.env.NODE_ENV !== 'production' && (
-              <FormDebugger form={form} show={true} />
-            )}
           </form>
         </Form>
       </CardContent>

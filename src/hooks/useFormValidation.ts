@@ -156,7 +156,7 @@ export const useFormValidation = () => {
       styleEl.id = 'form-validation-styles';
       styleEl.textContent = `
         .validation-error {
-          border: 1px solid #ff5252 !important;
+          border: 2px solid #ff5252 !important;
           box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.25);
           animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
         }
@@ -210,6 +210,11 @@ export const useFormValidation = () => {
             behavior: 'smooth',
             block: 'center'
           });
+          
+          // Focus the element after scrolling
+          setTimeout(() => {
+            firstErrorElement.focus();
+          }, 300);
         }, 100);
       }
     }

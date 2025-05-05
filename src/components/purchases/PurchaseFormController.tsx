@@ -56,8 +56,8 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
         formValidation={formValidation}
       />
       
-      {/* Add optional form debugger - only visible in development mode */}
-      <FormDebugger form={purchaseForm.form} show={process.env.NODE_ENV !== "production"} />
+      {/* Only show form debugger in development mode when explicitly enabled */}
+      {process.env.NODE_ENV === "development" && <FormDebugger form={purchaseForm.form} show={false} />}
     </>
   );
 };
