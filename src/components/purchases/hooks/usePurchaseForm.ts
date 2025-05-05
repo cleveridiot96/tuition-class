@@ -23,10 +23,10 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
 
   // Helper function to ensure numeric values are properly initialized
   const ensureNumber = (value: any, defaultValue = 0): number => {
-    if (value === null || value === undefined || isNaN(parseFloat(value))) {
+    if (value === null || value === undefined || isNaN(parseFloat(String(value)))) {
       return defaultValue;
     }
-    return parseFloat(value);
+    return parseFloat(String(value));
   };
 
   const form = useForm<PurchaseFormData>({
@@ -47,7 +47,7 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
       notes: initialData?.notes || '',
       agentId: initialData?.agentId || '',
       billNumber: initialData?.billNumber || '',
-      billAmount: ensureNumber(initialData?.billAmount, 0),
+      billAmount: initialData?.billAmount !== undefined ? initialData.billAmount : null,
     },
     mode: 'onSubmit',
     reValidateMode: 'onSubmit'
@@ -67,17 +67,21 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
       
       if (name === 'lotNumber') {
         const lotNumber = value.lotNumber as string;
-        const extractedBags = extractBagsFromLotNumber(lotNumber);
-        if (extractedBags !== null) {
-          form.setValue('bags', extractedBags);
+        if (lotNumber) {
+          const extractedBags = extractBagsFromLotNumber(lotNumber);
+          if (extractedBags !== null) {
+            form.setValue('bags', extractedBags);
+          }
         }
       }
       
       // Auto-calculate weight based on bags (50kg per bag)
       if (name === 'bags') {
         const bags = safeNumber(value.bags, 0);
-        const calculatedWeight = bags * 50;
-        form.setValue('netWeight', calculatedWeight);
+        if (bags > 0) {
+          const calculatedWeight = bags * 50;
+          form.setValue('netWeight', calculatedWeight);
+        }
       }
     });
     
@@ -88,8 +92,17 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
     setFormSubmitted(true);
     formValidation.clearErrorHighlights();
     
+    // Ensure all values are properly defined to prevent "undefined" in UI
+    const cleanedData = {
+      ...data,
+      party: data.party?.trim() || '',
+      lotNumber: data.lotNumber?.trim() || '',
+      notes: data.notes?.trim() || '',
+      billNumber: data.billNumber?.trim() || '',
+    };
+    
     // Validate that either supplier or agent is provided
-    if (!data.party && !data.agentId) {
+    if (!cleanedData.party && !cleanedData.agentId) {
       const errors = [
         {
           fieldName: 'party',
@@ -101,34 +114,38 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
     }
     
     // Validate supplier
-    const supplierValid = await validationRules.validateSupplier(data.party || '');
-    if (supplierValid !== true) {
-      formValidation.highlightErrors([
-        {
-          fieldName: 'party',
-          message: supplierValid as string
-        }
-      ], { scrollToError: true, highlightWithRipple: true, showToast: true });
-      form.setError('party', { type: 'manual', message: supplierValid as string });
-      return;
+    if (cleanedData.party) {
+      const supplierValid = await validationRules.validateSupplier(cleanedData.party);
+      if (supplierValid !== true) {
+        formValidation.highlightErrors([
+          {
+            fieldName: 'party',
+            message: supplierValid as string
+          }
+        ], { scrollToError: true, highlightWithRipple: true, showToast: true });
+        form.setError('party', { type: 'manual', message: supplierValid as string });
+        return;
+      }
     }
 
     // Validate agent
-    const agentValid = await validationRules.validateAgent(data.agentId || '');
-    if (agentValid !== true) {
-      formValidation.highlightErrors([
-        {
-          fieldName: 'agentId',
-          message: agentValid as string
-        }
-      ], { scrollToError: true, highlightWithRipple: true, showToast: true });
-      form.setError('agentId', { type: 'manual', message: agentValid as string });
-      return;
+    if (cleanedData.agentId) {
+      const agentValid = await validationRules.validateAgent(cleanedData.agentId);
+      if (agentValid !== true) {
+        formValidation.highlightErrors([
+          {
+            fieldName: 'agentId',
+            message: agentValid as string
+          }
+        ], { scrollToError: true, highlightWithRipple: true, showToast: true });
+        form.setError('agentId', { type: 'manual', message: agentValid as string });
+        return;
+      }
     }
 
     // Validate transporter
-    if (data.transporterId) {
-      const transporterValid = await validationRules.validateTransporter(data.transporterId || '');
+    if (cleanedData.transporterId) {
+      const transporterValid = await validationRules.validateTransporter(cleanedData.transporterId);
       if (transporterValid !== true) {
         formValidation.highlightErrors([
           {
@@ -143,14 +160,14 @@ export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFor
 
     // Ensure all numeric fields are properly parsed
     const dataWithFixedNumbers = {
-      ...data,
-      bags: ensureNumber(data.bags, 0),
-      netWeight: ensureNumber(data.netWeight, 0),
-      rate: ensureNumber(data.rate, 0),
-      transportRate: ensureNumber(data.transportRate, 0),
-      expenses: ensureNumber(data.expenses, 0),
-      brokerageValue: ensureNumber(data.brokerageValue, 1),
-      billAmount: data.billAmount ? ensureNumber(data.billAmount, 0) : null
+      ...cleanedData,
+      bags: ensureNumber(cleanedData.bags, 0),
+      netWeight: ensureNumber(cleanedData.netWeight, 0),
+      rate: ensureNumber(cleanedData.rate, 0),
+      transportRate: ensureNumber(cleanedData.transportRate, 0),
+      expenses: ensureNumber(cleanedData.expenses, 0),
+      brokerageValue: ensureNumber(cleanedData.brokerageValue, 1),
+      billAmount: cleanedData.billAmount ? ensureNumber(cleanedData.billAmount, 0) : null
     };
 
     const validation = validatePurchaseForm(dataWithFixedNumbers, !!initialData);

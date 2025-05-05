@@ -18,8 +18,11 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
     // Validate Supplier exists in master
     if (watchSupplier) {
       const suppliers = getSuppliers();
+      // Use more lenient comparison by trimming whitespace and comparing case-insensitively
       const supplierExists = suppliers.some(
-        s => s.name.toLowerCase() === watchSupplier.toLowerCase() && !s.isDeleted
+        s => s.name && 
+        s.name.toLowerCase().trim() === watchSupplier.toLowerCase().trim() && 
+        !s.isDeleted
       );
       
       if (!supplierExists) {
@@ -65,7 +68,11 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
         
         // Standard bag weight is usually between 45-55 kg
         if (avgWeight < 45 || avgWeight > 55) {
-          toast.warning(`Average bag weight (${avgWeight.toFixed(2)} kg) seems unusual. Please verify.`);
+          // Use less disruptive toast for this warning - changed from warning to info
+          // and only show for significant deviations
+          if (avgWeight < 40 || avgWeight > 60) {
+            toast.info(`Average bag weight (${avgWeight.toFixed(2)} kg) seems unusual. Please verify.`);
+          }
         }
       }
     }
@@ -75,9 +82,13 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
     // Validate Rate is within reasonable range
     if (watchRate) {
       const rate = safeNumber(watchRate, 0);
-      // Example: Warn if rate is outside 50-200 range
-      if (rate > 0 && (rate < 50 || rate > 200)) {
-        toast.warning("Rate seems unusual. Please verify.");
+      // Increased the threshold and made the warning less intrusive
+      // Only warn for extreme values now, using info instead of warning toast
+      if (rate > 0 && (rate < 30 || rate > 300)) {
+        toast.info("Rate seems unusual. Please verify.", {
+          duration: 3000, // shorter duration
+          id: "rate-warning" // prevent duplicate toasts
+        });
       }
     }
   }, [watchRate]);
@@ -86,8 +97,12 @@ export const usePurchaseValidationRules = (form: UseFormReturn<PurchaseFormData>
   const validateSupplier = async (value: string) => {
     if (!value) return true;
     const suppliers = getSuppliers();
-    return suppliers.some(s => s.name.toLowerCase() === value.toLowerCase() && !s.isDeleted) || 
-      "Supplier must exist in supplier master";
+    // More lenient validation for supplier name
+    return suppliers.some(s => 
+      s.name && 
+      s.name.toLowerCase().trim() === value.toLowerCase().trim() && 
+      !s.isDeleted
+    ) || "Supplier must exist in supplier master";
   };
 
   const validateAgent = async (value: string) => {

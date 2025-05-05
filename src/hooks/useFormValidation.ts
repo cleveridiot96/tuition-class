@@ -1,11 +1,10 @@
 
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 
 export interface FormFieldError {
   fieldName: string;
   message: string;
-  element?: HTMLElement | null;
 }
 
 export interface ValidationOptions {
@@ -14,243 +13,271 @@ export interface ValidationOptions {
   showToast?: boolean;
 }
 
+/**
+ * Custom hook for form validation with ripple effect for highlighting errors
+ */
 export const useFormValidation = () => {
-  const errorsRef = useRef<FormFieldError[]>([]);
+  const activeHighlights = useRef<HTMLElement[]>([]);
   
   /**
-   * Creates a ripple effect on an element to highlight errors
+   * Creates a ripple effect on an element
    */
-  const createRippleEffect = (element: HTMLElement) => {
+  const createRippleEffect = useCallback((element: HTMLElement) => {
     // Remove any existing ripple elements
-    const existingRipple = element.querySelector('.error-ripple');
-    if (existingRipple) {
-      existingRipple.parentNode?.removeChild(existingRipple);
-    }
+    const existingRipples = element.querySelectorAll('.validation-ripple');
+    existingRipples.forEach(ripple => {
+      if (ripple.parentNode === element) {
+        element.removeChild(ripple);
+      }
+    });
     
-    // Create new ripple element
+    // Create the ripple element
     const ripple = document.createElement('span');
-    ripple.className = 'error-ripple';
+    ripple.className = 'validation-ripple';
+    element.appendChild(ripple);
     
-    // Apply styles directly since we can't guarantee the CSS exists
-    ripple.style.position = 'absolute';
-    ripple.style.borderRadius = '50%';
-    ripple.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-    ripple.style.pointerEvents = 'none';
-    ripple.style.zIndex = '1000';
+    // Apply ripple styles
+    const style = ripple.style;
+    style.position = 'absolute';
+    style.borderRadius = '50%';
+    style.backgroundColor = 'rgba(255, 82, 82, 0.4)';
+    style.width = '120%';
+    style.height = '120%';
+    style.left = '-10%';
+    style.top = '-10%';
+    style.opacity = '0';
+    style.pointerEvents = 'none';
+    style.zIndex = '10';
     
-    // Make the parent position relative if it's not already
-    const computedStyle = window.getComputedStyle(element);
-    if (computedStyle.position === 'static') {
+    // Set element to relative position if not already positioned
+    if (getComputedStyle(element).position === 'static') {
       element.style.position = 'relative';
     }
     
-    // Append ripple to element
-    element.appendChild(ripple);
+    // Add the element to active highlights
+    activeHighlights.current.push(element);
     
-    // Set ripple dimensions and position
-    const rect = element.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height) * 2;
-    
-    ripple.style.width = `${size}px`;
-    ripple.style.height = `${size}px`;
-    ripple.style.left = '50%';
-    ripple.style.top = '50%';
-    ripple.style.transform = 'translate(-50%, -50%) scale(0)';
-    ripple.style.opacity = '1';
-    
-    // Animate the ripple
-    ripple.animate(
+    // Create and run the animation
+    const animation = ripple.animate(
       [
-        { transform: 'translate(-50%, -50%) scale(0)', opacity: 1 },
-        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 }
+        { opacity: 0, transform: 'scale(0.3)' },
+        { opacity: 1, transform: 'scale(0.8)' },
+        { opacity: 0, transform: 'scale(1)' }
       ],
       {
-        duration: 1000,
+        duration: 800,
         iterations: 2
       }
     );
     
-    // Add shake animation to the input
-    element.animate(
-      [
-        { transform: 'translate3d(-1px, 0, 0)' },
-        { transform: 'translate3d(2px, 0, 0)' },
-        { transform: 'translate3d(-4px, 0, 0)' },
-        { transform: 'translate3d(4px, 0, 0)' },
-        { transform: 'translate3d(-4px, 0, 0)' },
-        { transform: 'translate3d(4px, 0, 0)' },
-        { transform: 'translate3d(-4px, 0, 0)' },
-        { transform: 'translate3d(2px, 0, 0)' },
-        { transform: 'translate3d(-1px, 0, 0)' }
-      ],
-      {
-        duration: 500,
-        easing: 'cubic-bezier(.36,.07,.19,.97)'
-      }
-    );
-    
-    // Add error class to highlight the element
-    element.classList.add('error-field');
-    
-    // Remove ripple after animation
-    setTimeout(() => {
+    // Clean up after animation completes
+    animation.onfinish = () => {
       if (ripple.parentNode === element) {
         element.removeChild(ripple);
       }
-    }, 2000);
+    };
     
-    // Remove error class after a delay
-    setTimeout(() => {
-      element.classList.remove('error-field');
-    }, 5000);
-  };
+    // Add error styles to the input
+    element.classList.add('validation-error');
+    
+    // Return cleanup function
+    return () => {
+      if (ripple.parentNode === element) {
+        ripple.remove();
+      }
+      element.classList.remove('validation-error');
+    };
+  }, []);
   
   /**
-   * Highlights form field errors with optional ripple effect
+   * Clear all error highlights
    */
-  const highlightErrors = (errors: FormFieldError[], options: ValidationOptions = {}) => {
-    errorsRef.current = errors;
+  const clearErrorHighlights = useCallback(() => {
+    // Remove highlight from all active elements
+    activeHighlights.current.forEach(element => {
+      element.classList.remove('validation-error');
+      
+      // Remove any ripple elements
+      const ripples = element.querySelectorAll('.validation-ripple');
+      ripples.forEach(ripple => {
+        if (ripple.parentNode === element) {
+          element.removeChild(ripple);
+        }
+      });
+    });
     
-    if (errors.length === 0) return;
+    // Clear the active highlights array
+    activeHighlights.current = [];
+  }, []);
+  
+  /**
+   * Find form field element by name
+   */
+  const findFieldElement = useCallback((fieldName: string): HTMLElement | null => {
+    // Try different selectors to find the field
+    const selectors = [
+      `input[name="${fieldName}"]`,
+      `select[name="${fieldName}"]`,
+      `textarea[name="${fieldName}"]`,
+      `[data-field="${fieldName}"]`,
+      `#${fieldName}`,
+      `.${fieldName}-field`,
+    ];
     
-    // Add the necessary CSS to the document if it doesn't exist
-    if (!document.getElementById('ripple-effect-styles')) {
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      if (element instanceof HTMLElement) {
+        return element;
+      }
+    }
+    
+    // If above selectors don't work, try looking for the element inside a form control
+    const formItem = document.querySelector(`[data-field-name="${fieldName}"]`);
+    if (formItem instanceof HTMLElement) {
+      const input = formItem.querySelector('input, select, textarea');
+      if (input instanceof HTMLElement) {
+        return input;
+      }
+      return formItem;
+    }
+    
+    return null;
+  }, []);
+  
+  /**
+   * Highlight form field errors
+   */
+  const highlightErrors = useCallback((errors: FormFieldError[], options: ValidationOptions = {}) => {
+    if (!errors || errors.length === 0) return;
+    
+    // Add validation styles to the document if they don't exist
+    if (!document.getElementById('form-validation-styles')) {
       const styleEl = document.createElement('style');
-      styleEl.id = 'ripple-effect-styles';
+      styleEl.id = 'form-validation-styles';
       styleEl.textContent = `
-        .error-ripple {
-          position: absolute;
-          border-radius: 50%;
-          background-color: rgba(255, 0, 0, 0.3);
-          pointer-events: none;
-          z-index: 1000;
-        }
-        .error-field {
+        .validation-error {
           border: 1px solid #ff5252 !important;
-          box-shadow: 0 0 0 1px #ff5252 !important;
+          box-shadow: 0 0 0 2px rgba(255, 82, 82, 0.25);
+          animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
         }
-        .field-error-message {
-          color: #ff5252;
-          font-size: 0.75rem;
-          margin-top: 4px;
-          margin-bottom: 8px;
-          animation: fadeIn 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        
         @keyframes shake {
           10%, 90% { transform: translate3d(-1px, 0, 0); }
           20%, 80% { transform: translate3d(2px, 0, 0); }
-          30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
-          40%, 60% { transform: translate3d(4px, 0, 0); }
+          30%, 70% { transform: translate3d(-2px, 0, 0); }
+          40%, 60% { transform: translate3d(2px, 0, 0); }
         }
       `;
       document.head.appendChild(styleEl);
     }
     
-    // If option is enabled, show toast with first error
+    // Clear previous highlights
+    clearErrorHighlights();
+    
+    // If we should show a toast and there are errors, show the first error
     if (options.showToast && errors.length > 0) {
-      toast.error("Form validation error", {
-        description: errors[0].message || "Please fix the highlighted fields"
-      });
+      toast.error(`Form validation failed: ${errors[0].message}`);
     }
     
     // Process each error
-    errors.forEach((error) => {
+    errors.forEach(error => {
       if (!error.fieldName) return;
       
-      // Find the form element by name, id, or other selectors
-      const selector = `[name="${error.fieldName}"], #${error.fieldName}, [data-field="${error.fieldName}"]`;
-      const element = error.element || document.querySelector(selector) as HTMLElement;
+      // Find the element
+      const element = findFieldElement(error.fieldName);
       
       if (element) {
-        // Add error class
-        element.classList.add('error-field');
+        // Add to active highlights
+        activeHighlights.current.push(element);
         
-        // Create ripple effect if option is enabled
+        // Add error class
+        element.classList.add('validation-error');
+        
+        // Apply ripple effect if option is enabled
         if (options.highlightWithRipple) {
           createRippleEffect(element);
         }
-        
-        // Add error message below the field if it doesn't exist
-        const errorMessageId = `error-${error.fieldName}`;
-        let errorMessage = document.getElementById(errorMessageId);
-        
-        if (!errorMessage) {
-          errorMessage = document.createElement('div');
-          errorMessage.id = errorMessageId;
-          errorMessage.className = 'field-error-message';
-          element.parentNode?.insertBefore(errorMessage, element.nextSibling);
-        }
-        
-        errorMessage.textContent = error.message;
       }
     });
     
     // Scroll to the first error if option is enabled
     if (options.scrollToError && errors.length > 0) {
-      const firstErrorElement = 
-        errors[0].element || 
-        document.querySelector(`[name="${errors[0].fieldName}"], #${errors[0].fieldName}, [data-field="${errors[0].fieldName}"]`);
+      const firstErrorElement = findFieldElement(errors[0].fieldName);
       
       if (firstErrorElement) {
-        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => {
+          firstErrorElement.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }, 100);
       }
     }
-  };
+  }, [clearErrorHighlights, createRippleEffect, findFieldElement]);
   
   /**
-   * Clear all error highlights
+   * Enhance an existing form with validation functionality
    */
-  const clearErrorHighlights = () => {
-    // Remove error classes from all fields
-    document.querySelectorAll('.error-field').forEach(el => {
-      el.classList.remove('error-field');
-    });
+  const enhanceFormValidation = useCallback((form: any) => {
+    if (!form) return null;
     
-    // Remove all error messages
-    document.querySelectorAll('.field-error-message').forEach(el => {
-      el.parentNode?.removeChild(el);
-    });
-    
-    errorsRef.current = [];
-  };
-  
-  /**
-   * Enhance a form with validation highlighting
-   */
-  const enhanceForm = (form: any) => {
-    const originalSubmit = form.handleSubmit;
-    
-    // Modify the submit handler to automatically validate
-    form.handleSubmit = (...args: any[]) => {
-      // Clear previous errors
-      clearErrorHighlights();
+    return {
+      validateFields: (fieldNames: string[]) => {
+        const errors: FormFieldError[] = [];
+        
+        fieldNames.forEach(fieldName => {
+          const fieldError = form.formState.errors[fieldName];
+          if (fieldError) {
+            errors.push({
+              fieldName,
+              message: fieldError.message as string || `Invalid ${fieldName}`
+            });
+          }
+        });
+        
+        if (errors.length > 0) {
+          highlightErrors(errors, {
+            scrollToError: true,
+            highlightWithRipple: true
+          });
+        }
+        
+        return errors.length === 0;
+      },
       
-      // Call the original submit method
-      return originalSubmit.apply(form, args);
+      clearFieldError: (fieldName: string) => {
+        form.clearErrors(fieldName);
+        const element = findFieldElement(fieldName);
+        if (element) {
+          element.classList.remove('validation-error');
+        }
+      },
+      
+      validateForm: () => {
+        return form.trigger();
+      },
+      
+      highlightErrors,
+      clearErrorHighlights,
+      form
     };
-    
-    return form;
-  };
+  }, [highlightErrors, clearErrorHighlights, findFieldElement]);
   
   return {
     highlightErrors,
     clearErrorHighlights,
-    enhanceForm,
-    currentErrors: errorsRef.current
+    enhanceFormValidation,
+    findFieldElement
   };
 };
 
 /**
- * Enhance a form with validation highlighting
+ * Enhance form validation for react-hook-form and other form libraries
  */
 export const enhanceFormValidation = (form: any) => {
+  // Return enhanced form if useFormValidation is not available
+  if (!form) return null;
+  
   const validation = useFormValidation();
-  return {
-    ...validation,
-    form
-  };
+  return validation.enhanceFormValidation(form);
 };
