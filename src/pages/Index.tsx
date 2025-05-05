@@ -17,10 +17,11 @@ import { Download } from 'lucide-react';
 import { createPortableVersion } from '@/services/backup/backupService';
 import { toast } from 'sonner';
 import { useHotkeys } from '@/hooks/useHotkeys';
+import FormatConfirmationDialog from '@/components/FormatConfirmationDialog';
 
 const Index = () => {
   const navigate = useNavigate();
-  const [showFormatter, setShowFormatter] = useState(false);
+  const [showFormatConfirmation, setShowFormatConfirmation] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -40,8 +41,36 @@ const Index = () => {
   ]);
 
   const handleFormatClick = () => {
-    setShowFormatter(true);
+    setShowFormatConfirmation(true);
     return true;
+  };
+
+  const handleFormatConfirm = async () => {
+    setShowFormatConfirmation(false);
+    try {
+      toast("Format in progress", {
+        description: "Creating backup and resetting data...",
+      });
+      
+      // Use the format function
+      const formatSuccess = await FormatDataHandler.formatData();
+      
+      if (formatSuccess) {
+        toast.success("Data Formatted Successfully", {
+          description: "All data has been completely reset. A backup was created automatically.",
+        });
+        
+        // Refresh the page after a short delay
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      }
+    } catch (error) {
+      console.error("Error during formatting:", error);
+      toast.error("Format Error", {
+        description: "There was a problem formatting the data. Please try again.",
+      });
+    }
   };
 
   const handleMonthChange = (month: number, year: number) => {
@@ -166,12 +195,14 @@ const Index = () => {
             selectedYear={selectedYear} 
           />
         </section>
-
-        {/* Data format Handler (for advanced users; shown if needed) */}
-        {showFormatter && (
-          <FormatDataHandler onFormatComplete={() => setShowFormatter(false)} />
-        )}
       </main>
+
+      {/* Format confirmation dialog */}
+      <FormatConfirmationDialog
+        isOpen={showFormatConfirmation}
+        onClose={() => setShowFormatConfirmation(false)}
+        onConfirm={handleFormatConfirm}
+      />
     </div>
   );
 };

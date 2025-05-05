@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,10 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { menuItems } from './DashboardMenu';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
 interface NavigationProps {
   title?: string;
@@ -36,6 +39,8 @@ const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [formatPassword, setFormatPassword] = useState("");
   
   // Route-based styles - default to blue gradient
   const getRouteBasedStyles = () => {
@@ -58,6 +63,21 @@ const Navigation: React.FC<NavigationProps> = ({
   
   const handleHomeClick = () => {
     navigate('/');
+  };
+  
+  // Direct handling of format button click
+  const handleFormatButtonClick = () => {
+    setIsPasswordDialogOpen(true);
+  };
+  
+  // Handle password submission
+  const handlePasswordSubmit = () => {
+    setIsPasswordDialogOpen(false);
+    
+    // If onFormatClick is provided, call it with the password
+    if (onFormatClick) {
+      onFormatClick();
+    }
   };
   
   // Combine route-based styles with custom class + sticky positioning
@@ -114,8 +134,8 @@ const Navigation: React.FC<NavigationProps> = ({
           
           <div className="flex items-center space-x-4">
             <FontSizeAdjuster />
-            {showFormatButton && onFormatClick && (
-              <Button variant="destructive" size="sm" onClick={onFormatClick} className="md-ripple">
+            {showFormatButton && (
+              <Button variant="destructive" size="sm" onClick={handleFormatButtonClick} className="md-ripple">
                 Format
               </Button>
             )}
@@ -123,6 +143,35 @@ const Navigation: React.FC<NavigationProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Password Protection Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Format Protection</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="formatPassword">Enter Format Password</Label>
+            <Input 
+              id="formatPassword" 
+              type="password" 
+              placeholder="Password"
+              value={formatPassword}
+              onChange={(e) => setFormatPassword(e.target.value)}
+              className="mt-2"
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handlePasswordSubmit}>
+              Continue
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

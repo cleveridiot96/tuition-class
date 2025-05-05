@@ -96,6 +96,17 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
     }
   };
 
+  // Static method for formatting data from outside the component
+  static formatData = async (password: string = ""): Promise<boolean> => {
+    try {
+      // Use our format function with the provided password
+      return await completeFormatAllData(password);
+    } catch (error) {
+      console.error("Error during formatting:", error);
+      return false;
+    }
+  };
+
   return (
     <>
       <FormatEventConnector 
@@ -124,6 +135,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
               value={formatPassword}
               onChange={(e) => setFormatPassword(e.target.value)}
               className="mt-2"
+              autoComplete="off"
             />
           </div>
           <DialogFooter>
@@ -155,6 +167,7 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
                   value={exportPassword}
                   onChange={(e) => setExportPassword(e.target.value)}
                   className="mt-2"
+                  autoComplete="off"
                 />
               </>
             )}
@@ -176,6 +189,17 @@ const FormatDataHandler = ({ onFormatComplete }: FormatDataHandlerProps) => {
       </Dialog>
     </>
   );
+};
+
+// Add the static method
+FormatDataHandler.formatData = async (password: string = ""): Promise<boolean> => {
+  try {
+    // Use our format function with the provided password
+    return await completeFormatAllData(password);
+  } catch (error) {
+    console.error("Error during formatting:", error);
+    return false;
+  }
 };
 
 export default FormatDataHandler;

@@ -6,6 +6,7 @@ import { usePurchaseForm } from "./hooks/usePurchaseForm";
 import { usePartyManagement } from "./usePartyManagement";
 import PurchaseFormContent from "./PurchaseFormContent";
 import { enhanceFormValidation } from "@/hooks/useFormValidation";
+import FormDebugger from "@/components/FormDebugger";
 
 const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCancel, initialData }) => {
   // Load entity data
@@ -29,30 +30,35 @@ const PurchaseFormController: React.FC<PurchaseFormProps> = ({ onSubmit, onCance
     : '0';
 
   return (
-    <PurchaseFormContent
-      form={purchaseForm.form}
-      formSubmitted={purchaseForm.formSubmitted}
-      onCancel={onCancel}
-      isSubmitting={purchaseForm.form.formState.isSubmitting}
-      isEdit={!!initialData}
-      locations={entityData.locations}
-      brokerageAmount={purchaseForm.brokerageAmount}
-      totalAmount={purchaseForm.totalAmount}
-      transportCost={purchaseForm.transportCost}
-      totalAfterExpenses={purchaseForm.totalAfterExpenses}
-      ratePerKgAfterExpenses={purchaseForm.ratePerKgAfterExpenses}
-      extractBagsFromLotNumber={purchaseForm.extractBagsFromLotNumber}
-      showBrokerage={purchaseForm.showBrokerage}
-      initialData={initialData}
-      expenses={expensesDisplay}
-      showDuplicateLotDialog={purchaseForm.showDuplicateLotDialog}
-      setShowDuplicateLotDialog={purchaseForm.setShowDuplicateLotDialog}
-      duplicateLotInfo={purchaseForm.duplicateLotInfo}
-      onContinueDespiteDuplicate={purchaseForm.handleContinueDespiteDuplicate}
-      handleFormSubmit={purchaseForm.handleFormSubmit}
-      partyManagement={partyManagement}
-      formValidation={formValidation}
-    />
+    <>
+      <PurchaseFormContent
+        form={purchaseForm.form}
+        formSubmitted={purchaseForm.formSubmitted}
+        onCancel={onCancel}
+        isSubmitting={purchaseForm.form.formState.isSubmitting}
+        isEdit={!!initialData}
+        locations={entityData.locations}
+        brokerageAmount={purchaseForm.brokerageAmount}
+        totalAmount={purchaseForm.totalAmount}
+        transportCost={purchaseForm.transportCost}
+        totalAfterExpenses={purchaseForm.totalAfterExpenses}
+        ratePerKgAfterExpenses={purchaseForm.ratePerKgAfterExpenses}
+        extractBagsFromLotNumber={purchaseForm.extractBagsFromLotNumber}
+        showBrokerage={purchaseForm.showBrokerage}
+        initialData={initialData}
+        expenses={expensesDisplay}
+        showDuplicateLotDialog={purchaseForm.showDuplicateLotDialog}
+        setShowDuplicateLotDialog={purchaseForm.setShowDuplicateLotDialog}
+        duplicateLotInfo={purchaseForm.duplicateLotInfo}
+        onContinueDespiteDuplicate={purchaseForm.handleContinueDespiteDuplicate}
+        handleFormSubmit={purchaseForm.handleFormSubmit}
+        partyManagement={partyManagement}
+        formValidation={formValidation}
+      />
+      
+      {/* Add optional form debugger - only visible in development mode */}
+      <FormDebugger form={purchaseForm.form} show={process.env.NODE_ENV !== "production"} />
+    </>
   );
 };
 
