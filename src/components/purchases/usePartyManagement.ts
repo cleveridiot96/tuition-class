@@ -1,65 +1,40 @@
 
-import { useState, useEffect, useCallback } from "react";
-import { useMasterData } from "@/hooks/useMasterData";
+import { useDialogStates } from "./hooks/useDialogStates";
+import { useNewEntityStates } from "./hooks/useNewEntityStates";
+import { useSimilarPartyCheck } from "./hooks/useSimilarPartyCheck";
+import { useEntityManagement } from "./hooks/useEntityManagement";
+import { UseFormReturn } from "react-hook-form";
+import { PurchaseFormData } from "./PurchaseFormSchema";
 
-// Define proper types for your data structures
-interface MasterDataItem {
-  value: string;
-  label: string;
-  // Add any additional properties that might exist on your master data items
-  commissionRate?: number; // Use optional property if it may not exist on all items
+interface UsePartyManagementProps {
+  form: UseFormReturn<PurchaseFormData>;
+  loadData: () => void;
 }
 
-// You might want to adjust this type based on the actual return type of useMasterData
-interface UseMasterDataReturn {
-  suppliers: MasterDataItem[];
-  agents: MasterDataItem[];
-  transporters: MasterDataItem[];
-  refresh: () => void;
-  loading: boolean;
-  getByType: (type: string) => MasterDataItem[];
-}
+export const usePartyManagement = ({ form, loadData }: UsePartyManagementProps) => {
+  const dialogStates = useDialogStates();
+  const entityStates = useNewEntityStates();
+  const similarPartyStates = useSimilarPartyCheck();
+  const entityManagement = useEntityManagement({
+    loadData,
+    form,
+    ...dialogStates,
+    ...entityStates
+  });
 
-export const usePartyManagement = ({ form }: { form: any }) => {
-  const { 
-    suppliers, 
-    agents, 
-    transporters, 
-    refresh, 
-    loading,
-    getByType
-  } = useMasterData() as UseMasterDataReturn;
-
-  // Format data for each dropdown
-  const formattedSuppliers = suppliers.map(supplier => ({
-    value: supplier.value,
-    label: supplier.label
-  }));
-  
-  const formattedAgents = agents.map(agent => ({
-    value: agent.value,
-    label: agent.label,
-    commissionRate: agent.commissionRate // Access the property directly
-  }));
-  
-  const formattedTransporters = transporters.map(transporter => ({
-    value: transporter.value,
-    label: transporter.label
-  }));
-
-  const loadData = useCallback(() => {
-    refresh();
-  }, [refresh]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const useSuggestedParty = () => {
+    if (similarPartyStates.similarParty && similarPartyStates.similarParty.name) {
+      form.setValue("party", similarPartyStates.similarParty.name);
+    }
+    dialogStates.setShowSimilarPartyDialog(false);
+    similarPartyStates.resetSimilarPartyState();
+  };
 
   return {
-    suppliers: formattedSuppliers,
-    agents: formattedAgents,
-    transporters: formattedTransporters,
-    loadData,
-    loading
+    ...dialogStates,
+    ...entityStates,
+    ...similarPartyStates,
+    ...entityManagement,
+    useSuggestedParty
   };
 };

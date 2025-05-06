@@ -1,16 +1,13 @@
 
 // Core storage operations
-export const getStorageItem = <T>(key: string): T => {
+export const getStorageItem = <T>(key: string): T | null => {
   try {
     const serializedState = localStorage.getItem(key);
-    if (serializedState === null) {
-      // Return empty array for array types, empty object otherwise
-      return ([] as unknown) as T;
-    }
+    if (serializedState === null) return null;
     return JSON.parse(serializedState) as T;
   } catch (error) {
     console.error("Error getting item from localStorage:", error);
-    return ([] as unknown) as T;
+    return null;
   }
 };
 
@@ -44,7 +41,7 @@ export const getLocations = (): string[] => {
 
 export const checkDuplicateLot = (lotNumber: string): boolean => {
   try {
-    const purchases = getStorageItem<any[]>('purchases');
+    const purchases = getStorageItem<any[]>('purchases') || [];
     return purchases.some((p: any) => p.lotNumber === lotNumber && !p.isDeleted);
   } catch (error) {
     console.error("Error checking duplicate lot:", error);
@@ -53,25 +50,10 @@ export const checkDuplicateLot = (lotNumber: string): boolean => {
 };
 
 export const getAgents = () => {
-  return getStorageItem<any[]>('agents');
-};
-
-export const getSuppliers = () => {
-  return getStorageItem<any[]>('suppliers');
-};
-
-export const getTransporters = () => {
-  return getStorageItem<any[]>('transporters');
-};
-
-export const getBrokers = () => {
-  return getStorageItem<any[]>('brokers');
-};
-
-export const getPurchases = () => {
-  return getStorageItem<any[]>('purchases');
-};
-
-export const getCustomers = () => {
-  return getStorageItem<any[]>('customers');
+  const agents = getStorageItem<any[]>('agents');
+  if (!agents) {
+    console.warn("No agents found in storage, returning empty array");
+    return [];
+  }
+  return agents;
 };

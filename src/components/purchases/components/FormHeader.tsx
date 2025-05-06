@@ -2,22 +2,9 @@
 import React from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-
-interface FormHeaderProps {
-  lotNumber: string;
-  date: string;
-  location: string;
-  locations: string[];
-  onInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onSelectChange: (name: string, value: string) => void;
-}
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormHeaderProps } from '../../shared/types/PurchaseFormTypes';
+import { FormRow } from "@/components/ui/form";
 
 const FormHeader: React.FC<FormHeaderProps> = ({
   lotNumber,
@@ -27,54 +14,41 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   onInputChange,
   onSelectChange
 }) => {
-  // Extract bags from lot number for display
-  const extractedBags = (() => {
-    const match = lotNumber.match(/[\/\\](\d+)/);
-    return match && match[1] ? parseInt(match[1], 10) : null;
-  })();
-
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+    <FormRow>
       <div>
-        <Label htmlFor="lotNumber">Lot Number (Vakkal)</Label>
+        <Label htmlFor="lotNumber">Lot Number</Label>
         <Input
           id="lotNumber"
           name="lotNumber"
           value={lotNumber}
           onChange={onInputChange}
-          placeholder="e.g. DD/12"
-          className="mt-1"
+          required
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Format: Name/BagCount (e.g. DD/12 for 12 bags)
-          {extractedBags && <span className="font-medium text-blue-600"> → {extractedBags} bags</span>}
-        </p>
       </div>
-      
       <div>
         <Label htmlFor="date">Date</Label>
-        <Input 
+        <Input
           id="date"
           name="date"
           type="date"
-          value={date} 
+          value={date}
           onChange={onInputChange}
-          className="mt-1"
+          required
         />
       </div>
-      
       <div>
         <Label htmlFor="location">Location</Label>
-        <Select 
+        <Select
           name="location"
           value={location}
           onValueChange={(value) => onSelectChange('location', value)}
         >
-          <SelectTrigger className="mt-1">
+          <SelectTrigger>
             <SelectValue placeholder="Select location" />
           </SelectTrigger>
           <SelectContent>
-            {locations.map((loc) => (
+            {locations.map(loc => (
               <SelectItem key={loc} value={loc}>
                 {loc}
               </SelectItem>
@@ -82,7 +56,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
           </SelectContent>
         </Select>
       </div>
-    </div>
+    </FormRow>
   );
 };
 

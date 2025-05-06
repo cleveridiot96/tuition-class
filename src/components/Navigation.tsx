@@ -1,179 +1,177 @@
+
 import React from "react";
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Home, Menu } from 'lucide-react';
-import FontSizeAdjuster from './UI/FontSizeAdjuster';
-import { exportDataBackup, exportToExcel } from '@/services/storageUtils';
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import { menuItems } from './DashboardMenu';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useState } from "react";
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+} from "@/components/ui/navigation-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ChevronDown, LogOut, Home, Menu as MenuIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface NavigationProps {
-  title?: string;
+  title: string;
   showBackButton?: boolean;
-  onBack?: () => void;
-  rightContent?: React.ReactNode;
   showFormatButton?: boolean;
   onFormatClick?: () => void;
-  showHomeButton?: boolean;
-  className?: string; // Custom className for styling
 }
 
-const Navigation: React.FC<NavigationProps> = ({
-  title,
-  showBackButton = false,
-  onBack,
-  rightContent,
-  showFormatButton = false,
-  onFormatClick,
-  showHomeButton = true,
-  className = ''
-}) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-  const [formatPassword, setFormatPassword] = useState("");
-  
-  // Route-based styles - default to blue gradient
-  const getRouteBasedStyles = () => {
-    const path = location.pathname;
-    if (path.includes('/purchases')) return 'bg-gradient-to-r from-blue-600 to-blue-800';
-    if (path.includes('/sales')) return 'bg-gradient-to-r from-purple-600 to-purple-800';
-    if (path.includes('/stock') || path.includes('/inventory')) return 'bg-gradient-to-r from-green-600 to-green-800';
-    if (path.includes('/party-ledger')) return 'bg-gradient-to-r from-amber-600 to-amber-800';
-    // Use default blue for dashboard or any other route
-    return 'bg-gradient-to-r from-blue-600 to-purple-600';
+const Navigation: React.FC<NavigationProps> = ({ title, showBackButton = false, showFormatButton = false, onFormatClick }) => {
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
+    window.location.href = '/login';
   };
+
+  const currentUser = localStorage.getItem('currentUser');
+  const user = currentUser ? JSON.parse(currentUser) : null;
   
-  const handleBack = () => {
-    if (onBack) {
-      onBack();
-    } else {
-      navigate(-1);
-    }
-  };
-  
-  const handleHomeClick = () => {
-    navigate('/');
-  };
-  
-  // Direct handling of format button click
-  const handleFormatButtonClick = () => {
-    setIsPasswordDialogOpen(true);
-  };
-  
-  // Handle password submission
-  const handlePasswordSubmit = () => {
-    setIsPasswordDialogOpen(false);
-    
-    // If onFormatClick is provided, call it with the password
+  const handleFormatData = () => {
     if (onFormatClick) {
+      // Dispatch a custom event that will be captured by FormatEventConnector
+      document.dispatchEvent(new CustomEvent('format-click'));
       onFormatClick();
     }
   };
-  
-  // Combine route-based styles with custom class + sticky positioning
-  const headerClasses = `sticky top-0 z-50 w-full shadow-md ${getRouteBasedStyles()} ${className}`;
-  
+
   return (
-    <div className={headerClasses}>
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md-ripple mr-2 text-white hover:bg-white/10">
-                  <Menu size={18} />
+    <div className="bg-white shadow-md sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          {showBackButton && (
+            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
+              Back
+            </Button>
+          )}
+          <Link to="/" className="flex items-center mr-4">
+            <Button variant="ghost" size="icon" className="mr-2">
+              <Home size={18} />
+            </Button>
+          </Link>
+          <h1 className="text-xl font-bold">{title}</h1>
+        </div>
+        <div className="flex items-center space-x-4">
+          {showFormatButton && (
+            <Button variant="outline" size="sm" onClick={handleFormatData}>
+              Format Data
+            </Button>
+          )}
+          <div className="relative">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-1 px-3">
+                  <MenuIcon className="h-4 w-4" />
+                  <span>Menu</span>
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" />
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] p-0">
-                <div className="p-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
-                  <h2 className="text-xl font-bold">Kirana Retail</h2>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-64 bg-white" align="end" forceMount>
+                <div className="max-h-[70vh] overflow-y-auto py-1">
+                  {items.map((item) => (
+                    <DropdownMenuItem key={item.title} asChild className="py-2">
+                      <Link to={item.href} className="flex flex-col w-full">
+                        <div className="font-medium">{item.title}</div>
+                        <div className="text-xs text-muted-foreground">{item.description}</div>
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
                 </div>
-                <div className="p-0">
-                  <ul className="divide-y">
-                    {menuItems.map((item) => (
-                      <li key={item.title}>
-                        <Button 
-                          variant="ghost" 
-                          className="w-full flex justify-start items-center p-4 rounded-none hover:bg-gray-100 text-gray-700"
-                          onClick={() => navigate(item.path)}
-                        >
-                          <item.icon size={20} className="mr-4 text-blue-600" />
-                          <span className="text-base">{item.title}</span>
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </SheetContent>
-            </Sheet>
-            
-            {showBackButton && (
-              <Button variant="ghost" size="icon" onClick={handleBack} className="md-ripple text-white hover:bg-white/10">
-                <ArrowLeft size={18} />
-              </Button>
-            )}
-            
-            {showHomeButton && (
-              <Button variant="ghost" size="icon" onClick={handleHomeClick} className="md-ripple text-white hover:bg-white/10">
-                <Home size={18} />
-              </Button>
-            )}
-            
-            {title && <h1 className="text-xl font-bold text-white">{title}</h1>}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <FontSizeAdjuster />
-            {showFormatButton && (
-              <Button variant="destructive" size="sm" onClick={handleFormatButtonClick} className="md-ripple">
-                Format
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="https://github.com/shadcn.png" alt="Shadcn" />
+                  <AvatarFallback>SC</AvatarFallback>
+                </Avatar>
               </Button>
-            )}
-            {rightContent}
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56 bg-white" align="end" forceMount>
+              <DropdownMenuItem disabled>
+                <span className="font-bold">{user?.name}</span>
+                <br />
+                <span className="text-muted-foreground">{user?.email}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/profile" className="w-full h-full block">
+                  Profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to="/settings" className="w-full h-full block">
+                  Settings
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-
-      {/* Password Protection Dialog */}
-      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Format Protection</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="formatPassword">Enter Format Password</Label>
-            <Input 
-              id="formatPassword" 
-              type="password" 
-              placeholder="Password"
-              value={formatPassword}
-              onChange={(e) => setFormatPassword(e.target.value)}
-              className="mt-2"
-              autoComplete="off"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPasswordDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handlePasswordSubmit}>
-              Continue
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
+
+const items = [
+  {
+    title: "Purchases",
+    href: "/purchases",
+    description: "Record and manage purchases",
+  },
+  {
+    title: "Sales",
+    href: "/sales",
+    description: "Create and manage sales",
+  },
+  {
+    title: "Inventory",
+    href: "/inventory",
+    description: "View and manage stock",
+  },
+  {
+    title: "Stock Report",
+    href: "/stock",
+    description: "Real-time stock analysis",
+  },
+  {
+    title: "Payments",
+    href: "/payments",
+    description: "Record outgoing payments",
+  },
+  {
+    title: "Receipts",
+    href: "/receipts",
+    description: "Manage incoming payments",
+  },
+  {
+    title: "Master Data",
+    href: "/master",
+    description: "Manage people & companies",
+  },
+  {
+    title: "Cash Book",
+    href: "/cashbook",
+    description: "Track cash transactions",
+  },
+  {
+    title: "Party Ledger",
+    href: "/ledger",
+    description: "View party balances",
+  },
+];
 
 export default Navigation;

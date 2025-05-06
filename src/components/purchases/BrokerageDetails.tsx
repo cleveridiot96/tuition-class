@@ -2,19 +2,19 @@
 import React from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import BrokeragePercentage from "./components/BrokeragePercentage";
-import BrokerageFixed from "./components/BrokerageFixed";
-import BrokerageDisplay from "./components/BrokerageDisplay";
-import { BrokerageDetailsProps } from "./types/BrokerageTypes";
+import { Input } from "@/components/ui/input";
+
+interface BrokerageDetailsProps {
+  form: any;
+  brokerageAmount: number;
+  totalAmount: number;
+}
 
 const BrokerageDetails: React.FC<BrokerageDetailsProps> = ({
   form,
   brokerageAmount,
   totalAmount,
 }) => {
-  const brokerageType = form.watch("brokerageType");
-  const brokerageValue = form.watch("brokerageValue");
-
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-md bg-gray-50 mb-4">
       <FormField
@@ -27,7 +27,6 @@ const BrokerageDetails: React.FC<BrokerageDetailsProps> = ({
               <RadioGroup
                 onValueChange={field.onChange}
                 defaultValue={field.value}
-                value={field.value}
                 className="flex space-x-4"
               >
                 <div className="flex items-center space-x-2">
@@ -45,18 +44,43 @@ const BrokerageDetails: React.FC<BrokerageDetailsProps> = ({
         )}
       />
       
-      {brokerageType === "percentage" ? (
-        <BrokeragePercentage form={form} totalAmount={totalAmount} />
-      ) : (
-        <BrokerageFixed form={form} />
-      )}
-      
-      <BrokerageDisplay 
-        brokerageAmount={brokerageAmount}
-        totalAmount={totalAmount}
-        brokerageType={brokerageType}
-        brokerageValue={brokerageValue}
+      <FormField
+        control={form.control}
+        name="brokerageValue"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>
+              {form.watch("brokerageType") === "percentage" 
+                ? "Brokerage Percentage (%)" 
+                : "Fixed Amount (₹)"}
+            </FormLabel>
+            <FormControl>
+              <Input 
+                type="number" 
+                {...field} 
+                step="0.01"
+                placeholder={form.watch("brokerageType") === "percentage" ? "1.00" : "0.00"}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
+      
+      <div className="md:col-span-1">
+        <label className="text-sm font-medium">Calculated Brokerage (₹)</label>
+        <Input 
+          type="number" 
+          value={brokerageAmount.toFixed(2)} 
+          readOnly
+          className="bg-gray-100"
+        />
+        {form.watch("brokerageType") === "percentage" && (
+          <p className="text-xs text-gray-500 mt-1">
+            {form.watch("brokerageValue") || 0}% of ₹{totalAmount.toFixed(2)} = ₹{brokerageAmount.toFixed(2)}
+          </p>
+        )}
+      </div>
     </div>
   );
 };

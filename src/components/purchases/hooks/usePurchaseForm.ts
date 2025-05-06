@@ -1,232 +1,148 @@
 
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
-import { purchaseFormSchema } from '../PurchaseFormSchema';
-import { PurchaseFormData, PurchaseFormProps } from '../types/PurchaseTypes';
-import { usePurchaseCalculations } from './usePurchaseCalculations';
-import { useBagExtractor } from './useBagExtractor';
-import { usePurchaseValidation } from './usePurchaseValidation';
-import { usePurchaseValidationRules } from './usePurchaseValidationRules';
-import { useFormValidation } from '@/hooks/useFormValidation';
-import { safeNumber } from '@/lib/utils';
+import { useState, useCallback } from 'react';
+import { useToast } from "@/hooks/use-toast";
+import { v4 as uuidv4 } from 'uuid';
+import { Purchase } from "@/services/types";
+import { PurchaseFormState } from '../../shared/types/PurchaseFormTypes';
+import { addPurchase, updatePurchase } from "@/services/storageService";
 
-export const usePurchaseForm = ({ onSubmit, onCancel, initialData }: PurchaseFormProps) => {
-  const [showDuplicateLotDialog, setShowDuplicateLotDialog] = useState<boolean>(false);
-  const [duplicateLotInfo, setDuplicateLotInfo] = useState<any>(null);
-  const [pendingSubmitData, setPendingSubmitData] = useState<PurchaseFormData | null>(null);
-  const [showBrokerage, setShowBrokerage] = useState<boolean>(!!initialData?.agentId);
-  const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
-  const formValidation = useFormValidation();
+interface UsePurchaseFormProps {
+  onSubmit: (purchase: Purchase) => void;
+  initialValues?: Purchase;
+}
 
-  // Helper function to ensure numeric values are properly initialized
-  const ensureNumber = (value: any, defaultValue = 0): number => {
-    if (value === null || value === undefined || isNaN(parseFloat(String(value)))) {
-      return defaultValue;
-    }
-    return parseFloat(String(value));
-  };
+export const usePurchaseForm = ({ onSubmit, initialValues }: UsePurchaseFormProps) => {
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<PurchaseFormData>({
-    resolver: zodResolver(purchaseFormSchema),
-    defaultValues: {
-      date: initialData?.date || format(new Date(), 'yyyy-MM-dd'),
-      lotNumber: initialData?.lotNumber || '',
-      bags: ensureNumber(initialData?.bags, 0),
-      party: initialData?.party || '',
-      location: initialData?.location || '',
-      netWeight: ensureNumber(initialData?.netWeight, 0),
-      rate: ensureNumber(initialData?.rate, 0),
-      transporterId: initialData?.transporterId || '',
-      transportRate: ensureNumber(initialData?.transportRate, 0),
-      expenses: ensureNumber(initialData?.expenses, 0),
-      brokerageType: initialData?.brokerageType || 'percentage',
-      brokerageValue: ensureNumber(initialData?.brokerageValue, 1),
-      notes: initialData?.notes || '',
-      agentId: initialData?.agentId || '',
-      billNumber: initialData?.billNumber || '',
-      billAmount: initialData?.billAmount !== undefined ? initialData.billAmount : null,
-    },
-    mode: 'onSubmit',
-    reValidateMode: 'onSubmit'
+  const [formState, setFormState] = useState<PurchaseFormState>({
+    lotNumber: initialValues?.lotNumber || '',
+    date: initialValues?.date || new Date().toISOString().split('T')[0],
+    location: initialValues?.location || '',
+    agentId: initialValues?.agentId || '',
+    transporterId: initialValues?.transporterId || '',
+    transportCost: initialValues?.transportCost?.toString() || '0',
+    items: initialValues?.items || [{ id: uuidv4(), name: '', quantity: 0, rate: 0 }],
+    notes: initialValues?.notes || '',
+    expenses: initialValues?.expenses || 0,
+    totalAfterExpenses: initialValues?.totalAfterExpenses || 0
   });
 
-  const { totalAmount, totalAfterExpenses, ratePerKgAfterExpenses, transportCost, brokerageAmount } =
-    usePurchaseCalculations({ form, showBrokerage, initialData });
-  const { extractBagsFromLotNumber } = useBagExtractor({ form });
-  const { validatePurchaseForm } = usePurchaseValidation();
-  const validationRules = usePurchaseValidationRules(form);
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormState(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  }, []);
 
-  useEffect(() => {
-    const subscription = form.watch((value, { name }) => {
-      if (name === 'agentId') {
-        setShowBrokerage(!!value.agentId);
-      }
-      
-      if (name === 'lotNumber') {
-        const lotNumber = value.lotNumber as string;
-        if (lotNumber) {
-          const extractedBags = extractBagsFromLotNumber(lotNumber);
-          if (extractedBags !== null) {
-            form.setValue('bags', extractedBags);
-          }
-        }
-      }
-      
-      // Auto-calculate weight based on bags (50kg per bag)
-      if (name === 'bags') {
-        const bags = safeNumber(value.bags, 0);
-        if (bags > 0) {
-          const calculatedWeight = bags * 50;
-          form.setValue('netWeight', calculatedWeight);
-        }
-      }
-    });
-    
-    return () => subscription.unsubscribe();
-  }, [form, extractBagsFromLotNumber]);
+  const handleSelectChange = useCallback((name: string, value: string) => {
+    setFormState(prevState => ({
+      ...prevState,
+      [name]: value
+    }));
+  }, []);
 
-  const handleFormSubmit = async (data: PurchaseFormData) => {
-    setFormSubmitted(true);
-    formValidation.clearErrorHighlights();
-    
-    // Ensure all values are properly defined to prevent "undefined" in UI
-    const cleanedData = {
-      ...data,
-      party: data.party?.trim() || '',
-      lotNumber: data.lotNumber?.trim() || '',
-      notes: data.notes?.trim() || '',
-      billNumber: data.billNumber?.trim() || '',
-    };
-    
-    // Validate that either supplier or agent is provided
-    if (!cleanedData.party && !cleanedData.agentId) {
-      const errors = [
-        {
-          fieldName: 'party',
-          message: 'Either Supplier Name or Agent must be specified'
-        }
-      ];
-      formValidation.highlightErrors(errors, { scrollToError: true, highlightWithRipple: true, showToast: true });
-      return;
+  const handleItemChange = useCallback((index: number, field: string, value: any) => {
+    setFormState(prev => ({
+      ...prev,
+      items: prev.items.map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
+    }));
+  }, []);
+
+  const handleAddItem = useCallback(() => {
+    setFormState(prev => ({
+      ...prev,
+      items: [...prev.items, { id: uuidv4(), name: '', quantity: 0, rate: 0 }]
+    }));
+  }, []);
+
+  const handleRemoveItem = useCallback((index: number) => {
+    setFormState(prev => ({
+      ...prev,
+      items: prev.items.filter((_, i) => i !== index)
+    }));
+  }, []);
+
+  const calculateSubtotal = useCallback(() => {
+    return formState.items.reduce((total, item) => total + (item.quantity * item.rate), 0);
+  }, [formState.items]);
+
+  const calculateTotal = useCallback(() => {
+    const subtotal = calculateSubtotal();
+    const transportCost = parseFloat(formState.transportCost || '0');
+    const expenses = parseFloat(formState.expenses?.toString() || '0');
+    return subtotal + transportCost + expenses;
+  }, [formState.transportCost, formState.expenses, calculateSubtotal]);
+
+  const handleSubmit = useCallback(async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      const transportCost = parseFloat(formState.transportCost || '0');
+      const expenses = parseFloat(formState.expenses?.toString() || '0');
+      const totalAmount = calculateTotal();
+      const firstItem = formState.items[0] || { quantity: 0, rate: 0 };
+
+      const purchaseData: Purchase = {
+        id: initialValues?.id || uuidv4(),
+        lotNumber: formState.lotNumber,
+        date: formState.date,
+        location: formState.location,
+        agentId: formState.agentId,
+        transporterId: formState.transporterId,
+        transportCost: transportCost,
+        items: formState.items,
+        notes: formState.notes,
+        totalAmount: totalAmount,
+        expenses: expenses,
+        totalAfterExpenses: totalAmount,
+        // Required fields from Purchase type
+        quantity: formState.items.reduce((sum, item) => sum + item.quantity, 0),
+        netWeight: formState.items.reduce((sum, item) => sum + item.quantity, 0), // Using quantity as netWeight
+        rate: firstItem.rate // Using first item's rate as the main rate
+      };
+
+      if (initialValues) {
+        updatePurchase(purchaseData);
+        toast({
+          title: "Purchase Updated",
+          description: `Purchase ${purchaseData.lotNumber} has been updated.`
+        });
+      } else {
+        addPurchase(purchaseData);
+        toast({
+          title: "Purchase Added",
+          description: `Purchase ${purchaseData.lotNumber} has been added.`
+        });
+      }
+
+      onSubmit(purchaseData);
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save purchase. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    // Validate supplier
-    if (cleanedData.party) {
-      const supplierValid = await validationRules.validateSupplier(cleanedData.party);
-      if (supplierValid !== true) {
-        formValidation.highlightErrors([
-          {
-            fieldName: 'party',
-            message: supplierValid as string
-          }
-        ], { scrollToError: true, highlightWithRipple: true, showToast: true });
-        form.setError('party', { type: 'manual', message: supplierValid as string });
-        return;
-      }
-    }
-
-    // Validate agent
-    if (cleanedData.agentId) {
-      const agentValid = await validationRules.validateAgent(cleanedData.agentId);
-      if (agentValid !== true) {
-        formValidation.highlightErrors([
-          {
-            fieldName: 'agentId',
-            message: agentValid as string
-          }
-        ], { scrollToError: true, highlightWithRipple: true, showToast: true });
-        form.setError('agentId', { type: 'manual', message: agentValid as string });
-        return;
-      }
-    }
-
-    // Validate transporter
-    if (cleanedData.transporterId) {
-      const transporterValid = await validationRules.validateTransporter(cleanedData.transporterId);
-      if (transporterValid !== true) {
-        formValidation.highlightErrors([
-          {
-            fieldName: 'transporterId',
-            message: transporterValid as string
-          }
-        ], { scrollToError: true, highlightWithRipple: true, showToast: true });
-        form.setError('transporterId', { type: 'manual', message: transporterValid as string });
-        return;
-      }
-    }
-
-    // Ensure all numeric fields are properly parsed
-    const dataWithFixedNumbers = {
-      ...cleanedData,
-      bags: ensureNumber(cleanedData.bags, 0),
-      netWeight: ensureNumber(cleanedData.netWeight, 0),
-      rate: ensureNumber(cleanedData.rate, 0),
-      transportRate: ensureNumber(cleanedData.transportRate, 0),
-      expenses: ensureNumber(cleanedData.expenses, 0),
-      brokerageValue: ensureNumber(cleanedData.brokerageValue, 1),
-      billAmount: cleanedData.billAmount ? ensureNumber(cleanedData.billAmount, 0) : null
-    };
-
-    const validation = validatePurchaseForm(dataWithFixedNumbers, !!initialData);
-
-    if (!validation.isValid) {
-      if (validation.duplicatePurchase) {
-        setDuplicateLotInfo(validation.duplicatePurchase);
-        setShowDuplicateLotDialog(true);
-        setPendingSubmitData(dataWithFixedNumbers);
-        return;
-      }
-      return;
-    }
-
-    submitData(dataWithFixedNumbers);
-  };
-
-  const handleContinueDespiteDuplicate = () => {
-    if (pendingSubmitData) {
-      submitData(pendingSubmitData);
-      setPendingSubmitData(null);
-    }
-    setShowDuplicateLotDialog(false);
-  };
-
-  const submitData = (data: PurchaseFormData) => {
-    const expenses = ensureNumber(data.expenses, 0);
-      
-    const submitData = {
-      ...data,
-      expenses,
-      totalAmount,
-      transportCost,
-      brokerageAmount: showBrokerage ? brokerageAmount : 0,
-      totalAfterExpenses,
-      ratePerKgAfterExpenses,
-      id: initialData?.id || Date.now().toString()
-    };
-
-    onSubmit(submitData);
-    toast.success(initialData ? "Purchase updated successfully" : "Purchase added successfully");
-  };
+  }, [formState, initialValues, calculateTotal, onSubmit, toast]);
 
   return {
-    form,
-    formSubmitted,
-    showBrokerage,
-    setShowBrokerage,
-    showDuplicateLotDialog,
-    setShowDuplicateLotDialog,
-    duplicateLotInfo,
-    handleFormSubmit,
-    handleContinueDespiteDuplicate,
-    totalAmount,
-    transportCost,
-    brokerageAmount,
-    totalAfterExpenses,
-    ratePerKgAfterExpenses,
-    extractBagsFromLotNumber,
-    formValidation
+    formState,
+    isSubmitting,
+    handleInputChange,
+    handleSelectChange,
+    handleItemChange,
+    handleAddItem,
+    handleRemoveItem,
+    calculateSubtotal,
+    calculateTotal,
+    handleSubmit
   };
 };

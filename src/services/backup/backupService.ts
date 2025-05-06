@@ -1,15 +1,15 @@
 
-import { exportDataBackup, importDataBackup } from '../storageUtils';
+import { exportDataBackup, importDataBackup } from './backupRestore';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 // Creates a complete backup of all data in JSON format
-export const createCompleteBackup = async (filename?: string): Promise<string | boolean> => {
+export const createCompleteBackup = () => {
   try {
-    return await exportDataBackup(filename || undefined, true);
+    return exportDataBackup();
   } catch (error) {
     console.error("Error creating backup:", error);
-    return false;
+    return null;
   }
 };
 
@@ -17,7 +17,7 @@ export const createCompleteBackup = async (filename?: string): Promise<string | 
 export const createPortableVersion = async () => {
   try {
     // Create a backup of data
-    const dataBackup = await exportDataBackup(true) as string;
+    const dataBackup = exportDataBackup();
     if (!dataBackup) {
       return { success: false, message: "Failed to create data backup" };
     }

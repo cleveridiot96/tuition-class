@@ -1,140 +1,253 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
-import { v4 as uuidv4 } from "uuid";
-import { toast } from "sonner";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-  FormRow,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
 } from "@/components/ui/select";
-import { getCustomers, getBrokers, getNextReceiptNumber } from "@/services/storageService";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Printer } from "lucide-react";
+import {
+  getAgents,
+  getSuppliers,
+  getBrokers,
+  getCustomers,
+  getTransporters
+} from "@/services/storageService";
+import { useToast } from "@/hooks/use-toast";
+import { formatDate } from "@/utils/helpers";
 
 const formSchema = z.object({
   date: z.string().min(1, "Date is required"),
   receiptNumber: z.string().min(1, "Receipt number is required"),
-  entityId: z.string().min(1, "Please select an entity"),
-  entityType: z.enum(["customer", "broker"]),
-  amount: z.number().min(1, "Amount must be greater than 0"),
-  paymentMethod: z.enum(["cash", "bank"]),
-  reference: z.string().optional(),
+  amount: z.coerce.number().positive("Amount is required"),
+  partyType: z.string().min(1, "Party type is required"),
+  partyId: z.string().min(1, "Party is required"),
+  receiptMode: z.string().min(1, "Receipt mode is required"),
+  billNumber: z.string().optional(),
+  billAmount: z.coerce.number().min(0, "Bill amount must be valid"),
+  referenceNumber: z.string().optional(),
   notes: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormData = z.infer<typeof formSchema>;
 
 interface ReceiptFormProps {
   onSubmit: (data: any) => void;
-  onCancel: () => void;
   initialData?: any;
 }
 
-const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
-  const [customers, setCustomers] = useState<any[]>([]);
-  const [brokers, setBrokers] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState("customer");
+const ReceiptForm = ({ onSubmit, initialData }: ReceiptFormProps) => {
+  const [parties, setParties] = useState<any[]>([]);
+  const [partyType, setPartyType] = useState<string>(initialData?.partyType || "agent");
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+  const [currentReceipt, setCurrentReceipt] = useState<any>(null);
+  const { toast } = useToast();
   
-  const form = useForm<FormValues>({
+  const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      date: initialData?.date || format(new Date(), "yyyy-MM-dd"),
-      receiptNumber: initialData?.receiptNumber || getNextReceiptNumber(),
-      entityId: initialData?.customerId || initialData?.brokerId || "",
-      entityType: initialData?.customerId ? "customer" : "broker",
-      amount: initialData?.amount || 0,
-      paymentMethod: initialData?.paymentMethod || "cash",
-      reference: initialData?.reference || "",
-      notes: initialData?.notes || "",
-    },
+    defaultValues: initialData ? {
+      ...initialData,
+      partyType: initialData.partyType || "agent",
+      partyId: initialData.partyId || "",
+      date: initialData.date || format(new Date(), 'yyyy-MM-dd'),
+      billAmount: initialData.billAmount || 0,
+    } : {
+      date: format(new Date(), 'yyyy-MM-dd'),
+      receiptNumber: `REC-${Date.now().toString().slice(-6)}`,
+      amount: 0,
+      partyType: "agent",
+      partyId: "",
+      receiptMode: "cash",
+      billNumber: "",
+      billAmount: 0,
+      referenceNumber: "",
+      notes: "",
+    }
   });
 
-  const entityType = form.watch("entityType");
-
   useEffect(() => {
-    // Set active tab based on form value
-    setActiveTab(entityType);
-  }, [entityType]);
+    loadParties(partyType);
+  }, [partyType]);
 
-  useEffect(() => {
-    // Load customers and brokers
-    setCustomers(getCustomers() || []);
-    setBrokers(getBrokers() || []);
+  const loadParties = (type: string) => {
+    let partyList: any[] = [];
     
-    // If initial data has customerId or brokerId, set the appropriate tab
-    if (initialData) {
-      if (initialData.customerId) {
-        form.setValue("entityType", "customer");
-        form.setValue("entityId", initialData.customerId);
-        setActiveTab("customer");
-      } else if (initialData.brokerId) {
-        form.setValue("entityType", "broker");
-        form.setValue("entityId", initialData.brokerId);
-        setActiveTab("broker");
-      }
+    switch (type) {
+      case 'agent':
+        partyList = getAgents();
+        break;
+      case 'supplier':
+        partyList = getSuppliers();
+        break;
+      case 'customer':
+        partyList = getCustomers();
+        break;
+      case 'broker':
+        partyList = getBrokers();
+        break;
+      case 'transporter':
+        partyList = getTransporters();
+        break;
+      default:
+        partyList = [];
     }
-  }, [initialData]);
+    
+    setParties(partyList);
+    form.setValue("partyId", "");
+  };
 
-  const handleSubmit = (data: FormValues) => {
-    try {
-      const { entityId, entityType, ...rest } = data;
-      
-      // Prepare data based on entity type
-      const entityData = entityType === "customer" 
-        ? { 
-            customerId: entityId, 
-            customerName: customers.find(c => c.id === entityId)?.name || "Unknown Customer" 
-          }
-        : { 
-            brokerId: entityId, 
-            brokerName: brokers.find(b => b.id === entityId)?.name || "Unknown Broker" 
-          };
-      
-      // Combine data for submission
-      const submitData = {
-        ...rest,
-        ...entityData,
-        id: initialData?.id || uuidv4(),
-        amount: Number(data.amount),
-      };
-      
-      onSubmit(submitData);
-      toast.success(initialData ? "Receipt updated successfully" : "Receipt added successfully");
-    } catch (error) {
-      console.error("Error in receipt form:", error);
-      toast.error("Error submitting the form. Please check your inputs.");
+  const handlePartyTypeChange = (value: string) => {
+    setPartyType(value);
+    form.setValue("partyType", value);
+  };
+
+  const handleFormSubmit = (data: FormData) => {
+    const selectedParty = parties.find(p => p.id === data.partyId);
+    
+    const submitData = {
+      ...data,
+      partyName: selectedParty?.name || "",
+      id: initialData?.id || Date.now().toString()
+    };
+    
+    setCurrentReceipt(submitData);
+    
+    onSubmit(submitData);
+    
+    if (!initialData) {
+      setIsReceiptDialogOpen(true);
+      toast({
+        title: "Receipt Created",
+        description: "Receipt successfully created and ready to print",
+      });
     }
   };
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    form.setValue("entityType", value as "customer" | "broker");
-    form.setValue("entityId", ""); // Reset entity ID when switching tabs
+  const handlePrintReceipt = () => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      const receiptDate = new Date(currentReceipt?.date);
+      const formattedDate = format(receiptDate, 'dd/MM/yy');
+      
+      const receiptHtml = `
+        <html>
+          <head>
+            <title>Receipt #${currentReceipt?.receiptNumber}</title>
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+              .header { text-align: center; border-bottom: 1px solid #000; padding-bottom: 10px; }
+              .receipt-details { margin-top: 20px; }
+              .row { display: flex; margin-bottom: 10px; }
+              .label { width: 150px; font-weight: bold; }
+              .value { flex: 1; }
+              .footer { margin-top: 50px; display: flex; justify-content: space-between; }
+              .signature { width: 40%; text-align: center; border-top: 1px solid #000; padding-top: 10px; }
+              @media print {
+                button { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h2>RECEIPT</h2>
+              <p>Agricultural Business Management System</p>
+            </div>
+            
+            <div class="receipt-details">
+              <div class="row">
+                <div class="label">Receipt No:</div>
+                <div class="value">${currentReceipt?.receiptNumber}</div>
+              </div>
+              <div class="row">
+                <div class="label">Date:</div>
+                <div class="value">${formattedDate}</div>
+              </div>
+              <div class="row">
+                <div class="label">Received From:</div>
+                <div class="value">${currentReceipt?.partyName}</div>
+              </div>
+              <div class="row">
+                <div class="label">Amount:</div>
+                <div class="value">₹${parseFloat(currentReceipt?.amount).toFixed(2)}</div>
+              </div>
+              <div class="row">
+                <div class="label">Mode:</div>
+                <div class="value">${currentReceipt?.receiptMode}</div>
+              </div>
+              ${currentReceipt?.referenceNumber ? `
+                <div class="row">
+                  <div class="label">Reference No:</div>
+                  <div class="value">${currentReceipt?.referenceNumber}</div>
+                </div>
+              ` : ''}
+              ${currentReceipt?.billNumber ? `
+                <div class="row">
+                  <div class="label">Bill No:</div>
+                  <div class="value">${currentReceipt?.billNumber}</div>
+                </div>
+              ` : ''}
+              ${currentReceipt?.billAmount ? `
+                <div class="row">
+                  <div class="label">Bill Amount:</div>
+                  <div class="value">₹${parseFloat(currentReceipt?.billAmount).toFixed(2)}</div>
+                </div>
+              ` : ''}
+              ${currentReceipt?.notes ? `
+                <div class="row">
+                  <div class="label">Notes:</div>
+                  <div class="value">${currentReceipt?.notes}</div>
+                </div>
+              ` : ''}
+            </div>
+            
+            <div class="footer">
+              <div class="signature">Received By</div>
+              <div class="signature">Authorized Signature</div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px;">
+              <button onclick="window.print()">Print Receipt</button>
+            </div>
+          </body>
+        </html>
+      `;
+      
+      printWindow.document.open();
+      printWindow.document.write(receiptHtml);
+      printWindow.document.close();
+    } else {
+      toast({
+        title: "Print Error",
+        description: "Could not open print window. Check your browser settings.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
-    <ScrollArea className="h-[calc(100vh-200px)] pr-4">
-      <div className="p-4 bg-white rounded-lg">
+    <>
+      <Card className="p-6">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            <FormRow columns={2}>
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="date"
@@ -148,6 +261,7 @@ const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
                 name="receiptNumber"
@@ -155,177 +269,195 @@ const ReceiptForm = ({ onSubmit, onCancel, initialData }: ReceiptFormProps) => {
                   <FormItem>
                     <FormLabel>Receipt Number</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} placeholder="Enter receipt number" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </FormRow>
-
-            <Tabs
-              value={activeTab}
-              onValueChange={handleTabChange}
-              className="w-full"
-            >
-              <TabsList className="w-full grid grid-cols-2 mb-4">
-                <TabsTrigger value="customer">Customer</TabsTrigger>
-                <TabsTrigger value="broker">Broker</TabsTrigger>
-              </TabsList>
-
-              <FormField
-                control={form.control}
-                name="entityType"
-                render={({ field }) => (
-                  <input type="hidden" {...field} />
-                )}
-              />
-
-              <TabsContent value="customer" className="mt-0">
-                <FormField
-                  control={form.control}
-                  name="entityId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={entityType === "customer" ? field.value : ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select customer" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              {customer.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
-
-              <TabsContent value="broker" className="mt-0">
-                <FormField
-                  control={form.control}
-                  name="entityId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Broker</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={entityType === "broker" ? field.value : ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select broker" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {brokers.map((broker) => (
-                            <SelectItem key={broker.id} value={broker.id}>
-                              {broker.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </TabsContent>
-            </Tabs>
-
-            <FormRow columns={2}>
+              
               <FormField
                 control={form.control}
                 name="amount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Amount</FormLabel>
+                    <FormLabel>Amount (₹)</FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                      />
+                      <Input type="number" {...field} placeholder="0.00" step="0.01" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
               <FormField
                 control={form.control}
-                name="paymentMethod"
+                name="partyType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Payment Method</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Party Type</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handlePartyTypeChange(value);
+                      }} 
+                      value={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select payment method" />
+                          <SelectValue placeholder="Select party type" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="bank">Bank</SelectItem>
+                        <SelectItem value="agent">Agent</SelectItem>
+                        <SelectItem value="supplier">Supplier</SelectItem>
+                        <SelectItem value="customer">Customer</SelectItem>
+                        <SelectItem value="broker">Broker</SelectItem>
+                        <SelectItem value="transporter">Transporter</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </FormRow>
-
-            <FormRow columns={1}>
+              
               <FormField
                 control={form.control}
-                name="reference"
+                name="partyId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel optional>Reference</FormLabel>
+                    <FormLabel>Party</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select party" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {parties.map((party) => (
+                          <SelectItem key={party.id} value={party.id}>
+                            {party.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="receiptMode"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Receipt Mode</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select receipt mode" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="cash">Cash</SelectItem>
+                        <SelectItem value="cheque">Cheque</SelectItem>
+                        <SelectItem value="bank">Bank Transfer</SelectItem>
+                        <SelectItem value="upi">UPI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="billNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bill Number (Optional)</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} placeholder="Enter bill number" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </FormRow>
-
-            <FormRow columns={1}>
+              
               <FormField
                 control={form.control}
-                name="notes"
+                name="billAmount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel optional>Notes</FormLabel>
+                    <FormLabel>Bill Amount (₹)</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input type="number" {...field} placeholder="0.00" step="0.01" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </FormRow>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Cancel
+              
+              <FormField
+                control={form.control}
+                name="referenceNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Reference Number (Optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter reference number" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes</FormLabel>
+                  <FormControl>
+                    <Textarea rows={3} {...field} placeholder="Enter any additional notes" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="flex justify-end space-x-4">
+              {initialData && currentReceipt && (
+                <Button type="button" onClick={handlePrintReceipt} variant="outline">
+                  <Printer className="mr-2 h-4 w-4" /> Print Receipt
+                </Button>
+              )}
+              <Button type="submit" size="lg">
+                {initialData ? "Update Receipt" : "Create Receipt"}
               </Button>
-              <Button type="submit">{initialData ? "Update" : "Save"}</Button>
             </div>
           </form>
         </Form>
-      </div>
-    </ScrollArea>
+      </Card>
+      
+      <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Receipt Created</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>Receipt #{currentReceipt?.receiptNumber} has been created successfully.</p>
+            <p className="mt-2">Would you like to print the receipt?</p>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handlePrintReceipt}>
+              <Printer className="mr-2 h-4 w-4" /> Print Receipt
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

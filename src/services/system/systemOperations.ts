@@ -1,12 +1,12 @@
 
-import { exportDataBackup, importDataBackup } from '../storageUtils';
-import { seedInitialData } from '../backup/backupRestore';
+import { exportDataBackup, importDataBackup } from '../backup/backupRestore';
+import { seedInitialData } from '../core/dataManagement';
 
 // Function to properly reset all data including receipts
 export const completeFormatAllData = async () => {
   try {
     // First create a backup
-    const backupData = await exportDataBackup(true) as string;
+    const backupData = exportDataBackup(true);
     
     // Save backup to localStorage before formatting
     if (backupData) {
@@ -40,7 +40,7 @@ export const attemptDataRecovery = () => {
     if (preFormatBackup) {
       return { 
         available: true, 
-        restore: async () => await importDataBackup(preFormatBackup) 
+        restore: () => importDataBackup(preFormatBackup) 
       };
     }
     

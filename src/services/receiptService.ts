@@ -23,16 +23,16 @@ export const addReceipt = (receipt: Receipt): void => {
   saveYearSpecificStorageItem('receipts', receipts);
   
   // Create double entry for accounting system
-  if (receipt.customerId || receipt.entityId) {
+  if (receipt.customerId) {
     // Create accounting entry for cash receipt
     try {
       createDoubleEntry(
         receipt.date,
-        receipt.paymentMethod === 'bank' || receipt.mode === 'bank' ? 'acc-bank' : 'acc-cash', // Debit Cash or Bank
-        `acc-customer-${receipt.customerId || receipt.entityId}`, // Credit Customer Account
+        receipt.paymentMethod === 'bank' ? 'acc-bank' : 'acc-cash', // Debit Cash or Bank
+        `acc-customer-${receipt.customerId}`, // Credit Customer Account
         receipt.amount,
         receipt.reference || receipt.receiptNumber || '',
-        `Receipt from ${receipt.customerName || receipt.partyName || 'customer'}`,
+        `Receipt from ${receipt.customerName || 'customer'}`,
         'receipt',
         receipt.id
       );

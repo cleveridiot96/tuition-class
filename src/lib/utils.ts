@@ -1,77 +1,120 @@
 
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
 
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+// Cache frequently used class combinations
+const classCache = new Map<string, string>();
+const MAX_CACHE_SIZE = 100;
 
 /**
- * Safely converts a value to a number
- * @param value Value to convert to number
- * @param defaultValue Default value to return if conversion fails (defaults to 0)
- * @returns Number value or default value if conversion fails
+ * Enhanced cn utility with caching and error handling
  */
-export function safeNumber(value: unknown, defaultValue: number = 0): number {
-  // If value is null, undefined, or empty string, return default value
-  if (value === null || value === undefined || value === '') {
-    return defaultValue;
+export function cn(...inputs: ClassValue[]): string {
+  try {
+    const key = JSON.stringify(inputs);
+    
+    if (classCache.has(key)) {
+      return classCache.get(key)!;
+    }
+    
+    const result = twMerge(clsx(inputs));
+    
+    if (classCache.size >= MAX_CACHE_SIZE) {
+      const firstKey = classCache.keys().next().value;
+      classCache.delete(firstKey);
+    }
+    
+    classCache.set(key, result);
+    return result;
+  } catch (error) {
+    console.error("Error in cn utility function:", error);
+    // Fallback to basic implementation if cache fails
+    return twMerge(clsx(inputs));
   }
-  
-  // If value is already a number, return it
-  if (typeof value === 'number' && !isNaN(value)) {
-    return value;
-  }
-  
-  // Try to convert the value to a number
-  const parsedValue = typeof value === 'string' ? parseFloat(value) : Number(value);
-  
-  // Return parsed value if valid, otherwise return default value
-  return isNaN(parsedValue) ? defaultValue : parsedValue;
 }
 
 /**
- * Creates a debounced function that delays invoking func until after wait milliseconds
- * @param func The function to debounce
- * @param wait The number of milliseconds to delay
- * @returns Debounced function
+ * Enhanced debounce utility with error handling
  */
 export function debounce<T extends (...args: any[]) => any>(
-  func: T, 
+  func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout> | null = null;
   
-  return function(...args: Parameters<T>): void {
-    const later = () => {
-      timeout = null;
-      func(...args);
-    };
-    
-    if (timeout !== null) {
-      clearTimeout(timeout);
+  return function(...args: Parameters<T>) {
+    try {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        try {
+          func(...args);
+        } catch (err) {
+          console.error("Error in debounced function:", err);
+        }
+      }, wait);
+    } catch (err) {
+      console.error("Error setting up debounce:", err);
     }
-    timeout = setTimeout(later, wait);
   };
 }
 
 /**
- * Creates a throttled function that only invokes func at most once per every wait milliseconds
- * @param func The function to throttle
- * @param wait The number of milliseconds to throttle invocations to
- * @returns Throttled function
+ * Enhanced throttle utility for smooth UI with error handling
  */
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
-  wait: number
+  limit: number
 ): (...args: Parameters<T>) => void {
-  let lastCall = 0;
+  let inThrottle = false;
   
-  return function(...args: Parameters<T>): void {
-    const now = Date.now();
-    if (now - lastCall >= wait) {
-      lastCall = now;
-      func(...args);
+  return function(...args: Parameters<T>) {
+    try {
+      if (!inThrottle) {
+        try {
+          func(...args);
+        } catch (err) {
+          console.error("Error in throttled function:", err);
+        }
+        inThrottle = true;
+        setTimeout(() => inThrottle = false, limit);
+      }
+    } catch (err) {
+      console.error("Error setting up throttle:", err);
     }
   };
 }
+
+/**
+ * Safe array utilities for avoiding common iteration errors
+ */
+export const safeArrayUtils = {
+  map<T, R>(arr: T[] | null | undefined, fn: (item: T, index: number) => R): R[] {
+    if (!Array.isArray(arr)) return [];
+    try {
+      return arr.map(fn);
+    } catch (err) {
+      console.error("Error in safeArrayUtils.map:", err);
+      return [];
+    }
+  },
+  
+  filter<T>(arr: T[] | null | undefined, fn: (item: T, index: number) => boolean): T[] {
+    if (!Array.isArray(arr)) return [];
+    try {
+      return arr.filter(fn);
+    } catch (err) {
+      console.error("Error in safeArrayUtils.filter:", err);
+      return [];
+    }
+  },
+  
+  find<T>(arr: T[] | null | undefined, fn: (item: T, index: number) => boolean): T | undefined {
+    if (!Array.isArray(arr)) return undefined;
+    try {
+      return arr.find(fn);
+    } catch (err) {
+      console.error("Error in safeArrayUtils.find:", err);
+      return undefined;
+    }
+  }
+};

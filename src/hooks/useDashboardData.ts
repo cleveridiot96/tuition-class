@@ -1,200 +1,167 @@
 
-import { useEffect, useState } from 'react';
-import { getPurchases, getSales, getStorageItem } from '@/services/storageService';
+import { useCallback, useState } from "react";
+import { 
+  getPurchases, 
+  getInventory, 
+  getSales, 
+  exportDataBackup 
+} from "@/services/storageService";
+import { useToast } from "@/hooks/use-toast";
+import { format, parseISO } from "date-fns";
 
-export interface DashboardSummaryData {
-  totalPurchases: number;
-  totalSales: number;
-  totalInventory: number;
-  cashBalance: number;
-  purchases: {
-    amount: number;
-    bags: number;
-    kgs: number;
-  };
-  sales: {
-    amount: number;
-    bags: number;
-    kgs: number;
-  };
-  stock: {
-    mumbai: number;
-    chiplun: number;
-    sawantwadi: number;
-  };
+interface ProfitData {
+  purchase: number;
+  sale: number;
+  profit: number;
+  date: string;
+  quantity: number;
+  netWeight: number;
+  id?: string;
 }
 
-const defaultSummaryData: DashboardSummaryData = {
-  totalPurchases: 0,
-  totalSales: 0,
-  totalInventory: 0,
-  cashBalance: 0,
-  purchases: {
-    amount: 0,
-    bags: 0,
-    kgs: 0
-  },
-  sales: {
-    amount: 0,
-    bags: 0,
-    kgs: 0
-  },
-  stock: {
-    mumbai: 0,
-    chiplun: 0,
-    sawantwadi: 0
-  }
-};
+interface MonthlyProfit {
+  profit: number;
+  display: string;
+}
 
-export const useDashboardData = (
-  selectedMonth: number = new Date().getMonth(), 
-  selectedYear: number = new Date().getFullYear()
-) => {
-  const [summaryData, setSummaryData] = useState<DashboardSummaryData>(defaultSummaryData);
-  const [isLoading, setIsLoading] = useState(true);
+interface MonthlyProfits {
+  [key: string]: MonthlyProfit;
+}
 
-  useEffect(() => {
+export interface SummaryData {
+  purchases: { amount: number; bags: number; kgs: number };
+  sales: { amount: number; bags: number; kgs: number };
+  stock: { mumbai: number; chiplun: number; sawantwadi: number };
+}
+
+export const useDashboardData = () => {
+  const { toast } = useToast();
+  const [summaryData, setSummaryData] = useState<SummaryData>({
+    purchases: { amount: 0, bags: 0, kgs: 0 },
+    sales: { amount: 0, bags: 0, kgs: 0 },
+    stock: { mumbai: 0, chiplun: 0, sawantwadi: 0 }
+  });
+  const [profitByTransaction, setProfitByTransaction] = useState<ProfitData[]>([]);
+  const [profitByMonth, setProfitByMonth] = useState<any[]>([]);
+  const [totalProfit, setTotalProfit] = useState(0);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0);
+
+  const loadDashboardData = useCallback(() => {
+    setIsRefreshing(true);
+    
     try {
-      setIsLoading(true);
+      localStorage.setItem('lastDataRefresh', Date.now().toString());
       
-      // Get purchases data
-      const purchases = getPurchases();
+      const purchases = getPurchases() || [];
+      const sales = getSales() || [];
       
-      // Filter purchases by month and year
-      const startDate = new Date(selectedYear, selectedMonth, 1);
-      const endDate = new Date(selectedYear, selectedMonth + 1, 0); // Last day of month
+      const inventory = getInventory() || [];
+      const activeInventory = inventory.filter(item => !item.isDeleted);
+      const mumbaiStock = activeInventory.filter(item => item.location === "Mumbai");
+      const chiplunStock = activeInventory.filter(item => item.location === "Chiplun");
+      const sawantwadiStock = activeInventory.filter(item => item.location === "Sawantwadi");
       
-      const filteredPurchases = purchases.filter(purchase => {
-        if (purchase.isDeleted) return false;
-        const purchaseDate = new Date(purchase.date);
-        return purchaseDate >= startDate && purchaseDate <= endDate;
+      console.log("Purchases data loaded:", purchases.length);
+      console.log("Sales data loaded:", sales.length);
+      console.log("Active inventory:", activeInventory.length);
+      
+      const transactionProfits = sales.filter(sale => !sale.isDeleted).map(sale => {
+        const relatedPurchase = purchases.find(p => p.lotNumber === sale.lotNumber && !p.isDeleted);
+        const purchaseCost = relatedPurchase ? relatedPurchase.totalAfterExpenses : 0;
+        const purchaseCostPerKg = relatedPurchase ? purchaseCost / relatedPurchase.netWeight : 0;
+        
+        const effectivePurchaseCost = purchaseCostPerKg * sale.netWeight;
+        
+        const saleRevenue = sale.totalAmount || 0;
+        const profit = Math.round(saleRevenue - effectivePurchaseCost);
+        
+        return {
+          purchase: effectivePurchaseCost,
+          sale: saleRevenue,
+          profit: profit,
+          date: sale.date,
+          quantity: sale.quantity,
+          netWeight: sale.netWeight,
+          id: sale.id
+        };
       });
       
-      const totalPurchases = filteredPurchases.reduce((total, purchase) => {
-        return total + (purchase.totalAfterExpenses || 0);
-      }, 0);
-
-      // Calculate purchase metrics
-      const purchaseBags = filteredPurchases.reduce((total, purchase) => {
-        return total + (purchase.quantity || 0);
-      }, 0);
-
-      const purchaseKgs = filteredPurchases.reduce((total, purchase) => {
-        return total + (purchase.netWeight || 0);
-      }, 0);
-
-      // Get sales data
-      const sales = getSales();
-      
-      // Filter sales by month and year
-      const filteredSales = sales.filter(sale => {
-        if (sale.isDeleted) return false;
-        const saleDate = new Date(sale.date);
-        return saleDate >= startDate && saleDate <= endDate;
+      const profitsByMonth: MonthlyProfits = {};
+      transactionProfits.forEach(transaction => {
+        if (!transaction.date) return;
+        
+        try {
+          const date = parseISO(transaction.date);
+          const monthKey = format(date, 'yyyy-MM');
+          const monthDisplay = format(date, 'MMM yyyy');
+          
+          if (!profitsByMonth[monthKey]) {
+            profitsByMonth[monthKey] = {
+              profit: 0,
+              display: monthDisplay
+            };
+          }
+          
+          profitsByMonth[monthKey].profit += transaction.profit;
+        } catch (error) {
+          console.error("Error processing date:", transaction.date, error);
+        }
       });
       
-      const totalSales = filteredSales.reduce((total, sale) => {
-        return total + (sale.totalAmount || 0);
-      }, 0);
-
-      // Calculate sales metrics
-      const salesBags = filteredSales.reduce((total, sale) => {
-        return total + (sale.quantity || 0);
-      }, 0);
-
-      const salesKgs = filteredSales.reduce((total, sale) => {
-        return total + (sale.netWeight || 0);
-      }, 0);
-
-      // Get inventory data
-      const inventory = getStorageItem<any[]>('inventory') || [];
-      const totalInventory = inventory.reduce((total, item) => {
-        if (!item.isDeleted && item.remainingQuantity > 0) {
-          return total + (item.remainingQuantity * item.rate || 0);
-        }
-        return total;
-      }, 0);
-
-      // Calculate stock per location
-      const mumbaiStock = inventory.reduce((total, item) => {
-        if (!item.isDeleted && item.location === "Mumbai" && item.remainingQuantity > 0) {
-          return total + (item.remainingQuantity || 0);
-        }
-        return total;
-      }, 0);
-
-      const chiplunStock = inventory.reduce((total, item) => {
-        if (!item.isDeleted && item.location === "Chiplun" && item.remainingQuantity > 0) {
-          return total + (item.remainingQuantity || 0);
-        }
-        return total;
-      }, 0);
-
-      const sawantwadiStock = inventory.reduce((total, item) => {
-        if (!item.isDeleted && item.location === "Sawantwadi" && item.remainingQuantity > 0) {
-          return total + (item.remainingQuantity || 0);
-        }
-        return total;
-      }, 0);
-
-      // Get cash balance
-      const payments = getStorageItem<any[]>('payments') || [];
-      const receipts = getStorageItem<any[]>('receipts') || [];
+      const monthlyProfits = Object.entries(profitsByMonth).map(([key, data]) => ({
+        month: data.display,
+        profit: data.profit
+      })).sort((a, b) => a.month.localeCompare(b.month));
       
-      // Filter payments and receipts by month and year
-      const filteredPayments = payments.filter(payment => {
-        if (payment.isDeleted) return false;
-        const paymentDate = new Date(payment.date);
-        return paymentDate >= startDate && paymentDate <= endDate;
-      });
+      setProfitByTransaction(transactionProfits);
+      setProfitByMonth(monthlyProfits);
+      setTotalProfit(transactionProfits.reduce((sum, item) => sum + item.profit, 0));
       
-      const filteredReceipts = receipts.filter(receipt => {
-        if (receipt.isDeleted) return false;
-        const receiptDate = new Date(receipt.date);
-        return receiptDate >= startDate && receiptDate <= endDate;
-      });
+      const activePurchases = purchases.filter(p => !p.isDeleted);
+      const activeSales = sales.filter(s => !s.isDeleted);
       
-      const totalPayments = filteredPayments.reduce((total, payment) => {
-        return total + (payment.amount || 0);
-      }, 0);
-      
-      const totalReceipts = filteredReceipts.reduce((total, receipt) => {
-        return total + (receipt.amount || 0);
-      }, 0);
-      
-      const cashBalance = totalReceipts - totalPayments;
-
       setSummaryData({
-        totalPurchases,
-        totalSales,
-        totalInventory,
-        cashBalance,
         purchases: {
-          amount: totalPurchases,
-          bags: purchaseBags,
-          kgs: purchaseKgs
+          amount: activePurchases.reduce((sum, p) => sum + (p.totalAfterExpenses || 0), 0),
+          bags: activePurchases.reduce((sum, p) => sum + (p.quantity || 0), 0),
+          kgs: activePurchases.reduce((sum, p) => sum + (p.netWeight || 0), 0)
         },
         sales: {
-          amount: totalSales,
-          bags: salesBags,
-          kgs: salesKgs
+          amount: activeSales.reduce((sum, s) => sum + (s.totalAmount || 0), 0),
+          bags: activeSales.reduce((sum, s) => sum + (s.quantity || 0), 0),
+          kgs: activeSales.reduce((sum, s) => sum + (s.netWeight || 0), 0)
         },
         stock: {
-          mumbai: mumbaiStock,
-          chiplun: chiplunStock,
-          sawantwadi: sawantwadiStock
+          mumbai: mumbaiStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
+          chiplun: chiplunStock.reduce((sum, item) => sum + (item.quantity || 0), 0),
+          sawantwadi: sawantwadiStock.reduce((sum, item) => sum + (item.quantity || 0), 0)
         }
       });
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      // Ensure we always have valid data even if there's an error
-      setSummaryData(defaultSummaryData);
+      console.error("Error loading dashboard data:", error);
+      toast({
+        title: "Error Loading Data",
+        description: "There was a problem loading the dashboard data. Try refreshing.",
+        variant: "destructive"
+      });
     } finally {
-      setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, [selectedMonth, selectedYear]);
+  }, [toast]);
 
-  return { summaryData, isLoading };
+  const incrementDataVersion = () => {
+    setDataVersion(prev => prev + 1);
+  };
+
+  return {
+    summaryData,
+    profitByTransaction,
+    profitByMonth,
+    totalProfit,
+    isRefreshing,
+    dataVersion,
+    loadDashboardData,
+    incrementDataVersion
+  };
 };
-
-export default useDashboardData;

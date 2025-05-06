@@ -1,185 +1,186 @@
-// Basic interfaces
-export interface BasePurchase {
+export interface Agent {
+  id: string;
+  name: string;
+  address?: string;
+  balance: number;
+  isDeleted?: boolean;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  address?: string;
+  balance: number;
+  isDeleted?: boolean;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  address?: string;
+  balance: number;
+  isDeleted?: boolean;
+}
+
+export interface Broker {
+  id: string;
+  name: string;
+  address?: string;
+  commissionRate?: number;
+  balance: number;
+  isDeleted?: boolean;
+}
+
+export interface Transporter {
+  id: string;
+  name: string;
+  address?: string;
+  balance: number;
+  isDeleted?: boolean;
+}
+
+export interface Purchase {
   id: string;
   date: string;
   lotNumber: string;
-  bags: number;
-  party: string;
-  location: string;
-  netWeight: number;
-  rate: number;
-  quantity: number;
-  transporterId?: string;
-  transportRate?: number;
-  transportCost?: number;
-  expenses?: number;
-  brokerageType?: string;
-  brokerageRate?: number;
-  brokerageValue?: number;
-  notes?: string;
+  partyId?: string;
+  party?: string;
   agentId?: string;
   agent?: string;
-  broker?: string;
-  transporter?: string;
-  billNumber?: string;
-  billAmount?: number;
-  isDeleted?: boolean;
-  totalAmount: number;
-  transportAmount?: number;
-  brokerageAmount?: number;
-  totalAfterExpenses: number;
-  ratePerKgAfterExpenses?: number;
-  items?: Array<{id?: string; name: string; quantity: number; rate: number;}>;
-}
-
-export interface Purchase extends BasePurchase {
-  partyId?: string;
-  brokerName?: string;
-  isInventorized?: boolean;
-}
-
-export interface SaleItem {
-  id: string;
-  inventoryItemId: string;
-  lotNumber: string;
   quantity: number;
+  netWeight: number;
   rate: number;
   totalAmount: number;
-  name?: string;
+  transporterId?: string;
+  transporter?: string;
+  transportRate?: number;
+  transportAmount?: number;
+  transportCost?: number;
+  brokerId?: string;
+  broker?: string;
+  brokerageType?: string;
+  brokerageValue?: number;
+  brokerageAmount?: number;
+  expenses?: number;
+  totalAfterExpenses: number;
+  location: string;
+  notes?: string;
+  isDeleted?: boolean;
+  reference?: string;
+  items?: {
+    id: string;
+    name: string;
+    quantity: number;
+    rate: number;
+  }[];
 }
 
 export interface Sale {
   id: string;
   date: string;
+  billNumber?: string;
   lotNumber: string;
-  location: string;
   customerId: string;
-  customerName?: string;
-  customer?: string;
-  brokerId?: string;
-  brokerName?: string;
-  transporterId?: string;
-  transporterName?: string;
-  transportCost: number;
-  destination: string;
-  totalBags: number;
-  totalAmount: number;
+  customer: string;
   quantity: number;
   netWeight: number;
   rate: number;
-  brokerageAmount?: number;
-  transportAmount?: number;
-  expenses?: number;
+  totalAmount: number;
   notes?: string;
-  items: SaleItem[];
   isDeleted?: boolean;
-  bags: number;
-  billNumber: string;
-  billAmount: number | string;
+  brokerId?: string;
   broker?: string;
   salesBroker?: string;
+  transportCost?: number;
+  transporterId?: string;
+  transporter?: string;
+  billAmount?: number;
+  reference?: string;
+  location?: string;
+  items?: {
+    name: string;
+    quantity: number;
+    rate: number;
+  }[];
 }
 
 export interface InventoryItem {
   id: string;
-  purchaseId: string;
   lotNumber: string;
-  date: string;
   quantity: number;
-  remainingQuantity: number;
-  location: string;
   netWeight: number;
   rate: number;
-  ratePerKgAfterExpenses: number;
-  supplier: string;
-  isDeleted: boolean;
-  isSoldOut?: boolean;
-  transferredFrom?: string;
+  location: string;
+  dateAdded: string;
+  isDeleted?: boolean;
+  // Extended properties from legacy code
   agentId?: string;
   agentName?: string;
-  purchaseRate: number;
-  finalCost: number;
-  dateAdded: string;
-  productType?: string;
+  purchaseRate?: number;
+  finalCost?: number;
+  date?: string;
+  remainingQuantity?: number;
+  soldQuantity?: number;
+  remainingWeight?: number;
+}
+
+export interface EnhancedInventoryItem extends InventoryItem {
+  purchaseDate?: string;
+  buyingRate?: number;
+  currentValue?: number;
+  ageInDays?: number;
+  totalValue?: number;
+  agentName?: string;
+  remainingQuantity?: number;
+  soldQuantity?: number;
+  remainingWeight?: number;
+  finalCost?: number;
+  purchaseRate?: number;
 }
 
 export interface Payment {
   id: string;
-  date: string;
-  paymentNumber: string;
-  supplierId?: string;
-  supplierName?: string;
-  brokerId?: string;
-  brokerName?: string;
+  date: string | null;
   amount: number;
-  paymentMethod: 'cash' | 'bank';
-  reference?: string;
-  notes?: string;
-  isDeleted?: boolean;
+  partyType: string;
   partyId: string;
-  partyName?: string;
-  mode?: string;
+  partyName: string;
+  paymentMode: string;
+  mode?: string; // Legacy support
+  paymentMethod?: string; // Legacy support
+  billNumber?: string;
+  billAmount?: number;
+  referenceNumber?: string;
+  reference?: string; // Legacy support
+  notes?: string;
+  isAgainstTransaction?: boolean;
+  transactionId?: string;
+  transactionDetails?: any;
+  isOnAccount?: boolean;
+  isDeleted?: boolean;
 }
 
 export interface Receipt {
   id: string;
-  date: string;
-  receiptNumber: string;
-  customerId?: string;
-  customerName?: string;
-  brokerId?: string;
-  brokerName?: string;
+  date: string | null;
   amount: number;
-  paymentMethod: 'cash' | 'bank';
-  reference?: string;
-  notes?: string;
-  isDeleted?: boolean;
+  partyType: string;
   partyId: string;
-  partyName?: string;
-  entityId?: string;
-  entityType?: string;
-  mode?: string;
-  paymentMode?: string;
-}
-
-// Entity interfaces
-export interface BaseEntity {
-  id: string;
-  name: string;
-  phone?: string;
-  address?: string;
+  partyName: string;
+  customerName?: string; // Legacy support
+  customerId?: string; // Legacy support
+  paymentMode: string;
+  mode?: string; // Legacy support
+  paymentMethod?: string; // Legacy support
+  billNumber?: string;
+  billAmount?: number;
+  referenceNumber?: string;
+  reference?: string; // Legacy support
   notes?: string;
-  balance?: number;
+  isAgainstTransaction?: boolean;
+  transactionId?: string;
+  transactionDetails?: any;
+  isOnAccount?: boolean;
   isDeleted?: boolean;
-}
-
-export interface Agent extends BaseEntity {
-  commission?: number;
-}
-
-export interface Supplier extends BaseEntity {}
-
-export interface Customer extends BaseEntity {}
-
-export interface Broker extends BaseEntity {
-  commissionRate?: number;
-}
-
-export interface Transporter extends BaseEntity {
-  vehicleNumber?: string;
-}
-
-export interface Party extends BaseEntity {
-  type: 'supplier' | 'customer' | 'broker' | 'transporter' | 'agent';
-}
-
-// Report interface
-export interface EnhancedInventoryItem extends InventoryItem {
-  agentName: string;
-  soldQuantity: number;
-  soldWeight: number;
-  remainingWeight: number;
-  totalValue: number;
-  purchaseRate: number;
-  finalCost: number;
+  receiptNumber?: string; // Add this missing property
 }

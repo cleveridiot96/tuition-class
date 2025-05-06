@@ -1,32 +1,27 @@
 
-import React, { ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { CardContent } from "@/components/ui/card";
 
 interface DashboardCardProps {
   title: string;
-  children: ReactNode;
   onClick?: () => void;
   className?: string;
+  children: React.ReactNode;
 }
 
-const DashboardCard: React.FC<DashboardCardProps> = ({ 
-  title, 
-  children, 
-  onClick,
-  className = ""
-}) => {
+const DashboardCard = ({ title, onClick, className = "", children }: DashboardCardProps) => {
   return (
-    <Card 
-      className={`h-full transition-all duration-200 ${onClick ? 'cursor-pointer hover:shadow-md' : ''} ${className}`}
+    <div 
+      className={`bg-white rounded-xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 h-full ${className}`}
       onClick={onClick}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
     >
-      <CardHeader className="pb-3 border-b">
-        <CardTitle className="text-lg font-semibold">{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pt-4">
-        {children}
+      <CardContent className="p-5 relative w-full h-full">
+        <h3 className="text-lg font-medium mb-3 text-gray-800">{title}</h3>
+        <div>{children}</div>
       </CardContent>
-    </Card>
+    </div>
   );
 };
 

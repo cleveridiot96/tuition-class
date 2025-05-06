@@ -1,143 +1,197 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Download, Upload, AlertTriangle } from 'lucide-react';
-import { toast } from "sonner";
-import { exportDataBackup, importDataBackup } from '@/services/backup/backupRestore';
-import { useHotkeys, showAvailableShortcuts } from '@/hooks/useHotkeys';
+import { Card, CardContent } from "@/components/ui/card";
+import { RefreshCw, Download, Upload, AlertTriangle } from "lucide-react";
+import { exportDataBackup, importDataBackup } from "@/services/storageService";
+import { debugStorage } from "@/services/storageUtils"; 
+import { toast } from '@/hooks/use-toast';
+import PortableAppButton from "./dashboard/PortableAppButton";
 
 interface BackupRestoreControlsProps {
-  onRefresh?: () => void;
-  isRefreshing?: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
-const BackupRestoreControls: React.FC<BackupRestoreControlsProps> = ({
-  onRefresh,
-  isRefreshing = false,
-}) => {
-  // Register keyboard shortcuts
-  useHotkeys([
-    { key: 'h', alt: true, handler: showAvailableShortcuts, description: "Show keyboard shortcuts" }
-  ]);
-  
-  const handleRefreshClick = () => {
-    toast.info("Refreshing application data...");
-    if (onRefresh) onRefresh();
-  };
+const BackupRestoreControls = ({ onRefresh, isRefreshing }: BackupRestoreControlsProps) => {
+  const [isRestoring, setIsRestoring] = useState(false);
 
-  const handleBackup = async () => {
-    toast.info("Creating backup...");
+  const handleBackup = () => {
     try {
-      const fileName = `backup-${new Date().toISOString().split('T')[0]}.json`;
-      const backup = await exportDataBackup(fileName);
-      if (backup) {
-        toast.success("Backup created successfully", { 
-          description: "Your data has been exported to a file." 
+      const jsonData = exportDataBackup();
+      
+      if (!jsonData) {
+        toast({
+          title: "Failed to create backup",
+          variant: "destructive"
         });
+        return;
       }
-    } catch (error) {
-      console.error('Error creating backup:', error);
-      toast.error("Failed to create backup", {
-        description: "An error occurred while creating your backup."
+      
+      // Create a download link for the JSON data
+      const blob = new Blob([jsonData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      
+      // Generate filename with date
+      const date = new Date();
+      const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      a.download = `backup_${dateStr}.json`;
+      a.href = url;
+      a.click();
+      
+      URL.revokeObjectURL(url);
+      toast({
+        title: "Backup created and downloaded successfully"
       });
+      
+      window.dispatchEvent(new CustomEvent('backup-created', { detail: { success: true } }));
+    } catch (error) {
+      console.error("Error during backup:", error);
+      toast({
+        title: "Error creating backup",
+        variant: "destructive"
+      });
+      window.dispatchEvent(new CustomEvent('backup-created', { detail: { success: false } }));
     }
   };
-
+  
   const handleRestore = () => {
-    try {
-      const fileInput = document.createElement('input');
-      fileInput.type = 'file';
-      fileInput.accept = '.json';
-      
-      fileInput.onchange = (e: Event) => {
-        const target = e.target as HTMLInputElement;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        setIsRestoring(true);
+        const reader = new FileReader();
         
-        if (target.files && target.files.length) {
-          const file = target.files[0];
-          
-          toast.info("Restoring data from backup...");
-          importDataBackup(file)
-            .then(success => {
-              if (success) {
-                toast.success("Data restored successfully", {
-                  description: "Your data has been restored from backup."
-                });
-                
-                if (onRefresh) {
-                  setTimeout(() => onRefresh(), 500);
-                }
-              } else {
-                toast.error("Failed to restore data", {
-                  description: "The backup file format is not valid."
-                });
-              }
-            })
-            .catch(error => {
-              console.error('Error restoring data:', error);
-              toast.error("Failed to restore data", {
-                description: "An error occurred while processing the backup file."
-              });
-            });
-        }
-      };
+        reader.onload = (event) => {
+          const content = event.target?.result as string;
+          try {
+            if (!content) {
+              toast.error("Backup file is empty");
+              setIsRestoring(false);
+              return;
+            }
+            
+            // Debug the content
+            console.log("Restore file size:", content.length, "bytes");
+            
+            // Log a sample of the content for debugging (first 100 chars)
+            if (content.length > 100) {
+              console.log("Sample content:", content.substring(0, 100) + "...");
+            }
+            
+            // Attempt to parse the JSON to validate it before importing
+            JSON.parse(content);
+            
+            // All good - proceed with import
+            const success = importDataBackup(content);
+            
+            if (success) {
+              toast.success("Data restored successfully");
+              onRefresh();
+              
+              // Debug storage after restore
+              setTimeout(() => {
+                debugStorage();
+              }, 500);
+            } else {
+              toast.error("Failed to restore data from backup");
+            }
+          } catch (error) {
+            console.error("Import error:", error);
+            toast.error("Invalid backup file format");
+          } finally {
+            setIsRestoring(false);
+          }
+        };
+        
+        reader.onerror = () => {
+          toast.error("Error reading backup file");
+          setIsRestoring(false);
+        };
+        
+        reader.readAsText(file);
+      }
+    };
+    
+    input.click();
+  };
+  
+  const handleDebugStorage = () => {
+    try {
+      // Call the debugStorage function
+      debugStorage();
       
-      fileInput.click();
+      // Show notification to user
+      toast({
+        title: "Storage Debug Information",
+        description: "Database details logged to console. Press F12 to view.",
+      });
     } catch (error) {
-      console.error('Error setting up file input:', error);
-      toast.error("Failed to open file selector", {
-        description: "Please try again or use the Storage Manager."
+      console.error("Debug error:", error);
+      toast({
+        title: "Debug Error",
+        description: "Failed to log storage information",
+        variant: "destructive"
       });
     }
   };
-
-  const handleShowShortcuts = () => {
-    showAvailableShortcuts();
-  };
-
+  
   return (
-    <div className="flex flex-col md:flex-row justify-center gap-3 w-full">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={handleRefreshClick}
-          disabled={isRefreshing}
-          className="flex items-center justify-center gap-2 py-4 border-blue-200"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh Data
-        </Button>
+    <Card className="mb-6 border border-gray-200 bg-white">
+      <CardContent className="p-4 flex flex-wrap justify-between items-center gap-3">
+        <div className="flex gap-3 flex-wrap">
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
+            Refresh Data
+          </Button>
+            
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-2"
+            onClick={handleBackup}
+          >
+            <Download size={16} />
+            Backup Data
+          </Button>
+            
+          <Button 
+            variant={isRestoring ? "destructive" : "outline"} 
+            className="flex items-center gap-2"
+            onClick={handleRestore}
+            disabled={isRestoring}
+          >
+            {isRestoring ? (
+              <RefreshCw size={16} className="animate-spin" />
+            ) : (
+              <Upload size={16} />
+            )}
+            {isRestoring ? "Restoring..." : "Restore Data"}
+          </Button>
+          
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+            onClick={handleDebugStorage}
+            title="Log storage info to console for debugging"
+          >
+            <AlertTriangle size={16} />
+            Debug Storage
+          </Button>
+        </div>
         
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={handleBackup}
-          className="flex items-center justify-center gap-2 py-4 border-blue-200"
-        >
-          <Download size={16} />
-          Backup Data
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={handleRestore}
-          className="flex items-center justify-center gap-2 py-4 border-blue-200"
-        >
-          <Upload size={16} />
-          Restore Data
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={handleShowShortcuts}
-          className="flex items-center justify-center gap-2 py-4 border-blue-200"
-        >
-          <AlertTriangle size={16} />
-          Show Shortcuts
-        </Button>
-      </div>
-    </div>
+        <PortableAppButton />
+      </CardContent>
+    </Card>
   );
 };
 

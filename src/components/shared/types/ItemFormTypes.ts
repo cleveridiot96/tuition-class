@@ -1,26 +1,37 @@
 
-// Define common form state for both purchase and sales forms
+import { ReactNode } from 'react';
+
+export interface Item {
+  id?: string;
+  name: string;
+  quantity: number;
+  rate: number;
+}
+
+export interface ItemTableProps {
+  items: Item[];
+  onItemChange: (index: number, field: string, value: any) => void;
+  onRemoveItem: (index: number) => void;
+  onAddItem: () => void;
+}
+
+export interface FormSummaryProps {
+  subtotal: number;
+  transportCost: number;
+  brokerageAmount?: number;
+  showBrokerage?: boolean;
+  expenses?: number;
+  total: number;
+}
+
 export interface ItemFormState {
-  date: string;
   lotNumber: string;
+  date: string;
   location: string;
   transporterId: string;
   transportCost: string;
+  items: Item[];
   notes: string;
-  items: Array<{
-    id?: string;
-    name: string;
-    quantity: number;
-    rate: number;
-  }>;
-  expenses?: string | number;
-  bags?: number;
-  brokerageType?: string;
-  brokerageRate?: number;
-  brokerageAmount?: number;
-  agentId?: string;
-  billNumber?: string;
-  billAmount?: string | number | null;
-  brokerId?: string;
-  customerId?: string;
+  expenses?: number;
+  totalAfterExpenses?: number;
 }

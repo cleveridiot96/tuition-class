@@ -3,17 +3,15 @@
 export * from './core/storageCore';
 export * from './core/yearSpecificStorage';
 
-// Re-export data management functions from backupRestore
+// Re-export data management functions
 export {
-  exportDataBackup,
-  importDataBackup,
-  completeFormatAllData,
-  exportToExcel
-} from './backup/backupRestore';
+  clearAllData,
+  clearAllMasterData,
+  seedInitialData
+} from './core/dataManagement';
 
 // Re-export debug functionality
 export * from './debug/storageDebug';
 
 // Re-export backup functionality
-export { exportDataBackup as exportDataBackupAlternate } from './backup/exportBackup';
-export { importDataBackup as importDataBackupAlternate } from './backup/importBackup';
+export { exportDataBackup } from './backup/exportBackup';

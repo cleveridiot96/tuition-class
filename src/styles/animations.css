@@ -1,3 +1,4 @@
+
 /* Android-style ripple effect animations */
 .ripple {
   position: relative;
@@ -89,16 +90,14 @@
   }
 }
 
-/* Enhanced Material Design Ripple Effect */
+/* Material design ripple animation for interactive elements */
 .md-ripple {
   position: relative;
   overflow: hidden;
-  transform: translate3d(0, 0, 0);
-  transition: all 0.3s ease;
 }
 
 .md-ripple::after {
-  content: "";
+  content: '';
   display: block;
   position: absolute;
   width: 100%;
@@ -106,7 +105,7 @@
   top: 0;
   left: 0;
   pointer-events: none;
-  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.3) 10%, transparent 10.01%);
+  background-image: radial-gradient(circle, rgba(0, 0, 0, 0.2) 10%, transparent 10.01%);
   background-repeat: no-repeat;
   background-position: 50%;
   transform: scale(10, 10);
@@ -114,13 +113,9 @@
   transition: transform 0.5s, opacity 0.5s;
 }
 
-.md-ripple:active {
-  transform: scale(0.98);
-}
-
 .md-ripple:active::after {
   transform: scale(0, 0);
-  opacity: 0.4;
+  opacity: 0.3;
   transition: 0s;
 }
 

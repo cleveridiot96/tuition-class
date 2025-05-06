@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, RefreshCw, DatabaseBackup } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface FallbackErrorProps {
@@ -14,6 +14,29 @@ const FallbackError: React.FC<FallbackErrorProps> = ({
   resetErrorBoundary,
   message = "Something went wrong" 
 }) => {
+  // Handle data issues specifically - this is specialized for our dropdown problems
+  const handleDataReset = () => {
+    if (window.confirm("This will reset problematic data that might be causing dropdown errors. Continue?")) {
+      // A soft reset of just the problematic data
+      try {
+        localStorage.removeItem('options-cache');
+        sessionStorage.removeItem('dropdown-state');
+        
+        // If we're in the purchases section, clean that specific data
+        if (window.location.pathname.includes('purchases')) {
+          localStorage.removeItem('purchase-form-state');
+        }
+        
+        // Force a hard refresh
+        window.location.reload();
+      } catch (e) {
+        console.error("Error during data reset:", e);
+        // If reset fails, just do a normal refresh
+        window.location.reload();
+      }
+    }
+  };
+
   return (
     <div className="p-6 bg-red-50 border border-red-200 rounded-lg shadow-sm max-w-lg mx-auto my-4">
       <div className="flex items-start gap-3">
@@ -35,6 +58,17 @@ const FallbackError: React.FC<FallbackErrorProps> = ({
               >
                 <RefreshCw className="h-4 w-4" />
                 Try again
+              </Button>
+            )}
+            
+            {error?.message?.includes("undefined is not iterable") && (
+              <Button 
+                onClick={handleDataReset}
+                variant="destructive" 
+                className="flex items-center gap-2"
+              >
+                <DatabaseBackup className="h-4 w-4" />
+                Reset Problematic Data
               </Button>
             )}
           </div>

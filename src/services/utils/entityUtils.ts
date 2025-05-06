@@ -22,7 +22,10 @@ export const updateEntity = <T extends { id: string }>(key: string, updatedEntit
 
 export const deleteEntity = <T extends { id: string; isDeleted?: boolean }>(key: string, id: string): void => {
   const entities = getEntities<T>(key);
-  // Completely remove the entity instead of just marking it deleted
-  const filteredEntities = entities.filter(entity => entity.id !== id);
-  saveStorageItem(key, filteredEntities);
+  const index = entities.findIndex(entity => entity.id === id);
+  if (index !== -1) {
+    entities[index] = { ...entities[index], isDeleted: true };
+    saveStorageItem(key, entities);
+  }
 };
+

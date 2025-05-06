@@ -1,208 +1,135 @@
-
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Navigation from '@/components/Navigation';
-import DashboardMenu from '@/components/DashboardMenu';
-import BackupRestoreControls from '@/components/BackupRestoreControls';
-import FormatDataHandler from '@/components/dashboard/FormatDataHandler';
-import { useDashboardData } from '@/hooks/useDashboardData';
-import ProfitSection from '@/components/dashboard/ProfitSection';
-import MonthSelector from '@/components/dashboard/MonthSelector';
-import SalesSummaryCard from '@/components/dashboard/SalesSummaryCard';
-import PurchaseSummaryCard from '@/components/dashboard/PurchaseSummaryCard';
-import StockSummaryCard from '@/components/dashboard/StockSummaryCard';
-import { StorageDebugger } from '@/components/debug/StorageDebugger';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { createPortableVersion } from '@/services/backup/backupService';
-import { toast } from 'sonner';
-import { useHotkeys } from '@/hooks/useHotkeys';
-import FormatConfirmationDialog from '@/components/FormatConfirmationDialog';
+import React, { useEffect, useState } from "react";
+import Navigation from "@/components/Navigation";
+import DashboardMenu from "@/components/DashboardMenu";
+import { FormatDataHandler } from "@/components/dashboard/FormatDataHandler";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import DashboardHeader from "@/components/dashboard/DashboardHeader";
+import BackupRestoreControls from "@/components/BackupRestoreControls";
+import ProfitLossStatement from "@/components/ProfitLossStatement";
+import DashboardSummary from "@/components/DashboardSummary";
+import { seedInitialData } from "@/services/storageService";
+import { initializeFinancialYears } from "@/services/financialYearService";
+import OpeningBalanceSetup from "@/components/OpeningBalanceSetup";
+import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const navigate = useNavigate();
-  const [showFormatConfirmation, setShowFormatConfirmation] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showOpeningBalanceSetup, setShowOpeningBalanceSetup] = useState(false);
   
-  const { summaryData, isLoading } = useDashboardData(selectedMonth, selectedYear);
+  const {
+    summaryData,
+    profitByTransaction,
+    profitByMonth,
+    totalProfit,
+    isRefreshing,
+    dataVersion,
+    loadDashboardData,
+    incrementDataVersion
+  } = useDashboardData();
 
-  // Register keyboard shortcuts
-  useHotkeys([
-    { key: 'p', ctrl: true, handler: () => navigate('/purchases') },
-    { key: 's', ctrl: true, handler: () => navigate('/sales') },
-    { key: 'i', ctrl: true, handler: () => navigate('/inventory') },
-    { key: 't', ctrl: true, handler: () => navigate('/location-transfer') },
-    { key: 'h', ctrl: true, handler: () => navigate('/') },
-    { key: 'm', ctrl: true, handler: () => navigate('/master') },
-    { key: 'b', ctrl: true, handler: () => handleCreatePortable() },
-    { key: 'Escape', handler: () => navigate('/') },
-  ]);
-
-  const handleFormatClick = () => {
-    setShowFormatConfirmation(true);
-    return true;
-  };
-
-  const handleFormatConfirm = async () => {
-    setShowFormatConfirmation(false);
-    try {
-      toast("Format in progress", {
-        description: "Creating backup and resetting data...",
-      });
-      
-      // Use the format function
-      const formatSuccess = await FormatDataHandler.formatData();
-      
-      if (formatSuccess) {
-        toast.success("Data Formatted Successfully", {
-          description: "All data has been completely reset. A backup was created automatically.",
+  useEffect(() => {
+    const handleBackupCreated = (event: CustomEvent) => {
+      if (event.detail.success) {
+        toast({
+          title: "Backup Created",
+          description: "Data backup successfully downloaded",
         });
-        
-        // Refresh the page after a short delay
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
+      } else {
+        toast({
+          title: "Backup Failed",
+          description: "There was a problem creating the backup",
+          variant: "destructive",
+        });
       }
+    };
+
+    window.addEventListener('backup-created', handleBackupCreated as EventListener);
+    
+    return () => {
+      window.removeEventListener('backup-created', handleBackupCreated as EventListener);
+    };
+  }, []);
+  
+  useEffect(() => {
+    try {
+      initializeFinancialYears();
+      seedInitialData();
+      loadDashboardData();
     } catch (error) {
-      console.error("Error during formatting:", error);
-      toast.error("Format Error", {
-        description: "There was a problem formatting the data. Please try again.",
-      });
+      console.error("Error during initialization:", error);
     }
-  };
+    
+    const handleFocus = () => {
+      loadDashboardData();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadDashboardData]);
 
-  const handleMonthChange = (month: number, year: number) => {
-    setSelectedMonth(month);
-    setSelectedYear(year);
-  };
-
-  const handleRefreshData = () => {
-    setIsRefreshing(true);
-    toast.info("Refreshing data...");
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
-  };
-
-  const handleCreatePortable = async () => {
-    toast.info("Creating portable version...");
-    const result = await createPortableVersion();
-    if (result.success) {
-      toast.success("Portable version created", { 
-        description: "Download started. Save the ZIP file to your preferred location." 
-      });
-    } else {
-      toast.error("Failed to create portable version", { 
-        description: result.message 
-      });
+  useEffect(() => {
+    if (dataVersion > 0) {
+      loadDashboardData();
     }
+  }, [dataVersion, loadDashboardData]);
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      loadDashboardData();
+    };
+    
+    handleRouteChange();
+    
+    window.addEventListener('popstate', handleRouteChange);
+    
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+    };
+  }, [loadDashboardData]);
+
+  const handleOpeningBalances = () => {
+    setShowOpeningBalanceSetup(true);
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-blue-50 to-purple-100">
-      {/* Always-visible Navigation bar with hamburger */}
+    <div className="min-h-screen bg-ag-beige overflow-x-hidden">
       <Navigation 
-        title="Kirana Retail" 
-        showFormatButton 
-        onFormatClick={handleFormatClick}
+        title="Dashboard" 
+        showFormatButton={true}
+        onFormatClick={() => document.dispatchEvent(new Event('format-click'))}
       />
-
-      <main className="container mx-auto px-4 py-4">
-        {/* Quick Actions - front and center, very tap-friendly */}
-        <section className="w-full mb-6">
-          <h2 className="text-lg md:text-2xl font-bold mb-4 text-blue-800 text-center">
-            Quick Actions
-          </h2>
-          <div>
-            <DashboardMenu />
-          </div>
-        </section>
-
-        {/* Backup/Restore Panel - bold & prominent */}
-        <section className="w-full mb-6">
-          <BackupRestoreControls
-            onRefresh={handleRefreshData}
-            isRefreshing={isRefreshing}
-          />
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mt-2">
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="w-full md:w-auto flex items-center justify-center gap-2 text-base py-4"
-              onClick={handleCreatePortable}
-            >
-              <Download size={20} />
-              Export to Portable Version
-            </Button>
-            {/* Help text explaining what Storage Manager does */}
-            <div className="text-sm text-gray-600 italic">
-              Storage Manager: View, export, or import app data
-            </div>
-          </div>
-        </section>
-
-        {/* Month Selector */}
-        <section className="w-full mb-6">
-          <MonthSelector 
-            selectedMonth={selectedMonth} 
-            selectedYear={selectedYear} 
-            onChange={handleMonthChange} 
-          />
-        </section>
+      
+      <div className="container mx-auto px-4 py-6 overflow-x-hidden">
+        <DashboardHeader onOpeningBalancesClick={handleOpeningBalances} />
         
-        {/* Summary Cards - responsive grid */}
-        <section className="w-full mb-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div
-              onClick={() => navigate('/sales')}
-              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
-            >
-              <SalesSummaryCard 
-                amount={summaryData.sales.amount}
-                bags={summaryData.sales.bags}
-                kgs={summaryData.sales.kgs}
-              />
-            </div>
-            <div 
-              onClick={() => navigate('/purchases')}
-              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
-            >
-              <PurchaseSummaryCard 
-                amount={summaryData.purchases.amount}
-                bags={summaryData.purchases.bags}
-                kgs={summaryData.purchases.kgs}
-              />
-            </div>
-            <div 
-              onClick={() => navigate('/stock')}
-              className="cursor-pointer transition-transform hover:-translate-y-1 active:scale-95"
-            >
-              <StockSummaryCard 
-                mumbai={summaryData.stock.mumbai}
-                chiplun={summaryData.stock.chiplun}
-                sawantwadi={summaryData.stock.sawantwadi}
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Profit Section (can be collapsed by user if needed, but always visible by default) */}
-        <section className="w-full mb-6">
-          <ProfitSection 
-            selectedMonth={selectedMonth} 
-            selectedYear={selectedYear} 
-          />
-        </section>
-      </main>
-
-      {/* Format confirmation dialog */}
-      <FormatConfirmationDialog
-        isOpen={showFormatConfirmation}
-        onClose={() => setShowFormatConfirmation(false)}
-        onConfirm={handleFormatConfirm}
+        <p className="text-lg text-ag-brown mt-2 mb-4 text-center">
+          Agricultural Business Management System
+        </p>
+        
+        <BackupRestoreControls 
+          onRefresh={loadDashboardData} 
+          isRefreshing={isRefreshing} 
+        />
+        
+        <DashboardMenu />
+        
+        <DashboardSummary summaryData={summaryData} />
+        
+        <ProfitLossStatement 
+          profitByTransaction={profitByTransaction}
+          profitByMonth={profitByMonth}
+          totalProfit={totalProfit}
+        />
+      </div>
+      
+      <OpeningBalanceSetup 
+        isOpen={showOpeningBalanceSetup}
+        onClose={() => setShowOpeningBalanceSetup(false)}
       />
+      
+      <FormatDataHandler onFormatComplete={loadDashboardData} />
     </div>
   );
 };

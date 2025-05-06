@@ -1,17 +1,16 @@
 
-// Import directly from the toast-utils instead of the index to avoid circular references
-import { toast as toastFn, dismiss as dismissFn } from './toast/toast-utils';
+import { Toast, ToasterToast } from './toast/types';
+import { toast, dismissToast } from './toast/toast-utils';
 import { memoryState } from './toast/reducer';
-
-// Extend the useToast hook to include the toast function
-export function useToast() {
+  
+export const useToast = () => {
   return {
-    toast: toastFn,
-    dismiss: dismissFn,
-    toasts: memoryState.toasts
+    toast,
+    dismiss: dismissToast,
+    toasts: memoryState.toasts,
   };
-}
+};
 
-// Re-export toast and dismiss for convenience
-export const toast = toastFn;
-export const dismiss = dismissFn;
+export { toast } from './toast/toast-utils';
+export { dismissToast as dismiss } from './toast/toast-utils';
+export { ToastProvider } from './toast/toast-context';

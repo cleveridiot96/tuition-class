@@ -1,4 +1,3 @@
-
 import { addPurchase } from "@/services/purchaseService";
 import { addInventoryItem } from "@/services/inventoryService";
 import { Purchase, InventoryItem } from "@/services/types";
@@ -15,7 +14,7 @@ const generateLotNumber = (): string => {
 };
 
 export const createDemoPurchase = () => {
-  // Update the purchase object to include totalAfterExpenses and bags
+  // Update the purchase object to include totalAfterExpenses
   const purchase = {
     id: generateId(),
     date: new Date().toISOString().split('T')[0],
@@ -32,8 +31,7 @@ export const createDemoPurchase = () => {
     transportAmount: 2000,
     location: "Mumbai",
     notes: "Demo purchase entry",
-    totalAfterExpenses: 52000, // Add this required field
-    bags: 20, // Add required bags property
+    totalAfterExpenses: 52000 // Add this required field
   };
 
   addPurchase(purchase);
@@ -43,7 +41,6 @@ export const createDemoPurchase = () => {
 export const createDemoInventoryItem = (purchase: Purchase) => {
   const inventoryItem: InventoryItem = {
     id: uuidv4(),
-    purchaseId: purchase.id,
     lotNumber: purchase.lotNumber,
     quantity: purchase.quantity,
     location: purchase.location,
@@ -55,10 +52,7 @@ export const createDemoInventoryItem = (purchase: Purchase) => {
     agentId: purchase.agentId || '',
     agentName: purchase.agent || '',
     date: purchase.date,
-    rate: purchase.rate,
-    ratePerKgAfterExpenses: purchase.totalAfterExpenses / purchase.netWeight,
-    supplier: purchase.party,
-    isDeleted: false
+    rate: purchase.rate, // Add this required field
   };
 
   addInventoryItem(inventoryItem);

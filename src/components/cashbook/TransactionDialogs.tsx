@@ -1,69 +1,87 @@
 
-import React from 'react';
-import { Button } from "@/components/ui/button";
+import React from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogDescription,
 } from "@/components/ui/dialog";
+import ManualExpenseForm from "@/components/ManualExpenseForm";
 import PaymentForm from "@/components/PaymentForm";
 import ReceiptForm from "@/components/ReceiptForm";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface TransactionDialogsProps {
-  showReceiptDialog: boolean;
-  setShowReceiptDialog: (show: boolean) => void;
-  showPaymentDialog: boolean;
-  setShowPaymentDialog: (show: boolean) => void;
-  onSubmitReceipt?: (data: any) => void;
-  onSubmitPayment?: (data: any) => void;
+  expenseDialogOpen: boolean;
+  setExpenseDialogOpen: (open: boolean) => void;
+  paymentDialogOpen: boolean;
+  setPaymentDialogOpen: (open: boolean) => void;
+  receiptDialogOpen: boolean;
+  setReceiptDialogOpen: (open: boolean) => void;
+  handleManualExpenseAdded: () => void;
+  handlePaymentAdded: () => void;
+  handleReceiptAdded: () => void;
 }
 
 const TransactionDialogs = ({
-  showReceiptDialog,
-  setShowReceiptDialog,
-  showPaymentDialog,
-  setShowPaymentDialog,
-  onSubmitReceipt,
-  onSubmitPayment,
+  expenseDialogOpen,
+  setExpenseDialogOpen,
+  paymentDialogOpen,
+  setPaymentDialogOpen,
+  receiptDialogOpen,
+  setReceiptDialogOpen,
+  handleManualExpenseAdded,
+  handlePaymentAdded,
+  handleReceiptAdded,
 }: TransactionDialogsProps) => {
   return (
     <>
-      {showReceiptDialog && (
-        <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
-          <DialogContent className="max-w-4xl p-0">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle>Add New Receipt</DialogTitle>
-            </DialogHeader>
-            <ReceiptForm 
-              onSubmit={(data) => {
-                if (onSubmitReceipt) onSubmitReceipt(data);
-                setShowReceiptDialog(false);
-              }} 
-              onCancel={() => setShowReceiptDialog(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {showPaymentDialog && (
-        <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-          <DialogContent className="max-w-4xl p-0">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle>Add New Payment</DialogTitle>
-            </DialogHeader>
-            <PaymentForm 
-              onSubmit={(data) => {
-                if (onSubmitPayment) onSubmitPayment(data);
-                setShowPaymentDialog(false);
-              }} 
-              onCancel={() => setShowPaymentDialog(false)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Manual Expense Dialog */}
+      <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add Manual Expense</DialogTitle>
+            <DialogDescription>
+              Record a cash expense or withdrawal for your business.
+            </DialogDescription>
+          </DialogHeader>
+          <ManualExpenseForm 
+            onSubmit={handleManualExpenseAdded}
+            onCancel={() => setExpenseDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Payment Dialog */}
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add Payment</DialogTitle>
+            <DialogDescription>
+              Record a payment made to a party.
+            </DialogDescription>
+          </DialogHeader>
+          <PaymentForm
+            onSubmit={handlePaymentAdded}
+            onCancel={() => setPaymentDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Receipt Dialog */}
+      <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add Receipt</DialogTitle>
+            <DialogDescription>
+              Record a receipt from a party.
+            </DialogDescription>
+          </DialogHeader>
+          <ReceiptForm
+            onSubmit={handleReceiptAdded}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

@@ -20,9 +20,9 @@ export const addPurchase = (purchase: Purchase): void => {
   saveStorageItem('purchases', purchases);
 };
 
-export const updatePurchase = (purchaseId: string, updatedPurchase: Purchase): void => {
+export const updatePurchase = (updatedPurchase: Purchase): void => {
   const purchases = getPurchases();
-  const index = purchases.findIndex(purchase => purchase.id === purchaseId);
+  const index = purchases.findIndex(purchase => purchase.id === updatedPurchase.id);
   
   if (index !== -1) {
     // Ensure transportCost is set if missing
