@@ -1,74 +1,62 @@
 
-import * as React from "react";
+import React from "react";
+import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-
-interface EnhancedSelectSuggestionProps {
-  suggestedMatch: string | null;
-  onUseSuggestion: () => void;
-  searchTerm: string;
-  onAddNewItem: () => void;
-  masterType: string;
-  showAddOption: boolean;
-}
+import { EnhancedSelectSuggestionProps } from "./types";
 
 export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> = ({
   suggestedMatch,
   onUseSuggestion,
   searchTerm,
   onAddNewItem,
-  masterType,
-  showAddOption
+  masterType = "supplier",
+  showAddOption = true,
 }) => {
-  if (!searchTerm) {
+  const formattedMasterType = masterType.charAt(0).toUpperCase() + masterType.slice(1);
+  
+  // If there's a suggested match, show it as a suggestion
+  if (suggestedMatch) {
     return (
-      <div className="py-6 text-center text-sm text-muted-foreground">
-        Start typing to search...
+      <div className="p-3 text-sm">
+        <div className="mb-2 text-muted-foreground">
+          Did you mean:
+        </div>
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-left font-normal hover:bg-accent hover:text-accent-foreground"
+          onClick={onUseSuggestion}
+        >
+          {suggestedMatch}
+        </Button>
       </div>
     );
   }
 
+  // If no search term or suggestions, show a standard message
+  if (!searchTerm.trim()) {
+    return (
+      <div className="py-6 text-center text-sm text-muted-foreground">
+        Type to search...
+      </div>
+    );
+  }
+
+  // If there's a search term but no match, show "No results" with add option
   return (
-    <div>
-      {suggestedMatch ? (
-        <div className="px-3 py-4 text-sm">
-          <p>No exact match. Did you mean:</p>
-          <div
-            role="option"
-            tabIndex={0}
-            className="mt-1 cursor-pointer rounded-sm px-2 py-1.5 text-sm bg-accent text-accent-foreground hover:bg-accent/80 focus:bg-accent/80 outline-none"
-            onClick={onUseSuggestion}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                onUseSuggestion();
-              }
-            }}
-          >
-            {suggestedMatch}
-          </div>
-        </div>
-      ) : (
-        <div className="px-3 py-4 text-sm">
-          <p>No matches found for "{searchTerm}"</p>
-          
-          {showAddOption && (
-            <div
-              role="option"
-              tabIndex={0}
-              className="mt-2 flex cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm bg-accent text-accent-foreground hover:bg-accent/80 focus:bg-accent/80 outline-none"
-              onClick={onAddNewItem}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  onAddNewItem();
-                }
-              }}
-            >
-              <Plus className="mr-1 h-4 w-4" />
-              Add "{searchTerm}" to {masterType} master
-            </div>
-          )}
-        </div>
+    <div className="p-3 text-center">
+      <p className="py-2 text-sm text-muted-foreground">
+        No match found for "{searchTerm}"
+      </p>
+      {showAddOption && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2 w-full"
+          onClick={onAddNewItem}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add "{searchTerm}" to {formattedMasterType} master
+        </Button>
       )}
     </div>
   );

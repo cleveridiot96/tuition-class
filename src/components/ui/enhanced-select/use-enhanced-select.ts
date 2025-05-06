@@ -1,57 +1,61 @@
-
 import * as React from "react";
 import { SelectOption } from "./types";
-import { useDebounce } from "@/hooks/useDebounce";
 
-export function useEnhancedSelect(options: SelectOption[] = [], value?: string) {
+export const useEnhancedSelect = (options: SelectOption[], value?: string) => {
   const [open, setOpen] = React.useState(false);
   const [searchTerm, setSearchTerm] = React.useState("");
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
-
-  // Derived state from search term
-  const suggestedMatch = React.useMemo(() => {
-    if (!debouncedSearchTerm) return "";
-    
-    const lowerSearchTerm = debouncedSearchTerm.toLowerCase();
-    for (const option of options) {
-      if (option.label.toLowerCase().startsWith(lowerSearchTerm)) {
-        return option.label;
-      }
-    }
-    return "";
-  }, [debouncedSearchTerm, options]);
-
-  // Check if the current input exactly matches an option
-  const inputMatchesOption = React.useMemo(() => {
-    if (!searchTerm) return false;
-    return options.some(
-      option => option.label.toLowerCase() === searchTerm.toLowerCase()
-    );
-  }, [searchTerm, options]);
+  
+  // Find the selected option from the options array
+  const selectedOption = React.useMemo(() => {
+    return options.find((option) => option.value === value);
+  }, [options, value]);
 
   // Filter options based on search term
   const filteredOptions = React.useMemo(() => {
-    if (!debouncedSearchTerm) return options;
+    if (!searchTerm) return options;
     
-    const lowerSearchTerm = debouncedSearchTerm.toLowerCase();
-    return options.filter(option =>
-      option.label.toLowerCase().includes(lowerSearchTerm)
-    );
-  }, [debouncedSearchTerm, options]);
+    return options.filter((option) => {
+      const label = option.label.toLowerCase();
+      const search = searchTerm.toLowerCase();
+      return label.includes(search);
+    });
+  }, [options, searchTerm]);
 
-  // Find the selected option based on value
-  const selectedOption = React.useMemo(() => {
-    return options.find(option => option.value === value);
-  }, [options, value]);
+  // Check if the current search term exactly matches any option's label
+  const inputMatchesOption = React.useMemo(() => {
+    if (!searchTerm) return false;
+    
+    return options.some(
+      (option) => option.label.toLowerCase() === searchTerm.toLowerCase()
+    );
+  }, [options, searchTerm]);
+
+  // Find a suggested match for the search term
+  const suggestedMatch = React.useMemo(() => {
+    if (!searchTerm || searchTerm.length < 2 || inputMatchesOption) return undefined;
+    
+    // Find options that start with the search term
+    const matchingOptions = options.filter(option => 
+      option.label.toLowerCase().startsWith(searchTerm.toLowerCase())
+    );
+    
+    // If there's exactly one matching option, suggest it
+    if (matchingOptions.length === 1) {
+      return matchingOptions[0].label;
+    }
+    
+    // Otherwise, return undefined (no suggestion)
+    return undefined;
+  }, [options, searchTerm, inputMatchesOption]);
 
   return {
     open,
     setOpen,
     searchTerm,
     setSearchTerm,
-    suggestedMatch,
     filteredOptions,
-    inputMatchesOption,
     selectedOption,
+    inputMatchesOption,
+    suggestedMatch
   };
-}
+};
