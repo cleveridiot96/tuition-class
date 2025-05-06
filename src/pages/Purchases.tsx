@@ -7,7 +7,8 @@ import MultiItemPurchaseForm from "@/components/purchases/MultiItemPurchaseForm"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { getPurchases, savePurchases, getSuppliers } from "@/services/storageService";
+import { getPurchases, savePurchases } from "@/services/storageService";
+import { useMasterData } from "@/hooks/useMasterData";
 import { Purchase } from "@/services/types";
 import AddSupplierDialog from "@/components/purchases/AddSupplierDialog";
 import { toast } from "sonner";
@@ -16,13 +17,15 @@ const Purchases = () => {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<Purchase | null>(null);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [newSupplierName, setNewSupplierName] = useState("");
   const [newSupplierAddress, setNewSupplierAddress] = useState("");
   const [showAddSupplierDialog, setShowAddSupplierDialog] = useState(false);
   const [sortColumn, setSortColumn] = useState<keyof Purchase | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isMultiItemForm, setIsMultiItemForm] = useState(false);
+  
+  // Use the master data hook to access suppliers, agents, etc.
+  const { suppliers, agents, transporters, refresh: refreshMasterData } = useMasterData();
 
   useEffect(() => {
     loadInitialData();
@@ -31,9 +34,9 @@ const Purchases = () => {
   const loadInitialData = () => {
     const storedPurchases = getPurchases();
     setPurchases(storedPurchases.filter(p => !p.isDeleted));
-
-    const storedSuppliers = getSuppliers();
-    setSuppliers(storedSuppliers);
+    
+    // Also refresh the master data to ensure we have the latest
+    refreshMasterData();
   };
 
   const handleAddNewSupplier = () => {
@@ -48,14 +51,15 @@ const Purchases = () => {
       address: newSupplierAddress,
     };
 
-    const updatedSuppliers = [...suppliers, newSupplier];
-    setSuppliers(updatedSuppliers);
     // Cannot use saveSuppliers as it doesn't exist, use direct storage operation
-    localStorage.setItem('suppliers', JSON.stringify(updatedSuppliers));
+    localStorage.setItem('suppliers', JSON.stringify([...suppliers, newSupplier]));
 
     setNewSupplierName("");
     setNewSupplierAddress("");
     setShowAddSupplierDialog(false);
+    
+    // Refresh master data to include the new supplier
+    refreshMasterData();
 
     toast.success("New supplier added successfully!");
   };
@@ -120,25 +124,25 @@ const Purchases = () => {
   }, [purchases, sortColumn, sortDirection]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
-      <Navigation title="Purchases" showBackButton />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-purple-100">
+      <Navigation title="Purchases" showBackButton pageType="purchases" />
       <div className="container mx-auto px-4 py-6">
-        <Card className="bg-gradient-to-br from-blue-100 to-blue-200 border-blue-200 shadow">
+        <Card className="bg-gradient-to-br from-purple-100 to-purple-200 border-purple-200 shadow">
           <CardHeader>
-            <CardTitle className="text-blue-800">Purchases</CardTitle>
+            <CardTitle className="text-purple-800">Purchases</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
               <Button onClick={() => {
                 setIsAdding(true);
                 setIsMultiItemForm(false);
-              }} className="md-ripple bg-blue-500 text-white hover:bg-blue-700">
+              }} className="md-ripple bg-purple-500 text-white hover:bg-purple-700">
                 <Plus className="mr-2" size={16} /> Add Purchase
               </Button>
               <Button onClick={() => {
                 setIsMultiItemForm(true);
                 setIsAdding(true);
-              }} className="md-ripple bg-blue-500 text-white hover:bg-blue-700">
+              }} className="md-ripple bg-purple-500 text-white hover:bg-purple-700">
                 <Plus className="mr-2" size={16} /> Add Multi-Item Purchase
               </Button>
             </div>

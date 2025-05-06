@@ -6,3 +6,59 @@
 @import './components/ui/styles/components.css';
 @import './styles/global-dropdown-fixes.css';
 @import './styles/form-fixes.css';
+
+/* Enhanced dropdown styling */
+.radix-dropdown-content,
+.select-content {
+  z-index: 100 !important;
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Page-specific color classes */
+.purchases-bg { @apply bg-gradient-to-r from-purple-600 to-purple-800; }
+.sales-bg { @apply bg-gradient-to-r from-indigo-600 to-indigo-800; }
+.inventory-bg { @apply bg-gradient-to-r from-cyan-600 to-cyan-800; }
+.stock-bg { @apply bg-gradient-to-r from-orange-600 to-orange-800; }
+.location-transfer-bg { @apply bg-gradient-to-r from-violet-600 to-violet-800; }
+.payments-bg { @apply bg-gradient-to-r from-red-600 to-red-800; }
+.receipts-bg { @apply bg-gradient-to-r from-lime-600 to-lime-800; }
+.master-bg { @apply bg-gradient-to-r from-blue-600 to-blue-800; }
+.cash-book-bg { @apply bg-gradient-to-r from-pink-600 to-pink-800; }
+.ledger-bg { @apply bg-gradient-to-r from-gray-600 to-gray-800; }
+
+/* Editable table cell styling */
+td.editable {
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+td.editable:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+td.editable input {
+  background: transparent;
+  width: 100%;
+}
+
+td.editable input:focus {
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.5);
+  background-color: white;
+}
+
+/* Fix for form error highlighting */
+.form-field-error .input,
+.form-field-error .select {
+  border-color: rgb(220, 38, 38);
+  background-color: rgba(254, 226, 226, 0.3);
+}
+
+/* Make form inputs more visible */
+.form-control:focus {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.8);
+  outline: none;
+}

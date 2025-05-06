@@ -33,7 +33,7 @@ const Stock = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100">
-      <Navigation title="Stock Report" showBackButton />
+      <Navigation title="Stock Report" showBackButton pageType="stock" />
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 gap-6">
           <StockReport />

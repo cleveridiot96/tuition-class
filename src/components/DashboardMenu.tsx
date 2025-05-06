@@ -1,7 +1,22 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, FileText, FileBarChart, Package, RefreshCcw, ArrowLeftRight, Users, DollarSign, BookText } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+
+// Define consistent colors for the tiles
+const TILE_COLORS = {
+  purchases: 'from-purple-600 to-purple-700',
+  sales: 'from-indigo-600 to-indigo-700',
+  inventory: 'from-cyan-600 to-cyan-700',
+  stock: 'from-orange-600 to-orange-700',
+  locationTransfer: 'from-violet-600 to-violet-700',
+  payments: 'from-red-600 to-red-700',
+  receipts: 'from-lime-600 to-lime-700',
+  master: 'from-blue-600 to-blue-700',
+  cashBook: 'from-pink-600 to-pink-700',
+  ledger: 'from-gray-600 to-gray-700',
+};
 
 export const menuItems = [
   {
@@ -9,75 +24,92 @@ export const menuItems = [
     path: '/purchases',
     icon: Box,
     description: 'Record and manage purchases',
-    color: 'from-purple-400 to-purple-500',
+    color: TILE_COLORS.purchases,
+    type: 'purchases'
   },
   {
     title: 'Sales',
     path: '/sales',
     icon: FileBarChart,
     description: 'Create and manage sales',
-    color: 'from-indigo-400 to-indigo-500',
+    color: TILE_COLORS.sales,
+    type: 'sales'
   },
   {
     title: 'Inventory',
     path: '/inventory',
     icon: Package,
     description: 'View and manage stock',
-    color: 'from-teal-400 to-teal-500',
+    color: TILE_COLORS.inventory,
+    type: 'inventory'
   },
   {
     title: 'Stock Report',
     path: '/stock',
     icon: Box,
     description: 'Real-time stock analysis',
-    color: 'from-orange-400 to-orange-500',
+    color: TILE_COLORS.stock,
+    type: 'stock'
   },
   {
     title: 'Location Transfer',
     path: '/location-transfer',
     icon: RefreshCcw,
     description: 'Transfer stock between locations',
-    color: 'from-purple-400 to-purple-500',
+    color: TILE_COLORS.locationTransfer,
+    type: 'locationTransfer'
   },
   {
     title: 'Payments',
     path: '/payments',
     icon: ArrowLeftRight,
     description: 'Record outgoing payments',
-    color: 'from-red-400 to-red-500',
+    color: TILE_COLORS.payments,
+    type: 'payments'
   },
   {
     title: 'Receipts',
     path: '/receipts',
     icon: FileText,
     description: 'Manage incoming payments',
-    color: 'from-lime-400 to-lime-500',
+    color: TILE_COLORS.receipts,
+    type: 'receipts'
   },
   {
     title: 'Master Data',
     path: '/master',
     icon: Users,
     description: 'Manage people & companies',
-    color: 'from-indigo-400 to-indigo-500',
+    color: TILE_COLORS.master,
+    type: 'master'
   },
   {
     title: 'Cash Book',
     path: '/cash-book',
     icon: DollarSign,
     description: 'Track cash transactions',
-    color: 'from-pink-400 to-pink-500',
+    color: TILE_COLORS.cashBook,
+    type: 'cashBook'
   },
   {
     title: 'Party Ledger',
     path: '/ledger',
     icon: BookText,
     description: 'View party balances',
-    color: 'from-gray-400 to-gray-500',
+    color: TILE_COLORS.ledger,
+    type: 'ledger'
   },
 ];
 
 const DashboardMenu = () => {
   const navigate = useNavigate();
+
+  // Store the page type when navigating for consistent colors
+  const handleNavigation = (path: string, type: string) => {
+    // Store in localStorage for persistence across page loads
+    localStorage.setItem('currentPageType', type);
+    navigate(path);
+  };
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -86,7 +118,8 @@ const DashboardMenu = () => {
           key={item.title}
           variant="card"
           className={`md-ripple card-hover flex flex-col justify-center items-center h-28 bg-gradient-to-br ${item.color} hover:shadow-lg text-white`}
-          onClick={() => navigate(item.path)}
+          onClick={() => handleNavigation(item.path, item.type)}
+          data-type={item.type}
         >
           <item.icon size={24} className="mb-2" />
           <div className="text-base font-medium">{item.title}</div>

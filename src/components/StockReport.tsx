@@ -27,8 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { Printer, FileSpreadsheet } from "lucide-react";
+import { toast } from "sonner";
+import { Printer, FileSpreadsheet, Edit, Save, X } from "lucide-react";
 
 import { getInventory } from '@/services/inventoryService';
 import { getSales } from '@/services/saleService';
@@ -38,7 +38,6 @@ import { formatCurrency } from '@/utils/helpers';
 import { EnhancedInventoryItem } from '@/services/types';
 
 const StockReport = () => {
-  const { toast } = useToast();
   const [inventory, setInventory] = useState<EnhancedInventoryItem[]>([]);
   const [filteredInventory, setFilteredInventory] = useState<EnhancedInventoryItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,58 +47,69 @@ const StockReport = () => {
   const [agents, setAgents] = useState<{id: string, name: string}[]>([]);
   const [totalStockValue, setTotalStockValue] = useState(0);
   const [filteredStockValue, setFilteredStockValue] = useState(0);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [originalData, setOriginalData] = useState<EnhancedInventoryItem[]>([]);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const inventory = getInventory() || [];
-    const sales = getSales() || [];
-    const agents = getAgents() || [];
-    const locations = getLocations() || ["Mumbai", "Chiplun", "Sawantwadi"];
-    
-    const calculatedInventory = inventory
-      .filter(item => !item.isDeleted)
-      .map(item => {
-        const lotSales = sales.filter(
-          sale => sale.lotNumber === item.lotNumber && !sale.isDeleted
-        );
-        const soldQuantity = lotSales.reduce(
-          (total, sale) => total + sale.quantity,
-          0
-        );
-        const soldWeight = lotSales.reduce(
-          (total, sale) => total + sale.netWeight,
-          0
-        );
-        const remainingWeight = item.netWeight - soldWeight;
-        const agentName = 
-          agents.find(a => a.id === item.agentId)?.name || 'Unknown';
-        
-        const totalValue = remainingWeight * item.purchaseRate;
+    fetchInventoryData();
+  }, []);
 
-        return {
-          ...item,
-          agentName,
-          soldQuantity,
-          soldWeight,
-          remainingWeight,
-          totalValue,
-          agentId: item.agentId || '',
-          remainingQuantity: item.remainingQuantity || 0,
-          purchaseRate: item.purchaseRate || 0,
-          finalCost: item.finalCost || 0,
-          date: item.date || '',
-        } as EnhancedInventoryItem;
-      });
-    
-    setInventory(calculatedInventory);
-    setFilteredInventory(calculatedInventory);
-    setAgents(agents);
-    setLocations(locations);
-    
-    const totalValue = calculatedInventory.reduce((sum, item) => sum + item.totalValue, 0);
-    setTotalStockValue(totalValue);
-    setFilteredStockValue(totalValue);
-  }, [toast]);
+  const fetchInventoryData = () => {
+    try {
+      const inventory = getInventory() || [];
+      const sales = getSales() || [];
+      const agents = getAgents() || [];
+      const locations = getLocations() || ["Mumbai", "Chiplun", "Sawantwadi"];
+      
+      const calculatedInventory = inventory
+        .filter(item => !item.isDeleted)
+        .map(item => {
+          const lotSales = sales.filter(
+            sale => sale.lotNumber === item.lotNumber && !sale.isDeleted
+          );
+          const soldQuantity = lotSales.reduce(
+            (total, sale) => total + sale.quantity,
+            0
+          );
+          const soldWeight = lotSales.reduce(
+            (total, sale) => total + sale.netWeight,
+            0
+          );
+          const remainingWeight = item.netWeight - soldWeight;
+          const agentName = 
+            agents.find(a => a.id === item.agentId)?.name || 'Unknown';
+          
+          const totalValue = remainingWeight * item.purchaseRate;
+
+          return {
+            ...item,
+            agentName,
+            soldQuantity,
+            soldWeight,
+            remainingWeight,
+            totalValue,
+            agentId: item.agentId || '',
+            remainingQuantity: item.remainingQuantity || 0,
+            purchaseRate: item.purchaseRate || 0,
+            finalCost: item.finalCost || 0,
+            date: item.date || '',
+          } as EnhancedInventoryItem;
+        });
+      
+      setInventory(calculatedInventory);
+      setFilteredInventory(calculatedInventory);
+      setAgents(agents);
+      setLocations(locations);
+      
+      const totalValue = calculatedInventory.reduce((sum, item) => sum + item.totalValue, 0);
+      setTotalStockValue(totalValue);
+      setFilteredStockValue(totalValue);
+    } catch(error) {
+      console.error("Error loading inventory data:", error);
+      toast.error("Failed to load inventory data");
+    }
+  };
 
   useEffect(() => {
     if (!inventory || inventory.length === 0) {
@@ -134,21 +144,14 @@ const StockReport = () => {
     content: () => printRef.current,
     documentTitle: "Stock Report",
     onAfterPrint: () => {
-      toast({
-        title: "Print successful",
-        description: "Stock report has been sent to printer",
-      });
+      toast.success("Stock report has been sent to printer");
     },
   });
 
   const handleExportToExcel = () => {
     try {
       if (!filteredInventory || filteredInventory.length === 0) {
-        toast({
-          title: "Export failed",
-          description: "No data available to export",
-          variant: "destructive"
-        });
+        toast.error("No data available to export");
         return;
       }
       
@@ -176,17 +179,10 @@ const StockReport = () => {
       
       XLSX.writeFile(wb, fileName);
       
-      toast({
-        title: "Export completed",
-        description: "Stock report has been exported to Excel",
-      });
+      toast.success("Stock report has been exported to Excel");
     } catch (error) {
       console.error("Error exporting to Excel:", error);
-      toast({
-        title: "Export failed",
-        description: "There was an error exporting to Excel",
-        variant: "destructive"
-      });
+      toast.error("There was an error exporting to Excel");
     }
   };
 
@@ -196,20 +192,107 @@ const StockReport = () => {
     setSelectedAgent('');
   };
 
+  // Handle edit mode toggling
+  const toggleEditMode = () => {
+    if (!isEditMode) {
+      // Store original data before editing
+      setOriginalData([...filteredInventory]);
+      setIsEditMode(true);
+    } else {
+      // If cancelling edit mode, restore original data
+      setIsEditMode(false);
+      setFilteredInventory([...originalData]);
+    }
+  };
+
+  // Handle data field changes
+  const handleCellChange = (index: number, field: keyof EnhancedInventoryItem, value: any) => {
+    const updatedInventory = [...filteredInventory];
+    const item = { ...updatedInventory[index] };
+    
+    // Update the field
+    if (field === 'purchaseRate' || field === 'finalCost') {
+      // Handle numeric fields
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        item[field] = numValue;
+        
+        // Recalculate totalValue if purchase rate changes
+        if (field === 'purchaseRate') {
+          item.totalValue = item.remainingWeight * numValue;
+        }
+      }
+    } else {
+      item[field] = value;
+    }
+    
+    updatedInventory[index] = item;
+    setFilteredInventory(updatedInventory);
+    
+    // Recalculate the total stock value
+    const newFilteredStockValue = updatedInventory.reduce((sum, item) => sum + item.totalValue, 0);
+    setFilteredStockValue(newFilteredStockValue);
+  };
+
+  // Save changes
+  const saveChanges = async () => {
+    try {
+      toast("Saving changes...");
+      
+      // Here in a real app we would call an API to save the changes
+      // For now, we'll just update the inventory in memory
+      setInventory(prev => {
+        // Create a map of the edited items by id for faster lookup
+        const editedItemsMap = new Map(filteredInventory.map(item => [item.id, item]));
+        
+        // Update only the edited items in the full inventory
+        return prev.map(item => {
+          const editedItem = editedItemsMap.get(item.id);
+          return editedItem || item;
+        });
+      });
+      
+      setIsEditMode(false);
+      toast.success("Changes saved successfully");
+    } catch (error) {
+      console.error("Error saving changes:", error);
+      toast.error("Failed to save changes");
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader className="border-b">
         <div className="flex justify-between items-center flex-wrap gap-4">
           <CardTitle>Stock Report</CardTitle>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handlePrint}>
-              <Printer size={16} className="mr-2" />
-              Print
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportToExcel}>
-              <FileSpreadsheet size={16} className="mr-2" />
-              Export
-            </Button>
+            {isEditMode ? (
+              <>
+                <Button variant="outline" size="sm" onClick={toggleEditMode}>
+                  <X size={16} className="mr-2" />
+                  Cancel
+                </Button>
+                <Button variant="success" size="sm" onClick={saveChanges}>
+                  <Save size={16} className="mr-2" />
+                  Save Changes
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={toggleEditMode}>
+                  <Edit size={16} className="mr-2" />
+                  Edit
+                </Button>
+                <Button variant="outline" size="sm" onClick={handlePrint}>
+                  <Printer size={16} className="mr-2" />
+                  Print
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportToExcel}>
+                  <FileSpreadsheet size={16} className="mr-2" />
+                  Export
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </CardHeader>
@@ -319,7 +402,7 @@ const StockReport = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    (filteredInventory || []).map((item) => (
+                    filteredInventory.map((item, index) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.lotNumber}</TableCell>
                         <TableCell>{item.location}</TableCell>
@@ -336,9 +419,35 @@ const StockReport = () => {
                             / {item.netWeight.toFixed(2)}
                           </span>
                         </TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.purchaseRate)}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.finalCost)}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(item.totalValue)}</TableCell>
+                        <TableCell className={`text-right ${isEditMode ? 'p-0' : ''}`}>
+                          {isEditMode ? (
+                            <Input
+                              type="number"
+                              value={item.purchaseRate}
+                              step="0.01"
+                              onChange={(e) => handleCellChange(index, 'purchaseRate', e.target.value)}
+                              className="text-right border-0 h-auto py-2 focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            formatCurrency(item.purchaseRate)
+                          )}
+                        </TableCell>
+                        <TableCell className={`text-right ${isEditMode ? 'p-0' : ''}`}>
+                          {isEditMode ? (
+                            <Input
+                              type="number"
+                              value={item.finalCost}
+                              step="0.01"
+                              onChange={(e) => handleCellChange(index, 'finalCost', e.target.value)}
+                              className="text-right border-0 h-auto py-2 focus:ring-2 focus:ring-blue-500"
+                            />
+                          ) : (
+                            formatCurrency(item.finalCost)
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(item.totalValue)}
+                        </TableCell>
                       </TableRow>
                     ))
                   )}
