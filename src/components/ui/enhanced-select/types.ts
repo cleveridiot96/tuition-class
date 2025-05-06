@@ -2,6 +2,7 @@
 export interface SelectOption {
   value: string;
   label: string;
+  commissionRate?: number;
   data?: any;
 }
 
@@ -9,7 +10,7 @@ export interface EnhancedSearchableSelectProps {
   options: SelectOption[];
   value?: string;
   onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => string | void;
+  onAddNew?: (value: string) => string;
   placeholder?: string;
   emptyMessage?: string;
   label?: string;
@@ -28,10 +29,10 @@ export interface EnhancedSelectOptionProps {
 }
 
 export interface EnhancedSelectSuggestionProps {
-  suggestedMatch?: string;
+  suggestedMatch: string | null;
   onUseSuggestion: () => void;
   searchTerm: string;
   onAddNewItem: () => void;
-  masterType: string;
-  showAddOption: boolean;
+  masterType?: string;
+  showAddOption?: boolean;
 }

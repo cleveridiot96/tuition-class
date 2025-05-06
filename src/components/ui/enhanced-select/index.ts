@@ -6,4 +6,4 @@ export * from './use-enhanced-select';
 export * from './types';
 
 // Re-export the searchable select component
-export { EnhancedSearchableSelect } from '../enhanced-searchable-select';
+export { EnhancedSearchableSelect } from './enhanced-searchable-select';
