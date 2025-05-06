@@ -1,346 +1,238 @@
-
-import React, { useState, useEffect, useRef } from "react";
-import { format } from "date-fns";
-import { useReactToPrint } from 'react-to-print';
-import * as XLSX from 'xlsx';
+import React, { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-} from "@/components/ui/card";
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { getCashTransactions, addCashTransaction, deleteCashTransaction } from "@/services/cashService";
+import { format } from "date-fns";
+import { Plus, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
 
-// Import the newly created components
-import CashBookHeader from "@/components/cashbook/CashBookHeader";
-import CashBookSummary from "@/components/cashbook/CashBookSummary";
-import CashBookFilters from "@/components/cashbook/CashBookFilters";
-import CashBookTable from "@/components/cashbook/CashBookTable";
-import TransactionButtons from "@/components/cashbook/TransactionButtons";
-import TransactionDialogs from "@/components/cashbook/TransactionDialogs";
-import PrintStyles from "@/components/cashbook/PrintStyles";
-
-// Import services and utilities
-import { getCashBookEntries, initializeAccounting, getTodayCashTransactions } from "@/services/accountingService";
+interface CashTransaction {
+  id: string;
+  date: string;
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+}
 
 const CashBook = () => {
-  const { toast } = useToast();
-  const [entries, setEntries] = useState([]);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
-  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
-  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
-  const [todaySummary, setTodaySummary] = useState({ cashIn: 0, cashOut: 0 });
-  const printRef = useRef(null);
-
-  useEffect(() => {
-    loadCashbookData();
-  }, []);
-
-  const loadCashbookData = () => {
-    setIsLoading(true);
-    
-    try {
-      initializeAccounting();
-      
-      const formattedStartDate = startDate ? format(startDate, 'yyyy-MM-dd') : undefined;
-      const formattedEndDate = endDate ? format(endDate, 'yyyy-MM-dd') : undefined;
-      
-      const cashbookEntries = getCashBookEntries(formattedStartDate, formattedEndDate);
-      setEntries(cashbookEntries);
-      
-      // Get today's summary
-      const { cashIn, cashOut } = getTodayCashTransactions();
-      setTodaySummary({ cashIn, cashOut });
-      
-      console.log("Cashbook entries loaded:", cashbookEntries.length);
-    } catch (error) {
-      console.error("Error loading cashbook data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load cashbook data. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFilterChange = () => {
-    loadCashbookData();
-  };
-
-  const resetFilters = () => {
-    setStartDate(null);
-    setEndDate(null);
-    
-    setTimeout(() => {
-      loadCashbookData();
-    }, 0);
-  };
-
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: "Cashbook",
-    onAfterPrint: () => {
-      toast({
-        title: "Print successful",
-        description: "Cashbook has been sent to printer",
-      });
-    },
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [balance, setBalance] = useState(0);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [newTransaction, setNewTransaction] = useState({
+    date: format(new Date(), "yyyy-MM-dd"),
+    type: "income" as 'income' | 'expense',
+    amount: "",
+    description: "",
   });
 
-  const handleExportToExcel = () => {
-    try {
-      // Prepare data for Excel export
-      const excelData = entries.map(entry => ({
-        Date: entry.date,
-        Reference: entry.reference,
-        Description: entry.narration,
-        Debit: entry.debit > 0 ? entry.debit : '',
-        Credit: entry.credit > 0 ? entry.credit : '',
-        Balance: entry.balance,
-        'Balance Type': entry.balanceType
-      }));
-      
-      // Create workbook and worksheet
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(excelData);
-      
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(wb, ws, "Cashbook");
-      
-      // Generate file name with date
-      const fileName = `Cashbook_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-      
-      // Save workbook
-      XLSX.writeFile(wb, fileName);
-      
-      toast({
-        title: "Export completed",
-        description: "Cashbook data has been exported to Excel",
-      });
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      toast({
-        title: "Export failed",
-        description: "There was an error exporting to Excel",
-        variant: "destructive"
-      });
-    }
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  const loadTransactions = () => {
+    const cashData = getCashTransactions();
+    setTransactions(cashData);
+    
+    // Calculate balance
+    const totalIncome = cashData
+      .filter(t => t.type === "income")
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    
+    const totalExpense = cashData
+      .filter(t => t.type === "expense")
+      .reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+    
+    setBalance(totalIncome - totalExpense);
   };
 
-  const handleBackupData = () => {
-    try {
-      // Get all necessary data
-      const purchases = JSON.parse(localStorage.getItem('purchases') || '[]');
-      const sales = JSON.parse(localStorage.getItem('sales') || '[]');
-      const inventory = JSON.parse(localStorage.getItem('inventory') || '[]');
-      const agents = JSON.parse(localStorage.getItem('agents') || '[]');
-      const suppliers = JSON.parse(localStorage.getItem('suppliers') || '[]');
-      const customers = JSON.parse(localStorage.getItem('customers') || '[]');
-      const brokers = JSON.parse(localStorage.getItem('brokers') || '[]');
-      const transporters = JSON.parse(localStorage.getItem('transporters') || '[]');
-      const cashbookEntries = entries;
-      
-      // Create a single workbook with multiple sheets
-      const wb = XLSX.utils.book_new();
-      
-      // Add each data set as its own sheet
-      if (purchases.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(purchases);
-        XLSX.utils.book_append_sheet(wb, ws, "Purchases");
-      }
-      
-      if (sales.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(sales);
-        XLSX.utils.book_append_sheet(wb, ws, "Sales");
-      }
-      
-      if (inventory.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(inventory);
-        XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-      }
-      
-      if (agents.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(agents);
-        XLSX.utils.book_append_sheet(wb, ws, "Agents");
-      }
-      
-      if (suppliers.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(suppliers);
-        XLSX.utils.book_append_sheet(wb, ws, "Suppliers");
-      }
-      
-      if (customers.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(customers);
-        XLSX.utils.book_append_sheet(wb, ws, "Customers");
-      }
-      
-      if (brokers.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(brokers);
-        XLSX.utils.book_append_sheet(wb, ws, "Brokers");
-      }
-      
-      if (transporters.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(transporters);
-        XLSX.utils.book_append_sheet(wb, ws, "Transporters");
-      }
-      
-      if (cashbookEntries.length > 0) {
-        const ws = XLSX.utils.json_to_sheet(cashbookEntries);
-        XLSX.utils.book_append_sheet(wb, ws, "CashBook");
-      }
-      
-      // Generate file name with date
-      const fileName = `ERP_Backup_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-      
-      // Save workbook
-      XLSX.writeFile(wb, fileName);
-      
-      toast({
-        title: "Backup successful",
-        description: "All data has been backed up to Excel file",
-      });
-    } catch (error) {
-      console.error("Error creating backup:", error);
-      toast({
-        title: "Backup failed",
-        description: "There was an error creating the backup",
-        variant: "destructive"
-      });
+  const handleAddTransaction = () => {
+    if (!newTransaction.amount || parseFloat(newTransaction.amount) <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
     }
-  };
 
-  const calculateOpeningBalance = () => {
-    if (entries.length === 0) return 0;
-    
-    // Find first entry and get its balance before transactions
-    const firstEntry = entries[0];
-    
-    // Special case for opening balance entry
-    if (firstEntry.reference === 'Opening Balance') {
-      return 0; // The opening balance is already reflected in the first entry
+    if (!newTransaction.description) {
+      toast.error("Please enter a description");
+      return;
     }
-    
-    let openingBalance = firstEntry.balance;
-    
-    // Adjust for the first transaction
-    if (firstEntry.debit > 0) {
-      openingBalance -= firstEntry.debit;
-    } else if (firstEntry.credit > 0) {
-      openingBalance += firstEntry.credit;
-    }
-    
-    return openingBalance;
-  };
 
-  const calculateClosingBalance = () => {
-    if (entries.length === 0) return 0;
-    return entries[entries.length - 1].balance;
-  };
+    const transaction: CashTransaction = {
+      id: Date.now().toString(),
+      date: newTransaction.date || format(new Date(), "yyyy-MM-dd"),
+      type: newTransaction.type,
+      amount: parseFloat(newTransaction.amount),
+      description: newTransaction.description
+    };
 
-  const handleManualExpenseAdded = () => {
-    setExpenseDialogOpen(false);
-    loadCashbookData();
-    
-    toast({
-      title: "Success",
-      description: "Manual expense has been added to cashbook",
+    addCashTransaction(transaction);
+    setIsAddDialogOpen(false);
+    setNewTransaction({
+      date: format(new Date(), "yyyy-MM-dd"),
+      type: "income" as 'income' | 'expense',
+      amount: "",
+      description: "",
     });
+    loadTransactions();
+    toast.success("Transaction added successfully");
   };
 
-  const handlePaymentAdded = () => {
-    setPaymentDialogOpen(false);
-    loadCashbookData();
-    
-    toast({
-      title: "Success",
-      description: "Payment has been added to cashbook",
-    });
+  const handleDeleteTransaction = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this transaction?")) {
+      deleteCashTransaction(id);
+      loadTransactions();
+      toast.success("Transaction deleted successfully");
+    }
   };
-
-  const handleReceiptAdded = () => {
-    setReceiptDialogOpen(false);
-    loadCashbookData();
-    
-    toast({
-      title: "Success",
-      description: "Receipt has been added to cashbook",
-    });
-  };
-
-  const openingBalance = calculateOpeningBalance();
-  const closingBalance = calculateClosingBalance();
-  const lastBalanceType = entries.length > 0 ? entries[entries.length - 1].balanceType : 'DR';
 
   return (
-    <div className="min-h-screen bg-ag-beige">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-pink-100">
       <Navigation title="Cash Book" showBackButton />
       <div className="container mx-auto px-4 py-6">
-        <Card>
-          <CardHeader className="border-b">
-            <div className="flex justify-between items-center flex-wrap gap-4">
-              <CashBookHeader
-                onPrint={handlePrint}
-                onExportToExcel={handleExportToExcel}
-                onBackupData={handleBackupData}
-              />
-              <TransactionButtons
-                onRefresh={loadCashbookData}
-                isLoading={isLoading}
-                onExpenseDialogOpen={() => setExpenseDialogOpen(true)}
-                onPaymentDialogOpen={() => setPaymentDialogOpen(true)}
-                onReceiptDialogOpen={() => setReceiptDialogOpen(true)}
-              />
+        <Card className="bg-gradient-to-br from-pink-100 to-pink-200 border-pink-200 shadow">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="text-pink-800">Cash Book</CardTitle>
+            <div className="flex items-center space-x-4">
+              <div className="bg-white px-4 py-2 rounded-md shadow-sm">
+                <span className="text-sm text-gray-500">Current Balance:</span>
+                <span className={`ml-2 font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ₹{balance.toLocaleString()}
+                </span>
+              </div>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="bg-pink-600 hover:bg-pink-700"
+              >
+                <Plus size={16} className="mr-1" /> Add Transaction
+              </Button>
             </div>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="mb-4">
-              <CashBookSummary
-                todaySummary={todaySummary}
-                closingBalance={closingBalance}
-                lastBalanceType={lastBalanceType}
-              />
-            </div>
-            
-            <CashBookFilters
-              startDate={startDate}
-              endDate={endDate}
-              setStartDate={setStartDate}
-              setEndDate={setEndDate}
-              onFilterChange={handleFilterChange}
-              onResetFilters={resetFilters}
-            />
-            
-            <CashBookTable
-              entries={entries}
-              openingBalance={openingBalance}
-              closingBalance={closingBalance}
-              lastBalanceType={lastBalanceType}
-              startDate={startDate}
-              endDate={endDate}
-              printRef={printRef}
-            />
+          <CardContent>
+            <ScrollArea className="h-[calc(100vh-300px)]">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {transactions.length > 0 ? (
+                    transactions.map((transaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>{format(new Date(transaction.date), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{transaction.description}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 rounded-full text-xs ${
+                            transaction.type === "income" 
+                              ? "bg-green-100 text-green-800" 
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {transaction.type === "income" ? "Income" : "Expense"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={transaction.type === "income" ? "text-green-600" : "text-red-600"}>
+                            ₹{transaction.amount.toLocaleString()}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteTransaction(transaction.id)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-4 text-gray-500">
+                        No transactions found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
-      
-      <TransactionDialogs
-        expenseDialogOpen={expenseDialogOpen}
-        setExpenseDialogOpen={setExpenseDialogOpen}
-        paymentDialogOpen={paymentDialogOpen}
-        setPaymentDialogOpen={setPaymentDialogOpen}
-        receiptDialogOpen={receiptDialogOpen}
-        setReceiptDialogOpen={setReceiptDialogOpen}
-        handleManualExpenseAdded={handleManualExpenseAdded}
-        handlePaymentAdded={handlePaymentAdded}
-        handleReceiptAdded={handleReceiptAdded}
-      />
-      
-      <PrintStyles />
+
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Transaction</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="date">Date</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={newTransaction.date}
+                  onChange={(e) => setNewTransaction({ ...newTransaction, date: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="type">Transaction Type</Label>
+                <Select
+                  value={newTransaction.type}
+                  onValueChange={(value: 'income' | 'expense') => setNewTransaction({ ...newTransaction, type: value })}
+                >
+                  <SelectTrigger id="type">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="income">Income</SelectItem>
+                    <SelectItem value="expense">Expense</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="Enter amount"
+                value={newTransaction.amount}
+                onChange={(e) => setNewTransaction({ ...newTransaction, amount: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                placeholder="Enter description"
+                value={newTransaction.description}
+                onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddTransaction} className="bg-pink-600 hover:bg-pink-700">
+              Add Transaction
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Database } from "lucide-react";
@@ -13,7 +12,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { exportDataBackup, importDataBackup } from '@/services/storageService';
+import { exportDataBackup, importDataBackup } from '@/services/backup/backupRestore';
 import { useStorageDebug } from '@/hooks/useStorageDebug';
 import { BackupConfirmDialog } from './BackupConfirmDialog';
 import { StorageDataView } from './StorageDataView';
@@ -31,71 +30,79 @@ export function StorageDebugger() {
     setShowBackupConfirm,
     storageStats,
     handleDebugClick,
-    getTotalEntries,
+    getTotalEntries
   } = useStorageDebug();
 
-  const handleExport = () => {
+  const handleExport = async () => {
     try {
-      const backup = exportDataBackup();
+      toast.info("Preparing data backup...");
+      const filename = `backup-${new Date().toISOString().split('T')[0]}.json`;
+      const backup = await exportDataBackup(filename);
       if (backup) {
-        const blob = new Blob([backup], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `backup-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        toast.success("Data backup exported successfully");
+        toast.success("Data backup exported successfully", {
+          description: "Your backup file has been downloaded."
+        });
       }
     } catch (error) {
       console.error('Error exporting data:', error);
-      toast.error("Error creating data backup");
+      toast.error("Error creating data backup", {
+        description: "Please try again or check console for details."
+      });
     }
   };
 
-  const handleImport = () => {
+  const handleImport = async () => {
     try {
       if (!importData.trim()) {
-        toast.error("Please paste backup data first");
+        toast.error("Please paste backup data first", {
+          description: "The import data field cannot be empty."
+        });
         return;
       }
       
+      toast.info("Importing data...");
+      
       if (window.confirm('Importing data will replace all existing data. Continue?')) {
-        const success = importDataBackup(importData);
+        const success = await importDataBackup(importData);
         
         if (success) {
-          toast.success("Data imported successfully");
+          toast.success("Data imported successfully", {
+            description: "Your data has been restored from the backup."
+          });
           handleDebugClick();
         } else {
-          toast.error("Error importing data: Invalid format");
+          toast.error("Error importing data: Invalid format", {
+            description: "The imported data does not match the expected format."
+          });
         }
       }
     } catch (error) {
       console.error('Error importing data:', error);
-      toast.error("Error importing data: Invalid JSON");
+      toast.error("Error importing data: Invalid JSON", {
+        description: "Please check the data format and try again."
+      });
     }
   };
 
-  const proceedWithDataClear = (shouldBackup: boolean) => {
+  const proceedWithDataClear = async (shouldBackup: boolean) => {
     if (shouldBackup) {
-      handleExport();
+      await handleExport();
     }
     localStorage.clear();
     handleDebugClick();
-    toast.success("All data cleared");
+    toast.success("All data cleared", {
+      description: "Your application data has been deleted."
+    });
     setShowBackupConfirm(false);
   };
 
   const filteredStorageData = useMemo(() => {
     try {
       if ((!searchTerm.trim() && filterType === 'all') || !storageData) {
-        return storageData;
+        return JSON.stringify(storageData, null, 2);
       }
 
-      const data = JSON.parse(storageData);
+      const data = storageData;
       const filteredData: Record<string, any> = {};
       
       Object.keys(data).forEach(key => {
@@ -114,11 +121,10 @@ export function StorageDebugger() {
       
       return JSON.stringify(filteredData, null, 2);
     } catch (e) {
-      return storageData;
+      return JSON.stringify(storageData, null, 2);
     }
   }, [storageData, searchTerm, filterType]);
 
-  // Helper functions to categorize data
   const isMasterData = (key: string): boolean => {
     return ['agents', 'customers', 'suppliers', 'brokers', 'transporters', 'locations'].includes(key);
   };
@@ -135,7 +141,14 @@ export function StorageDebugger() {
 
   return (
     <>
-      <Dialog onOpenChange={(open) => { if (open) handleDebugClick(); }}>
+      <Dialog onOpenChange={(open) => { 
+        if (open) {
+          handleDebugClick();
+          toast.info("Storage Manager opened", {
+            description: "Manage your application data"
+          });
+        }
+      }}>
         <DialogTrigger asChild>
           <Button 
             variant="outline" 
@@ -168,55 +181,66 @@ export function StorageDebugger() {
             <TabsContent value="view">
               <StorageDataView
                 searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
+                onSearchChange={(val) => {
+                  setSearchTerm(val);
+                  if (val) {
+                    toast.info(`Filtering storage by "${val}"`);
+                  }
+                }}
                 filterType={filterType}
-                onFilterChange={setFilterType}
-                onClearData={() => setShowBackupConfirm(true)}
+                onFilterChange={(val) => {
+                  setFilterType(val);
+                  toast.info(`Showing ${val} data`);
+                }}
+                onClearData={() => {
+                  setShowBackupConfirm(true);
+                  toast.warning("You're about to clear all data", {
+                    description: "Consider making a backup first"
+                  });
+                }}
                 storageData={filteredStorageData}
                 storageStats={storageStats}
                 onKeySelect={(key) => {
                   setSearchTerm(key);
                   setFilterType('all');
+                  toast.info(`Selected "${key}" from storage`);
                 }}
               />
             </TabsContent>
             
             <TabsContent value="export" className="space-y-4">
-              <div className="text-sm text-muted-foreground mb-4">
-                Export a backup of all application data. This file can be used to restore your data later.
-              </div>
-              <Button onClick={handleExport} className="flex gap-2 items-center">
-                <Database className="h-4 w-4" />
-                Download Backup
-              </Button>
-              <div className="mt-4 p-4 bg-muted rounded-md">
-                <p className="text-sm font-medium">Backup includes:</p>
-                <ul className="text-sm mt-2 list-disc pl-5 space-y-1">
-                  <li>Master data (Agents, Suppliers, Customers, etc.)</li>
-                  <li>Transactions (Purchases, Sales, etc.)</li>
-                  <li>Configuration settings</li>
-                </ul>
+              <div className="bg-slate-50 p-4 rounded-md">
+                <h3 className="font-medium text-lg mb-2">Export Your Data</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Create a backup of all your application data. This file can be used to restore your data later.
+                </p>
+                <Button onClick={handleExport} className="w-full">
+                  Download Backup File
+                </Button>
               </div>
             </TabsContent>
             
             <TabsContent value="import" className="space-y-4">
-              <div className="text-sm text-muted-foreground mb-4">
-                Paste a previously exported backup to restore your data. This will replace all existing data.
+              <div className="bg-slate-50 p-4 rounded-md">
+                <h3 className="font-medium text-lg mb-2">Import Data from Backup</h3>
+                <p className="text-sm text-gray-500 mb-4">
+                  Paste the contents of a previously exported backup file below to restore your data.
+                </p>
+                <textarea
+                  className="w-full h-48 p-2 border rounded-md font-mono text-sm"
+                  value={importData}
+                  onChange={(e) => setImportData(e.target.value)}
+                  placeholder="Paste your backup data here..."
+                />
+                <div className="flex justify-end mt-2">
+                  <Button onClick={handleImport} variant="destructive" className="mt-2">
+                    Import & Restore
+                  </Button>
+                </div>
               </div>
-              <textarea
-                className="w-full h-[300px] p-4 border rounded-md resize-none focus:outline-none"
-                placeholder="Paste your backup JSON data here..."
-                value={importData}
-                onChange={(e) => setImportData(e.target.value)}
-              />
-              <Button 
-                onClick={handleImport}
-                className="flex gap-2 items-center"
-                disabled={!importData.trim()}
-              >
-                <Database className="h-4 w-4" />
-                Import Data
-              </Button>
+              <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md text-sm text-yellow-800">
+                <span className="font-semibold">Warning:</span> Importing will override all existing data in the application.
+              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>

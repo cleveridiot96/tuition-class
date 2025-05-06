@@ -1,71 +1,83 @@
 
-import { useState } from 'react';
-import { toast } from "sonner";
-import { 
-  debugStorage, 
-  clearAllData, 
-  exportDataBackup, 
-  importDataBackup,
-} from '@/services/storageService';
+import { useState, useEffect, useCallback } from 'react';
+import { debugStorage } from '@/services/storageService';
 
+// Define type for storage statistics
 export interface StorageStats {
-  [key: string]: number;
+  totalItems: number;
+  totalSize: number;
+  largestItems: Array<{key: string, size: number}>;
 }
 
 export const useStorageDebug = () => {
-  const [storageData, setStorageData] = useState<string>('');
+  const [storageData, setStorageData] = useState<Record<string, any>>({});
   const [importData, setImportData] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
-  const [filterType, setFilterType] = useState<string>('all');
+  const [filterType, setFilterType] = useState<'all' | 'master' | 'transaction' | 'settings'>('all');
   const [showBackupConfirm, setShowBackupConfirm] = useState<boolean>(false);
-  const [storageStats, setStorageStats] = useState<StorageStats>({});
+  const [storageStats, setStorageStats] = useState<StorageStats>({
+    totalItems: 0,
+    totalSize: 0,
+    largestItems: []
+  });
+  
+  const handleDebugClick = useCallback(() => {
+    // Use the debugStorage object's methods directly
+    const data = debugStorage.getAllData();
+    setStorageData(data);
+    calculateStorageStats(data);
+  }, []);
 
-  const handleDebugClick = () => {
+  const calculateStorageStats = (data: Record<string, any>) => {
     try {
-      console.log("Debugging storage...");
-      debugStorage();
+      const itemSizes: Array<{key: string, size: number}> = [];
+      let totalSize = 0;
       
-      const allData: Record<string, any> = {};
-      const stats: StorageStats = {};
+      Object.entries(data).forEach(([key, value]) => {
+        const serialized = JSON.stringify(value);
+        const size = serialized ? serialized.length : 0;
+        totalSize += size;
+        itemSizes.push({ key, size });
+      });
       
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key) {
-          try {
-            const data = JSON.parse(localStorage.getItem(key) || 'null');
-            allData[key] = data;
-            
-            if (Array.isArray(data)) {
-              stats[key] = data.length;
-            } else if (typeof data === 'object' && data !== null) {
-              stats[key] = Object.keys(data).length;
-            } else {
-              stats[key] = 1;
-            }
-          } catch (e) {
-            allData[key] = localStorage.getItem(key);
-            stats[key] = 1;
-          }
-        }
-      }
+      // Sort by size (descending)
+      itemSizes.sort((a, b) => b.size - a.size);
       
-      setStorageStats(stats);
-      setStorageData(JSON.stringify(allData, null, 2));
+      setStorageStats({
+        totalItems: Object.keys(data).length,
+        totalSize,
+        largestItems: itemSizes.slice(0, 5) // Top 5 largest items
+      });
     } catch (error) {
-      console.error('Error debugging storage:', error);
-      toast.error("Error accessing storage data");
+      console.error("Error calculating storage stats:", error);
     }
   };
-
-  const getTotalEntries = (): number => {
-    return Object.values(storageStats).reduce((sum, count) => sum + count, 0);
+  
+  useEffect(() => {
+    handleDebugClick();
+  }, [handleDebugClick]);
+  
+  const refreshData = () => {
+    const data = debugStorage.getAllData();
+    setStorageData(data);
+    calculateStorageStats(data);
+  };
+  
+  const getItemData = (key: string) => {
+    return debugStorage.getItem(key);
   };
 
+  const getTotalEntries = () => {
+    return Object.keys(storageData).length;
+  };
+  
   return {
     storageData,
+    refreshData,
+    getItemData,
     importData,
     setImportData,
-    searchTerm,
+    searchTerm, 
     setSearchTerm,
     filterType,
     setFilterType,
@@ -73,6 +85,6 @@ export const useStorageDebug = () => {
     setShowBackupConfirm,
     storageStats,
     handleDebugClick,
-    getTotalEntries,
+    getTotalEntries
   };
 };

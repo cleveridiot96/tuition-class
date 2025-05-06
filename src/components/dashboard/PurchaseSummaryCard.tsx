@@ -1,34 +1,44 @@
 
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import DashboardCard from "./DashboardCard";
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BaggageClaim } from 'lucide-react';
 
-interface PurchaseSummaryProps {
+interface PurchaseSummaryCardProps {
   amount: number;
   bags: number;
   kgs: number;
 }
 
-const PurchaseSummaryCard = ({ amount, bags, kgs }: PurchaseSummaryProps) => {
-  const navigate = useNavigate();
-
+const PurchaseSummaryCard: React.FC<PurchaseSummaryCardProps> = ({
+  amount,
+  bags,
+  kgs
+}) => {
   return (
-    <DashboardCard title="Purchase Summary" onClick={() => navigate('/purchases')}>
-      <div className="text-sm text-gray-500">Total Purchases</div>
-      <div className="text-2xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-        ₹{amount.toLocaleString()}
-      </div>
-      <div className="grid grid-cols-2 gap-2 mt-4">
-        <div className="bg-green-50 p-2 rounded-lg">
-          <div className="text-xs text-gray-500">Bags</div>
-          <div className="text-sm font-semibold">{bags.toLocaleString()}</div>
+    <Card className="h-full bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 shadow-sm hover:shadow-md transition-shadow md-ripple">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between bg-gradient-to-r from-blue-200 to-blue-100 border-b border-blue-200">
+        <CardTitle className="text-lg font-semibold text-blue-800">Purchase Summary</CardTitle>
+        <BaggageClaim className="h-5 w-5 text-blue-600" />
+      </CardHeader>
+      <CardContent className="pt-4">
+        <div className="space-y-3">
+          <div>
+            <p className="text-sm text-blue-700">Total Amount</p>
+            <p className="text-2xl font-bold text-blue-800">₹{amount.toLocaleString()}</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-blue-50 p-2 rounded-md">
+              <p className="text-xs text-blue-600">Bags</p>
+              <p className="text-lg font-semibold text-blue-700">{bags.toLocaleString()}</p>
+            </div>
+            <div className="bg-blue-50 p-2 rounded-md">
+              <p className="text-xs text-blue-600">Net Weight</p>
+              <p className="text-lg font-semibold text-blue-700">{kgs.toLocaleString()} kg</p>
+            </div>
+          </div>
         </div>
-        <div className="bg-green-50 p-2 rounded-lg">
-          <div className="text-xs text-gray-500">Net Weight</div>
-          <div className="text-sm font-semibold">{kgs.toLocaleString()} kg</div>
-        </div>
-      </div>
-    </DashboardCard>
+      </CardContent>
+    </Card>
   );
 };
 

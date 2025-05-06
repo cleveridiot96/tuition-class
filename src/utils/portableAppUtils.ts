@@ -28,6 +28,26 @@ export const ensurePortableDataLoaded = (): boolean => {
       return false;
     }
     
+    // Check for data in the initialData key
+    const initialData = localStorage.getItem('initialData');
+    if (initialData) {
+      try {
+        const data = JSON.parse(initialData);
+        // Import data to localStorage if not already there
+        if (!localStorage.getItem('locations')) {
+          for (const key in data) {
+            if (!localStorage.getItem(key)) {
+              localStorage.setItem(key, JSON.stringify(data[key]));
+            }
+          }
+          console.log("Imported initial data from portable mode");
+          window.dispatchEvent(new Event('storage'));
+        }
+      } catch (e) {
+        console.error("Error parsing initial data:", e);
+      }
+    }
+    
     // Initialize default locations if needed
     const locations = localStorage.getItem('locations');
     if (!locations) {
@@ -37,7 +57,7 @@ export const ensurePortableDataLoaded = (): boolean => {
     return true;
   } catch (err) {
     console.error("Portable mode error:", err);
-    toast.error("Error loading data in portable mode. Try allowing local file access in your browser.");
+    toast.error("Error loading data in portable mode. Try using Chrome or Edge browser with file access enabled.");
     return false;
   }
 };
@@ -62,6 +82,14 @@ export const fixPortableAppIssues = (): void => {
       localStorage.setItem('currentFinancialYear', `${yearStart}-${yearEnd}`);
     }
     
+    // Ensure master data arrays exist
+    const masterArrays = ['suppliers', 'customers', 'agents', 'brokers', 'transporters'];
+    masterArrays.forEach(key => {
+      if (!localStorage.getItem(key)) {
+        localStorage.setItem(key, JSON.stringify([]));
+      }
+    });
+    
     console.log("Portable app settings verified and fixed if needed");
   } catch (err) {
     console.error("Error fixing portable app issues:", err);
@@ -81,7 +109,7 @@ export const initializePortableApp = (): void => {
 export const createPortableVersion = async (): Promise<boolean> => {
   try {
     // Create a backup of the data
-    const dataBackup = exportDataBackup(true);
+    const dataBackup = await exportDataBackup(true) as string;
     if (!dataBackup) {
       toast.error("Failed to create data backup");
       return false;
@@ -102,25 +130,7 @@ export const createPortableVersion = async (): Promise<boolean> => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Kisan Khata Sahayak - Portable</title>
   <script>
-    // Store the portable mode flag
     localStorage.setItem('portableMode', 'true');
-    
-    // Check if we have a data backup to import
-    const dataJson = localStorage.getItem('initialData');
-    if (dataJson) {
-      try {
-        const data = JSON.parse(dataJson);
-        // Import data to localStorage
-        for (const key in data) {
-          localStorage.setItem(key, JSON.stringify(data[key]));
-        }
-        console.log("Imported initial data");
-      } catch (e) {
-        console.error("Error importing initial data:", e);
-      }
-    }
-    
-    // Redirect to main app
     window.location.href = './index.html?portable=true';
   </script>
 </head>
@@ -131,28 +141,6 @@ export const createPortableVersion = async (): Promise<boolean> => {
     
     zip.file("launcher.html", launcherContent);
     
-    // Import data.json content into the app
-    const importScript = `
-    // This script imports the data.json file's contents into localStorage
-    // It's executed when the portable app is launched
-    document.addEventListener('DOMContentLoaded', async () => {
-      try {
-        const response = await fetch('./data.json');
-        if (response.ok) {
-          const data = await response.json();
-          localStorage.setItem('initialData', JSON.stringify(data));
-          console.log("Data loaded for portable mode");
-        } else {
-          console.error("Failed to load data.json");
-        }
-      } catch (e) {
-        console.error("Error loading portable data:", e);
-      }
-    });
-    `;
-    
-    zip.file("portable-loader.js", importScript);
-    
     // Generate and save zip file
     const content = await zip.generateAsync({ type: "blob" });
     const date = new Date();
@@ -160,9 +148,6 @@ export const createPortableVersion = async (): Promise<boolean> => {
     saveAs(content, `KisanKhataSahayak_Portable_${dateStr}.zip`);
     
     toast.success("Portable version created successfully");
-    
-    // Enable portable mode in localStorage for testing
-    localStorage.setItem('portableMode', 'true');
     
     return true;
   } catch (error) {

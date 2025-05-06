@@ -1,491 +1,117 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Card, CardContent } from '@/components/ui/card';
-import Navigation from '@/components/Navigation';
-import NewEntityForm from '@/components/NewEntityForm';
-import { 
-  getPurchaseAgents, addAgent, deleteAgent, updateAgent,
-  getCustomers, addCustomer, deleteCustomer, updateCustomer,
-  getSalesBrokers, addBroker, deleteBroker, updateBroker,
-  getTransporters, addTransporter, deleteTransporter, updateTransporter,
-  getSuppliers, addSupplier, deleteSupplier, updateSupplier,
-  seedInitialData,
-  clearAllData,
-  importDataBackup
-} from '@/services/storageService';
-import { Edit, Trash2, Plus, Search } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Label } from '@/components/ui/label';
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getMasters } from "@/services/masterService";
+import { MasterForm } from "@/components/master/MasterForm";
+import { MastersList } from "@/components/master/MastersList";
+import Navigation from "@/components/Navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MasterType } from "@/types/master.types";
+
+const AUTO_REFRESH_INTERVAL = 1000; // 1 second refresh interval
 
 const Master = () => {
-  const [activeTab, setActiveTab] = useState('agents');
-  const [agents, setAgents] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [customers, setCustomers] = useState([]);
-  const [brokers, setBrokers] = useState([]);
-  const [transporters, setTransporters] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [entityToDelete, setEntityToDelete] = useState(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [currentEntityType, setCurrentEntityType] = useState('');
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [entityToEdit, setEntityToEdit] = useState(null);
-
+  const [showForm, setShowForm] = useState(false);
+  const [currentTab, setCurrentTab] = useState<"all" | MasterType>("all");
+  const [masters, setMasters] = useState<any[]>([]);
+  const [formType, setFormType] = useState<MasterType>("supplier");
+  
   const loadData = useCallback(() => {
-    setAgents(getPurchaseAgents() || []);
-    setSuppliers(getSuppliers() || []);
-    setCustomers(getCustomers() || []);
-    setBrokers(getSalesBrokers() || []);
-    setTransporters(getTransporters() || []);
+    try {
+      // Load masters directly from the master service
+      const allMasters = getMasters();
+      // Filter out deleted masters
+      const activeMasters = allMasters.filter(m => !m.isDeleted);
+      setMasters(activeMasters);
+    } catch (error) {
+      console.error("Error loading masters:", error);
+    }
   }, []);
-
+  
   useEffect(() => {
-    seedInitialData();
     loadData();
     
-    const handleStorageChange = (e) => {
-      if (e.key === null || e.key.includes('agents') ||
-          e.key.includes('customers') ||
-          e.key.includes('suppliers') ||
-          e.key.includes('brokers') ||
-          e.key.includes('transporters')) {
-        loadData();
-      }
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    const handleFocus = () => {
+    // Set up auto-refresh interval
+    const refreshInterval = setInterval(() => {
       loadData();
-    };
+    }, AUTO_REFRESH_INTERVAL);
     
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('focus', handleFocus);
-    };
+    // Clean up interval on component unmount
+    return () => clearInterval(refreshInterval);
   }, [loadData]);
 
-  const filterEntities = (entities) => {
-    if (!searchTerm) return entities;
-    return entities.filter(entity => 
-      entity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (entity.address && entity.address.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  };
-
-  const handleTabChange = (value) => {
-    setActiveTab(value);
-  };
-
-  const confirmDelete = (id, type) => {
-    setEntityToDelete(id);
-    setCurrentEntityType(type);
-    setShowDeleteDialog(true);
-  };
-
-  const handleDelete = () => {
-    if (!entityToDelete || !currentEntityType) return;
-
-    switch (currentEntityType) {
-      case 'agent':
-        deleteAgent(entityToDelete);
-        break;
-      case 'supplier':
-        deleteSupplier(entityToDelete);
-        break;
-      case 'customer':
-        deleteCustomer(entityToDelete);
-        break;
-      case 'broker':
-        deleteBroker(entityToDelete);
-        break;
-      case 'transporter':
-        deleteTransporter(entityToDelete);
-        break;
-      default:
-        break;
+  const handleTabChange = (value: string) => {
+    setCurrentTab(value as "all" | MasterType);
+    
+    // Set form type based on the selected tab (except for "all")
+    if (value !== "all") {
+      setFormType(value as MasterType);
     }
+  };
 
+  // Filter masters by type based on current tab
+  const filteredMasters = useMemo(() => {
+    if (currentTab === "all") return masters;
+    return masters.filter(master => master.type === currentTab);
+  }, [currentTab, masters]);
+
+  const handleAddMaster = () => {
+    // Set the form type based on current tab (if not on "all" tab)
+    if (currentTab !== "all") {
+      setFormType(currentTab);
+    }
+    setShowForm(true);
+  };
+
+  const handleFormSave = () => {
+    setShowForm(false);
+    // Immediately load data after save to show the new master
     loadData();
-    toast.success(`${currentEntityType.charAt(0).toUpperCase() + currentEntityType.slice(1)} deleted successfully`);
-    setShowDeleteDialog(false);
-    setEntityToDelete(null);
-    setCurrentEntityType('');
-  };
-
-  const handleAdd = (data) => {
-    switch (activeTab) {
-      case 'agents':
-        addAgent({
-          id: `agent-${Date.now()}`,
-          name: data.name,
-          address: data.address,
-          balance: 0
-        });
-        break;
-      case 'suppliers':
-        addSupplier({
-          id: `supplier-${Date.now()}`,
-          name: data.name,
-          address: data.address,
-          balance: 0
-        });
-        break;
-      case 'customers':
-        addCustomer({
-          id: `customer-${Date.now()}`,
-          name: data.name,
-          address: data.address,
-          balance: 0
-        });
-        break;
-      case 'brokers':
-        addBroker({
-          id: `broker-${Date.now()}`,
-          name: data.name,
-          address: data.address,
-          commissionRate: data.commissionRate || 1,
-          balance: 0
-        });
-        break;
-      case 'transporters':
-        addTransporter({
-          id: `transporter-${Date.now()}`,
-          name: data.name,
-          address: data.address,
-          balance: 0
-        });
-        break;
-      default:
-        break;
-    }
-
-    loadData();
-    setIsAddDialogOpen(false);
-    toast.success(`${activeTab.slice(0, -1).charAt(0).toUpperCase() + activeTab.slice(0, -1).slice(1)} added successfully`);
-  };
-
-  const openEditDialog = (entity, type) => {
-    setEntityToEdit(entity);
-    setCurrentEntityType(type);
-    setIsEditDialogOpen(true);
-  };
-
-  const handleUpdate = (data) => {
-    if (!entityToEdit || !currentEntityType) return;
-
-    const updatedEntity = {
-      ...entityToEdit,
-      name: data.name,
-      address: data.address,
-    };
-
-    if (currentEntityType === 'broker' && data.commissionRate !== undefined) {
-      updatedEntity.commissionRate = data.commissionRate;
-    }
-
-    switch (currentEntityType) {
-      case 'agent':
-        updateAgent(updatedEntity);
-        break;
-      case 'supplier':
-        updateSupplier(updatedEntity);
-        break;
-      case 'customer':
-        updateCustomer(updatedEntity);
-        break;
-      case 'broker':
-        updateBroker(updatedEntity);
-        break;
-      case 'transporter':
-        updateTransporter(updatedEntity);
-        break;
-      default:
-        break;
-    }
-
-    loadData();
-    toast.success(`${currentEntityType.charAt(0).toUpperCase() + currentEntityType.slice(1)} updated successfully`);
-    setIsEditDialogOpen(false);
-    setEntityToEdit(null);
-    setCurrentEntityType('');
-  };
-
-  const getEntityFormFields = (type) => {
-    const commonFields = [
-      {
-        name: 'name',
-        label: 'Name',
-        type: 'text',
-        placeholder: 'Enter name',
-        required: true,
-      },
-      {
-        name: 'address',
-        label: 'Address',
-        type: 'text',
-        placeholder: 'Enter address',
-        required: false,
-      },
-    ];
-
-    if (type === 'broker') {
-      return [
-        ...commonFields,
-        {
-          name: 'commissionRate',
-          label: 'Default Commission Rate (%)',
-          type: 'number',
-          placeholder: 'Enter default commission rate',
-          required: false,
-        },
-      ];
-    }
-
-    return commonFields;
-  };
-
-  const getFilteredEntities = () => {
-    switch (activeTab) {
-      case 'agents':
-        return filterEntities(agents);
-      case 'suppliers':
-        return filterEntities(suppliers);
-      case 'customers':
-        return filterEntities(customers);
-      case 'brokers':
-        return filterEntities(brokers);
-      case 'transporters':
-        return filterEntities(transporters);
-      default:
-        return [];
-    }
   };
 
   return (
-    <div className="min-h-screen">
-      <Navigation title="Master Data" showBackButton={true} />
-      
-      <div className="container mx-auto py-8 px-4">
-        <Tabs defaultValue="agents" value={activeTab} onValueChange={setActiveTab}>
-          <div className="flex justify-between items-center mb-6">
-            <TabsList>
-              <TabsTrigger value="agents">Purchase Agents</TabsTrigger>
-              <TabsTrigger value="suppliers">Suppliers</TabsTrigger>
-              <TabsTrigger value="customers">Customers</TabsTrigger>
-              <TabsTrigger value="brokers">Sales Brokers</TabsTrigger>
-              <TabsTrigger value="transporters">Transporters</TabsTrigger>
-            </TabsList>
-            
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus size={18} className="mr-1" /> Add {activeTab === 'agents' ? 'Purchase Agent' : 
-                     activeTab === 'brokers' ? 'Sales Broker' :
-                     activeTab.slice(0, -1)}
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>
-                    Add New {activeTab === 'agents' ? 'Purchase Agent' : 
-                      activeTab === 'brokers' ? 'Sales Broker' :
-                      activeTab.slice(0, -1).charAt(0).toUpperCase() + activeTab.slice(0, -1).slice(1)}
-                  </DialogTitle>
-                </DialogHeader>
-                <NewEntityForm 
-                  onSubmit={handleAdd} 
-                  fields={getEntityFormFields(activeTab.slice(0, -1))}
-                />
-              </DialogContent>
-            </Dialog>
-          </div>
-          
-          <div className="mb-4 flex">
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={`Search ${activeTab}...`}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
+      <Navigation title="Master Data" showBackButton />
+      <div className="container mx-auto px-4 py-6">
+        <Card className="bg-gradient-to-br from-indigo-100 to-indigo-200 border-indigo-200 shadow">
+          <CardHeader>
+            <CardTitle className="text-indigo-800">Master Data</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={handleAddMaster} 
+              className="mb-4 bg-indigo-600 hover:bg-indigo-700"
+            >
+              + Add Master
+            </Button>
 
-          <TabsContent value="agents">
-            <Card>
-              <CardContent className="p-6">
-                <EntityTable 
-                  entities={filterEntities(agents)} 
-                  onDelete={(id) => confirmDelete(id, 'agent')}
-                  onEdit={(entity) => openEditDialog(entity, 'agent')}
-                  type="agent"
-                  title="Purchase Agent"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="suppliers">
-            <Card>
-              <CardContent className="p-6">
-                <EntityTable 
-                  entities={filterEntities(suppliers)} 
-                  onDelete={(id) => confirmDelete(id, 'supplier')}
-                  onEdit={(entity) => openEditDialog(entity, 'supplier')}
-                  type="supplier"
-                  title="Supplier"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="customers">
-            <Card>
-              <CardContent className="p-6">
-                <EntityTable 
-                  entities={filterEntities(customers)} 
-                  onDelete={(id) => confirmDelete(id, 'customer')}
-                  onEdit={(entity) => openEditDialog(entity, 'customer')}
-                  type="customer"
-                  title="Customer"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="brokers">
-            <Card>
-              <CardContent className="p-6">
-                <EntityTable 
-                  entities={filterEntities(brokers)} 
-                  onDelete={(id) => confirmDelete(id, 'broker')}
-                  onEdit={(entity) => openEditDialog(entity, 'broker')}
-                  type="broker"
-                  title="Sales Broker"
-                  showCommissionRate
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="transporters">
-            <Card>
-              <CardContent className="p-6">
-                <EntityTable 
-                  entities={filterEntities(transporters)} 
-                  onDelete={(id) => confirmDelete(id, 'transporter')}
-                  onEdit={(entity) => openEditDialog(entity, 'transporter')}
-                  type="transporter"
-                  title="Transporter"
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-        
-        <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Delete</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete this {currentEntityType}? This action cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                Edit {currentEntityType ? currentEntityType.charAt(0).toUpperCase() + currentEntityType.slice(1) : ''}
-              </DialogTitle>
-            </DialogHeader>
-            {entityToEdit && (
-              <NewEntityForm 
-                onSubmit={handleUpdate} 
-                initialData={entityToEdit}
-                fields={getEntityFormFields(currentEntityType)}
+            {showForm && (
+              <MasterForm
+                onClose={() => setShowForm(false)}
+                onSaved={handleFormSave}
+                initialType={formType}
               />
             )}
-          </DialogContent>
-        </Dialog>
+
+            <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid grid-cols-6 mb-4">
+                <TabsTrigger value="all">All</TabsTrigger>
+                <TabsTrigger value="supplier">Suppliers</TabsTrigger>
+                <TabsTrigger value="customer">Customers</TabsTrigger>
+                <TabsTrigger value="broker">Brokers</TabsTrigger>
+                <TabsTrigger value="agent">Agents</TabsTrigger>
+                <TabsTrigger value="transporter">Transporters</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value={currentTab}>
+                <MastersList masters={filteredMasters} onUpdate={loadData} />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
     </div>
-  );
-};
-
-const EntityTable = ({ entities, onDelete, onEdit, type, title, showCommissionRate = false }) => {
-  if (!entities || entities.length === 0) {
-    return <p className="text-center py-8 text-gray-500">No entries found.</p>;
-  }
-  
-  return (
-    <ScrollArea className="h-[calc(100vh-250px)]">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-1/4">Name</TableHead>
-            <TableHead className="w-2/5">Address</TableHead>
-            {showCommissionRate && <TableHead className="w-1/6">Commission Rate (%)</TableHead>}
-            <TableHead className="w-1/6">Balance (₹)</TableHead>
-            <TableHead className="w-1/6">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {entities.map((entity) => (
-            <TableRow key={entity.id}>
-              <TableCell className="font-medium">{entity.name}</TableCell>
-              <TableCell>{entity.address || '-'}</TableCell>
-              {showCommissionRate && <TableCell>{entity.commissionRate || 0}%</TableCell>}
-              <TableCell>₹{entity.balance?.toFixed(2) || '0.00'}</TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(entity)}>
-                    <Edit size={16} />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-red-500" onClick={() => onDelete(entity.id)}>
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </ScrollArea>
   );
 };
 

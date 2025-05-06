@@ -32,28 +32,28 @@ const Stock = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-ag-beige">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100">
       <Navigation title="Stock Report" showBackButton />
       <div className="container mx-auto px-4 py-6">
         <div className="grid grid-cols-1 gap-6">
           <StockReport />
-          <Card className="mt-6">
+          <Card className="mt-6 bg-gradient-to-br from-orange-100 to-orange-200 border-orange-200 shadow">
             <CardHeader>
-              <CardTitle>Stock Summary by Location</CardTitle>
+              <CardTitle className="text-orange-800">Stock Summary by Location</CardTitle>
             </CardHeader>
             <CardContent>
               {Object.keys(inventoryByLocation).length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {Object.entries(inventoryByLocation).map(([location, stats]) => (
-                    <Card key={location} className="p-4 shadow-sm">
-                      <h3 className="font-semibold text-lg">{location}</h3>
-                      <p className="text-gray-600">{stats.bags} bags</p>
-                      <p className="text-gray-600">~{stats.weight.toFixed(2)} kgs</p>
+                    <Card key={location} className="p-4 shadow-sm bg-gradient-to-br from-orange-50 to-orange-100 border-orange-100">
+                      <h3 className="font-semibold text-lg text-orange-800">{location}</h3>
+                      <p className="text-orange-600">{stats.bags} bags</p>
+                      <p className="text-orange-600">~{stats.weight.toFixed(2)} kgs</p>
                     </Card>
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-gray-500">No stock data available</p>
+                <p className="text-center text-orange-500">No stock data available</p>
               )}
             </CardContent>
           </Card>

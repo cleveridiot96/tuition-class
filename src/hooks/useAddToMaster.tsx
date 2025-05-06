@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,72 +8,119 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NumericInput } from "@/components/ui/numeric-input";
 import { toast } from "sonner";
+import { v4 as uuidv4 } from "uuid";
+import { addToMasterList } from "@/services/masterOperations";
+import { MasterType } from "@/types/master.types";
+import { useMasterValidation } from "@/hooks/master/useMasterValidation";
 
-/**
- * Hook for managing "Add to Master" functionality in dropdown components
- */
-export function useAddToMaster() {
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [newItemValue, setNewItemValue] = useState('');
-  const [onConfirmCallback, setOnConfirmCallback] = useState<((value: string) => void) | null>(null);
-  
-  /**
-   * Shows the confirmation dialog for adding a new item
-   */
-  const confirmAddToMaster = useCallback((value: string, onConfirm: (value: string) => void) => {
-    setNewItemValue(value);
-    setOnConfirmCallback(() => onConfirm);
-    setShowConfirmDialog(true);
-  }, []);
-  
-  /**
-   * Handles the confirmation action
-   */
-  const handleConfirmAdd = useCallback(() => {
-    if (newItemValue && onConfirmCallback) {
-      onConfirmCallback(newItemValue);
-      setShowConfirmDialog(false);
-      toast.success(`"${newItemValue}" added to master list`);
+export const useAddToMaster = () => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [itemName, setItemName] = useState("");
+  const [commissionRate, setCommissionRate] = useState<string>("1");
+  const [masterType, setMasterType] = useState<MasterType>("supplier");
+  const [onConfirm, setOnConfirm] = useState<((value: string) => void) | null>(null);
+  const { nameError, validateMaster } = useMasterValidation();
+
+  const confirmAddToMaster = (
+    name: string,
+    callback: (value: string) => void,
+    type: MasterType = "supplier"
+  ) => {
+    setItemName(name);
+    setMasterType(type);
+    setOnConfirm(() => callback);
+    setIsDialogOpen(true);
+  };
+
+  const handleConfirm = () => {
+    // Don't proceed if validation fails
+    if (!validateMaster(itemName, masterType)) {
+      return;
     }
-  }, [newItemValue, onConfirmCallback]);
-  
-  /**
-   * Renders the confirmation dialog component
-   */
-  const AddToMasterDialog = useCallback(() => (
-    <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-      <DialogContent className="sm:max-w-md">
+
+    // Convert commission rate to number if needed
+    const commissionRateNum = ["broker", "agent"].includes(masterType) 
+      ? parseFloat(commissionRate) 
+      : undefined;
+
+    // Add to master list with appropriate data
+    const result = addToMasterList(masterType, {
+      name: itemName,
+      commissionRate: commissionRateNum,
+      type: masterType
+    });
+
+    // If successful and callback exists, call it
+    if (result && onConfirm) {
+      onConfirm(result);
+    }
+
+    // Close dialog and reset state
+    setIsDialogOpen(false);
+    setItemName("");
+    setCommissionRate("1");
+  };
+
+  const AddToMasterDialog = () => (
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogContent className="bg-white">
         <DialogHeader>
-          <DialogTitle>Add to Master List</DialogTitle>
+          <DialogTitle>Add to {masterType.charAt(0).toUpperCase() + masterType.slice(1)} Master</DialogTitle>
         </DialogHeader>
-        <div className="py-4">
-          <p className="mb-4">"{newItemValue}" not found. Add to master list?</p>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="confirmValue">Value to add:</Label>
-            <Input 
-              id="confirmValue" 
-              value={newItemValue}
-              onChange={(e) => setNewItemValue(e.target.value)}
+        <div className="space-y-4 py-2">
+          <div>
+            <Label htmlFor="itemName" className="flex items-center">
+              Name <span className="text-red-500 ml-1">*</span>
+            </Label>
+            <Input
+              id="itemName"
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              placeholder={`Enter ${masterType} name`}
+              className="mt-1"
             />
+            {nameError && <p className="text-red-500 text-sm mt-1">{nameError}</p>}
           </div>
+
+          {(masterType === "broker" || masterType === "agent") && (
+            <div>
+              <Label htmlFor="commissionRate" className="flex items-center">
+                Commission Rate (%) <span className="text-red-500 ml-1">*</span>
+              </Label>
+              <NumericInput
+                id="commissionRate"
+                value={commissionRate}
+                onChange={(value) => setCommissionRate(value.toString())}
+                className="mt-1"
+                step="0.01"
+                min={0}
+                max={100}
+                placeholder="Enter commission rate"
+              />
+            </div>
+          )}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
-            No, Cancel
+          <Button
+            variant="outline"
+            onClick={() => setIsDialogOpen(false)}
+          >
+            Cancel
           </Button>
-          <Button onClick={handleConfirmAdd}>
-            Yes, Add to Master
+          <Button onClick={handleConfirm}>
+            Add {masterType.charAt(0).toUpperCase() + masterType.slice(1)}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  ), [showConfirmDialog, newItemValue, handleConfirmAdd]);
-  
+  );
+
   return {
     confirmAddToMaster,
-    AddToMasterDialog
+    AddToMasterDialog,
   };
-}
+};

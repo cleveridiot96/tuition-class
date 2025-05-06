@@ -1,28 +1,20 @@
 
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
-import './styles/global-dropdown-fixes.css'
-import './styles/form-fixes.css'
-import './styles/animations.css'
-import { ToastProvider } from '@/hooks/toast/toast-context'
-import { setupCrashRecovery } from '@/utils/crash/crashDetection'
-import { setupUSBDetection } from '@/utils/storage/usbDetection'
-import RippleProvider from '@/components/RippleProvider'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter as Router } from 'react-router-dom';
+import App from './App';
+import EnhancedErrorBoundary from './components/EnhancedErrorBoundary';
 
-// Setup crash recovery system
-setupCrashRecovery();
+// Create the root element
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
-// Setup USB drive detection if supported
-setupUSBDetection();
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Render the application with proper providers
+root.render(
   <React.StrictMode>
-    <ToastProvider>
-      <RippleProvider>
+    <EnhancedErrorBoundary>
+      <Router>
         <App />
-      </RippleProvider>
-    </ToastProvider>
-  </React.StrictMode>,
-)
+      </Router>
+    </EnhancedErrorBoundary>
+  </React.StrictMode>
+);

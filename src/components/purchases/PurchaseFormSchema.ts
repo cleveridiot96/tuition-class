@@ -1,21 +1,42 @@
 
-import { z } from "zod";
+import * as z from "zod";
 
+// Schema for purchase form data with field validation
 export const purchaseFormSchema = z.object({
-  date: z.string().nonempty("Date is required"),
-  lotNumber: z.string().nonempty("Lot number is required"),
-  quantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  party: z.string().nonempty("Party is required"),
-  brokerId: z.string().optional(),
-  location: z.string().nonempty("Location is required"),
-  netWeight: z.coerce.number().min(0.01, "Net weight must be greater than 0"),
-  rate: z.coerce.number().min(0.01, "Rate must be greater than 0"),
+  date: z.string({
+    required_error: "Date is required",
+  }),
+  lotNumber: z.string().optional(),
+  bags: z.union([z.number().int().positive(), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseInt(val) || 0) : val
+  ),
+  party: z.string().optional(),
+  location: z.string().optional(),
+  netWeight: z.union([z.number().positive(), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ),
+  rate: z.union([z.number().positive(), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ),
   transporterId: z.string().optional(),
-  transportRate: z.coerce.number().min(0, "Transport rate cannot be negative").default(0),
-  expenses: z.coerce.number().min(0, "Expenses cannot be negative").default(0),
+  transportRate: z.union([z.number().min(0), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ).optional().default(0),
+  expenses: z.union([z.number().min(0), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ).optional().default(0),
   brokerageType: z.enum(["percentage", "fixed"]).default("percentage"),
-  brokerageValue: z.coerce.number().min(0, "Brokerage value cannot be negative").default(0),
+  brokerageValue: z.union([z.number().min(0), z.string()]).transform(val => 
+    typeof val === 'string' ? (parseFloat(val) || 0) : val
+  ).optional().default(1),
   notes: z.string().optional(),
+  agentId: z.string().optional(),
+  billNumber: z.string().optional(),
+  billAmount: z.union([z.number().min(0), z.null()]).optional(),
+}).refine(data => data.party || data.agentId, {
+  message: "Either Supplier Name or Agent must be specified",
+  path: ["party"],
 });
 
+// Type definition for purchase form data
 export type PurchaseFormData = z.infer<typeof purchaseFormSchema>;

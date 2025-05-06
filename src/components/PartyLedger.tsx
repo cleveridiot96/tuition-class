@@ -1,315 +1,352 @@
 
-import React, { useEffect, useState, useRef } from 'react';
-import { useReactToPrint } from 'react-to-print';
-import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
-import { 
-  Drawer, 
-  DrawerContent, 
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerFooter,
-  DrawerClose
-} from "@/components/ui/drawer";
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Printer, FileSpreadsheet, X } from "lucide-react";
-import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft } from "lucide-react";
+import { format } from 'date-fns';
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import AccountOpeningBalance from './AccountOpeningBalance';
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Edit, Eye, PlusCircle, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { getParties } from "@/services/ledgerService";
+import { Sale, Purchase, Payment, Receipt } from "@/services/types";
+import { optimizedStorage } from "@/services/core/storage-core";
 
-import { 
-  getAccountById, 
-  getAccountLedger,
-  Account, 
-  LedgerEntry
-} from '@/services/accountingService';
-import { formatDate, formatBalance, formatCurrency } from '@/utils/helpers';
-
-interface PartyLedgerProps {
-  isOpen: boolean;
-  onClose: () => void;
-  accountId: string;
+interface Transaction {
+  type: string;
+  date: string;
+  description: string;
+  amount: number;
+  reference?: string;
+  balance?: number;
+  id: string;
 }
 
-const PartyLedger = ({ isOpen, onClose, accountId }: PartyLedgerProps) => {
+const PartyLedger: React.FC = () => {
+  const { partyId, partyType } = useParams<{ partyId: string; partyType: string; }>();
+  const navigate = useNavigate();
   const { toast } = useToast();
-  const [account, setAccount] = useState<Account | null>(null);
-  const [ledger, setLedger] = useState<LedgerEntry[]>([]);
-  const printRef = useRef<HTMLDivElement>(null);
-  const [isOpeningBalanceDialogOpen, setIsOpeningBalanceDialogOpen] = useState(false);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [parties, setParties] = useState<any[]>([]);
 
   useEffect(() => {
-    if (isOpen && accountId) {
-      const accountData = getAccountById(accountId);
-      if (accountData) {
-        setAccount(accountData);
-        const ledgerData = getAccountLedger(accountId);
-        setLedger(ledgerData);
-      }
-    }
-  }, [isOpen, accountId]);
+    const loadParties = () => {
+      const partiesData = getParties();
+      setParties(partiesData);
+    };
 
-  const handlePrint = useReactToPrint({
-    content: () => printRef.current,
-    documentTitle: `Ledger - ${account?.name || 'Party'}`,
-    onAfterPrint: () => {
-      toast({
-        title: 'Print Successful',
-        description: 'Ledger has been sent to printer',
-      });
-    },
-  });
+    loadParties();
+  }, []);
 
-  const handleExportToExcel = () => {
-    try {
-      if (!account) return;
+  useEffect(() => {
+    if (partyId) {
+      const sales = optimizedStorage.get<Sale[]>('sales') || [];
+      const purchases = optimizedStorage.get<Purchase[]>('purchases') || [];
+      const payments = optimizedStorage.get<Payment[]>('payments') || [];
+      const receipts = optimizedStorage.get<Receipt[]>('receipts') || [];
       
-      // Prepare data for Excel export
-      const excelData = ledger.map(entry => ({
-        Date: formatDate(entry.date),
-        Reference: entry.reference,
-        Narration: entry.narration,
-        Debit: entry.debit > 0 ? entry.debit : '',
-        Credit: entry.credit > 0 ? entry.credit : '',
-        Balance: entry.balance
-      }));
+      const partySales = sales.filter(
+        (sale) => !sale.isDeleted && 
+        ((partyType === 'customer' && sale.customerId === partyId) || 
+         (partyType === 'broker' && sale.brokerId === partyId))
+      );
       
-      // Create workbook and worksheet
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(excelData);
+      const partyPurchases = purchases.filter(
+        (purchase) => !purchase.isDeleted && 
+        ((partyType === 'supplier' && purchase.party === partyId) || 
+         (partyType === 'broker' && purchase.broker === partyId) ||
+         (partyType === 'agent' && purchase.agentId === partyId))
+      );
       
-      // Add worksheet to workbook
-      XLSX.utils.book_append_sheet(wb, ws, `${account.name} Ledger`);
+      const partyPayments = payments.filter(
+        (payment) => !payment.isDeleted && payment.partyId === partyId
+      );
       
-      // Generate filename with date
-      const fileName = `Ledger_${account.name}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+      const partyReceipts = receipts.filter(
+        (receipt) => !receipt.isDeleted && receipt.partyId === partyId
+      );
       
-      // Save workbook
-      XLSX.writeFile(wb, fileName);
+      const allTransactions = [
+        ...partySales.map(sale => ({
+          type: 'sale',
+          date: sale.date,
+          description: `Sale - ${sale.lotNumber}`,
+          amount: sale.totalAmount || 0,
+          reference: sale.billNumber,
+          id: sale.id
+        })),
+        ...partyPurchases.map(purchase => ({
+          type: 'purchase',
+          date: purchase.date,
+          description: `Purchase - ${purchase.lotNumber}`,
+          amount: purchase.totalAmount || 0,
+          reference: purchase.billNumber,
+          id: purchase.id
+        })),
+        ...partyPayments.map(payment => ({
+          type: 'payment',
+          date: payment.date,
+          description: `Payment - ${payment.paymentNumber}`,
+          amount: -payment.amount,
+          reference: payment.reference,
+          id: payment.id
+        })),
+        ...partyReceipts.map(receipt => ({
+          type: 'receipt',
+          date: receipt.date,
+          description: `Receipt - ${receipt.receiptNumber}`,
+          amount: -receipt.amount,
+          reference: receipt.reference,
+          id: receipt.id
+        }))
+      ];
       
-      toast({
-        title: "Export completed",
-        description: "Ledger data has been exported to Excel",
+      allTransactions.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      let balance = 0;
+      const transactionsWithBalance = allTransactions.map(transaction => {
+        balance += transaction.amount;
+        return { ...transaction, balance };
       });
-    } catch (error) {
-      console.error("Error exporting to Excel:", error);
-      toast({
-        title: "Export failed",
-        description: "There was an error exporting to Excel",
-        variant: "destructive"
-      });
+      
+      setTransactions(transactionsWithBalance);
+      setLoading(false);
     }
+  }, [partyId, partyType]);
+
+  const partyName = parties.find(party => party.id === partyId)?.name || 'Unknown Party';
+
+  const confirmDeleteTransaction = (transaction: Transaction) => {
+    setTransactionToDelete(transaction);
+    setShowDeleteConfirm(true);
   };
 
-  const handleOpeningBalanceSave = () => {
-    setIsOpeningBalanceDialogOpen(false);
-    
-    // Refresh ledger data
-    if (accountId) {
-      const accountData = getAccountById(accountId);
-      if (accountData) {
-        setAccount(accountData);
-        const ledgerData = getAccountLedger(accountId);
-        setLedger(ledgerData);
-      }
+  const handleDeleteTransaction = () => {
+    if (!transactionToDelete) return;
+
+    // Optimistic update
+    const transactionIdToDelete = transactionToDelete.id;
+    const transactionTypeToDelete = transactionToDelete.type;
+
+    // Filter out the transaction to be deleted
+    const updatedTransactions = transactions.filter(t => t.id !== transactionIdToDelete);
+    setTransactions(updatedTransactions);
+    setShowDeleteConfirm(false);
+
+    // Perform deletion based on transaction type
+    switch (transactionTypeToDelete) {
+      case 'sale':
+        // Delete sale
+        const sales = optimizedStorage.get<Sale[]>('sales') || [];
+        const updatedSales = sales.map(sale =>
+          sale.id === transactionIdToDelete ? { ...sale, isDeleted: true } : sale
+        );
+        optimizedStorage.set('sales', updatedSales);
+        break;
+      case 'purchase':
+        // Delete purchase
+        const purchases = optimizedStorage.get<Purchase[]>('purchases') || [];
+        const updatedPurchases = purchases.map(purchase =>
+          purchase.id === transactionIdToDelete ? { ...purchase, isDeleted: true } : purchase
+        );
+        optimizedStorage.set('purchases', updatedPurchases);
+        break;
+      case 'payment':
+        // Delete payment
+        const payments = optimizedStorage.get<Payment[]>('payments') || [];
+        const updatedPayments = payments.map(payment =>
+          payment.id === transactionIdToDelete ? { ...payment, isDeleted: true } : payment
+        );
+        optimizedStorage.set('payments', updatedPayments);
+        break;
+      case 'receipt':
+        // Delete receipt
+        const receipts = optimizedStorage.get<Receipt[]>('receipts') || [];
+        const updatedReceipts = receipts.map(receipt =>
+          receipt.id === transactionIdToDelete ? { ...receipt, isDeleted: true } : receipt
+        );
+        optimizedStorage.set('receipts', updatedReceipts);
+        break;
+      default:
+        console.warn('Unknown transaction type for deletion:', transactionTypeToDelete);
+        break;
     }
-    
+
     toast({
-      title: 'Opening Balance Updated',
-      description: 'Party opening balance has been updated successfully',
+      title: "Success",
+      description: "Transaction deleted successfully",
     });
   };
 
-  const openingBalance = ledger.length > 0 && ledger[0].reference === 'Opening Balance'
-    ? ledger[0]
-    : null;
-
-  // Filter out opening balance from the main list if it exists
-  const transactionEntries = openingBalance
-    ? ledger.filter(entry => entry.reference !== 'Opening Balance')
-    : ledger;
-
-  const closingBalance = ledger.length > 0
-    ? ledger[ledger.length - 1]
-    : null;
-
   return (
-    <>
-      <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="border-b">
-            <DrawerTitle className="text-lg font-bold">
-              {account?.name} Ledger
-            </DrawerTitle>
-            <DrawerDescription>
-              Account Type: {account?.type}
-            </DrawerDescription>
-          </DrawerHeader>
-          
-          <div className="p-4" ref={printRef}>
-            <div className="print-header text-center mb-4 hidden">
-              <h2 className="text-2xl font-bold">{account?.name} Ledger</h2>
-              <p className="text-gray-600">Account Type: {account?.type}</p>
-              <p className="text-gray-600">Financial Year: {new Date().getFullYear()}-{new Date().getFullYear() + 1}</p>
-            </div>
-            
-            <div className="flex justify-between mb-4 print:hidden">
-              <div className="flex gap-2">
-                <Button 
-                  size="sm"
-                  onClick={() => setIsOpeningBalanceDialogOpen(true)}
-                  variant="outline"
-                >
-                  Set Opening Balance
-                </Button>
-              </div>
-              
-              <div className="text-right">
-                {account?.openingBalance ? (
-                  <div className="text-sm">
-                    Initial Opening Balance: 
-                    <span className="font-medium ml-1">
-                      {formatCurrency(account.openingBalance)} {account.openingBalanceType === 'debit' ? 'DR' : 'CR'}
-                    </span>
-                  </div>
-                ) : null}
-              </div>
-            </div>
-            
-            {openingBalance && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-md border print:bg-white print:border-0">
-                <strong>Opening Balance:</strong> {formatCurrency(openingBalance.balance)}
-              </div>
-            )}
-            
-            <ScrollArea className="h-[calc(90vh-240px)] print:h-auto">
-              <div className="border rounded-md overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="whitespace-nowrap">Date</TableHead>
-                      <TableHead className="whitespace-nowrap">Reference</TableHead>
-                      <TableHead>Narration</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Debit (₹)</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Credit (₹)</TableHead>
-                      <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactionEntries.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No transactions found for this account.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      transactionEntries.map((entry, index) => (
-                        <TableRow key={index} className={
-                          entry.debit > 0 ? 'bg-green-50 print:bg-white' : 'bg-red-50 print:bg-white'
-                        }>
-                          <TableCell className="font-medium">{formatDate(entry.date)}</TableCell>
-                          <TableCell>{entry.reference}</TableCell>
-                          <TableCell>{entry.narration}</TableCell>
-                          <TableCell className="text-right">
-                            {entry.debit > 0 ? formatCurrency(entry.debit) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {entry.credit > 0 ? formatCurrency(entry.credit) : '-'}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {formatCurrency(entry.balance)}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </ScrollArea>
-            
-            {closingBalance && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-md border print:bg-white print:border-0">
-                <strong>Closing Balance:</strong> {formatCurrency(closingBalance.balance)}
-              </div>
-            )}
+    <div className="min-h-screen bg-gray-100">
+      <div className="container mx-auto p-4">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
+
+        <div className="bg-white shadow rounded-md p-4">
+          <h1 className="text-2xl font-bold mb-2">{partyName} Ledger</h1>
+          <p className="text-gray-600 mb-4">
+            {partyType ? `Type: ${partyType}` : 'No party type specified'}
+          </p>
+
+          <div className="mb-4">
+            <Button variant="outline" onClick={() => navigate(`/master/${partyType}s`)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit {partyType}
+            </Button>
+            <Button variant="default" className="ml-2" onClick={() => navigate(`/${partyType === 'customer' ? 'sales' : 'purchases'}/add`)}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add {partyType === 'customer' ? 'Sale' : 'Purchase'}
+            </Button>
           </div>
-          
-          <DrawerFooter className="border-t print:hidden">
-            <div className="flex justify-between w-full">
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  onClick={handlePrint}
-                  className="flex items-center gap-2"
-                >
-                  <Printer size={16} />
-                  Print Ledger
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={handleExportToExcel}
-                  className="flex items-center gap-2"
-                >
-                  <FileSpreadsheet size={16} />
-                  Export to Excel
-                </Button>
-              </div>
-              <DrawerClose asChild>
-                <Button variant="ghost" onClick={onClose}>Close</Button>
-              </DrawerClose>
-            </div>
-          </DrawerFooter>
-        </DrawerContent>
-      </Drawer>
-      
-      {/* Opening Balance Dialog */}
-      <Dialog open={isOpeningBalanceDialogOpen} onOpenChange={setIsOpeningBalanceDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Set Opening Balance for {account?.name}</DialogTitle>
-          </DialogHeader>
-          <AccountOpeningBalance 
-            accountId={accountId}
-            onSaved={handleOpeningBalanceSave}
-            onCancel={() => setIsOpeningBalanceDialogOpen(false)}
-          />
-        </DialogContent>
-      </Dialog>
-      
-      {/* Print Styles */}
-      <style>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .print-header {
-            display: block !important;
-          }
-          #printRef, #printRef * {
-            visibility: visible;
-          }
-          #printRef {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          .text-red-600, .text-green-600 {
-            color: black !important;
-          }
-        }
-      `}</style>
-    </>
+
+          <ScrollArea className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Date</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Reference</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                  </TableRow>
+                ) : transactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center">No transactions found.</TableCell>
+                  </TableRow>
+                ) : (
+                  transactions.map((transaction) => (
+                    <TableRow key={transaction.id}>
+                      <TableCell className="font-medium">{format(new Date(transaction.date), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>{transaction.description}</TableCell>
+                      <TableCell>{transaction.reference}</TableCell>
+                      <TableCell className="text-right">{transaction.amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{transaction.balance?.toFixed(2)}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center space-x-2">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-[425px]">
+                              <DialogHeader>
+                                <DialogTitle>Transaction Details</DialogTitle>
+                                <DialogDescription>
+                                  View detailed information about this transaction.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="grid gap-4 py-4">
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-1 font-semibold">Type:</div>
+                                  <div className="col-span-3">{transaction.type}</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-1 font-semibold">Date:</div>
+                                  <div className="col-span-3">{format(new Date(transaction.date), 'dd/MM/yyyy')}</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-1 font-semibold">Description:</div>
+                                  <div className="col-span-3">{transaction.description}</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-1 font-semibold">Amount:</div>
+                                  <div className="col-span-3">{transaction.amount.toFixed(2)}</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-1 font-semibold">Reference:</div>
+                                  <div className="col-span-3">{transaction.reference || 'N/A'}</div>
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                  <div className="col-span-1 font-semibold">Balance:</div>
+                                  <div className="col-span-3">{transaction.balance?.toFixed(2)}</div>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                          <Button variant="ghost" size="icon" onClick={() => {
+                            if (transaction.type === 'sale') {
+                              navigate(`/sales/edit/${transaction.id}`);
+                            } else if (transaction.type === 'purchase') {
+                              navigate(`/purchases/edit/${transaction.id}`);
+                            } else if (transaction.type === 'payment') {
+                              navigate(`/payments/edit/${transaction.id}`);
+                            } else if (transaction.type === 'receipt') {
+                              navigate(`/receipts/edit/${transaction.id}`);
+                            }
+                          }}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => confirmDeleteTransaction(transaction)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </div>
+      </div>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. Are you sure you want to delete this transaction?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTransaction}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 };
 

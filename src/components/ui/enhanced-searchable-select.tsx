@@ -1,8 +1,7 @@
 
 import * as React from "react";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fuzzyMatch } from "@/lib/fuzzy-match";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -11,27 +10,12 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { useAddToMaster } from "@/hooks/useAddToMaster";
+import { EnhancedSearchableSelectProps } from "./enhanced-select/types";
+import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
+import { EnhancedSelectOption } from "./enhanced-select/enhanced-select-option";
+import { EnhancedSelectSuggestion } from "./enhanced-select/enhanced-select-suggestion";
 
-export interface SelectOption {
-  value: string;
-  label: string;
-}
-
-interface EnhancedSearchableSelectProps {
-  options: SelectOption[];
-  value?: string;
-  onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => void;
-  placeholder?: string;
-  emptyMessage?: string;
-  label?: string;
-  disabled?: boolean;
-  className?: string;
-  masterType?: string;
-}
-
-export function EnhancedSearchableSelect({
+export const EnhancedSearchableSelect = React.memo(({
   options = [],
   value,
   onValueChange,
@@ -41,208 +25,170 @@ export function EnhancedSearchableSelect({
   label,
   disabled = false,
   className,
-  masterType = "item"
-}: EnhancedSearchableSelectProps) {
-  const [open, setOpen] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [suggestedMatch, setSuggestedMatch] = React.useState<string | null>(null);
-  
-  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
+  masterType = "supplier"
+}: EnhancedSearchableSelectProps) => {
+  const {
+    open,
+    setOpen,
+    searchTerm,
+    setSearchTerm,
+    suggestedMatch,
+    filteredOptions,
+    inputMatchesOption,
+    selectedOption
+  } = useEnhancedSelect(options, value);
 
-  React.useEffect(() => {
-    if (!open) {
-      setSearchTerm("");
-      setSuggestedMatch(null);
-    }
-  }, [open]);
-
-  // Enhanced filtering with fuzzy matching
-  const filteredOptions = React.useMemo(() => {
-    if (!searchTerm) return options;
-    
-    // Find exact and fuzzy matches
-    const matches = options.filter(option => 
-      fuzzyMatch(searchTerm, option.label) || 
-      fuzzyMatch(searchTerm, option.value)
-    );
-    
-    // Look for best fuzzy match for suggestion
-    if (matches.length === 0 && searchTerm.length >= 2) {
-      const bestMatch = options.find(option => {
-        const cleanInput = searchTerm.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-        const cleanOption = option.label.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
-        return cleanOption.startsWith(cleanInput.charAt(0)) && 
-               (cleanOption.includes(cleanInput) || 
-                cleanInput.length >= 2 && cleanOption.substring(0, 2) === cleanInput.substring(0, 2));
-      });
-      
-      if (bestMatch) {
-        setSuggestedMatch(bestMatch.label);
-      }
-    } else {
-      setSuggestedMatch(null);
-    }
-    
-    return matches;
-  }, [options, searchTerm]);
-
-  const inputMatchesOption = React.useMemo(() => {
-    if (!searchTerm) return false;
-    
-    return options.some(option => 
-      option.label.toLowerCase() === searchTerm.toLowerCase() ||
-      option.value.toLowerCase() === searchTerm.toLowerCase()
-    );
-  }, [options, searchTerm]);
-
-  const selectedOption = options.find(option => option.value === value);
-
-  const handleSelect = (currentValue: string) => {
+  // Handler functions
+  const handleSelect = React.useCallback((currentValue: string) => {
     onValueChange(currentValue);
     setOpen(false);
     setSearchTerm("");
-    setSuggestedMatch(null);
-  };
+  }, [onValueChange, setOpen, setSearchTerm]);
 
-  const handleAddNewItem = () => {
+  const handleAddNewItem = React.useCallback(() => {
     if (searchTerm.trim() && !inputMatchesOption && onAddNew) {
-      confirmAddToMaster(searchTerm.trim(), (confirmedValue) => {
-        onAddNew(confirmedValue);
-        onValueChange(confirmedValue);
-      });
+      const newValue = onAddNew(searchTerm.trim());
+      if (newValue) {
+        onValueChange(newValue);
+        setOpen(false);
+        setSearchTerm("");
+      }
     }
-  };
+  }, [searchTerm, inputMatchesOption, onAddNew, onValueChange, setOpen, setSearchTerm]);
 
-  const useSuggestedMatch = () => {
+  const useSuggestedMatch = React.useCallback(() => {
     if (suggestedMatch) {
       const matchingOption = options.find(option => option.label === suggestedMatch);
       if (matchingOption) {
         handleSelect(matchingOption.value);
       }
     }
-  };
+  }, [suggestedMatch, options, handleSelect]);
 
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    const relatedTarget = e.relatedTarget as HTMLElement | null;
-    
-    if (searchTerm && !inputMatchesOption && onAddNew && 
-       (!relatedTarget || !relatedTarget.closest('[role="listbox"]'))) {
-      setTimeout(() => {
-        if (open) {
-          handleAddNewItem();
-        }
-      }, 100);
+  const handleInputKeyDown = React.useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredOptions.length === 1) {
+        handleSelect(filteredOptions[0].value);
+      } else if (!inputMatchesOption && searchTerm.trim() && onAddNew) {
+        handleAddNewItem();
+      }
+    } else if (e.key === 'ArrowDown' && filteredOptions.length > 0) {
+      // Focus the first item in the list
+      const firstItem = document.querySelector('[role="option"]') as HTMLElement;
+      if (firstItem) firstItem.focus();
     }
-  };
+  }, [filteredOptions, handleSelect, inputMatchesOption, searchTerm, onAddNew, handleAddNewItem]);
+
+  const handleKeyNavigation = React.useCallback((e: React.KeyboardEvent<HTMLDivElement>, index: number) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextItem = document.querySelectorAll('[role="option"]')[index + 1] as HTMLElement;
+      if (nextItem) nextItem.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (index === 0) {
+        // Focus back on the input
+        const input = document.querySelector(`input[placeholder*="${placeholder.toLowerCase()}"]`) as HTMLElement;
+        if (input) input.focus();
+      } else {
+        const prevItem = document.querySelectorAll('[role="option"]')[index - 1] as HTMLElement;
+        if (prevItem) prevItem.focus();
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const option = filteredOptions[index];
+      if (option) handleSelect(option.value);
+    }
+  }, [filteredOptions, handleSelect, placeholder]);
 
   return (
-    <>
-      <Popover 
-        open={disabled ? false : open} 
-        onOpenChange={disabled ? undefined : setOpen}
-      >
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "w-full justify-between bg-white",
-              !value && "text-muted-foreground",
-              className
-            )}
-            disabled={disabled}
-            onClick={() => !disabled && setOpen(!open)}
-          >
-            {selectedOption ? selectedOption.label : placeholder}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
-          align="start"
-          style={{ pointerEvents: 'auto' }}
+    <Popover 
+      open={disabled ? false : open} 
+      onOpenChange={disabled ? undefined : setOpen}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            "w-full justify-between bg-white shadow-sm border-gray-300",
+            !value && "text-muted-foreground",
+            className
+          )}
+          disabled={disabled}
+          onClick={() => !disabled && setOpen(!open)}
         >
-          <div className="flex items-center border-b px-3">
-            <Input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onBlur={handleInputBlur}
-              placeholder={`Search ${placeholder.toLowerCase()}...`}
-              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              onClick={(e) => e.stopPropagation()}
+          {selectedOption ? selectedOption.label : placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent 
+        className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-[9999]" 
+        align="start"
+        style={{ pointerEvents: 'auto' }}
+      >
+        <div className="flex items-center border-b px-3">
+          <Input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleInputKeyDown}
+            placeholder={`Search ${placeholder.toLowerCase()}...`}
+            className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        <ScrollArea className="max-h-60">
+          {filteredOptions.length === 0 ? (
+            <EnhancedSelectSuggestion 
+              suggestedMatch={suggestedMatch}
+              onUseSuggestion={useSuggestedMatch}
+              searchTerm={searchTerm}
+              onAddNewItem={handleAddNewItem}
+              masterType={masterType}
+              showAddOption={!!onAddNew}
             />
-          </div>
-          <ScrollArea className="max-h-60">
-            {filteredOptions.length === 0 ? (
-              <div className="py-6 text-center text-sm">
-                {searchTerm.trim() ? (
-                  <div className="space-y-2 px-4">
-                    {suggestedMatch ? (
-                      <div className="space-y-2">
-                        <p>Did you mean?</p>
-                        <Button 
-                          variant="outline" 
-                          className="w-full"
-                          onClick={useSuggestedMatch}
-                        >
-                          {suggestedMatch}
-                        </Button>
-                      </div>
-                    ) : (
-                      <p>"{searchTerm}" not found</p>
-                    )}
-                    <Button 
-                      variant="outline" 
-                      className="w-full flex items-center justify-center gap-2"
-                      onClick={handleAddNewItem}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Add to {masterType} master?
-                    </Button>
-                  </div>
-                ) : (
-                  emptyMessage
-                )}
-              </div>
-            ) : (
-              <div role="listbox">
-                {filteredOptions.map((option) => (
-                  <div
-                    key={option.value}
-                    className={cn(
-                      "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground",
-                      value === option.value ? "bg-accent text-accent-foreground" : ""
-                    )}
-                    onClick={() => handleSelect(option.value)}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        value === option.value ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    {option.label}
-                  </div>
-                ))}
-
-                {searchTerm.trim() && !inputMatchesOption && (
-                  <div
-                    className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground border-t"
-                    onClick={handleAddNewItem}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add "{searchTerm}" to {masterType} master?
-                  </div>
-                )}
-              </div>
-            )}
-          </ScrollArea>
-        </PopoverContent>
-      </Popover>
-
-      <AddToMasterDialog />
-    </>
+          ) : (
+            <div role="listbox">
+              {filteredOptions.map((option, index) => (
+                <EnhancedSelectOption
+                  key={option.value}
+                  value={option.value}
+                  label={option.label}
+                  isSelected={value === option.value}
+                  onSelect={() => handleSelect(option.value)}
+                  onKeyDown={(e) => handleKeyNavigation(e, index)}
+                  index={index}
+                />
+              ))}
+              
+              {/* Add option for new entry if search term doesn't match any existing option */}
+              {searchTerm.trim() && !inputMatchesOption && onAddNew && (
+                <div
+                  role="option"
+                  tabIndex={0}
+                  className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground border-t"
+                  onClick={handleAddNewItem}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddNewItem();
+                    }
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add "{searchTerm}" to {masterType} master
+                </div>
+              )}
+            </div>
+          )}
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
   );
-}
+});
+
+EnhancedSearchableSelect.displayName = "EnhancedSearchableSelect";

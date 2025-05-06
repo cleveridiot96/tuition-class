@@ -1,14 +1,14 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { Purchase } from "@/services/types";
 import { Button } from "@/components/ui/button";
-import { Agent, Transporter, Purchase } from "@/services/types";
-import { getAgents, getTransporters, getLocations } from "@/services/storageService";
-import ItemsTable from '../shared/ItemsTable';
-import FormSummary from '../shared/FormSummary';
 import FormHeader from './components/FormHeader';
 import AgentSection from './components/AgentSection';
 import TransportSection from './components/TransportSection';
-import { usePurchaseForm } from './hooks/usePurchaseForm';
+import BrokerageSection from './components/BrokerageSection';
+import ItemsSection from './components/ItemsSection';
+import NotesAndSummary from './components/NotesAndSummary';
+import { useMultiItemPurchaseForm } from './hooks/useMultiItemPurchaseForm';
 
 interface MultiItemPurchaseFormProps {
   onCancel: () => void;
@@ -21,131 +21,90 @@ const MultiItemPurchaseForm: React.FC<MultiItemPurchaseFormProps> = ({
   onSubmit,
   initialValues
 }) => {
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [transporters, setTransporters] = useState<Transporter[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
-  const [showAddAgentDialog, setShowAddAgentDialog] = useState(false);
-  const [showAddTransporterDialog, setShowAddTransporterDialog] = useState(false);
-
   const {
     formState,
     isSubmitting,
-    handleInputChange,
-    handleSelectChange,
-    handleItemChange,
-    handleAddItem,
-    handleRemoveItem,
-    calculateSubtotal,
-    calculateTotal,
-    handleSubmit
-  } = usePurchaseForm({ onSubmit, initialValues });
-
-  useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  const loadInitialData = async () => {
-    try {
-      const allAgents = getAgents();
-      setAgents(allAgents);
-
-      const allTransporters = getTransporters();
-      setTransporters(allTransporters);
-
-      const allLocations = getLocations();
-      setLocations(allLocations);
-    } catch (error) {
-      console.error("Error loading initial data:", error);
-    }
-  };
-
-  const handleAgentAdded = (newAgent: Agent) => {
-    setAgents(prevAgents => [...prevAgents, newAgent]);
-    handleSelectChange('agentId', newAgent.id);
-    setShowAddAgentDialog(false);
-  };
-
-  const handleTransporterAdded = (newTransporter: Transporter) => {
-    setTransporters(prevTransporters => [...prevTransporters, newTransporter]);
-    handleSelectChange('transporterId', newTransporter.id);
-    setShowAddTransporterDialog(false);
-  };
+    brokerageAmount,
+    handleSubmit,
+    formMethods,
+    formUtils
+  } = useMultiItemPurchaseForm({ 
+    onSubmit, 
+    initialValues 
+  });
 
   return (
-    <div className="w-full max-w-[1200px] mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <FormHeader
-          lotNumber={formState.lotNumber}
-          date={formState.date}
-          location={formState.location}
-          locations={locations}
-          onInputChange={handleInputChange}
-          onSelectChange={handleSelectChange}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <AgentSection
-            agents={agents}
-            agentId={formState.agentId}
-            onSelectChange={handleSelectChange}
-            onAddAgentClick={() => setShowAddAgentDialog(true)}
-            showAddAgentDialog={showAddAgentDialog}
-            setShowAddAgentDialog={setShowAddAgentDialog}
-            onAgentAdded={handleAgentAdded}
+    <div className="w-full max-h-[calc(100vh-100px)] px-2 sm:px-4 md:px-6 mx-auto overflow-y-auto pb-8">
+      <div className="max-w-[1000px] mx-auto">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          <FormHeader
+            lotNumber={formState.lotNumber}
+            date={formState.date}
+            location={formState.location}
+            locations={formUtils.locations}
+            onInputChange={formMethods.handleInputChange}
+            onSelectChange={formMethods.handleSelectChange}
           />
-        </div>
 
-        <TransportSection
-          transporters={transporters}
-          transporterId={formState.transporterId}
-          transportCost={formState.transportCost}
-          onSelectChange={handleSelectChange}
-          onInputChange={handleInputChange}
-          onAddTransporterClick={() => setShowAddTransporterDialog(true)}
-          showAddTransporterDialog={showAddTransporterDialog}
-          setShowAddTransporterDialog={setShowAddTransporterDialog}
-          onTransporterAdded={handleTransporterAdded}
-        />
-
-        <ItemsTable
-          items={formState.items}
-          onItemChange={handleItemChange}
-          onRemoveItem={handleRemoveItem}
-          onAddItem={handleAddItem}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <textarea
-              id="notes"
-              name="notes"
-              className="w-full p-2 rounded-md border"
-              rows={3}
-              value={formState.notes}
-              onChange={(e) => handleInputChange({
-                target: { name: 'notes', value: e.target.value }
-              } as React.ChangeEvent<HTMLInputElement>)}
-              placeholder="Enter notes..."
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-3 sm:gap-4">
+            <AgentSection
+              agents={formUtils.agents}
+              agentId={formState.agentId}
+              onSelectChange={formMethods.handleSelectChange}
+              onAddAgentClick={() => formUtils.setShowAddAgentDialog(true)}
+              showAddAgentDialog={formUtils.showAddAgentDialog}
+              setShowAddAgentDialog={formUtils.setShowAddAgentDialog}
+              onAgentAdded={formUtils.handleAgentAdded}
             />
           </div>
 
-          <FormSummary
-            subtotal={calculateSubtotal()}
-            transportCost={parseFloat(formState.transportCost || '0')}
-            expenses={formState.expenses}
-            total={calculateTotal()}
+          <TransportSection
+            transporters={formUtils.transporters}
+            transporterId={formState.transporterId}
+            transportCost={formState.transportCost}
+            onSelectChange={formMethods.handleSelectChange}
+            onInputChange={formMethods.handleInputChange}
+            onAddTransporterClick={() => formUtils.setShowAddTransporterDialog(true)}
+            showAddTransporterDialog={formUtils.showAddTransporterDialog}
+            setShowAddTransporterDialog={formUtils.setShowAddTransporterDialog}
+            onTransporterAdded={formUtils.handleTransporterAdded}
           />
-        </div>
 
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : initialValues ? 'Update Purchase' : 'Save Purchase'}
-          </Button>
-        </div>
-      </form>
+          <BrokerageSection
+            brokerageType={formState.brokerageType}
+            brokerageRate={formState.brokerageRate}
+            brokerageAmount={brokerageAmount}
+            onBrokerageTypeChange={formUtils.handleBrokerageTypeChange}
+            onBrokerageRateChange={formUtils.handleBrokerageRateChange}
+          />
+
+          <ItemsSection
+            items={formState.items}
+            onItemChange={formMethods.handleItemChange}
+            onRemoveItem={formMethods.handleRemoveItem}
+            onAddItem={formMethods.handleAddItem}
+          />
+
+          <NotesAndSummary
+            notes={formState.notes}
+            onNotesChange={formMethods.handleInputChange}
+            expenses={formState.expenses}
+            subtotal={formMethods.calculateSubtotal()}
+            transportCost={parseFloat(formState.transportCost || '0')}
+            brokerageAmount={brokerageAmount}
+            total={formMethods.calculateTotal()}
+          />
+
+          <div className="flex flex-col sm:flex-row justify-center sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2 mt-6">
+            <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              {isSubmitting ? 'Saving...' : initialValues ? 'Update Purchase' : 'Save Purchase'}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
