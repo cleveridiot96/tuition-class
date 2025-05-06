@@ -223,7 +223,9 @@ const StockReport = () => {
         }
       }
     } else {
-      item[field] = value;
+      // Fix for Type 'any' is not assignable to type 'never'
+      // Use type assertion to safely assign the value
+      (item as any)[field] = value;
     }
     
     updatedInventory[index] = item;
@@ -272,7 +274,7 @@ const StockReport = () => {
                   <X size={16} className="mr-2" />
                   Cancel
                 </Button>
-                <Button variant="success" size="sm" onClick={saveChanges}>
+                <Button variant="secondary" size="sm" onClick={saveChanges}>
                   <Save size={16} className="mr-2" />
                   Save Changes
                 </Button>
