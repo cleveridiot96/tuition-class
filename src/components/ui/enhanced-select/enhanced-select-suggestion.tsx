@@ -1,6 +1,7 @@
 
 import React from "react";
 import { EnhancedSelectSuggestionProps } from "./types";
+import { Plus } from "lucide-react";
 
 export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> = ({
   suggestedMatch,
@@ -12,7 +13,7 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
 }) => {
   if (!searchTerm.trim()) {
     return (
-      <div className="px-3 py-6 text-center text-sm">
+      <div className="px-3 py-6 text-center text-sm text-gray-500">
         Type to search...
       </div>
     );
@@ -24,7 +25,7 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
         No exact matches. Did you mean:
         <button
           type="button"
-          className="mx-1 font-medium underline cursor-pointer"
+          className="mx-1 font-medium underline cursor-pointer text-primary"
           onClick={onUseSuggestion}
         >
           {suggestedMatch}
@@ -43,6 +44,7 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
             className="flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 border rounded bg-primary/10 hover:bg-primary/20 border-primary/20"
             onClick={onAddNewItem}
           >
+            <Plus className="h-3.5 w-3.5" />
             Add "{searchTerm}" to {masterType} master
           </button>
         </div>
