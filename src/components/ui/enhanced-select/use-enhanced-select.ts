@@ -1,61 +1,85 @@
-import * as React from "react";
-import { SelectOption } from "./types";
 
-export const useEnhancedSelect = (options: SelectOption[], value?: string) => {
-  const [open, setOpen] = React.useState(false);
-  const [searchTerm, setSearchTerm] = React.useState("");
-  
-  // Find the selected option from the options array
-  const selectedOption = React.useMemo(() => {
-    return options.find((option) => option.value === value);
-  }, [options, value]);
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { SelectOption } from './types';
+import stringSimilarity from 'string-similarity';
+
+interface UseEnhancedSelectReturn {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  selectedOption: SelectOption | undefined;
+  filteredOptions: SelectOption[];
+  suggestedMatch: string | null;
+  inputMatchesOption: boolean;
+}
+
+export const useEnhancedSelect = (
+  options: SelectOption[],
+  selectedValue?: string
+): UseEnhancedSelectReturn => {
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Find the currently selected option
+  const selectedOption = useMemo(() => {
+    return options.find((option) => option.value === selectedValue);
+  }, [options, selectedValue]);
+
+  // Reset search term when the dropdown is closed
+  useEffect(() => {
+    if (!open) {
+      setSearchTerm('');
+    }
+  }, [open]);
+
+  // Set initial search term to the selected option's label when opened
+  useEffect(() => {
+    if (open && selectedOption) {
+      setSearchTerm(selectedOption.label);
+    }
+  }, [open, selectedOption]);
 
   // Filter options based on search term
-  const filteredOptions = React.useMemo(() => {
+  const filteredOptions = useMemo(() => {
     if (!searchTerm) return options;
-    
-    return options.filter((option) => {
-      const label = option.label.toLowerCase();
-      const search = searchTerm.toLowerCase();
-      return label.includes(search);
-    });
+
+    return options.filter((option) =>
+      option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   }, [options, searchTerm]);
 
-  // Check if the current search term exactly matches any option's label
-  const inputMatchesOption = React.useMemo(() => {
-    if (!searchTerm) return false;
-    
+  // Check if the input exactly matches any option
+  const inputMatchesOption = useMemo(() => {
     return options.some(
       (option) => option.label.toLowerCase() === searchTerm.toLowerCase()
     );
   }, [options, searchTerm]);
 
-  // Find a suggested match for the search term
-  const suggestedMatch = React.useMemo(() => {
-    if (!searchTerm || searchTerm.length < 2 || inputMatchesOption) return undefined;
+  // Find the best suggestion if no exact match is found
+  const suggestedMatch = useMemo(() => {
+    if (!searchTerm || inputMatchesOption || filteredOptions.length > 0) {
+      return null;
+    }
+
+    const optionLabels = options.map((option) => option.label);
+    const matches = stringSimilarity.findBestMatch(searchTerm, optionLabels);
     
-    // Find options that start with the search term
-    const matchingOptions = options.filter(option => 
-      option.label.toLowerCase().startsWith(searchTerm.toLowerCase())
-    );
-    
-    // If there's exactly one matching option, suggest it
-    if (matchingOptions.length === 1) {
-      return matchingOptions[0].label;
+    if (matches.bestMatch.rating > 0.4) {
+      return matches.bestMatch.target;
     }
     
-    // Otherwise, return undefined (no suggestion)
-    return undefined;
-  }, [options, searchTerm, inputMatchesOption]);
+    return null;
+  }, [searchTerm, inputMatchesOption, filteredOptions, options]);
 
   return {
     open,
     setOpen,
     searchTerm,
     setSearchTerm,
-    filteredOptions,
     selectedOption,
+    filteredOptions,
+    suggestedMatch,
     inputMatchesOption,
-    suggestedMatch
   };
 };
