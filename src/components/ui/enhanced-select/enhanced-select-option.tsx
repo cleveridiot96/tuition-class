@@ -1,8 +1,8 @@
 
-import * as React from "react";
-import { Check } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React from "react";
 import { EnhancedSelectOptionProps } from "./types";
+import { CommandItem } from "@/components/ui/command";
+import { Check } from "lucide-react";
 
 export const EnhancedSelectOption: React.FC<EnhancedSelectOptionProps> = ({
   value,
@@ -13,20 +13,16 @@ export const EnhancedSelectOption: React.FC<EnhancedSelectOptionProps> = ({
   index
 }) => {
   return (
-    <div
-      role="option"
-      aria-selected={isSelected}
-      tabIndex={0}
-      className={cn(
-        "relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none",
-        isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-      )}
-      onClick={onSelect}
+    <CommandItem
+      key={value}
+      value={value}
+      onSelect={onSelect}
       onKeyDown={onKeyDown}
+      className="flex items-center justify-between px-2 py-1.5 text-sm cursor-pointer hover:bg-gray-100 data-[selected=true]:bg-gray-100"
       data-index={index}
     >
-      <span className="flex-grow truncate">{label}</span>
-      {isSelected && <Check className="ml-2 h-4 w-4 shrink-0" />}
-    </div>
+      <span>{label}</span>
+      {isSelected && <Check className="h-4 w-4 text-primary" />}
+    </CommandItem>
   );
 };
