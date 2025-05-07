@@ -1,6 +1,5 @@
 
 import { useState, useCallback } from "react";
-import { useForm } from "react-hook-form";
 import { useEntityData } from "./hooks/useEntityData";
 import { useEntityManagement } from "./hooks/useEntityManagement";
 
@@ -38,14 +37,14 @@ export const usePartyManagement = ({ form }) => {
     newTransporterAddress
   });
 
-  // Function to handle party creation from enhanced-select
+  // Function to handle party creation from enhanced-select - memoized to prevent recreating on every render
   const handleAddNewSupplier = useCallback((name: string) => {
     setNewPartyName(name);
     setShowAddPartyDialog(true);
     return name; // Just return the name as is for now, it will be replaced when the dialog submits
   }, []);
 
-  // Function to handle transporter creation from enhanced-select
+  // Function to handle transporter creation from enhanced-select - memoized to prevent recreating on every render
   const handleAddNewTransporterFromSelect = useCallback((name: string) => {
     setNewTransporterName(name);
     setShowAddTransporterDialog(true);

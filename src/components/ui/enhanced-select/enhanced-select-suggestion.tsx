@@ -1,12 +1,11 @@
 
 import React from "react";
-import { CommandItem } from "@/components/ui/command";
-import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-export interface EnhancedSelectSuggestionProps {
+interface EnhancedSelectSuggestionProps {
   suggestedMatch: string | null;
-  onUseSuggestion: () => void;
   searchTerm: string;
+  onUseSuggestion: () => void;
   onAddNewItem: () => void;
   masterType: string;
   showAddOption: boolean;
@@ -14,38 +13,55 @@ export interface EnhancedSelectSuggestionProps {
 
 export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> = ({
   suggestedMatch,
-  onUseSuggestion,
   searchTerm,
+  onUseSuggestion,
   onAddNewItem,
   masterType,
   showAddOption
 }) => {
-  return (
-    <div className="p-2 text-sm">
-      {suggestedMatch ? (
-        <CommandItem
-          value={suggestedMatch}
-          onSelect={onUseSuggestion}
-          className="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-gray-100"
-        >
-          <span>Did you mean: <strong>{suggestedMatch}</strong>?</span>
-        </CommandItem>
-      ) : (
-        <div>
-          <p className="px-2 py-1.5 text-gray-500">No matching {masterType} found</p>
+  if (suggestedMatch) {
+    return (
+      <div className="p-2 text-sm">
+        <p>Did you mean: <strong>{suggestedMatch}</strong>?</p>
+        <div className="flex gap-2 mt-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={onUseSuggestion}
+            className="text-xs"
+          >
+            Use Suggestion
+          </Button>
           {showAddOption && (
-            <CommandItem
-              value={`add-${searchTerm}`}
-              onSelect={onAddNewItem}
-              className="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-gray-100"
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={onAddNewItem}
+              className="text-xs"
             >
-              <span className="flex items-center">
-                <Plus className="mr-2 h-4 w-4" />
-                Add "{searchTerm}" as new {masterType}
-              </span>
-            </CommandItem>
+              Add New {masterType}
+            </Button>
           )}
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-2 text-sm">
+      <p>No matches found for: <strong>{searchTerm}</strong></p>
+      {showAddOption && (
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={onAddNewItem}
+          className="mt-2 text-xs"
+        >
+          Add New {masterType}
+        </Button>
       )}
     </div>
   );

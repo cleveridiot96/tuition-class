@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useCallback, useMemo } from "react";
 import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command";
 import { EnhancedSearchableSelectProps } from "./enhanced-select/types";
 import { EnhancedSelectOption } from "./enhanced-select/enhanced-select-option";
@@ -34,7 +34,7 @@ export function EnhancedSearchableSelect({
   const inputRef = useRef<HTMLInputElement>(null);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!open) return;
     
     const optionsLength = filteredOptions.length;
@@ -65,18 +65,18 @@ export function EnhancedSearchableSelect({
       default:
         break;
     }
-  };
+  }, [open, filteredOptions, activeIndex, onValueChange, setOpen]);
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     // Delayed closing to allow clicking on options
     setTimeout(() => {
       if (document.activeElement !== inputRef.current) {
         setOpen(false);
       }
     }, 100);
-  };
+  }, [setOpen]);
 
-  const handleUseSuggestion = () => {
+  const handleUseSuggestion = useCallback(() => {
     if (suggestedMatch) {
       const option = safeOptions.find(opt => opt.label.toLowerCase() === suggestedMatch.toLowerCase());
       if (option) {
@@ -84,15 +84,19 @@ export function EnhancedSearchableSelect({
         setOpen(false);
       }
     }
-  };
+  }, [suggestedMatch, safeOptions, onValueChange, setOpen]);
 
-  const handleAddNewItem = () => {
+  const handleAddNewItem = useCallback(() => {
     if (onAddNew && searchTerm) {
       const newValue = onAddNew(searchTerm);
       onValueChange(newValue);
       setOpen(false);
     }
-  };
+  }, [onAddNew, searchTerm, onValueChange, setOpen]);
+
+  const showAddOption = useMemo(() => {
+    return !!onAddNew && !!searchTerm && !inputMatchesOption;
+  }, [onAddNew, searchTerm, inputMatchesOption]);
 
   return (
     <div className={`relative w-full ${className}`}>
@@ -119,14 +123,14 @@ export function EnhancedSearchableSelect({
         {open && filteredOptions && (
           <CommandList className="absolute top-full left-0 w-full z-50 bg-white shadow-lg rounded-md border mt-1 max-h-60 overflow-auto">
             <CommandEmpty>
-              {!inputMatchesOption && suggestedMatch ? (
+              {suggestedMatch ? (
                 <EnhancedSelectSuggestion
                   suggestedMatch={suggestedMatch}
                   onUseSuggestion={handleUseSuggestion}
                   searchTerm={searchTerm}
                   onAddNewItem={handleAddNewItem}
                   masterType={masterType}
-                  showAddOption={!!onAddNew}
+                  showAddOption={showAddOption}
                 />
               ) : (
                 <EnhancedSelectSuggestion
@@ -135,7 +139,7 @@ export function EnhancedSearchableSelect({
                   searchTerm={searchTerm}
                   onAddNewItem={handleAddNewItem}
                   masterType={masterType}
-                  showAddOption={!!onAddNew}
+                  showAddOption={showAddOption}
                 />
               )}
             </CommandEmpty>

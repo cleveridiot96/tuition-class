@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { SelectOption, UseEnhancedSelectReturn } from "./types";
 import { findBestMatch } from "string-similarity";
 
@@ -9,7 +9,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
 
   // Find the selected option based on the value
   const selectedOption = useMemo(() => {
-    return options.find(option => option.value === value);
+    return options?.find(option => option.value === value);
   }, [options, value]);
 
   // Set the search term to the selected option's label when value changes
@@ -22,10 +22,10 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     }
   }, [selectedOption, value]);
 
-  // Filter options based on search term
+  // Filter options based on search term - memoized to prevent re-calculation on every render
   const filteredOptions = useMemo(() => {
-    if (!searchTerm) {
-      return options;
+    if (!searchTerm || !Array.isArray(options)) {
+      return options || [];
     }
     
     const lowerSearchTerm = searchTerm.toLowerCase();
@@ -55,7 +55,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     return null;
   }, [searchTerm, filteredOptions, options]);
 
-  // Check if input matches an existing option
+  // Check if input matches an existing option - memoized to prevent re-calculation
   const inputMatchesOption = useMemo(() => {
     if (!searchTerm || !Array.isArray(options)) return false;
     
@@ -64,13 +64,18 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     );
   }, [options, searchTerm]);
 
+  // Memoize the setSearchTerm function to prevent re-creation on each render
+  const handleSearchTermChange = useCallback((term: string) => {
+    setSearchTerm(term);
+  }, []);
+
   return {
     open,
     setOpen,
     searchTerm,
-    setSearchTerm,
+    setSearchTerm: handleSearchTermChange,
     selectedOption,
-    filteredOptions,
+    filteredOptions: filteredOptions || [],
     suggestedMatch,
     inputMatchesOption
   };
