@@ -16,8 +16,11 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
   useEffect(() => {
     if (selectedOption) {
       setSearchTerm(selectedOption.label);
+    } else if (value === '') {
+      // Reset search term if value is empty
+      setSearchTerm('');
     }
-  }, [selectedOption]);
+  }, [selectedOption, value]);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
@@ -33,15 +36,12 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
 
   // Find suggested match if no options match the search term
   const suggestedMatch = useMemo(() => {
-    if (!searchTerm || filteredOptions.length > 0) {
+    if (!searchTerm || filteredOptions.length > 0 || !Array.isArray(options) || options.length === 0) {
       return null;
     }
     
     // Use string-similarity to find the closest match
     const targets = options.map(option => option.label);
-    if (targets.length === 0) {
-      return null;
-    }
     
     try {
       const matches = findBestMatch(searchTerm, targets);
@@ -57,7 +57,8 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
 
   // Check if input matches an existing option
   const inputMatchesOption = useMemo(() => {
-    if (!searchTerm) return false;
+    if (!searchTerm || !Array.isArray(options)) return false;
+    
     return options.some(option => 
       option.label.toLowerCase() === searchTerm.toLowerCase()
     );

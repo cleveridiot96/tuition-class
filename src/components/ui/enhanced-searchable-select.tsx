@@ -7,7 +7,7 @@ import { EnhancedSelectSuggestion } from "./enhanced-select/enhanced-select-sugg
 import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
 
 export function EnhancedSearchableSelect({
-  options,
+  options = [],
   value,
   onValueChange,
   onAddNew,
@@ -18,6 +18,8 @@ export function EnhancedSearchableSelect({
   className = "",
   masterType = "supplier"
 }: EnhancedSearchableSelectProps) {
+  const safeOptions = Array.isArray(options) ? options : [];
+  
   const {
     open,
     setOpen,
@@ -27,7 +29,7 @@ export function EnhancedSearchableSelect({
     filteredOptions,
     suggestedMatch,
     inputMatchesOption
-  } = useEnhancedSelect(options, value);
+  } = useEnhancedSelect(safeOptions, value);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
@@ -76,7 +78,7 @@ export function EnhancedSearchableSelect({
 
   const handleUseSuggestion = () => {
     if (suggestedMatch) {
-      const option = options.find(opt => opt.label.toLowerCase() === suggestedMatch.toLowerCase());
+      const option = safeOptions.find(opt => opt.label.toLowerCase() === suggestedMatch.toLowerCase());
       if (option) {
         onValueChange(option.value);
         setOpen(false);
@@ -114,7 +116,7 @@ export function EnhancedSearchableSelect({
           disabled={disabled}
           onKeyDown={handleKeyDown}
         />
-        {open && (
+        {open && filteredOptions && (
           <CommandList className="absolute top-full left-0 w-full z-50 bg-white shadow-lg rounded-md border mt-1 max-h-60 overflow-auto">
             <CommandEmpty>
               {!inputMatchesOption && suggestedMatch ? (
