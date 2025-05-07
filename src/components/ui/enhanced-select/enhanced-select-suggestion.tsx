@@ -19,6 +19,9 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
   masterType,
   showAddOption
 }) => {
+  // Safe guard against undefined searchTerm
+  const safeSearchTerm = searchTerm || '';
+  
   if (suggestedMatch) {
     return (
       <div className="p-2 text-sm">
@@ -51,8 +54,8 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
 
   return (
     <div className="p-2 text-sm">
-      <p>No matches found for: <strong>{searchTerm}</strong></p>
-      {showAddOption && (
+      <p>No matches found for: <strong>{safeSearchTerm}</strong></p>
+      {showAddOption && safeSearchTerm.trim() !== '' && (
         <Button
           type="button"
           size="sm"

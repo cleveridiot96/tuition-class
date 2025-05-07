@@ -7,10 +7,13 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
   const [open, setOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
+  // Ensure options is always an array
+  const safeOptions = useMemo(() => Array.isArray(options) ? options : [], [options]);
+
   // Find the selected option based on the value
   const selectedOption = useMemo(() => {
-    return options?.find(option => option.value === value);
-  }, [options, value]);
+    return safeOptions.find(option => option.value === value);
+  }, [safeOptions, value]);
 
   // Set the search term to the selected option's label when value changes
   useEffect(() => {
@@ -24,24 +27,24 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
 
   // Filter options based on search term - memoized to prevent re-calculation on every render
   const filteredOptions = useMemo(() => {
-    if (!searchTerm || !Array.isArray(options)) {
-      return options || [];
+    if (!searchTerm) {
+      return safeOptions;
     }
     
     const lowerSearchTerm = searchTerm.toLowerCase();
-    return options.filter(option => 
+    return safeOptions.filter(option => 
       option.label.toLowerCase().includes(lowerSearchTerm)
     );
-  }, [options, searchTerm]);
+  }, [safeOptions, searchTerm]);
 
   // Find suggested match if no options match the search term
   const suggestedMatch = useMemo(() => {
-    if (!searchTerm || filteredOptions.length > 0 || !Array.isArray(options) || options.length === 0) {
+    if (!searchTerm || filteredOptions.length > 0 || safeOptions.length === 0) {
       return null;
     }
     
     // Use string-similarity to find the closest match
-    const targets = options.map(option => option.label);
+    const targets = safeOptions.map(option => option.label);
     
     try {
       const matches = findBestMatch(searchTerm, targets);
@@ -53,16 +56,16 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     }
     
     return null;
-  }, [searchTerm, filteredOptions, options]);
+  }, [searchTerm, filteredOptions, safeOptions]);
 
   // Check if input matches an existing option - memoized to prevent re-calculation
   const inputMatchesOption = useMemo(() => {
-    if (!searchTerm || !Array.isArray(options)) return false;
+    if (!searchTerm) return false;
     
-    return options.some(option => 
+    return safeOptions.some(option => 
       option.label.toLowerCase() === searchTerm.toLowerCase()
     );
-  }, [options, searchTerm]);
+  }, [safeOptions, searchTerm]);
 
   // Memoize the setSearchTerm function to prevent re-creation on each render
   const handleSearchTermChange = useCallback((term: string) => {
@@ -75,7 +78,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     searchTerm,
     setSearchTerm: handleSearchTermChange,
     selectedOption,
-    filteredOptions: filteredOptions || [],
+    filteredOptions,
     suggestedMatch,
     inputMatchesOption
   };

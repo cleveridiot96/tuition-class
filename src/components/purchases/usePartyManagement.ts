@@ -37,15 +37,23 @@ export const usePartyManagement = ({ form }) => {
     newTransporterAddress
   });
 
-  // Function to handle party creation from enhanced-select - memoized to prevent recreating on every render
+  // Function to handle party creation from enhanced-select
   const handleAddNewSupplier = useCallback((name: string) => {
+    if (!name || typeof name !== 'string') {
+      console.error('Invalid supplier name provided:', name);
+      return name;
+    }
     setNewPartyName(name);
     setShowAddPartyDialog(true);
     return name; // Just return the name as is for now, it will be replaced when the dialog submits
   }, []);
 
-  // Function to handle transporter creation from enhanced-select - memoized to prevent recreating on every render
+  // Function to handle transporter creation from enhanced-select
   const handleAddNewTransporterFromSelect = useCallback((name: string) => {
+    if (!name || typeof name !== 'string') {
+      console.error('Invalid transporter name provided:', name);
+      return name;
+    }
     setNewTransporterName(name);
     setShowAddTransporterDialog(true);
     return name; // Just return the name as is for now

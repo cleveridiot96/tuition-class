@@ -18,6 +18,7 @@ export function EnhancedSearchableSelect({
   className = "",
   masterType = "supplier"
 }: EnhancedSearchableSelectProps) {
+  // Safety check - ensure options is always an array
   const safeOptions = Array.isArray(options) ? options : [];
   
   const {
@@ -29,7 +30,7 @@ export function EnhancedSearchableSelect({
     filteredOptions,
     suggestedMatch,
     inputMatchesOption
-  } = useEnhancedSelect(safeOptions, value);
+  } = useEnhancedSelect(safeOptions, value || '');
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [activeIndex, setActiveIndex] = useState<number>(-1);
@@ -37,7 +38,7 @@ export function EnhancedSearchableSelect({
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!open) return;
     
-    const optionsLength = filteredOptions.length;
+    const optionsLength = filteredOptions?.length || 0;
     
     // Handle keyboard navigation
     switch (e.key) {
@@ -53,7 +54,7 @@ export function EnhancedSearchableSelect({
         break;
       case "Enter":
         e.preventDefault();
-        if (activeIndex >= 0 && activeIndex < optionsLength) {
+        if (activeIndex >= 0 && activeIndex < optionsLength && filteredOptions?.[activeIndex]) {
           onValueChange(filteredOptions[activeIndex].value);
           setOpen(false);
         }
@@ -88,9 +89,13 @@ export function EnhancedSearchableSelect({
 
   const handleAddNewItem = useCallback(() => {
     if (onAddNew && searchTerm) {
-      const newValue = onAddNew(searchTerm);
-      onValueChange(newValue);
-      setOpen(false);
+      try {
+        const newValue = onAddNew(searchTerm);
+        onValueChange(newValue);
+        setOpen(false);
+      } catch (error) {
+        console.error("Error adding new item:", error);
+      }
     }
   }, [onAddNew, searchTerm, onValueChange, setOpen]);
 
@@ -111,7 +116,7 @@ export function EnhancedSearchableSelect({
       >
         <CommandInput
           ref={inputRef}
-          value={searchTerm}
+          value={searchTerm || ''}
           onValueChange={setSearchTerm}
           onBlur={handleBlur}
           onFocus={() => setOpen(true)}
@@ -123,25 +128,14 @@ export function EnhancedSearchableSelect({
         {open && filteredOptions && (
           <CommandList className="absolute top-full left-0 w-full z-50 bg-white shadow-lg rounded-md border mt-1 max-h-60 overflow-auto">
             <CommandEmpty>
-              {suggestedMatch ? (
-                <EnhancedSelectSuggestion
-                  suggestedMatch={suggestedMatch}
-                  onUseSuggestion={handleUseSuggestion}
-                  searchTerm={searchTerm}
-                  onAddNewItem={handleAddNewItem}
-                  masterType={masterType}
-                  showAddOption={showAddOption}
-                />
-              ) : (
-                <EnhancedSelectSuggestion
-                  suggestedMatch={null}
-                  onUseSuggestion={handleUseSuggestion}
-                  searchTerm={searchTerm}
-                  onAddNewItem={handleAddNewItem}
-                  masterType={masterType}
-                  showAddOption={showAddOption}
-                />
-              )}
+              <EnhancedSelectSuggestion
+                suggestedMatch={suggestedMatch}
+                onUseSuggestion={handleUseSuggestion}
+                searchTerm={searchTerm || ''}
+                onAddNewItem={handleAddNewItem}
+                masterType={masterType}
+                showAddOption={showAddOption}
+              />
             </CommandEmpty>
             {filteredOptions.map((option, index) => (
               <EnhancedSelectOption
