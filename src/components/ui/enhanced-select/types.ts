@@ -1,14 +1,24 @@
 
+import { ReactNode } from "react";
+
 export interface SelectOption {
   value: string;
   label: string;
-  commissionRate?: number;
   data?: any;
+}
+
+export interface EnhancedSelectOptionProps {
+  value: string;
+  label: string;
+  isSelected: boolean;
+  onSelect: () => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  index?: number;
 }
 
 export interface EnhancedSearchableSelectProps {
   options: SelectOption[];
-  value?: string;
+  value: string;
   onValueChange: (value: string) => void;
   onAddNew?: (value: string) => string;
   placeholder?: string;
@@ -19,20 +29,13 @@ export interface EnhancedSearchableSelectProps {
   masterType?: string;
 }
 
-export interface EnhancedSelectOptionProps {
-  value: string;
-  label: string;
-  isSelected: boolean;
-  onSelect: () => void;
-  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-  index: number;
-}
-
-export interface EnhancedSelectSuggestionProps {
-  suggestedMatch: string | null;
-  onUseSuggestion: () => void;
+export interface UseEnhancedSelectReturn {
+  open: boolean;
+  setOpen: (value: boolean) => void;
   searchTerm: string;
-  onAddNewItem: () => void;
-  masterType?: string;
-  showAddOption?: boolean;
+  setSearchTerm: (value: string) => void;
+  selectedOption: SelectOption | undefined;
+  filteredOptions: SelectOption[];
+  suggestedMatch: string | null;
+  inputMatchesOption: boolean;
 }

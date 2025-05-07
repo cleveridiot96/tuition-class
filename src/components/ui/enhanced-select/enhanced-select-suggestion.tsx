@@ -1,55 +1,51 @@
 
 import React from "react";
-import { EnhancedSelectSuggestionProps } from "./types";
+import { CommandItem } from "@/components/ui/command";
 import { Plus } from "lucide-react";
+
+export interface EnhancedSelectSuggestionProps {
+  suggestedMatch: string | null;
+  onUseSuggestion: () => void;
+  searchTerm: string;
+  onAddNewItem: () => void;
+  masterType: string;
+  showAddOption: boolean;
+}
 
 export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> = ({
   suggestedMatch,
   onUseSuggestion,
   searchTerm,
   onAddNewItem,
-  masterType = "supplier",
-  showAddOption = true
+  masterType,
+  showAddOption
 }) => {
-  if (!searchTerm.trim()) {
-    return (
-      <div className="px-3 py-6 text-center text-sm text-gray-500">
-        Type to search...
-      </div>
-    );
-  }
-
-  if (suggestedMatch) {
-    return (
-      <div className="px-3 py-2 text-sm">
-        No exact matches. Did you mean:
-        <button
-          type="button"
-          className="mx-1 font-medium underline cursor-pointer text-primary"
-          onClick={onUseSuggestion}
-        >
-          {suggestedMatch}
-        </button>?
-      </div>
-    );
-  }
-
   return (
-    <div className="px-3 py-6 text-center text-sm">
-      {showAddOption ? (
-        <div className="flex flex-col items-center gap-1">
-          <div>No matches found</div>
-          <button
-            type="button"
-            className="flex items-center justify-center gap-1 text-xs font-medium px-2 py-1 border rounded bg-primary/10 hover:bg-primary/20 border-primary/20"
-            onClick={onAddNewItem}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add "{searchTerm}" to {masterType} master
-          </button>
-        </div>
+    <div className="p-2 text-sm">
+      {suggestedMatch ? (
+        <CommandItem
+          value={suggestedMatch}
+          onSelect={onUseSuggestion}
+          className="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-gray-100"
+        >
+          <span>Did you mean: <strong>{suggestedMatch}</strong>?</span>
+        </CommandItem>
       ) : (
-        <div>No matches found</div>
+        <div>
+          <p className="px-2 py-1.5 text-gray-500">No matching {masterType} found</p>
+          {showAddOption && (
+            <CommandItem
+              value={`add-${searchTerm}`}
+              onSelect={onAddNewItem}
+              className="flex items-center justify-between px-2 py-1.5 cursor-pointer hover:bg-gray-100"
+            >
+              <span className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" />
+                Add "{searchTerm}" as new {masterType}
+              </span>
+            </CommandItem>
+          )}
+        </div>
       )}
     </div>
   );

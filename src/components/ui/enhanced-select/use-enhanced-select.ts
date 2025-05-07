@@ -1,76 +1,67 @@
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { SelectOption } from './types';
-import stringSimilarity from 'string-similarity';
+import { useState, useEffect, useMemo } from "react";
+import { SelectOption, UseEnhancedSelectReturn } from "./types";
+import { findBestMatch } from "string-similarity";
 
-interface UseEnhancedSelectReturn {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  searchTerm: string;
-  setSearchTerm: (term: string) => void;
-  selectedOption: SelectOption | undefined;
-  filteredOptions: SelectOption[];
-  suggestedMatch: string | null;
-  inputMatchesOption: boolean;
-}
+export const useEnhancedSelect = (options: SelectOption[], value: string): UseEnhancedSelectReturn => {
+  const [open, setOpen] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>("");
 
-export const useEnhancedSelect = (
-  options: SelectOption[],
-  selectedValue?: string
-): UseEnhancedSelectReturn => {
-  const [open, setOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-
-  // Find the currently selected option
+  // Find the selected option based on the value
   const selectedOption = useMemo(() => {
-    return options.find((option) => option.value === selectedValue);
-  }, [options, selectedValue]);
+    return options.find(option => option.value === value);
+  }, [options, value]);
 
-  // Reset search term when the dropdown is closed
+  // Set the search term to the selected option's label when value changes
   useEffect(() => {
-    if (!open) {
-      setSearchTerm('');
-    }
-  }, [open]);
-
-  // Set initial search term to the selected option's label when opened
-  useEffect(() => {
-    if (open && selectedOption) {
+    if (selectedOption) {
       setSearchTerm(selectedOption.label);
     }
-  }, [open, selectedOption]);
+  }, [selectedOption]);
 
   // Filter options based on search term
   const filteredOptions = useMemo(() => {
-    if (!searchTerm) return options;
-
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    if (!searchTerm) {
+      return options;
+    }
+    
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return options.filter(option => 
+      option.label.toLowerCase().includes(lowerSearchTerm)
     );
   }, [options, searchTerm]);
 
-  // Check if the input exactly matches any option
-  const inputMatchesOption = useMemo(() => {
-    return options.some(
-      (option) => option.label.toLowerCase() === searchTerm.toLowerCase()
-    );
-  }, [options, searchTerm]);
-
-  // Find the best suggestion if no exact match is found
+  // Find suggested match if no options match the search term
   const suggestedMatch = useMemo(() => {
-    if (!searchTerm || inputMatchesOption || filteredOptions.length > 0) {
+    if (!searchTerm || filteredOptions.length > 0) {
       return null;
     }
-
-    const optionLabels = options.map((option) => option.label);
-    const matches = stringSimilarity.findBestMatch(searchTerm, optionLabels);
     
-    if (matches.bestMatch.rating > 0.4) {
-      return matches.bestMatch.target;
+    // Use string-similarity to find the closest match
+    const targets = options.map(option => option.label);
+    if (targets.length === 0) {
+      return null;
+    }
+    
+    try {
+      const matches = findBestMatch(searchTerm, targets);
+      if (matches.bestMatch.rating > 0.4) {
+        return matches.bestMatch.target;
+      }
+    } catch (error) {
+      console.error("Error finding best match:", error);
     }
     
     return null;
-  }, [searchTerm, inputMatchesOption, filteredOptions, options]);
+  }, [searchTerm, filteredOptions, options]);
+
+  // Check if input matches an existing option
+  const inputMatchesOption = useMemo(() => {
+    if (!searchTerm) return false;
+    return options.some(option => 
+      option.label.toLowerCase() === searchTerm.toLowerCase()
+    );
+  }, [options, searchTerm]);
 
   return {
     open,
@@ -80,6 +71,6 @@ export const useEnhancedSelect = (
     selectedOption,
     filteredOptions,
     suggestedMatch,
-    inputMatchesOption,
+    inputMatchesOption
   };
 };
