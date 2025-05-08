@@ -44,7 +44,8 @@ export function EnhancedSearchableSelect({
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!open) return;
     
-    const optionsLength = filteredOptions?.length || 0;
+    // Safely access filteredOptions.length
+    const optionsLength = Array.isArray(filteredOptions) ? filteredOptions.length : 0;
     
     // Handle keyboard navigation
     switch (e.key) {

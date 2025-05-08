@@ -1,7 +1,8 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useEntityData } from "./hooks/useEntityData";
 import { useEntityManagement } from "./hooks/useEntityManagement";
+import { SelectOption } from "@/components/ui/enhanced-select/types";
 
 export const usePartyManagement = ({ form }) => {
   const { suppliers, transporters, agents, loadData } = useEntityData();
@@ -37,7 +38,7 @@ export const usePartyManagement = ({ form }) => {
     newTransporterAddress
   });
 
-  // Function to handle party creation from enhanced-select
+  // Function to handle party creation from enhanced-select - memoized to prevent re-creation
   const handleAddNewSupplier = useCallback((name: string) => {
     if (!name || typeof name !== 'string') {
       console.error('Invalid supplier name provided:', name);
@@ -51,7 +52,7 @@ export const usePartyManagement = ({ form }) => {
     return `temp-supplier-${Date.now()}`;
   }, []);
 
-  // Function to handle transporter creation from enhanced-select
+  // Function to handle transporter creation from enhanced-select - memoized to prevent re-creation
   const handleAddNewTransporterFromSelect = useCallback((name: string) => {
     if (!name || typeof name !== 'string') {
       console.error('Invalid transporter name provided:', name);
@@ -65,10 +66,25 @@ export const usePartyManagement = ({ form }) => {
     return `temp-transporter-${Date.now()}`;
   }, []);
 
+  // Memoize the suppliers array to prevent unnecessary re-renders
+  const memoizedSuppliers = useMemo(() => {
+    return Array.isArray(suppliers) ? suppliers : [];
+  }, [suppliers]);
+
+  // Memoize the transporters array to prevent unnecessary re-renders
+  const memoizedTransporters = useMemo(() => {
+    return Array.isArray(transporters) ? transporters : [];
+  }, [transporters]);
+
+  // Memoize the agents array to prevent unnecessary re-renders
+  const memoizedAgents = useMemo(() => {
+    return Array.isArray(agents) ? agents : [];
+  }, [agents]);
+
   return {
-    suppliers: suppliers || [],
-    transporters: transporters || [],
-    agents: agents || [],
+    suppliers: memoizedSuppliers,
+    transporters: memoizedTransporters,
+    agents: memoizedAgents,
     showAddPartyDialog,
     setShowAddPartyDialog,
     showAddBrokerDialog,

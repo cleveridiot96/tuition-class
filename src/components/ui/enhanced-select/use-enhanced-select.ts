@@ -19,7 +19,13 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
   // Find the selected option based on the value
   const selectedOption = useMemo(() => {
     if (!value || !safeOptions.length) return undefined;
-    return safeOptions.find(option => option.value === value);
+    
+    const found = safeOptions.find(option => option.value === value);
+    if (found) return found;
+    
+    // If no match found, log for debugging
+    console.log("No matching option found for value:", value, "in options:", safeOptions);
+    return undefined;
   }, [safeOptions, value]);
 
   // Set the search term to the selected option's label when value changes
@@ -32,7 +38,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     }
   }, [selectedOption, value]);
 
-  // Filter options based on search term - memoized to prevent re-calculation on every render
+  // Filter options based on search term - memoized to prevent re-calculation
   const filteredOptions = useMemo(() => {
     if (!searchTerm || !safeOptions.length) {
       return safeOptions;

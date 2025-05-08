@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface EnhancedSelectSuggestionProps {
@@ -7,7 +8,7 @@ interface EnhancedSelectSuggestionProps {
   searchTerm: string;
   onUseSuggestion: () => void;
   onAddNewItem: () => void;
-  masterType: string;
+  masterType?: string;
   showAddOption: boolean;
 }
 
@@ -16,55 +17,40 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
   searchTerm,
   onUseSuggestion,
   onAddNewItem,
-  masterType,
+  masterType = "item",
   showAddOption
 }) => {
-  // Safe guard against undefined searchTerm
-  const safeSearchTerm = searchTerm || '';
-  
-  if (suggestedMatch) {
-    return (
-      <div className="p-2 text-sm">
-        <p>Did you mean: <strong>{suggestedMatch}</strong>?</p>
-        <div className="flex gap-2 mt-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="secondary"
-            onClick={onUseSuggestion}
-            className="text-xs"
-          >
-            Use Suggestion
-          </Button>
-          {showAddOption && (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={onAddNewItem}
-              className="text-xs"
-            >
-              Add New {masterType}
-            </Button>
-          )}
-        </div>
-      </div>
-    );
+  if (!searchTerm) {
+    return <div className="py-6 text-center text-sm">Type to search...</div>;
   }
 
   return (
     <div className="p-2 text-sm">
-      <p>No matches found for: <strong>{safeSearchTerm}</strong></p>
-      {showAddOption && safeSearchTerm.trim() !== '' && (
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={onAddNewItem}
-          className="mt-2 text-xs"
-        >
-          Add New {masterType}
-        </Button>
+      {suggestedMatch ? (
+        <div className="flex flex-col gap-2">
+          <p>Did you mean: </p>
+          <Button
+            variant="outline"
+            className="justify-start text-left font-normal"
+            onClick={onUseSuggestion}
+          >
+            {suggestedMatch}
+          </Button>
+        </div>
+      ) : (
+        <div>
+          <p>No matches found for "{searchTerm}"</p>
+          {showAddOption && (
+            <Button
+              variant="outline"
+              className="mt-2 w-full justify-start"
+              onClick={onAddNewItem}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add new {masterType}
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
