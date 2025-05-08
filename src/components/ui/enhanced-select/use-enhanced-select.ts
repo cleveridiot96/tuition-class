@@ -8,10 +8,17 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
   const [searchTerm, setSearchTerm] = useState<string>("");
 
   // Ensure options is always an array
-  const safeOptions = useMemo(() => Array.isArray(options) ? options : [], [options]);
+  const safeOptions = useMemo(() => {
+    if (!Array.isArray(options)) {
+      console.warn("useEnhancedSelect: options is not an array, using empty array instead");
+      return [];
+    }
+    return options;
+  }, [options]);
 
   // Find the selected option based on the value
   const selectedOption = useMemo(() => {
+    if (!value || !safeOptions.length) return undefined;
     return safeOptions.find(option => option.value === value);
   }, [safeOptions, value]);
 
@@ -27,7 +34,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
 
   // Filter options based on search term - memoized to prevent re-calculation on every render
   const filteredOptions = useMemo(() => {
-    if (!searchTerm) {
+    if (!searchTerm || !safeOptions.length) {
       return safeOptions;
     }
     
@@ -43,10 +50,12 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
       return null;
     }
     
-    // Use string-similarity to find the closest match
-    const targets = safeOptions.map(option => option.label);
-    
     try {
+      // Use string-similarity to find the closest match
+      const targets = safeOptions.map(option => option.label);
+      
+      if (!targets.length) return null;
+
       const matches = findBestMatch(searchTerm, targets);
       if (matches.bestMatch.rating > 0.4) {
         return matches.bestMatch.target;
@@ -60,7 +69,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
 
   // Check if input matches an existing option - memoized to prevent re-calculation
   const inputMatchesOption = useMemo(() => {
-    if (!searchTerm) return false;
+    if (!searchTerm || !safeOptions.length) return false;
     
     return safeOptions.some(option => 
       option.label.toLowerCase() === searchTerm.toLowerCase()

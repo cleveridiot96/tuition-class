@@ -41,28 +41,34 @@ export const usePartyManagement = ({ form }) => {
   const handleAddNewSupplier = useCallback((name: string) => {
     if (!name || typeof name !== 'string') {
       console.error('Invalid supplier name provided:', name);
-      return name;
+      return ''; // Return empty string instead of invalid name
     }
+    
     setNewPartyName(name);
     setShowAddPartyDialog(true);
-    return name; // Just return the name as is for now, it will be replaced when the dialog submits
+    
+    // We return a temporary ID that will be replaced when the dialog submits
+    return `temp-supplier-${Date.now()}`;
   }, []);
 
   // Function to handle transporter creation from enhanced-select
   const handleAddNewTransporterFromSelect = useCallback((name: string) => {
     if (!name || typeof name !== 'string') {
       console.error('Invalid transporter name provided:', name);
-      return name;
+      return ''; // Return empty string instead of invalid name
     }
+    
     setNewTransporterName(name);
     setShowAddTransporterDialog(true);
-    return name; // Just return the name as is for now
+    
+    // We return a temporary ID that will be replaced when the dialog submits
+    return `temp-transporter-${Date.now()}`;
   }, []);
 
   return {
-    suppliers,
-    transporters,
-    agents,
+    suppliers: suppliers || [],
+    transporters: transporters || [],
+    agents: agents || [],
     showAddPartyDialog,
     setShowAddPartyDialog,
     showAddBrokerDialog,

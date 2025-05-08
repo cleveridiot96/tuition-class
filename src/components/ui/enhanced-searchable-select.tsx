@@ -19,7 +19,13 @@ export function EnhancedSearchableSelect({
   masterType = "supplier"
 }: EnhancedSearchableSelectProps) {
   // Safety check - ensure options is always an array
-  const safeOptions = Array.isArray(options) ? options : [];
+  const safeOptions = useMemo(() => {
+    if (!Array.isArray(options)) {
+      console.warn("EnhancedSearchableSelect: options is not an array");
+      return [];
+    }
+    return options;
+  }, [options]);
   
   const {
     open,
@@ -78,8 +84,10 @@ export function EnhancedSearchableSelect({
   }, [setOpen]);
 
   const handleUseSuggestion = useCallback(() => {
-    if (suggestedMatch) {
-      const option = safeOptions.find(opt => opt.label.toLowerCase() === suggestedMatch.toLowerCase());
+    if (suggestedMatch && safeOptions.length > 0) {
+      const option = safeOptions.find(opt => 
+        opt.label.toLowerCase() === suggestedMatch.toLowerCase()
+      );
       if (option) {
         onValueChange(option.value);
         setOpen(false);
@@ -91,8 +99,10 @@ export function EnhancedSearchableSelect({
     if (onAddNew && searchTerm) {
       try {
         const newValue = onAddNew(searchTerm);
-        onValueChange(newValue);
-        setOpen(false);
+        if (newValue) {
+          onValueChange(newValue);
+          setOpen(false);
+        }
       } catch (error) {
         console.error("Error adding new item:", error);
       }
@@ -100,7 +110,7 @@ export function EnhancedSearchableSelect({
   }, [onAddNew, searchTerm, onValueChange, setOpen]);
 
   const showAddOption = useMemo(() => {
-    return !!onAddNew && !!searchTerm && !inputMatchesOption;
+    return Boolean(onAddNew && searchTerm && !inputMatchesOption);
   }, [onAddNew, searchTerm, inputMatchesOption]);
 
   return (
@@ -125,7 +135,7 @@ export function EnhancedSearchableSelect({
           disabled={disabled}
           onKeyDown={handleKeyDown}
         />
-        {open && filteredOptions && (
+        {open && (
           <CommandList className="absolute top-full left-0 w-full z-50 bg-white shadow-lg rounded-md border mt-1 max-h-60 overflow-auto">
             <CommandEmpty>
               <EnhancedSelectSuggestion
@@ -137,7 +147,7 @@ export function EnhancedSearchableSelect({
                 showAddOption={showAddOption}
               />
             </CommandEmpty>
-            {filteredOptions.map((option, index) => (
+            {Array.isArray(filteredOptions) && filteredOptions.map((option, index) => (
               <EnhancedSelectOption
                 key={option.value}
                 value={option.value}
