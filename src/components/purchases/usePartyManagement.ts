@@ -66,19 +66,19 @@ export const usePartyManagement = ({ form }) => {
     return `temp-transporter-${Date.now()}`;
   }, []);
 
-  // Memoize the suppliers array to prevent unnecessary re-renders
+  // Safely handle suppliers array
   const memoizedSuppliers = useMemo(() => {
-    return Array.isArray(suppliers) ? suppliers : [];
+    return Array.isArray(suppliers) ? suppliers.filter(Boolean) : [];
   }, [suppliers]);
 
-  // Memoize the transporters array to prevent unnecessary re-renders
+  // Safely handle transporters array
   const memoizedTransporters = useMemo(() => {
-    return Array.isArray(transporters) ? transporters : [];
+    return Array.isArray(transporters) ? transporters.filter(Boolean) : [];
   }, [transporters]);
 
-  // Memoize the agents array to prevent unnecessary re-renders
+  // Safely handle agents array
   const memoizedAgents = useMemo(() => {
-    return Array.isArray(agents) ? agents : [];
+    return Array.isArray(agents) ? agents.filter(Boolean) : [];
   }, [agents]);
 
   return {

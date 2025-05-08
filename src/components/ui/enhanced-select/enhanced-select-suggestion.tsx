@@ -20,7 +20,8 @@ export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> =
   masterType = "item",
   showAddOption
 }) => {
-  if (!searchTerm) {
+  // Skip rendering if there's no search term
+  if (!searchTerm || typeof searchTerm !== 'string') {
     return <div className="py-6 text-center text-sm">Type to search...</div>;
   }
 

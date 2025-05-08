@@ -3,14 +3,14 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { SelectOption, UseEnhancedSelectReturn } from "./types";
 import { findBestMatch } from "string-similarity";
 
-export const useEnhancedSelect = (options: SelectOption[], value: string): UseEnhancedSelectReturn => {
+export const useEnhancedSelect = (options: SelectOption[] | null | undefined, value: string): UseEnhancedSelectReturn => {
   const [open, setOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
 
-  // Ensure options is always an array
+  // Ensure options is always an array even if null or undefined
   const safeOptions = useMemo(() => {
-    if (!Array.isArray(options)) {
-      console.warn("useEnhancedSelect: options is not an array, using empty array instead");
+    if (!options || !Array.isArray(options)) {
+      console.warn("useEnhancedSelect: options is not a valid array, using empty array instead");
       return [];
     }
     return options;
@@ -20,7 +20,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
   const selectedOption = useMemo(() => {
     if (!value || !safeOptions.length) return undefined;
     
-    const found = safeOptions.find(option => option.value === value);
+    const found = safeOptions.find(option => option && option.value === value);
     if (found) return found;
     
     // If no match found, log for debugging
@@ -46,7 +46,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     
     const lowerSearchTerm = searchTerm.toLowerCase();
     return safeOptions.filter(option => 
-      option.label.toLowerCase().includes(lowerSearchTerm)
+      option && option.label && option.label.toLowerCase().includes(lowerSearchTerm)
     );
   }, [safeOptions, searchTerm]);
 
@@ -58,12 +58,14 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     
     try {
       // Use string-similarity to find the closest match
-      const targets = safeOptions.map(option => option.label);
+      const targets = safeOptions
+        .filter(option => option && option.label)
+        .map(option => option.label);
       
       if (!targets.length) return null;
 
       const matches = findBestMatch(searchTerm, targets);
-      if (matches.bestMatch.rating > 0.4) {
+      if (matches && matches.bestMatch && matches.bestMatch.rating > 0.4) {
         return matches.bestMatch.target;
       }
     } catch (error) {
@@ -78,7 +80,7 @@ export const useEnhancedSelect = (options: SelectOption[], value: string): UseEn
     if (!searchTerm || !safeOptions.length) return false;
     
     return safeOptions.some(option => 
-      option.label.toLowerCase() === searchTerm.toLowerCase()
+      option && option.label && option.label.toLowerCase() === searchTerm.toLowerCase()
     );
   }, [safeOptions, searchTerm]);
 
