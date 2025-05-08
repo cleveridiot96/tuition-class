@@ -4,7 +4,7 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/comp
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useAddToMaster } from "@/hooks/useAddToMaster";
+import { useMasterDialog } from "@/contexts/MasterDialogContext";
 
 interface PurchasePartyDetailsProps {
   form: any;
@@ -24,49 +24,23 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
   partyManagement
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
-  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
+  const { openDialog } = useMasterDialog();
 
   const handleAddSupplier = () => {
-    confirmAddToMaster('', (value) => {
-      if (value) {
-        form.setValue("party", value);
-        if (partyManagement && typeof partyManagement.loadData === "function") {
-          partyManagement.loadData();
-        }
-      }
-    }, "supplier");
+    openDialog("supplier");
   };
 
   const handleAddAgent = () => {
-    confirmAddToMaster('', (value) => {
-      // After agent is added, we need to refresh the data and find the new agent's ID
-      if (value) {
-        if (partyManagement && typeof partyManagement.loadData === "function") {
-          partyManagement.loadData();
-        }
-        // The actual agent selection will happen when the data is refreshed
-      }
-    }, "agent");
+    openDialog("agent");
   };
 
   const handleSupplierAddNew = (name: string): string => {
-    confirmAddToMaster(name, (value) => {
-      if (value) {
-        form.setValue("party", value);
-        if (partyManagement && typeof partyManagement.loadData === "function") {
-          partyManagement.loadData();
-        }
-      }
-    }, "supplier");
+    openDialog("supplier", name);
     return "";
   };
 
   const handleAgentAddNew = (name: string): string => {
-    confirmAddToMaster(name, (value) => {
-      if (partyManagement && typeof partyManagement.loadData === "function") {
-        partyManagement.loadData();
-      }
-    }, "agent");
+    openDialog("agent", name);
     return "";
   };
 
@@ -140,7 +114,6 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           )}
         />
       </div>
-      <AddToMasterDialog />
     </div>
   );
 };
