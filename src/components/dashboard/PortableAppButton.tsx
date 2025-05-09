@@ -14,16 +14,20 @@ const PortableAppButton = () => {
       // Use the createPortableVersion function from portableAppUtils
       const result = await createPortableVersion();
       
-      if (result) {
+      if (result.success) {
         toast.success("Portable App Created", {
-          description: "Extract the ZIP file and open index.html to use your app anywhere!"
+          description: "Extract the ZIP file and open launcher.html to use your app anywhere!"
         });
       } else {
-        toast.error("Failed to create portable version");
+        toast.error("Failed to create portable version", {
+          description: result.message
+        });
       }
     } catch (error) {
       console.error("Error creating portable version:", error);
-      toast.error("An unexpected error occurred");
+      toast.error("An unexpected error occurred", {
+        description: error instanceof Error ? error.message : "Unknown error"
+      });
     } finally {
       setIsCreating(false);
     }

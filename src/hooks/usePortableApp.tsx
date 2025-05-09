@@ -23,7 +23,7 @@ export function usePortableApp() {
       try {
         // Initialize portable app
         initializePortableApp();
-        ensurePortableDataLoaded();
+        const dataLoaded = ensurePortableDataLoaded();
         
         // Show portable mode message only once per session
         const shownMessage = sessionStorage.getItem('portable-mode-message');
@@ -46,7 +46,9 @@ export function usePortableApp() {
         setIsInitialized(true);
       } catch (error) {
         console.error("Failed to initialize portable app:", error);
-        toast.error("Error initializing portable app");
+        toast.error("Error initializing portable app", {
+          description: error instanceof Error ? error.message : "Please check your browser's storage permissions"
+        });
       }
     } else {
       setIsInitialized(true);
