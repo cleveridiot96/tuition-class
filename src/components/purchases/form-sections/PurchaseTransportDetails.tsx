@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { useMasterDialog } from "@/contexts/MasterDialogContext";
+import { useAddToMaster } from "@/hooks/useAddToMaster";
 
 interface PurchaseTransportDetailsProps {
   form: any;
@@ -25,14 +25,29 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
   partyManagement
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
-  const { openDialog } = useMasterDialog();
+  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
 
   const handleAddTransporter = () => {
-    openDialog("transporter");
+    confirmAddToMaster('', (value) => {
+      // After transporter is added, refresh the data
+      if (value) {
+        if (partyManagement && typeof partyManagement.loadData === "function") {
+          partyManagement.loadData();
+        }
+        form.setValue("transporterId", value);
+      }
+    }, "transporter");
   };
 
   const handleTransporterAddNew = (name: string): string => {
-    openDialog("transporter", name);
+    confirmAddToMaster(name, (value) => {
+      if (value) {
+        form.setValue("transporterId", value);
+        if (partyManagement && typeof partyManagement.loadData === "function") {
+          partyManagement.loadData();
+        }
+      }
+    }, "transporter");
     return "";
   };
 
@@ -98,6 +113,7 @@ const PurchaseTransportDetails: React.FC<PurchaseTransportDetailsProps> = ({
           )}
         />
       </div>
+      <AddToMasterDialog />
     </div>
   );
 };

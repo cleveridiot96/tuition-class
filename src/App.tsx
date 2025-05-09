@@ -1,34 +1,77 @@
 
-import React from "react";
-import { Routes, Route } from "react-router-dom";
+import React, { useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "sonner";
-import { MasterDialogProvider } from "@/contexts/MasterDialogContext";
-
-// Import your pages
-import Home from "@/pages/Home";
-import Purchases from "@/pages/Purchases";
-import Sales from "@/pages/Sales";
-import Inventory from "@/pages/Inventory";
-import Masters from "@/pages/Masters";
-import Settings from "@/pages/Settings";
-import Reports from "@/pages/Reports";
-import Dashboard from "@/pages/Dashboard";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import EnhancedErrorBoundary from "@/components/EnhancedErrorBoundary";
+import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
+import { ContextMenuProvider } from "@/components/custom-context-menu/context-menu-context";
+import Index from '@/pages/Index';
+import Agents from '@/pages/Agents';
+import Calculator from '@/pages/Calculator';
+import CashBook from '@/pages/CashBook';
+import Inventory from '@/pages/Inventory';
+import Ledger from '@/pages/Ledger';
+import Master from '@/pages/Master';
+import Payments from '@/pages/Payments';
+import Purchases from '@/pages/Purchases';
+import Receipts from '@/pages/Receipts';
+import Sales from '@/pages/Sales';
+import Stock from '@/pages/Stock';
+import Transport from '@/pages/Transport';
+import NotFound from '@/pages/NotFound';
+import LocationTransferPage from '@/pages/location-transfer/LocationTransferPage';
+import RippleProvider from '@/components/RippleProvider';
+import { optimizedStorage } from '@/services/core/storage-core';
+import './App.css';
 
 const App = () => {
+  // Initialize storage on app load
+  useEffect(() => {
+    optimizedStorage.get('locations');
+    optimizedStorage.get('customers');
+    optimizedStorage.get('suppliers');
+    optimizedStorage.get('brokers');
+    optimizedStorage.get('agents');
+    optimizedStorage.get('transporters');
+  }, []);
+
   return (
-    <MasterDialogProvider>
-      <Toaster position="top-right" />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/purchases" element={<Purchases />} />
-        <Route path="/sales" element={<Sales />} />
-        <Route path="/inventory" element={<Inventory />} />
-        <Route path="/masters" element={<Masters />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-      </Routes>
-    </MasterDialogProvider>
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <EnhancedErrorBoundary>
+        <ErrorBoundary>
+          <ContextMenuProvider>
+            <KeyboardShortcutsProvider>
+              <div className="min-h-screen w-full flex flex-col">
+                <RippleProvider>
+                  <div className="flex-1 overflow-auto">
+                    <Routes>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/agents" element={<Agents />} />
+                      <Route path="/calculator" element={<Calculator />} />
+                      <Route path="/cash-book" element={<CashBook />} />
+                      <Route path="/inventory" element={<Inventory />} />
+                      <Route path="/location-transfer" element={<LocationTransferPage />} />
+                      <Route path="/ledger" element={<Ledger />} />
+                      <Route path="/master" element={<Master />} />
+                      <Route path="/payments" element={<Payments />} />
+                      <Route path="/purchases" element={<Purchases />} />
+                      <Route path="/receipts" element={<Receipts />} />
+                      <Route path="/sales" element={<Sales />} />
+                      <Route path="/stock" element={<Stock />} />
+                      <Route path="/transport" element={<Transport />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </div>
+                </RippleProvider>
+                <Toaster />
+              </div>
+            </KeyboardShortcutsProvider>
+          </ContextMenuProvider>
+        </ErrorBoundary>
+      </EnhancedErrorBoundary>
+    </ThemeProvider>
   );
 };
 
