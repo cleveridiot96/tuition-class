@@ -1,5 +1,6 @@
+
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { MasterDialogProvider } from "@/contexts/MasterDialogContext";
 
@@ -17,18 +18,16 @@ const App = () => {
   return (
     <MasterDialogProvider>
       <Toaster position="top-right" />
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/purchases" element={<Purchases />} />
-          <Route path="/sales" element={<Sales />} />
-          <Route path="/inventory" element={<Inventory />} />
-          <Route path="/masters" element={<Masters />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/reports" element={<Reports />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-        </Routes>
-      </Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/purchases" element={<Purchases />} />
+        <Route path="/sales" element={<Sales />} />
+        <Route path="/inventory" element={<Inventory />} />
+        <Route path="/masters" element={<Masters />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
     </MasterDialogProvider>
   );
 };
