@@ -22,11 +22,15 @@ import Stock from '@/pages/Stock';
 import Transport from '@/pages/Transport';
 import NotFound from '@/pages/NotFound';
 import LocationTransferPage from '@/pages/location-transfer/LocationTransferPage';
+import Dashboard from '@/pages/Dashboard';
 import RippleProvider from '@/components/RippleProvider';
 import { optimizedStorage } from '@/services/core/storage-core';
+import { usePortableApp } from '@/hooks/usePortableApp';
 import './App.css';
 
 const App = () => {
+  const { isPortableMode } = usePortableApp();
+  
   // Initialize storage on app load
   useEffect(() => {
     optimizedStorage.get('locations');
@@ -48,6 +52,7 @@ const App = () => {
                   <div className="flex-1 overflow-auto">
                     <Routes>
                       <Route path="/" element={<Index />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
                       <Route path="/agents" element={<Agents />} />
                       <Route path="/calculator" element={<Calculator />} />
                       <Route path="/cash-book" element={<CashBook />} />

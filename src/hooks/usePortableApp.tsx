@@ -1,14 +1,21 @@
 
-import { useEffect } from 'react';
-import { initializePortableApp, isPortableMode } from '@/utils/portableAppUtils';
+import { useEffect, useState } from 'react';
+import { initializePortableApp, isPortableMode, ensurePortableDataLoaded } from '@/utils/portableAppUtils';
 import { toast } from 'sonner';
 
 export function usePortableApp() {
+  const [isInPortableMode, setIsInPortableMode] = useState<boolean>(false);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
   useEffect(() => {
-    if (isPortableMode()) {
+    const portableMode = isPortableMode();
+    setIsInPortableMode(portableMode);
+    
+    if (portableMode) {
       console.log("Initializing portable app");
       try {
         initializePortableApp();
+        ensurePortableDataLoaded();
         
         // Set a session flag to prevent showing the message multiple times
         const shownMessage = sessionStorage.getItem('portable-mode-message');
@@ -19,12 +26,19 @@ export function usePortableApp() {
           });
           sessionStorage.setItem('portable-mode-message', 'true');
         }
+        
+        setIsInitialized(true);
       } catch (error) {
         console.error("Failed to initialize portable app:", error);
         toast.error("Error initializing portable app");
       }
+    } else {
+      setIsInitialized(true);
     }
   }, []);
   
-  return { isPortableMode: isPortableMode() };
+  return { 
+    isPortableMode: isInPortableMode, 
+    isInitialized: isInitialized 
+  };
 }

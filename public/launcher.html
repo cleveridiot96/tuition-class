@@ -79,6 +79,15 @@
             from { width: 0; }
             to { width: 100%; }
         }
+        .error {
+            color: #e53e3e;
+            margin-top: 20px;
+            display: none;
+            padding: 10px;
+            background-color: #fff5f5;
+            border-left: 4px solid #e53e3e;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
@@ -92,16 +101,38 @@
         <div class="progress" id="progress">
             <div class="progress-bar"></div>
         </div>
+        
+        <div class="error" id="errorMessage">
+            <p><strong>Connection Error:</strong> Could not connect to the internet.</p>
+            <p>This is an offline application. Please make sure all files are in the same folder.</p>
+        </div>
     </div>
     
     <script>
+        // Mark as portable mode
+        localStorage.setItem('portableMode', 'true');
+        
         document.getElementById('startButton').addEventListener('click', function() {
             this.style.display = 'none';
             document.getElementById('progress').style.display = 'block';
             
-            setTimeout(function() {
-                window.location.href = 'index.html';
-            }, 1000);
+            // Try to load index.html
+            const testConnection = () => {
+                try {
+                    // Set a flag to indicate we're in portable mode
+                    localStorage.setItem('portableMode', 'true');
+                    
+                    // Redirect to index.html with portable flag
+                    window.location.href = 'index.html?portable=true';
+                } catch (err) {
+                    console.error("Error launching application:", err);
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('progress').style.display = 'none';
+                }
+            };
+            
+            // Wait a bit before redirecting
+            setTimeout(testConnection, 1000);
         });
     </script>
 </body>
