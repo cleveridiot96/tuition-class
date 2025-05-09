@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   FormField,
@@ -30,7 +31,7 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
   const [showAddPartyDialog, setShowAddPartyDialog] = useState<boolean>(false);
   const [newPartyName, setNewPartyName] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
+  const { confirmAddToMaster } = useAddToMaster();
   
   const loadSuppliers = useCallback(() => {
     const supplierData = getSuppliers() || [];
@@ -181,8 +182,6 @@ const PartySelector: React.FC<PartySelectorProps> = ({ form, partyManagement }) 
           </div>
         </DialogContent>
       </Dialog>
-      
-      <AddToMasterDialog />
     </>
   );
 };

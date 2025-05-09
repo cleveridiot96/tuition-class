@@ -34,7 +34,7 @@ const BrokerSelector: React.FC<BrokerSelectorProps> = ({ form, partyManagement }
   const [newAgentName, setNewAgentName] = useState<string>("");
   const [newAgentCommission, setNewAgentCommission] = useState<string>("1");
   const [nameError, setNameError] = useState<string>("");
-  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
+  const { confirmAddToMaster } = useAddToMaster();
   
   const loadAgents = useCallback(() => {
     const agentData = getAgents() || [];
@@ -190,8 +190,6 @@ const BrokerSelector: React.FC<BrokerSelectorProps> = ({ form, partyManagement }
           </div>
         </DialogContent>
       </Dialog>
-      
-      <AddToMasterDialog />
     </>
   );
 };
