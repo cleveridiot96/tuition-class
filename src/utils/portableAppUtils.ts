@@ -1,158 +1,98 @@
 
 import { toast } from "sonner";
-import { exportDataBackup } from "@/services/backup/exportBackup";
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
+import { isFileProtocol, isOffline, registerOfflineHandlers } from "./offlineDetection";
 
-// Helper function to check if we're running in portable mode
+/**
+ * Portable mode flag in localStorage
+ */
+export const PORTABLE_MODE_KEY = 'portableMode';
+
+/**
+ * Check if the application is in portable mode
+ */
 export const isPortableMode = (): boolean => {
-  return window.location.protocol === 'file:' || 
-    window.location.href.includes('portable=true') ||
-    localStorage.getItem('portableMode') === 'true';
+  // Check for portable mode flag in localStorage
+  const portableMode = localStorage.getItem(PORTABLE_MODE_KEY) === 'true';
+  
+  // Check for file protocol (always indicates portable mode)
+  const fileProtocol = isFileProtocol();
+  
+  // Check for portable=true in URL query params
+  const urlParams = new URLSearchParams(window.location.search);
+  const portableParam = urlParams.get('portable') === 'true';
+  
+  return portableMode || fileProtocol || portableParam;
 };
 
-// Helper function to ensure data is properly loaded in portable mode
-export const ensurePortableDataLoaded = (): boolean => {
-  if (!isPortableMode()) return true;
-  
-  try {
-    // Check if we can access localStorage in portable mode
-    const testKey = 'portable-test-' + Date.now();
-    localStorage.setItem(testKey, 'test');
-    const testValue = localStorage.getItem(testKey);
-    localStorage.removeItem(testKey);
+/**
+ * Initialize portable app mode
+ */
+export const initializePortableApp = (): void => {
+  // If we're running in portable mode, register offline handlers
+  if (isPortableMode()) {
+    console.log("Initializing portable app mode");
+    localStorage.setItem(PORTABLE_MODE_KEY, 'true');
     
-    if (testValue !== 'test') {
-      console.error("Portable mode storage test failed");
-      toast.error("Error: Cannot access storage in portable mode. Try using a different browser.");
-      return false;
-    }
-    
-    // Check for data in the initialData key
-    const initialData = localStorage.getItem('initialData');
-    if (initialData) {
-      try {
-        const data = JSON.parse(initialData);
-        // Import data to localStorage if not already there
-        if (!localStorage.getItem('locations')) {
-          for (const key in data) {
-            if (!localStorage.getItem(key)) {
-              localStorage.setItem(key, JSON.stringify(data[key]));
-            }
-          }
-          console.log("Imported initial data from portable mode");
-          window.dispatchEvent(new Event('storage'));
-        }
-      } catch (e) {
-        console.error("Error parsing initial data:", e);
+    // Register offline handlers
+    registerOfflineHandlers(
+      () => {
+        console.log("App is offline in portable mode");
+        // Being offline in portable mode is normal, so no need for alerts
+      },
+      () => {
+        console.log("App is back online in portable mode");
+        // This shouldn't matter in portable mode, but we log it anyway
       }
-    }
-    
-    // Initialize default locations if needed
-    const locations = localStorage.getItem('locations');
-    if (!locations) {
-      localStorage.setItem('locations', JSON.stringify(["Mumbai", "Chiplun", "Sawantwadi"]));
-    }
-    
-    return true;
-  } catch (err) {
-    console.error("Portable mode error:", err);
-    toast.error("Error loading data in portable mode. Try using Chrome or Edge browser with file access enabled.");
-    return false;
+    );
   }
 };
 
-// Helper function to fix common portable app issues
-export const fixPortableAppIssues = (): void => {
+/**
+ * Ensure portable data is loaded
+ */
+export const ensurePortableDataLoaded = (): void => {
   if (!isPortableMode()) return;
   
   try {
-    // Ensure default locations exist
-    const locations = localStorage.getItem('locations');
-    if (!locations || locations === '[]') {
-      localStorage.setItem('locations', JSON.stringify(["Mumbai", "Chiplun", "Sawantwadi"]));
-    }
+    // Create default schema if data doesn't exist
+    const requiredKeys = ['suppliers', 'customers', 'brokers', 'agents', 'transporters', 'masters'];
     
-    // Ensure financial year is set
-    const currentYear = localStorage.getItem('currentFinancialYear');
-    if (!currentYear) {
-      const now = new Date();
-      const yearEnd = now.getMonth() >= 3 ? now.getFullYear() + 1 : now.getFullYear();
-      const yearStart = yearEnd - 1;
-      localStorage.setItem('currentFinancialYear', `${yearStart}-${yearEnd}`);
-    }
-    
-    // Ensure master data arrays exist
-    const masterArrays = ['suppliers', 'customers', 'agents', 'brokers', 'transporters'];
-    masterArrays.forEach(key => {
+    requiredKeys.forEach(key => {
       if (!localStorage.getItem(key)) {
         localStorage.setItem(key, JSON.stringify([]));
       }
     });
     
-    console.log("Portable app settings verified and fixed if needed");
-  } catch (err) {
-    console.error("Error fixing portable app issues:", err);
-  }
-};
-
-// Call this function early in the app initialization
-export const initializePortableApp = (): void => {
-  if (isPortableMode()) {
-    console.log("Running in portable mode");
-    fixPortableAppIssues();
-    ensurePortableDataLoaded();
-  }
-};
-
-// Create a portable version of the application
-export const createPortableVersion = async (): Promise<boolean> => {
-  try {
-    // Create a backup of the data
-    const dataBackup = await exportDataBackup(true) as string;
-    if (!dataBackup) {
-      toast.error("Failed to create data backup");
-      return false;
+    // Set default locations if they don't exist
+    if (!localStorage.getItem('locations')) {
+      localStorage.setItem('locations', JSON.stringify(['Mumbai', 'Chiplun', 'Sawantwadi']));
     }
-
-    // Create zip file with all necessary files
-    const zip = new JSZip();
     
-    // Add data backup
-    zip.file("data.json", dataBackup);
-    
-    // Add launcher HTML
-    const launcherContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kisan Khata Sahayak - Portable</title>
-  <script>
-    localStorage.setItem('portableMode', 'true');
-    window.location.href = './index.html?portable=true';
-  </script>
-</head>
-<body>
-  <p>Loading Kisan Khata Sahayak...</p>
-</body>
-</html>`;
-    
-    zip.file("launcher.html", launcherContent);
-    
-    // Generate and save zip file
-    const content = await zip.generateAsync({ type: "blob" });
-    const date = new Date();
-    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    saveAs(content, `KisanKhataSahayak_Portable_${dateStr}.zip`);
-    
-    toast.success("Portable version created successfully");
-    
-    return true;
+    console.log("Portable data schema initialized successfully");
   } catch (error) {
-    console.error("Error creating portable version:", error);
-    toast.error("Failed to create portable version");
+    console.error("Error initializing portable data:", error);
+  }
+};
+
+/**
+ * Exit portable mode
+ */
+export const exitPortableMode = (): void => {
+  localStorage.removeItem(PORTABLE_MODE_KEY);
+  sessionStorage.removeItem('portable-mode-message');
+  console.log("Exited portable mode");
+  toast.success("Exited portable mode");
+};
+
+/**
+ * Check if the browser supports offline storage
+ */
+export const checkOfflineStorageSupport = (): boolean => {
+  try {
+    localStorage.setItem('test', 'test');
+    localStorage.removeItem('test');
+    return true;
+  } catch (e) {
     return false;
   }
 };

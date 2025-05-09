@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';">
     <title>किसान खाता सहायक - Start</title>
     <style>
         body {
@@ -88,6 +89,19 @@
             border-left: 4px solid #e53e3e;
             text-align: left;
         }
+        .offline-notice {
+            background-color: #fff9e6;
+            border-left: 4px solid #f5c518;
+            padding: 10px;
+            text-align: left;
+            margin: 20px 0;
+            display: none;
+        }
+        .version {
+            font-size: 12px;
+            color: #999;
+            margin-top: 30px;
+        }
     </style>
 </head>
 <body>
@@ -96,6 +110,11 @@
         <h1>किसान खाता सहायक</h1>
         <p class="subtitle">आपका कृषि व्यापार प्रबंधन सॉफ्टवेयर</p>
         
+        <div class="offline-notice" id="offlineNotice">
+            <p><strong>Offline Mode:</strong> You are currently offline.</p>
+            <p>The application will run using locally stored data.</p>
+        </div>
+        
         <button class="button" id="startButton">शुरू करें (Start)</button>
         
         <div class="progress" id="progress">
@@ -103,12 +122,19 @@
         </div>
         
         <div class="error" id="errorMessage">
-            <p><strong>Connection Error:</strong> Could not connect to the internet.</p>
+            <p><strong>Error:</strong> Could not start the application.</p>
             <p>This is an offline application. Please make sure all files are in the same folder.</p>
         </div>
+        
+        <p class="version">Version 1.0.0</p>
     </div>
     
     <script>
+        // Check if we're offline
+        if (!navigator.onLine) {
+            document.getElementById('offlineNotice').style.display = 'block';
+        }
+        
         // Mark as portable mode
         localStorage.setItem('portableMode', 'true');
         
@@ -121,6 +147,22 @@
                 try {
                     // Set a flag to indicate we're in portable mode
                     localStorage.setItem('portableMode', 'true');
+                    
+                    // Initialize required storage keys if they don't exist
+                    const requiredKeys = [
+                        'suppliers', 'customers', 'brokers', 'agents', 'transporters', 'masters'
+                    ];
+                    
+                    requiredKeys.forEach(key => {
+                        if (!localStorage.getItem(key)) {
+                            localStorage.setItem(key, JSON.stringify([]));
+                        }
+                    });
+                    
+                    // Set default locations if not present
+                    if (!localStorage.getItem('locations')) {
+                        localStorage.setItem('locations', JSON.stringify(['Mumbai', 'Chiplun', 'Sawantwadi']));
+                    }
                     
                     // Redirect to index.html with portable flag
                     window.location.href = 'index.html?portable=true';

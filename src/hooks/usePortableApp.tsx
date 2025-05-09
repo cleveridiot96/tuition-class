@@ -1,23 +1,31 @@
 
 import { useEffect, useState } from 'react';
-import { initializePortableApp, isPortableMode, ensurePortableDataLoaded } from '@/utils/portableAppUtils';
+import { isPortableMode, ensurePortableDataLoaded, initializePortableApp } from '@/utils/portableAppUtils';
 import { toast } from 'sonner';
+import { isOffline } from '@/utils/offlineDetection';
 
 export function usePortableApp() {
   const [isInPortableMode, setIsInPortableMode] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
+  const [isInOfflineMode, setIsInOfflineMode] = useState<boolean>(false);
 
   useEffect(() => {
+    // Check if we're in portable mode
     const portableMode = isPortableMode();
     setIsInPortableMode(portableMode);
+    
+    // Check if we're offline
+    const offline = isOffline();
+    setIsInOfflineMode(offline);
     
     if (portableMode) {
       console.log("Initializing portable app");
       try {
+        // Initialize portable app
         initializePortableApp();
         ensurePortableDataLoaded();
         
-        // Set a session flag to prevent showing the message multiple times
+        // Show portable mode message only once per session
         const shownMessage = sessionStorage.getItem('portable-mode-message');
         if (!shownMessage) {
           toast.info("Running in portable mode", {
@@ -25,6 +33,14 @@ export function usePortableApp() {
             duration: 5000,
           });
           sessionStorage.setItem('portable-mode-message', 'true');
+        }
+        
+        // If we're offline, show a message
+        if (offline) {
+          toast.info("You are currently offline", {
+            description: "Application will continue to work with local data",
+            duration: 5000,
+          });
         }
         
         setIsInitialized(true);
@@ -35,10 +51,33 @@ export function usePortableApp() {
     } else {
       setIsInitialized(true);
     }
+    
+    // Add event listeners for online/offline status
+    const handleOnline = () => {
+      setIsInOfflineMode(false);
+      toast.success("You are back online", { duration: 3000 });
+    };
+    
+    const handleOffline = () => {
+      setIsInOfflineMode(true);
+      toast.info("You are offline", {
+        description: "Application will continue to work with local data",
+        duration: 5000,
+      });
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
   
   return { 
-    isPortableMode: isInPortableMode, 
+    isPortableMode: isInPortableMode,
+    isOffline: isInOfflineMode, 
     isInitialized: isInitialized 
   };
 }
