@@ -18,10 +18,10 @@ export function EnhancedSearchableSelect({
   className = "",
   masterType = "supplier"
 }: EnhancedSearchableSelectProps) {
-  // Safety check - ensure options is always an array
+  // Always ensure options is an array to prevent "undefined is not iterable" errors
   const safeOptions = useMemo(() => {
     if (!Array.isArray(options)) {
-      console.warn("EnhancedSearchableSelect: options is not an array");
+      console.warn(`EnhancedSearchableSelect: options is not an array, received:`, options);
       return [];
     }
     return options;
@@ -148,20 +148,26 @@ export function EnhancedSearchableSelect({
                 showAddOption={showAddOption}
               />
             </CommandEmpty>
-            {Array.isArray(filteredOptions) && filteredOptions.map((option, index) => (
-              <EnhancedSelectOption
-                key={option.value}
-                value={option.value}
-                label={option.label}
-                isSelected={value === option.value}
-                onSelect={() => {
-                  onValueChange(option.value);
-                  setOpen(false);
-                }}
-                onKeyDown={handleKeyDown}
-                index={index}
-              />
-            ))}
+            {Array.isArray(filteredOptions) && filteredOptions.length > 0 ? (
+              filteredOptions.map((option, index) => (
+                <EnhancedSelectOption
+                  key={option.value}
+                  value={option.value}
+                  label={option.label}
+                  isSelected={value === option.value}
+                  onSelect={() => {
+                    onValueChange(option.value);
+                    setOpen(false);
+                  }}
+                  onKeyDown={handleKeyDown}
+                  index={index}
+                />
+              ))
+            ) : (
+              <div className="py-2 px-4 text-sm text-gray-500">
+                {searchTerm ? `No results for "${searchTerm}"` : emptyMessage}
+              </div>
+            )}
           </CommandList>
         )}
       </Command>

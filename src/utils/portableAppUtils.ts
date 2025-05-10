@@ -62,17 +62,40 @@ export const ensurePortableDataLoaded = (): void => {
     requiredKeys.forEach(key => {
       if (!localStorage.getItem(key)) {
         localStorage.setItem(key, JSON.stringify([]));
+        console.log(`Created empty array for ${key}`);
       }
     });
     
     // Set default locations if they don't exist
     if (!localStorage.getItem('locations')) {
       localStorage.setItem('locations', JSON.stringify(['Mumbai', 'Chiplun', 'Sawantwadi']));
+      console.log("Created default locations");
     }
+    
+    // Check if data loaded correctly by reading it back
+    requiredKeys.forEach(key => {
+      const data = localStorage.getItem(key);
+      if (!data) {
+        throw new Error(`Failed to initialize ${key} data - storage access issue`);
+      }
+      
+      try {
+        // Make sure it's valid JSON array
+        const parsed = JSON.parse(data);
+        if (!Array.isArray(parsed)) {
+          console.warn(`${key} data is not an array, resetting to empty array`);
+          localStorage.setItem(key, JSON.stringify([]));
+        }
+      } catch (e) {
+        console.error(`Invalid JSON for ${key}, resetting to empty array`);
+        localStorage.setItem(key, JSON.stringify([]));
+      }
+    });
     
     console.log("Portable data schema initialized successfully");
   } catch (error) {
     console.error("Error initializing portable data:", error);
+    throw error; // Re-throw to be caught by caller
   }
 };
 
@@ -232,6 +255,13 @@ export const createPortableVersion = async (): Promise<{success: boolean, messag
             color: #999;
             margin-top: 30px;
         }
+        .debug-info {
+            margin-top: 20px;
+            font-size: 12px; 
+            color: #666;
+            text-align: left;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -252,21 +282,53 @@ export const createPortableVersion = async (): Promise<{success: boolean, messag
         </div>
         
         <div class="error" id="errorMessage">
-            <p><strong>Error:</strong> Could not start the application.</p>
+            <p><strong>Error:</strong> <span id="errorDetail">Could not start the application.</span></p>
             <p>This is an offline application. Please make sure all files are in the same folder.</p>
+            <button class="button" id="debugButton" style="background-color: #666; margin-top: 10px; padding: 8px 16px; font-size: 14px;">Show Debug Info</button>
+        </div>
+        
+        <div class="debug-info" id="debugInfo">
+            <h4>Debug Information:</h4>
+            <div id="debugContent"></div>
         </div>
         
         <p class="version">Version 1.0.0</p>
     </div>
     
     <script>
+        // Debug helpers
+        function showError(message) {
+            document.getElementById('errorDetail').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('progress').style.display = 'none';
+        }
+        
+        function addDebugInfo(text) {
+            const debugContent = document.getElementById('debugContent');
+            const p = document.createElement('p');
+            p.textContent = text;
+            debugContent.appendChild(p);
+        }
+        
+        // Debug button handler
+        document.getElementById('debugButton').addEventListener('click', function() {
+            const debugInfo = document.getElementById('debugInfo');
+            debugInfo.style.display = debugInfo.style.display === 'block' ? 'none' : 'block';
+        });
+        
         // Check if we're offline
         if (!navigator.onLine) {
             document.getElementById('offlineNotice').style.display = 'block';
+            addDebugInfo("Offline mode detected.");
         }
         
         // Set portable mode flag
-        localStorage.setItem('portableMode', 'true');
+        try {
+            localStorage.setItem('portableMode', 'true');
+            addDebugInfo("Set portableMode = true in localStorage");
+        } catch (err) {
+            addDebugInfo("Failed to set portableMode: " + err.message);
+        }
         
         document.getElementById('startButton').addEventListener('click', function() {
             this.style.display = 'none';
@@ -275,38 +337,55 @@ export const createPortableVersion = async (): Promise<{success: boolean, messag
             try {
                 // Load data from data.json if it exists
                 fetch('./data.json')
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to load data.json (HTTP ' + response.status + ')');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         console.log('Loading data from data.json...');
+                        addDebugInfo("Successfully loaded data.json");
+                        
                         // Import all data to localStorage
+                        let importCount = 0;
                         Object.entries(data).forEach(([key, value]) => {
                             try {
                                 localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+                                importCount++;
                             } catch (error) {
                                 console.error('Failed to import item ' + key + ':', error);
+                                addDebugInfo("Failed to import: " + key + " - " + error.message);
                             }
                         });
                         console.log('Data loaded successfully');
+                        addDebugInfo("Imported " + importCount + " data items to localStorage");
                         
                         // Initialize any required data that might be missing
-                        if (!localStorage.getItem('locations')) {
-                            localStorage.setItem('locations', JSON.stringify(['Mumbai', 'Chiplun', 'Sawantwadi']));
-                        }
+                        initializeDefaultData();
                         
                         // Redirect to main app with portable flag
+                        console.log('Redirecting to main app...');
                         window.location.href = 'index.html?portable=true';
                     })
                     .catch(error => {
                         console.error('Error loading data.json:', error);
+                        addDebugInfo("Error: " + error.message);
+                        showError("Could not load data: " + error.message);
                         
                         // Even if data.json fails, try to launch app with default data
                         initializeDefaultData();
-                        window.location.href = 'index.html?portable=true';
+                        
+                        // Set a slight delay before redirecting
+                        setTimeout(() => {
+                            console.log('Redirecting to main app with default data...');
+                            window.location.href = 'index.html?portable=true';
+                        }, 2000);
                     });
             } catch (err) {
                 console.error('Error launching application:', err);
-                document.getElementById('errorMessage').style.display = 'block';
-                document.getElementById('progress').style.display = 'none';
+                showError(err.message || "Unknown error");
+                addDebugInfo("Critical error: " + err.message);
             }
         });
         
@@ -318,12 +397,14 @@ export const createPortableVersion = async (): Promise<{success: boolean, messag
             requiredKeys.forEach(key => {
                 if (!localStorage.getItem(key)) {
                     localStorage.setItem(key, JSON.stringify([]));
+                    addDebugInfo("Created empty array for: " + key);
                 }
             });
             
             // Set default locations
             if (!localStorage.getItem('locations')) {
                 localStorage.setItem('locations', JSON.stringify(['Mumbai', 'Chiplun', 'Sawantwadi']));
+                addDebugInfo("Created default locations");
             }
         }
     </script>
@@ -347,6 +428,7 @@ export const createPortableVersion = async (): Promise<{success: boolean, messag
 - This portable version works completely offline
 - All your data is stored in your browser's local storage
 - For best results, use Chrome or Edge browser
+- If you see any errors about "undefined is not iterable", make sure all files are extracted from the ZIP and in the same folder
 
 `;
     
@@ -369,4 +451,3 @@ export const createPortableVersion = async (): Promise<{success: boolean, messag
     return { success: false, message: `Failed to create portable version: ${error instanceof Error ? error.message : 'Unknown error'}` };
   }
 };
-

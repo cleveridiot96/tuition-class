@@ -8,6 +8,7 @@ export function usePortableApp() {
   const [isInPortableMode, setIsInPortableMode] = useState<boolean>(false);
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [isInOfflineMode, setIsInOfflineMode] = useState<boolean>(false);
+  const [dataLoadError, setDataLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if we're in portable mode
@@ -23,7 +24,22 @@ export function usePortableApp() {
       try {
         // Initialize portable app
         initializePortableApp();
-        const dataLoaded = ensurePortableDataLoaded();
+        
+        try {
+          // Ensure data is loaded and handle any potential errors
+          ensurePortableDataLoaded();
+          console.log("Portable data loaded successfully");
+          setDataLoadError(null);
+        } catch (dataError) {
+          console.error("Error loading portable data:", dataError);
+          setDataLoadError(dataError instanceof Error ? dataError.message : "Failed to load application data");
+          
+          // Show error message but still continue - we'll initialize with default data
+          toast.error("Error loading data", {
+            description: "Using default empty data. Some dropdowns may be empty.",
+            duration: 8000,
+          });
+        }
         
         // Show portable mode message only once per session
         const shownMessage = sessionStorage.getItem('portable-mode-message');
@@ -80,6 +96,7 @@ export function usePortableApp() {
   return { 
     isPortableMode: isInPortableMode,
     isOffline: isInOfflineMode, 
-    isInitialized: isInitialized 
+    isInitialized: isInitialized,
+    dataLoadError: dataLoadError
   };
 }
