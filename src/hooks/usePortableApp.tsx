@@ -30,6 +30,40 @@ export function usePortableApp() {
           ensurePortableDataLoaded();
           console.log("Portable data loaded successfully");
           setDataLoadError(null);
+          
+          // Verify that critical data for dropdowns is available
+          const verifyDataExists = () => {
+            try {
+              // Check if these keys exist and are valid arrays
+              const criticalDataKeys = ['suppliers', 'customers', 'brokers', 'agents', 'transporters', 'masters'];
+              
+              criticalDataKeys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (!data) {
+                  console.warn(`Missing ${key} data, initializing with empty array`);
+                  localStorage.setItem(key, JSON.stringify([]));
+                } else {
+                  try {
+                    const parsed = JSON.parse(data);
+                    if (!Array.isArray(parsed)) {
+                      console.warn(`${key} is not an array, resetting to empty array`);
+                      localStorage.setItem(key, JSON.stringify([]));
+                    }
+                  } catch (e) {
+                    console.error(`Invalid JSON for ${key}, resetting to empty array`);
+                    localStorage.setItem(key, JSON.stringify([]));
+                  }
+                }
+              });
+              
+              console.log("Critical data verified and initialized if needed");
+            } catch (error) {
+              console.error("Error verifying critical data:", error);
+            }
+          };
+          
+          verifyDataExists();
+          
         } catch (dataError) {
           console.error("Error loading portable data:", dataError);
           setDataLoadError(dataError instanceof Error ? dataError.message : "Failed to load application data");
@@ -39,6 +73,17 @@ export function usePortableApp() {
             description: "Using default empty data. Some dropdowns may be empty.",
             duration: 8000,
           });
+          
+          // Initialize critical data with empty arrays to prevent errors
+          try {
+            const criticalDataKeys = ['suppliers', 'customers', 'brokers', 'agents', 'transporters', 'masters'];
+            criticalDataKeys.forEach(key => {
+              localStorage.setItem(key, JSON.stringify([]));
+            });
+            console.log("Initialized critical data with empty arrays after error");
+          } catch (initError) {
+            console.error("Failed to initialize critical data after error:", initError);
+          }
         }
         
         // Show portable mode message only once per session

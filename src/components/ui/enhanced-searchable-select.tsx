@@ -24,7 +24,7 @@ export function EnhancedSearchableSelect({
       console.warn(`EnhancedSearchableSelect: options is not an array, received:`, options);
       return [];
     }
-    return options;
+    return options.filter(option => option !== null && option !== undefined);
   }, [options]);
   
   const {
@@ -44,10 +44,11 @@ export function EnhancedSearchableSelect({
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
     if (!open) return;
     
-    // Safely access filteredOptions.length
-    const optionsLength = Array.isArray(filteredOptions) ? filteredOptions.length : 0;
+    // Safely access filteredOptions - ensure it's always an array
+    const safeFilteredOptions = Array.isArray(filteredOptions) ? filteredOptions : [];
+    const optionsLength = safeFilteredOptions.length;
     
-    // Handle keyboard navigation
+    // Handle keyboard navigation with improved safety checks
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
@@ -61,8 +62,8 @@ export function EnhancedSearchableSelect({
         break;
       case "Enter":
         e.preventDefault();
-        if (activeIndex >= 0 && activeIndex < optionsLength && filteredOptions?.[activeIndex]) {
-          onValueChange(filteredOptions[activeIndex].value);
+        if (activeIndex >= 0 && activeIndex < optionsLength && safeFilteredOptions[activeIndex]) {
+          onValueChange(safeFilteredOptions[activeIndex].value);
           setOpen(false);
         }
         break;
@@ -86,12 +87,16 @@ export function EnhancedSearchableSelect({
 
   const handleUseSuggestion = useCallback(() => {
     if (suggestedMatch && safeOptions.length > 0) {
-      const option = safeOptions.find(opt => 
-        opt.label.toLowerCase() === suggestedMatch.toLowerCase()
-      );
-      if (option) {
-        onValueChange(option.value);
-        setOpen(false);
+      try {
+        const option = safeOptions.find(opt => 
+          opt && opt.label && opt.label.toLowerCase() === suggestedMatch.toLowerCase()
+        );
+        if (option) {
+          onValueChange(option.value);
+          setOpen(false);
+        }
+      } catch (error) {
+        console.error("Error using suggestion:", error);
       }
     }
   }, [suggestedMatch, safeOptions, onValueChange, setOpen]);
@@ -113,6 +118,11 @@ export function EnhancedSearchableSelect({
   const showAddOption = useMemo(() => {
     return Boolean(onAddNew && searchTerm && !inputMatchesOption);
   }, [onAddNew, searchTerm, inputMatchesOption]);
+
+  // Ensure filteredOptions is always an array
+  const safeFilteredOptions = useMemo(() => {
+    return Array.isArray(filteredOptions) ? filteredOptions : [];
+  }, [filteredOptions]);
 
   return (
     <div className={`relative w-full ${className}`}>
@@ -148,8 +158,8 @@ export function EnhancedSearchableSelect({
                 showAddOption={showAddOption}
               />
             </CommandEmpty>
-            {Array.isArray(filteredOptions) && filteredOptions.length > 0 ? (
-              filteredOptions.map((option, index) => (
+            {safeFilteredOptions.length > 0 ? (
+              safeFilteredOptions.map((option, index) => (
                 <EnhancedSelectOption
                   key={option.value}
                   value={option.value}
