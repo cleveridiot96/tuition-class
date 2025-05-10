@@ -6,16 +6,31 @@ import { findBestMatch } from "string-similarity";
 export const useEnhancedSelect = (options: SelectOption[] | null | undefined, value: string): UseEnhancedSelectReturn => {
   const [open, setOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [lastValidOptions, setLastValidOptions] = useState<SelectOption[]>([]);
 
   // Enhanced validation to ensure options is always a valid array
   const safeOptions = useMemo(() => {
     if (!options || !Array.isArray(options)) {
       console.warn("useEnhancedSelect: options is not a valid array, using empty array instead");
-      return [];
+      return lastValidOptions.length > 0 ? lastValidOptions : [];
     }
+    
     // Filter out null or undefined options
-    return options.filter(option => option !== null && option !== undefined);
-  }, [options]);
+    const validOptions = options.filter(option => 
+      option !== null && 
+      option !== undefined && 
+      typeof option === 'object' && 
+      'value' in option && 
+      'label' in option
+    );
+    
+    // Store valid options for fallback
+    if (validOptions.length > 0) {
+      setLastValidOptions(validOptions);
+    }
+    
+    return validOptions;
+  }, [options, lastValidOptions]);
 
   // Find the selected option based on the value, with improved error handling
   const selectedOption = useMemo(() => {
@@ -117,13 +132,14 @@ export const useEnhancedSelect = (options: SelectOption[] | null | undefined, va
     setSearchTerm(term || '');
   }, []);
 
+  // Ensure we always return valid arrays and values
   return {
     open,
     setOpen,
-    searchTerm,
+    searchTerm: searchTerm || '',
     setSearchTerm: handleSearchTermChange,
     selectedOption,
-    filteredOptions,
+    filteredOptions: filteredOptions || [], // Ensure we never return undefined
     suggestedMatch,
     inputMatchesOption
   };
