@@ -41,6 +41,8 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
       errorSource = 'react-hooks';
     } else if (errorMessage.includes('toFixed is not a function')) {
       errorSource = 'number-format';
+    } else if (errorMessage.includes('undefined is not iterable')) {
+      errorSource = 'invalid-iteration';
     }
     
     return {
@@ -53,6 +55,10 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error("Error caught by EnhancedErrorBoundary:", error);
     console.error("Component stack:", errorInfo.componentStack);
+    
+    // Additional logging for debugging
+    console.error("Error message:", error.message);
+    console.error("Error type detected:", this.state.errorSource);
     
     // Call onError prop if provided
     if (this.props.onError) {
@@ -78,6 +84,7 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
     // Force a hard refresh for certain types of errors
     if (this.state.errorSource === 'react-context' || 
         this.state.errorSource === 'number-format' ||
+        this.state.errorSource === 'invalid-iteration' ||
         (this.state.error?.message?.includes("undefined is not iterable") || 
          this.state.error?.message?.includes("toFixed is not a function"))) {
       window.location.reload();
@@ -100,7 +107,7 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
         return this.props.fallback;
       }
 
-      // For number formatting errors, show specialized message
+      // For specific error types, show specialized messages
       if (this.state.errorSource === 'number-format') {
         return (
           <FallbackError 
@@ -111,7 +118,16 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
         );
       }
 
-      // For context-specific errors, show specialized message
+      if (this.state.errorSource === 'invalid-iteration') {
+        return (
+          <FallbackError 
+            error={this.state.error as Error} 
+            resetErrorBoundary={this.handleRetry}
+            message="Data Error: Received invalid data for dropdown or list component"
+          />
+        );
+      }
+
       if (this.state.errorSource === 'react-context') {
         return (
           <FallbackError 
@@ -122,7 +138,6 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
         );
       }
 
-      // For router-specific errors
       if (this.state.errorSource === 'react-router') {
         return (
           <FallbackError 
@@ -165,8 +180,8 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
                 Try Again
               </Button>
               
-              {this.state.error?.message?.includes("undefined is not iterable") || 
-               this.state.error?.message?.includes("toFixed is not a function") && (
+              {(this.state.error?.message?.includes("undefined is not iterable") || 
+                this.state.error?.message?.includes("toFixed is not a function")) && (
                 <Button 
                   onClick={this.handleDataReset}
                   variant="destructive"
