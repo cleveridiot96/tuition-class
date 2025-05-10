@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { isPortableMode, ensurePortableDataLoaded, initializePortableApp } from '@/utils/portableAppUtils';
 import { toast } from 'sonner';
 import { isOffline } from '@/utils/offlineDetection';
@@ -9,6 +9,37 @@ export function usePortableApp() {
   const [isInitialized, setIsInitialized] = useState<boolean>(false);
   const [isInOfflineMode, setIsInOfflineMode] = useState<boolean>(false);
   const [dataLoadError, setDataLoadError] = useState<string | null>(null);
+
+  // Create a stable function to verify and initialize critical data
+  const verifyDataExists = useCallback(() => {
+    try {
+      // Check if these keys exist and are valid arrays
+      const criticalDataKeys = ['suppliers', 'customers', 'brokers', 'agents', 'transporters', 'masters'];
+      
+      criticalDataKeys.forEach(key => {
+        const data = localStorage.getItem(key);
+        if (!data) {
+          console.warn(`Missing ${key} data, initializing with empty array`);
+          localStorage.setItem(key, JSON.stringify([]));
+        } else {
+          try {
+            const parsed = JSON.parse(data);
+            if (!Array.isArray(parsed)) {
+              console.warn(`${key} is not an array, resetting to empty array`);
+              localStorage.setItem(key, JSON.stringify([]));
+            }
+          } catch (e) {
+            console.error(`Invalid JSON for ${key}, resetting to empty array`);
+            localStorage.setItem(key, JSON.stringify([]));
+          }
+        }
+      });
+      
+      console.log("Critical data verified and initialized if needed");
+    } catch (error) {
+      console.error("Error verifying critical data:", error);
+    }
+  }, []);
 
   useEffect(() => {
     // Check if we're in portable mode
@@ -32,36 +63,6 @@ export function usePortableApp() {
           setDataLoadError(null);
           
           // Verify that critical data for dropdowns is available
-          const verifyDataExists = () => {
-            try {
-              // Check if these keys exist and are valid arrays
-              const criticalDataKeys = ['suppliers', 'customers', 'brokers', 'agents', 'transporters', 'masters'];
-              
-              criticalDataKeys.forEach(key => {
-                const data = localStorage.getItem(key);
-                if (!data) {
-                  console.warn(`Missing ${key} data, initializing with empty array`);
-                  localStorage.setItem(key, JSON.stringify([]));
-                } else {
-                  try {
-                    const parsed = JSON.parse(data);
-                    if (!Array.isArray(parsed)) {
-                      console.warn(`${key} is not an array, resetting to empty array`);
-                      localStorage.setItem(key, JSON.stringify([]));
-                    }
-                  } catch (e) {
-                    console.error(`Invalid JSON for ${key}, resetting to empty array`);
-                    localStorage.setItem(key, JSON.stringify([]));
-                  }
-                }
-              });
-              
-              console.log("Critical data verified and initialized if needed");
-            } catch (error) {
-              console.error("Error verifying critical data:", error);
-            }
-          };
-          
           verifyDataExists();
           
         } catch (dataError) {
@@ -136,7 +137,7 @@ export function usePortableApp() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [verifyDataExists]);
   
   return { 
     isPortableMode: isInPortableMode,

@@ -43,6 +43,8 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
       errorSource = 'number-format';
     } else if (errorMessage.includes('undefined is not iterable')) {
       errorSource = 'invalid-iteration';
+    } else if (errorMessage.includes('Too many re-renders')) {
+      errorSource = 'infinite-loop';
     }
     
     return {
@@ -85,8 +87,10 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
     if (this.state.errorSource === 'react-context' || 
         this.state.errorSource === 'number-format' ||
         this.state.errorSource === 'invalid-iteration' ||
+        this.state.errorSource === 'infinite-loop' ||
         (this.state.error?.message?.includes("undefined is not iterable") || 
-         this.state.error?.message?.includes("toFixed is not a function"))) {
+         this.state.error?.message?.includes("toFixed is not a function") ||
+         this.state.error?.message?.includes("Too many re-renders"))) {
       window.location.reload();
     }
   };
@@ -124,6 +128,16 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
             error={this.state.error as Error} 
             resetErrorBoundary={this.handleRetry}
             message="Data Error: Received invalid data for dropdown or list component"
+          />
+        );
+      }
+
+      if (this.state.errorSource === 'infinite-loop') {
+        return (
+          <FallbackError 
+            error={this.state.error as Error} 
+            resetErrorBoundary={this.handleRetry}
+            message="Too many re-renders: A component is updating in an infinite loop"
           />
         );
       }
@@ -181,7 +195,8 @@ class EnhancedErrorBoundary extends Component<EnhancedErrorBoundaryProps, Enhanc
               </Button>
               
               {(this.state.error?.message?.includes("undefined is not iterable") || 
-                this.state.error?.message?.includes("toFixed is not a function")) && (
+                this.state.error?.message?.includes("toFixed is not a function") ||
+                this.state.error?.message?.includes("Too many re-renders")) && (
                 <Button 
                   onClick={this.handleDataReset}
                   variant="destructive"

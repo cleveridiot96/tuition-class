@@ -7,6 +7,7 @@ export const useEnhancedSelect = (options: SelectOption[] | null | undefined, va
   const [open, setOpen] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [lastValidOptions, setLastValidOptions] = useState<SelectOption[]>([]);
+  const [lastSearchTerm, setLastSearchTerm] = useState<string>("");
 
   // Enhanced validation to ensure options is always a valid array
   const safeOptions = useMemo(() => {
@@ -56,16 +57,23 @@ export const useEnhancedSelect = (options: SelectOption[] | null | undefined, va
   useEffect(() => {
     try {
       if (selectedOption && selectedOption.label) {
-        setSearchTerm(selectedOption.label);
+        // Only update if it's different to avoid loops
+        if (searchTerm !== selectedOption.label) {
+          setSearchTerm(selectedOption.label);
+          setLastSearchTerm(selectedOption.label);
+        }
       } else if (value === '') {
         // Reset search term if value is empty
-        setSearchTerm('');
+        if (searchTerm !== '') {
+          setSearchTerm('');
+          setLastSearchTerm('');
+        }
       }
     } catch (error) {
       console.error("Error setting search term from selected option:", error);
-      setSearchTerm('');
+      setSearchTerm(lastSearchTerm);
     }
-  }, [selectedOption, value]);
+  }, [selectedOption, value, searchTerm, lastSearchTerm]);
 
   // Filter options based on search term - memoized with error handling
   const filteredOptions = useMemo(() => {
@@ -129,8 +137,12 @@ export const useEnhancedSelect = (options: SelectOption[] | null | undefined, va
 
   // Memoize the setSearchTerm function to prevent re-creation on each render
   const handleSearchTermChange = useCallback((term: string) => {
-    setSearchTerm(term || '');
-  }, []);
+    // Only update if different to prevent infinite loops
+    if (term !== searchTerm) {
+      setSearchTerm(term || '');
+      setLastSearchTerm(term || '');
+    }
+  }, [searchTerm]);
 
   // Ensure we always return valid arrays and values
   return {
