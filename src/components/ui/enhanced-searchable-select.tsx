@@ -5,6 +5,9 @@ import { EnhancedSearchableSelectProps } from "./enhanced-select/types";
 import { EnhancedSelectOption } from "./enhanced-select/enhanced-select-option";
 import { EnhancedSelectSuggestion } from "./enhanced-select/enhanced-select-suggestion";
 import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
+import { useGlobalMasterDialog } from "@/hooks/useGlobalMasterDialog";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export function EnhancedSearchableSelect({
   options = [],
@@ -27,8 +30,10 @@ export function EnhancedSearchableSelect({
     return options.filter(option => option !== null && option !== undefined);
   }, [options]);
   
+  const { open, GlobalMasterAddDialog, handleAddMaster } = useGlobalMasterDialog();
+  
   const {
-    open,
+    open: isOpen,
     setOpen,
     searchTerm,
     setSearchTerm,
@@ -42,7 +47,7 @@ export function EnhancedSearchableSelect({
   const [activeIndex, setActiveIndex] = useState<number>(-1);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!open) return;
+    if (!isOpen) return;
     
     // Safely access filteredOptions - ensure it's always an array
     const safeFilteredOptions = Array.isArray(filteredOptions) ? filteredOptions : [];
@@ -65,6 +70,8 @@ export function EnhancedSearchableSelect({
         if (activeIndex >= 0 && activeIndex < optionsLength && safeFilteredOptions[activeIndex]) {
           onValueChange(safeFilteredOptions[activeIndex].value);
           setOpen(false);
+        } else if (searchTerm && !inputMatchesOption) {
+          handleAddNewItem();
         }
         break;
       case "Escape":
@@ -74,7 +81,7 @@ export function EnhancedSearchableSelect({
       default:
         break;
     }
-  }, [open, filteredOptions, activeIndex, onValueChange, setOpen]);
+  }, [isOpen, filteredOptions, activeIndex, onValueChange, setOpen, searchTerm, inputMatchesOption]);
 
   const handleBlur = useCallback(() => {
     // Delayed closing to allow clicking on options
@@ -102,22 +109,35 @@ export function EnhancedSearchableSelect({
   }, [suggestedMatch, safeOptions, onValueChange, setOpen]);
 
   const handleAddNewItem = useCallback(() => {
-    if (onAddNew && searchTerm) {
-      try {
-        const newValue = onAddNew(searchTerm);
-        if (newValue) {
-          onValueChange(newValue);
-          setOpen(false);
+    if (searchTerm) {
+      // If we're using the global master dialog
+      if (masterType === 'supplier' || masterType === 'agent' || masterType === 'transporter') {
+        open(masterType, searchTerm);
+        handleAddMaster((id, name) => {
+          // This callback will be called after successfully adding the new master
+          if (onValueChange) {
+            onValueChange(id);
+          }
+        });
+      } 
+      // If we're using a custom onAddNew function
+      else if (onAddNew) {
+        try {
+          const newValue = onAddNew(searchTerm);
+          if (newValue) {
+            onValueChange(newValue);
+            setOpen(false);
+          }
+        } catch (error) {
+          console.error("Error adding new item:", error);
         }
-      } catch (error) {
-        console.error("Error adding new item:", error);
       }
     }
-  }, [onAddNew, searchTerm, onValueChange, setOpen]);
+  }, [onAddNew, searchTerm, onValueChange, setOpen, masterType, open, handleAddMaster]);
 
   const showAddOption = useMemo(() => {
-    return Boolean(onAddNew && searchTerm && !inputMatchesOption);
-  }, [onAddNew, searchTerm, inputMatchesOption]);
+    return Boolean(searchTerm && !inputMatchesOption && (onAddNew || masterType));
+  }, [onAddNew, searchTerm, inputMatchesOption, masterType]);
 
   // Ensure filteredOptions is always an array
   const safeFilteredOptions = useMemo(() => {
@@ -127,9 +147,22 @@ export function EnhancedSearchableSelect({
   return (
     <div className={`relative w-full ${className}`}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm font-medium text-gray-700">
+            {label}
+          </label>
+          {masterType && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => open(masterType as 'supplier' | 'agent' | 'transporter')}
+              className="h-6 px-2 text-xs"
+            >
+              <Plus className="w-3 h-3 mr-1" /> Add
+            </Button>
+          )}
+        </div>
       )}
       <Command
         className="border rounded-md overflow-visible bg-transparent"
@@ -146,7 +179,7 @@ export function EnhancedSearchableSelect({
           disabled={disabled}
           onKeyDown={handleKeyDown}
         />
-        {open && (
+        {isOpen && (
           <CommandList className="absolute top-full left-0 w-full z-50 bg-white shadow-lg rounded-md border mt-1 max-h-60 overflow-auto">
             <CommandEmpty>
               <EnhancedSelectSuggestion
@@ -178,9 +211,19 @@ export function EnhancedSearchableSelect({
                 {searchTerm ? `No results for "${searchTerm}"` : emptyMessage}
               </div>
             )}
+            {showAddOption && (
+              <div 
+                className="cursor-pointer flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t"
+                onClick={handleAddNewItem}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add "{searchTerm}" to {masterType} master
+              </div>
+            )}
           </CommandList>
         )}
       </Command>
+      <GlobalMasterAddDialog />
     </div>
   );
 }

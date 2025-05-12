@@ -1,58 +1,65 @@
 
 import React from "react";
-import { Plus } from "lucide-react";
+import { Plus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface EnhancedSelectSuggestionProps {
   suggestedMatch: string | null;
-  searchTerm: string;
   onUseSuggestion: () => void;
+  searchTerm: string;
   onAddNewItem: () => void;
-  masterType?: string;
   showAddOption: boolean;
+  masterType?: string;
 }
 
-export const EnhancedSelectSuggestion: React.FC<EnhancedSelectSuggestionProps> = ({
+export function EnhancedSelectSuggestion({
   suggestedMatch,
-  searchTerm,
   onUseSuggestion,
+  searchTerm,
   onAddNewItem,
-  masterType = "item",
-  showAddOption
-}) => {
-  // Skip rendering if there's no search term
-  if (!searchTerm || typeof searchTerm !== 'string') {
-    return <div className="py-6 text-center text-sm">Type to search...</div>;
+  showAddOption,
+  masterType = "item"
+}: EnhancedSelectSuggestionProps) {
+  if (suggestedMatch) {
+    return (
+      <div className="p-4 text-center">
+        <div className="text-sm text-gray-500">
+          Did you mean <span className="font-medium">{suggestedMatch}</span>?
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2 h-8"
+          onClick={onUseSuggestion}
+        >
+          Use suggestion <ArrowRight className="ml-2 h-3 w-3" />
+        </Button>
+      </div>
+    );
+  }
+
+  if (showAddOption && searchTerm) {
+    return (
+      <div className="p-4 text-center">
+        <div className="text-sm text-gray-500">
+          No results for "{searchTerm}"
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="mt-2 h-8 text-blue-600 hover:text-blue-700" 
+          onClick={onAddNewItem}
+        >
+          <Plus className="mr-1 h-3 w-3" />
+          Add "{searchTerm}" to {masterType} master
+        </Button>
+      </div>
+    );
   }
 
   return (
-    <div className="p-2 text-sm">
-      {suggestedMatch ? (
-        <div className="flex flex-col gap-2">
-          <p>Did you mean: </p>
-          <Button
-            variant="outline"
-            className="justify-start text-left font-normal"
-            onClick={onUseSuggestion}
-          >
-            {suggestedMatch}
-          </Button>
-        </div>
-      ) : (
-        <div>
-          <p>No matches found for "{searchTerm}"</p>
-          {showAddOption && (
-            <Button
-              variant="outline"
-              className="mt-2 w-full justify-start"
-              onClick={onAddNewItem}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add new {masterType}
-            </Button>
-          )}
-        </div>
-      )}
+    <div className="py-6 text-center text-sm text-gray-500">
+      No results found
     </div>
   );
-};
+}

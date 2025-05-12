@@ -2,9 +2,7 @@
 import React from "react";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { EnhancedSearchableSelect } from "@/components/ui/enhanced-searchable-select";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { useAddToMaster } from "@/hooks/useAddToMaster";
+import { useGlobalMasterDialog } from "@/hooks/useGlobalMasterDialog";
 
 interface PurchasePartyDetailsProps {
   form: any;
@@ -24,51 +22,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
   partyManagement
 }) => {
   const showErrors = formSubmitted || form.formState.isSubmitted;
-  const { confirmAddToMaster, AddToMasterDialog } = useAddToMaster();
-
-  const handleAddSupplier = () => {
-    confirmAddToMaster('', (value) => {
-      if (value) {
-        form.setValue("party", value);
-        if (partyManagement && typeof partyManagement.loadData === "function") {
-          partyManagement.loadData();
-        }
-      }
-    }, "supplier");
-  };
-
-  const handleAddAgent = () => {
-    confirmAddToMaster('', (value) => {
-      // After agent is added, we need to refresh the data and find the new agent's ID
-      if (value) {
-        if (partyManagement && typeof partyManagement.loadData === "function") {
-          partyManagement.loadData();
-        }
-        // The actual agent selection will happen when the data is refreshed
-      }
-    }, "agent");
-  };
-
-  const handleSupplierAddNew = (name: string): string => {
-    confirmAddToMaster(name, (value) => {
-      if (value) {
-        form.setValue("party", value);
-        if (partyManagement && typeof partyManagement.loadData === "function") {
-          partyManagement.loadData();
-        }
-      }
-    }, "supplier");
-    return "";
-  };
-
-  const handleAgentAddNew = (name: string): string => {
-    confirmAddToMaster(name, (value) => {
-      if (partyManagement && typeof partyManagement.loadData === "function") {
-        partyManagement.loadData();
-      }
-    }, "agent");
-    return "";
-  };
+  const { GlobalMasterAddDialog } = useGlobalMasterDialog();
 
   return (
     <div className="border rounded-md p-4 bg-blue-50/40">
@@ -79,17 +33,8 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           name="party"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel className="flex justify-between items-center">
+              <FormLabel>
                 Supplier Name <span className="text-red-500">*</span>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleAddSupplier}
-                  className="h-6 px-2 text-xs"
-                >
-                  <Plus className="w-3 h-3 mr-1" /> Add
-                </Button>
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
@@ -99,7 +44,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
                   placeholder="Select or add supplier"
                   masterType="supplier"
-                  onAddNew={handleSupplierAddNew}
+                  label="Supplier Name"
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}
@@ -112,17 +57,8 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           name="agentId"
           render={({ field, fieldState }) => (
             <FormItem>
-              <FormLabel className="flex justify-between items-center">
+              <FormLabel>
                 Agent
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={handleAddAgent}
-                  className="h-6 px-2 text-xs"
-                >
-                  <Plus className="w-3 h-3 mr-1" /> Add
-                </Button>
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
@@ -132,7 +68,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
                   className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
                   placeholder="Select or add agent"
                   masterType="agent"
-                  onAddNew={handleAgentAddNew}
+                  label="Agent"
                 />
               </FormControl>
               {showErrors && fieldState.error && <FormMessage />}
@@ -140,7 +76,7 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
           )}
         />
       </div>
-      <AddToMasterDialog />
+      <GlobalMasterAddDialog />
     </div>
   );
 };
