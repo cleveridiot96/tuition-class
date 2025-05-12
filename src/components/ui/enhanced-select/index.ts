@@ -1,9 +1,11 @@
 
-// Re-export all components and hooks
-export * from './enhanced-select-option';
-export * from './enhanced-select-suggestion';
-export * from './use-enhanced-select';
-export * from './types';
+// Export components explicitly to avoid duplicate export issues
+export { EnhancedSelectOption } from './enhanced-select-option';
+export { EnhancedSelectSuggestion } from './enhanced-select-suggestion';
+export { useEnhancedSelect } from './use-enhanced-select';
+
+// Re-export the types
+export type { SelectOption, UseEnhancedSelectReturn, EnhancedSearchableSelectProps } from './types';
 
 // Re-export the searchable select component
 export { EnhancedSearchableSelect } from '../enhanced-searchable-select';

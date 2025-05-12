@@ -46,7 +46,7 @@ export const EnhancedSearchableSelect = React.memo(({
   }, [onValueChange, setOpen, setSearchTerm]);
 
   const handleAddNewItem = React.useCallback(() => {
-    if (searchTerm.trim() && !inputMatchesOption && onAddNew) {
+    if (searchTerm.trim() && !inputMatchesOption && typeof onAddNew === 'function') {
       const newValue = onAddNew(searchTerm.trim());
       if (newValue) {
         onValueChange(newValue);
@@ -70,7 +70,7 @@ export const EnhancedSearchableSelect = React.memo(({
       e.preventDefault();
       if (filteredOptions.length === 1) {
         handleSelect(filteredOptions[0].value);
-      } else if (!inputMatchesOption && searchTerm.trim() && onAddNew) {
+      } else if (!inputMatchesOption && searchTerm.trim() && typeof onAddNew === 'function') {
         handleAddNewItem();
       }
     } else if (e.key === 'ArrowDown' && filteredOptions.length > 0) {
@@ -149,7 +149,7 @@ export const EnhancedSearchableSelect = React.memo(({
               searchTerm={searchTerm}
               onAddNewItem={handleAddNewItem}
               masterType={masterType}
-              showAddOption={!!onAddNew}
+              showAddOption={typeof onAddNew === 'function'}
             />
           ) : (
             <div role="listbox">
@@ -166,7 +166,7 @@ export const EnhancedSearchableSelect = React.memo(({
               ))}
               
               {/* Add option for new entry if search term doesn't match any existing option */}
-              {searchTerm.trim() && !inputMatchesOption && onAddNew && (
+              {searchTerm.trim() && !inputMatchesOption && typeof onAddNew === 'function' && (
                 <div
                   role="option"
                   tabIndex={0}

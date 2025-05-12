@@ -5,7 +5,7 @@ import { EnhancedSearchableSelectProps } from "./enhanced-select/types";
 import { EnhancedSelectOption } from "./enhanced-select/enhanced-select-option";
 import { EnhancedSelectSuggestion } from "./enhanced-select/enhanced-select-suggestion";
 import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
-import { useGlobalMasterDialog } from "@/hooks/useGlobalMasterDialog";
+import { useGlobalMasterDialog } from "@/context/GlobalMasterDialogContext";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { MasterType } from "@/types/master.types";
@@ -31,7 +31,7 @@ export function EnhancedSearchableSelect({
     return options.filter(option => option !== null && option !== undefined);
   }, [options]);
   
-  const { open, GlobalMasterAddDialog, handleAddMaster } = useGlobalMasterDialog();
+  const { open } = useGlobalMasterDialog();
   
   const {
     open: isOpen,
@@ -116,15 +116,9 @@ export function EnhancedSearchableSelect({
         // Cast masterType to the proper MasterType for useGlobalMasterDialog
         const validMasterType = masterType as MasterType;
         open(validMasterType, searchTerm);
-        handleAddMaster((id, name) => {
-          // This callback will be called after successfully adding the new master
-          if (onValueChange) {
-            onValueChange(id);
-          }
-        });
       } 
       // If we're using a custom onAddNew function
-      else if (onAddNew) {
+      else if (typeof onAddNew === 'function') {
         try {
           const newValue = onAddNew(searchTerm);
           if (newValue) {
@@ -136,10 +130,10 @@ export function EnhancedSearchableSelect({
         }
       }
     }
-  }, [onAddNew, searchTerm, onValueChange, setOpen, masterType, open, handleAddMaster]);
+  }, [onAddNew, searchTerm, onValueChange, setOpen, masterType, open]);
 
   const showAddOption = useMemo(() => {
-    return Boolean(searchTerm && !inputMatchesOption && (onAddNew || masterType));
+    return Boolean(searchTerm && !inputMatchesOption && (typeof onAddNew === 'function' || masterType));
   }, [onAddNew, searchTerm, inputMatchesOption, masterType]);
 
   // Ensure filteredOptions is always an array
@@ -229,7 +223,6 @@ export function EnhancedSearchableSelect({
           </CommandList>
         )}
       </Command>
-      <GlobalMasterAddDialog />
     </div>
   );
 }

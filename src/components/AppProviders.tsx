@@ -1,6 +1,5 @@
 
 import React from "react";
-import { HashRouter } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvider";
 import { ContextMenuProvider } from "@/components/custom-context-menu/context-menu-context";

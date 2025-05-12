@@ -27,12 +27,3 @@ export interface EnhancedSearchableSelectProps {
   className?: string;
   masterType?: 'supplier' | 'agent' | 'transporter' | 'customer' | 'broker' | 'party';
 }
-
-export interface EnhancedSelectOptionProps {
-  value: string;
-  label: string;
-  isSelected: boolean;
-  onSelect: () => void;
-  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
-  index: number;
-}
