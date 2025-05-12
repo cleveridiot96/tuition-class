@@ -1,173 +1,105 @@
 
+// Create this file if it doesn't exist
 import { useState, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { MasterType } from '@/types/master.types';
 import { v4 as uuidv4 } from 'uuid';
-import { addSupplier, addAgent, addTransporter } from '@/services/storageService';
-
-type MasterType = 'supplier' | 'agent' | 'transporter';
-
-interface MasterDialogState {
-  isOpen: boolean;
-  masterType: MasterType | null;
-  initialName: string;
-  commissionRate?: string; // Only for agents
-}
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export function useGlobalMasterDialog() {
-  const [dialogState, setDialogState] = useState<MasterDialogState>({
-    isOpen: false,
-    masterType: null,
-    initialName: '',
-    commissionRate: '1'
-  });
-  
-  const [name, setName] = useState<string>('');
-  const [commissionRate, setCommissionRate] = useState<string>('1');
-  const [nameError, setNameError] = useState<string>('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [masterType, setMasterType] = useState<MasterType>('supplier');
+  const [initialName, setInitialName] = useState('');
+  const [name, setName] = useState('');
+  const [commissionRate, setCommissionRate] = useState('');
+  const [onConfirm, setOnConfirm] = useState<((id: string, name: string) => void) | null>(null);
 
-  const open = useCallback((masterType: MasterType, initialName: string = '') => {
-    setDialogState({
-      isOpen: true,
-      masterType,
-      initialName,
-      commissionRate: '1'
-    });
-    setName(initialName);
-    setCommissionRate('1');
-    setNameError('');
+  const open = useCallback((type: MasterType, initialValue = '') => {
+    setMasterType(type);
+    setInitialName(initialValue);
+    setName(initialValue);
+    setCommissionRate(type === 'broker' || type === 'agent' ? '1' : '');
+    setIsOpen(true);
   }, []);
 
   const close = useCallback(() => {
-    setDialogState(prev => ({ ...prev, isOpen: false }));
+    setIsOpen(false);
   }, []);
 
-  const handleAddMaster = useCallback((onSuccess?: (id: string, name: string) => void) => {
-    if (!name.trim()) {
-      setNameError("Name is required");
-      return;
+  const handleAddMaster = useCallback((callback: (id: string, name: string) => void) => {
+    setOnConfirm(() => callback);
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    if (!name.trim()) return;
+    
+    const id = `${masterType}-${uuidv4()}`;
+    
+    if (onConfirm) {
+      onConfirm(id, name);
     }
-
-    try {
-      let newId = '';
-      let successMessage = '';
-
-      switch (dialogState.masterType) {
-        case 'supplier':
-          newId = `supplier-${uuidv4()}`;
-          addSupplier({
-            id: newId,
-            name: name.trim(),
-            type: "supplier",
-            isDeleted: false
-          });
-          successMessage = "Supplier added successfully";
-          break;
-          
-        case 'agent':
-          newId = `agent-${uuidv4()}`;
-          addAgent({
-            id: newId,
-            name: name.trim(),
-            commissionRate: parseFloat(commissionRate) || 1,
-            type: "agent",
-            isDeleted: false
-          });
-          successMessage = "Agent added successfully";
-          break;
-          
-        case 'transporter':
-          newId = `transporter-${uuidv4()}`;
-          addTransporter({
-            id: newId,
-            name: name.trim(),
-            type: "transporter",
-            isDeleted: false
-          });
-          successMessage = "Transporter added successfully";
-          break;
-          
-        default:
-          throw new Error("Unknown master type");
-      }
-
-      toast.success(successMessage);
-      if (onSuccess) {
-        onSuccess(newId, name.trim());
-      }
-      close();
-      
-    } catch (error) {
-      console.error(`Error adding ${dialogState.masterType}:`, error);
-      toast.error(`Failed to add ${dialogState.masterType}`);
-    }
-  }, [name, commissionRate, dialogState.masterType, close]);
+    
+    setIsOpen(false);
+    setName('');
+    setCommissionRate('');
+    setOnConfirm(null);
+  }, [masterType, name, onConfirm]);
 
   const GlobalMasterAddDialog = useCallback(() => {
-    const { isOpen, masterType } = dialogState;
+    const showCommissionField = masterType === 'broker' || masterType === 'agent';
     
-    const title = masterType 
-      ? `Add New ${masterType.charAt(0).toUpperCase() + masterType.slice(1)}` 
-      : "Add New Entry";
-      
     return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-        <DialogContent className="bg-white">
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
+            <DialogTitle>Add New {masterType.charAt(0).toUpperCase() + masterType.slice(1)}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="masterName">
-                {masterType ? `${masterType.charAt(0).toUpperCase() + masterType.slice(1)} Name` : "Name"} <span className="text-red-500">*</span>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
               </Label>
-              <Input 
-                id="masterName"
+              <Input
+                id="name"
                 value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (e.target.value.trim()) setNameError("");
-                }}
-                placeholder={`Enter ${masterType || 'item'} name`}
-                className={nameError ? "border-red-500" : ""}
-                autoComplete="off"
+                onChange={(e) => setName(e.target.value)}
+                className="col-span-3"
+                autoFocus
               />
-              {nameError && (
-                <p className="text-red-500 text-sm mt-1">{nameError}</p>
-              )}
             </div>
-            
-            {masterType === 'agent' && (
-              <div>
-                <Label htmlFor="commissionRate">Commission (%)</Label>
-                <Input 
-                  id="commissionRate"
+            {showCommissionField && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="commission" className="text-right">
+                  Commission (%)
+                </Label>
+                <Input
+                  id="commission"
                   type="number"
-                  step="0.01"
                   value={commissionRate}
                   onChange={(e) => setCommissionRate(e.target.value)}
-                  placeholder="Enter commission percentage"
+                  className="col-span-3"
                 />
               </div>
             )}
-            
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={close}>Cancel</Button>
-              <Button onClick={() => handleAddMaster()}>Add</Button>
-            </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={close}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirm}>Add</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     );
-  }, [dialogState, name, commissionRate, nameError, close, handleAddMaster]);
+  }, [isOpen, masterType, name, commissionRate, close, handleConfirm]);
 
   return {
     open,
     close,
+    isOpen,
     handleAddMaster,
-    GlobalMasterAddDialog,
+    GlobalMasterAddDialog
   };
 }

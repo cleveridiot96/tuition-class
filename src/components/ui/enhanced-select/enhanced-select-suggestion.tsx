@@ -2,6 +2,7 @@
 import React from "react";
 import { Plus, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MasterType } from "@/types/master.types";
 
 interface EnhancedSelectSuggestionProps {
   suggestedMatch: string | null;

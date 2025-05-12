@@ -8,6 +8,7 @@ import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
 import { useGlobalMasterDialog } from "@/hooks/useGlobalMasterDialog";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { MasterType } from "@/types/master.types";
 
 export function EnhancedSearchableSelect({
   options = [],
@@ -110,9 +111,11 @@ export function EnhancedSearchableSelect({
 
   const handleAddNewItem = useCallback(() => {
     if (searchTerm) {
-      // If we're using the global master dialog
-      if (masterType === 'supplier' || masterType === 'agent' || masterType === 'transporter') {
-        open(masterType, searchTerm);
+      // If we're using the global master dialog for any valid master type
+      if (masterType) {
+        // Cast masterType to the proper MasterType for useGlobalMasterDialog
+        const validMasterType = masterType as MasterType;
+        open(validMasterType, searchTerm);
         handleAddMaster((id, name) => {
           // This callback will be called after successfully adding the new master
           if (onValueChange) {
@@ -156,7 +159,10 @@ export function EnhancedSearchableSelect({
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => open(masterType as 'supplier' | 'agent' | 'transporter')}
+              onClick={() => {
+                const validMasterType = masterType as MasterType;
+                open(validMasterType);
+              }}
               className="h-6 px-2 text-xs"
             >
               <Plus className="w-3 h-3 mr-1" /> Add

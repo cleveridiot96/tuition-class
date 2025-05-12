@@ -25,5 +25,14 @@ export interface EnhancedSearchableSelectProps {
   label?: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  masterType?: 'supplier' | 'agent' | 'transporter'; // Added support for masterType
+  masterType?: 'supplier' | 'agent' | 'transporter' | 'customer' | 'broker' | 'party'; // Extended the union type
+}
+
+export interface EnhancedSelectOptionProps {
+  value: string;
+  label: string;
+  isSelected: boolean;
+  onSelect: () => void;
+  onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => void;
+  index: number;
 }
