@@ -1,8 +1,7 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { HashRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import { initializePortableApp } from './utils/portableAppUtils';
 import { AppProviders } from './components/AppProviders';
 
@@ -16,9 +15,9 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 root.render(
   <React.StrictMode>
     <AppProviders>
-      <HashRouter>
+      <BrowserRouter>
         <App />
-      </HashRouter>
+      </BrowserRouter>
     </AppProviders>
   </React.StrictMode>
 );
