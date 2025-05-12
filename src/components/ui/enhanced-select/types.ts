@@ -19,13 +19,13 @@ export interface EnhancedSearchableSelectProps {
   options: SelectOption[];
   value: string;
   onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => string;
+  onAddNew?: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
   label?: React.ReactNode;
   disabled?: boolean;
   className?: string;
-  masterType?: 'supplier' | 'agent' | 'transporter' | 'customer' | 'broker' | 'party'; // Extended the union type
+  masterType?: 'supplier' | 'agent' | 'transporter' | 'customer' | 'broker' | 'party';
 }
 
 export interface EnhancedSelectOptionProps {

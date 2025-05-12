@@ -6,6 +6,7 @@ import { KeyboardShortcutsProvider } from "@/components/KeyboardShortcutsProvide
 import { ContextMenuProvider } from "@/components/custom-context-menu/context-menu-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import EnhancedErrorBoundary from "@/components/EnhancedErrorBoundary";
+import { GlobalMasterDialogProvider } from "@/context/GlobalMasterDialogContext";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -14,7 +15,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <ErrorBoundary>
           <ContextMenuProvider>
             <KeyboardShortcutsProvider>
-              {children}
+              <GlobalMasterDialogProvider>
+                {children}
+              </GlobalMasterDialogProvider>
             </KeyboardShortcutsProvider>
           </ContextMenuProvider>
         </ErrorBoundary>
