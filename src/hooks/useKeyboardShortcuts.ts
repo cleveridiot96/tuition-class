@@ -19,9 +19,18 @@ export interface ShortcutGroup {
 }
 
 export const useKeyboardShortcuts = (customShortcuts?: ShortcutConfig[]) => {
-  const navigate = useNavigate();
-  const { toast } = useToast();
   const [showHelp, setShowHelp] = useState(false);
+  const { toast } = useToast();
+  
+  // Safe navigate implementation
+  let navigate: ReturnType<typeof useNavigate>;
+  try {
+    navigate = useNavigate();
+  } catch (e) {
+    console.warn("useNavigate failed — likely used outside a Router context");
+    // Provide a fallback function that does nothing
+    navigate = () => {};
+  }
   
   // Core system shortcuts
   const systemShortcuts: ShortcutConfig[] = [
