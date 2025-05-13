@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ export interface SearchableSelectProps {
   className?: string;
   disabled?: boolean;
   masterType?: string;
+  label?: React.ReactNode;
 }
 
 export const SearchableSelect = React.forwardRef<
@@ -38,6 +40,7 @@ export const SearchableSelect = React.forwardRef<
       className,
       disabled = false,
       masterType = "item",
+      label,
     },
     ref
   ) => {
@@ -104,105 +107,108 @@ export const SearchableSelect = React.forwardRef<
     }, [filteredOptions, handleSelect, inputMatchesOption, searchTerm, onAddNew, handleAddNewItem]);
 
     return (
-      <Popover open={disabled ? false : open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            ref={ref}
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "w-full justify-between bg-white",
-              !value && "text-muted-foreground",
-              className
-            )}
-            disabled={disabled}
-          >
-            {selectedOption ? selectedOption.label : placeholder}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-50" align="start">
-          <div className="flex items-center border-b px-3">
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Search ${placeholder.toLowerCase()}...`}
-              className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              autoFocus
-            />
-          </div>
-          <ScrollArea className="h-[var(--radix-popover-content-available-height)] max-h-[300px]">
-            {filteredOptions.length > 0 ? (
-              <div className="p-1">
-                {filteredOptions.map((option) => (
-                  <div
-                    key={option.value}
-                    data-select-option
-                    tabIndex={0}
-                    role="option"
-                    aria-selected={value === option.value}
-                    className={cn(
-                      "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground",
-                      value === option.value && "bg-accent text-accent-foreground"
-                    )}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleSelect(option.value);
-                      }
-                    }}
-                    onClick={() => handleSelect(option.value)}
-                  >
-                    <Check
+      <>
+        {label && <div className="text-sm font-medium mb-1.5 text-gray-700">{label}</div>}
+        <Popover open={disabled ? false : open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              ref={ref}
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className={cn(
+                "w-full justify-between bg-white",
+                !value && "text-muted-foreground",
+                className
+              )}
+              disabled={disabled}
+            >
+              {selectedOption ? selectedOption.label : placeholder}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white shadow-lg z-50" align="start">
+            <div className="flex items-center border-b px-3">
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={`Search ${placeholder.toLowerCase()}...`}
+                className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                autoFocus
+              />
+            </div>
+            <ScrollArea className="h-[var(--radix-popover-content-available-height)] max-h-[300px]">
+              {filteredOptions.length > 0 ? (
+                <div className="p-1">
+                  {filteredOptions.map((option) => (
+                    <div
+                      key={option.value}
+                      data-select-option
+                      tabIndex={0}
+                      role="option"
+                      aria-selected={value === option.value}
                       className={cn(
-                        "mr-2 h-4 w-4",
-                        value === option.value ? "opacity-100" : "opacity-0"
+                        "flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground",
+                        value === option.value && "bg-accent text-accent-foreground"
                       )}
-                    />
-                    {option.label}
-                  </div>
-                ))}
-                
-                {/* Add new option if searchTerm doesn't match any existing option */}
-                {searchTerm.trim() && !inputMatchesOption && onAddNew && (
-                  <div
-                    role="option"
-                    tabIndex={0}
-                    className="flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground border-t"
-                    onClick={handleAddNewItem}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleAddNewItem();
-                      }
-                    }}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add "{searchTerm}" to {masterType} list
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center p-6 text-sm text-muted-foreground">
-                {emptyMessage}
-                {onAddNew && searchTerm.trim() && (
-                  <div className="mt-4">
-                    <Button 
-                      size="sm" 
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleSelect(option.value);
+                        }
+                      }}
+                      onClick={() => handleSelect(option.value)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          value === option.value ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.label}
+                    </div>
+                  ))}
+                  
+                  {/* Add new option if searchTerm doesn't match any existing option */}
+                  {searchTerm.trim() && !inputMatchesOption && onAddNew && (
+                    <div
+                      role="option"
+                      tabIndex={0}
+                      className="flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none focus:bg-accent focus:text-accent-foreground border-t"
                       onClick={handleAddNewItem}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          handleAddNewItem();
+                        }
+                      }}
                     >
                       <Plus className="mr-2 h-4 w-4" />
-                      Add "{searchTerm}"
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-          </ScrollArea>
-        </PopoverContent>
-      </Popover>
+                      Add "{searchTerm}" to {masterType} list
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center p-6 text-sm text-muted-foreground">
+                  {emptyMessage}
+                  {onAddNew && searchTerm.trim() && (
+                    <div className="mt-4">
+                      <Button 
+                        size="sm" 
+                        onClick={handleAddNewItem}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add "{searchTerm}"
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
+      </>
     );
   }
 );

@@ -9,10 +9,10 @@ export interface SearchableSelectProps {
   options: SelectOption[];
   value?: string;
   onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => void;
+  onAddNew?: (value: string) => void | string;
   placeholder?: string;
   emptyMessage?: string;
-  label?: string;
+  label?: React.ReactNode;
   disabled?: boolean;
   className?: string;
   masterType?: string;

@@ -12,10 +12,11 @@ interface EnhancedSearchableSelectProps {
   onValueChange: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
-  label?: string;
+  label?: React.ReactNode;
   disabled?: boolean;
   className?: string;
   masterType?: MasterType;
+  onAddNew?: (value: string) => void;
 }
 
 export const EnhancedSearchableSelect: React.FC<EnhancedSearchableSelectProps> = ({
@@ -28,6 +29,7 @@ export const EnhancedSearchableSelect: React.FC<EnhancedSearchableSelectProps> =
   disabled,
   className,
   masterType,
+  onAddNew: externalAddNewHandler,
 }) => {
   // Get master data and dialog functionality
   const { getByType, refresh } = useMasterData();
@@ -38,17 +40,20 @@ export const EnhancedSearchableSelect: React.FC<EnhancedSearchableSelectProps> =
   
   // Handler for adding new master data
   const handleAddNew = (name: string) => {
+    // If external handler is provided, use it
+    if (externalAddNewHandler) {
+      return externalAddNewHandler(name);
+    }
+
     if (!masterType) return;
     
     // Open the global master dialog with the new name prefilled
-    openMasterDialog({
-      itemName: name,
-      masterType,
-      onConfirm: (name) => {
-        // After confirming, refresh the master data
-        refresh();
-      }
-    });
+    openMasterDialog(masterType, name);
+    
+    // Refresh the master data
+    setTimeout(() => {
+      refresh();
+    }, 500);
   };
   
   return (
@@ -56,10 +61,9 @@ export const EnhancedSearchableSelect: React.FC<EnhancedSearchableSelectProps> =
       options={options}
       value={value}
       onValueChange={onValueChange}
-      onAddNew={masterType ? handleAddNew : undefined}
+      onAddNew={handleAddNew}
       placeholder={placeholder || `Select ${masterType || 'option'}`}
       emptyMessage={emptyMessage || "No results found."}
-      label={label}
       disabled={disabled}
       className={className}
       masterType={masterType}

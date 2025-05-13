@@ -8,6 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+interface MasterDialogConfig {
+  itemName?: string;
+  masterType: MasterType;
+  onConfirm?: (name: string) => void;
+}
+
 export function useGlobalMasterDialog() {
   const [isOpen, setIsOpen] = useState(false);
   const [masterType, setMasterType] = useState<MasterType>('supplier');
@@ -16,11 +22,31 @@ export function useGlobalMasterDialog() {
   const [commissionRate, setCommissionRate] = useState('');
   const [onConfirm, setOnConfirm] = useState<((id: string, name: string) => void) | null>(null);
 
-  const open = useCallback((type: MasterType, initialValue = '') => {
-    setMasterType(type);
-    setInitialName(initialValue);
-    setName(initialValue);
-    setCommissionRate(type === 'broker' || type === 'agent' ? '1' : '');
+  const open = useCallback((type: MasterType | MasterDialogConfig, initialValue = '') => {
+    if (typeof type === 'object') {
+      // If passed as config object
+      setMasterType(type.masterType);
+      setInitialName(type.itemName || '');
+      setName(type.itemName || '');
+      if (type.onConfirm) {
+        setOnConfirm(() => (id: string, name: string) => {
+          if (type.onConfirm) type.onConfirm(name);
+        });
+      }
+    } else {
+      // If passed as type string and separate initialValue
+      setMasterType(type);
+      setInitialName(initialValue);
+      setName(initialValue);
+    }
+    
+    setCommissionRate(
+      (typeof type === 'object' ? type.masterType : type) === 'broker' || 
+      (typeof type === 'object' ? type.masterType : type) === 'agent' 
+        ? '1' 
+        : ''
+    );
+    
     setIsOpen(true);
   }, []);
 

@@ -16,7 +16,7 @@ export interface UseEnhancedSelectReturn {
 }
 
 export interface EnhancedSearchableSelectProps {
-  options: SelectOption[];
+  options?: SelectOption[];
   value: string;
   onValueChange: (value: string) => void;
   onAddNew?: (value: string) => void;
