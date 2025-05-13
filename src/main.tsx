@@ -1,3 +1,4 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
@@ -14,10 +15,10 @@ const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement)
 // Render the application with proper providers
 root.render(
   <React.StrictMode>
-    <AppProviders>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AppProviders>
         <App />
-      </BrowserRouter>
-    </AppProviders>
+      </AppProviders>
+    </BrowserRouter>
   </React.StrictMode>
 );
