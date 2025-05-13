@@ -1,228 +1,136 @@
 
-import React, { useRef, useState, useCallback, useMemo } from "react";
-import { Command, CommandInput, CommandList, CommandEmpty } from "@/components/ui/command";
-import { EnhancedSearchableSelectProps } from "./enhanced-select/types";
-import { EnhancedSelectOption } from "./enhanced-select/enhanced-select-option";
-import { EnhancedSelectSuggestion } from "./enhanced-select/enhanced-select-suggestion";
-import { useEnhancedSelect } from "./enhanced-select/use-enhanced-select";
-import { useGlobalMasterDialog } from "@/context/GlobalMasterDialogContext";
+import React, { useState, useEffect } from "react";
+import { Command, CommandInput, CommandEmpty, CommandGroup } from "@/components/ui/command";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
-import { MasterType } from "@/types/master.types";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { SelectOption } from "./enhanced-select/types";
 
-export function EnhancedSearchableSelect({
+interface EnhancedSearchableSelectProps {
+  options?: SelectOption[];
+  value: string;
+  onValueChange: (value: string) => void;
+  onAddNew?: (value: string) => void;
+  placeholder?: string;
+  emptyMessage?: string;
+  label?: React.ReactNode;
+  disabled?: boolean;
+  className?: string;
+  masterType?: 'supplier' | 'agent' | 'transporter' | 'customer' | 'broker' | 'party';
+}
+
+export const EnhancedSearchableSelect: React.FC<EnhancedSearchableSelectProps> = ({
   options = [],
   value,
   onValueChange,
   onAddNew,
-  placeholder = "Search...",
-  emptyMessage = "No results found",
+  placeholder = "Select an option",
+  emptyMessage = "No results found.",
   label,
   disabled = false,
-  className = "",
-  masterType = "supplier"
-}: EnhancedSearchableSelectProps) {
-  // Always ensure options is an array to prevent "undefined is not iterable" errors
-  const safeOptions = useMemo(() => {
-    if (!Array.isArray(options)) {
-      console.warn(`EnhancedSearchableSelect: options is not an array, received:`, options);
-      return [];
+  className,
+  masterType,
+}) => {
+  const [open, setOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredOptions, setFilteredOptions] = useState<SelectOption[]>(options);
+
+  // Get the selected option based on value
+  const selectedOption = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredOptions(options);
+    } else {
+      const filtered = options.filter((option) =>
+        option.label.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredOptions(filtered);
     }
-    return options.filter(option => option !== null && option !== undefined);
-  }, [options]);
-  
-  const { open } = useGlobalMasterDialog();
-  
-  const {
-    open: isOpen,
-    setOpen,
-    searchTerm,
-    setSearchTerm,
-    selectedOption,
-    filteredOptions,
-    suggestedMatch,
-    inputMatchesOption
-  } = useEnhancedSelect(safeOptions, value || '');
+  }, [searchTerm, options]);
 
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [activeIndex, setActiveIndex] = useState<number>(-1);
+  const handleSelect = (currentValue: string) => {
+    onValueChange(currentValue === value ? "" : currentValue);
+    setOpen(false);
+  };
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!isOpen) return;
-    
-    // Safely access filteredOptions - ensure it's always an array
-    const safeFilteredOptions = Array.isArray(filteredOptions) ? filteredOptions : [];
-    const optionsLength = safeFilteredOptions.length;
-    
-    // Handle keyboard navigation with improved safety checks
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setActiveIndex(prevIndex => 
-          prevIndex < optionsLength - 1 ? prevIndex + 1 : prevIndex
-        );
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setActiveIndex(prevIndex => (prevIndex > 0 ? prevIndex - 1 : 0));
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (activeIndex >= 0 && activeIndex < optionsLength && safeFilteredOptions[activeIndex]) {
-          onValueChange(safeFilteredOptions[activeIndex].value);
-          setOpen(false);
-        } else if (searchTerm && !inputMatchesOption) {
-          handleAddNewItem();
-        }
-        break;
-      case "Escape":
-        e.preventDefault();
-        setOpen(false);
-        break;
-      default:
-        break;
+  const handleAddNew = () => {
+    // ✅ Fixed: Check if onAddNew is a function before calling it
+    if (typeof onAddNew === 'function') {
+      onAddNew(searchTerm);
     }
-  }, [isOpen, filteredOptions, activeIndex, onValueChange, setOpen, searchTerm, inputMatchesOption]);
-
-  const handleBlur = useCallback(() => {
-    // Delayed closing to allow clicking on options
-    setTimeout(() => {
-      if (document.activeElement !== inputRef.current) {
-        setOpen(false);
-      }
-    }, 100);
-  }, [setOpen]);
-
-  const handleUseSuggestion = useCallback(() => {
-    if (suggestedMatch && safeOptions.length > 0) {
-      try {
-        const option = safeOptions.find(opt => 
-          opt && opt.label && opt.label.toLowerCase() === suggestedMatch.toLowerCase()
-        );
-        if (option) {
-          onValueChange(option.value);
-          setOpen(false);
-        }
-      } catch (error) {
-        console.error("Error using suggestion:", error);
-      }
-    }
-  }, [suggestedMatch, safeOptions, onValueChange, setOpen]);
-
-  const handleAddNewItem = useCallback(() => {
-    if (searchTerm) {
-      // If we're using the global master dialog for any valid master type
-      if (masterType) {
-        // Cast masterType to the proper MasterType for useGlobalMasterDialog
-        const validMasterType = masterType as MasterType;
-        open(validMasterType, searchTerm);
-      } 
-      // If we're using a custom onAddNew function
-      else if (typeof onAddNew === 'function') {
-        try {
-          const newValue = onAddNew(searchTerm);
-          if (newValue) {
-            onValueChange(newValue);
-            setOpen(false);
-          }
-        } catch (error) {
-          console.error("Error adding new item:", error);
-        }
-      }
-    }
-  }, [onAddNew, searchTerm, onValueChange, setOpen, masterType, open]);
-
-  const showAddOption = useMemo(() => {
-    return Boolean(searchTerm && !inputMatchesOption && (typeof onAddNew === 'function' || masterType));
-  }, [onAddNew, searchTerm, inputMatchesOption, masterType]);
-
-  // Ensure filteredOptions is always an array
-  const safeFilteredOptions = useMemo(() => {
-    return Array.isArray(filteredOptions) ? filteredOptions : [];
-  }, [filteredOptions]);
+    setOpen(false);
+  };
 
   return (
-    <div className={`relative w-full ${className}`}>
+    <div className={cn("relative", className)}>
       {label && (
-        <div className="flex justify-between items-center mb-1">
-          <label className="block text-sm font-medium text-gray-700">
-            {label}
-          </label>
-          {masterType && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                const validMasterType = masterType as MasterType;
-                open(validMasterType);
-              }}
-              className="h-6 px-2 text-xs"
-            >
-              <Plus className="w-3 h-3 mr-1" /> Add
-            </Button>
-          )}
-        </div>
+        <div className="text-sm font-medium mb-1.5 text-gray-700">{label}</div>
       )}
-      <Command
-        className="border rounded-md overflow-visible bg-transparent"
-        shouldFilter={false}
-      >
-        <CommandInput
-          ref={inputRef}
-          value={searchTerm || ''}
-          onValueChange={setSearchTerm}
-          onBlur={handleBlur}
-          onFocus={() => setOpen(true)}
-          placeholder={placeholder}
-          className="focus:outline-none border-none focus:ring-0 p-2"
-          disabled={disabled}
-          onKeyDown={handleKeyDown}
-        />
-        {isOpen && (
-          <CommandList className="absolute top-full left-0 w-full z-50 bg-white shadow-lg rounded-md border mt-1 max-h-60 overflow-auto">
-            <CommandEmpty>
-              <EnhancedSelectSuggestion
-                suggestedMatch={suggestedMatch}
-                onUseSuggestion={handleUseSuggestion}
-                searchTerm={searchTerm || ''}
-                onAddNewItem={handleAddNewItem}
-                masterType={masterType}
-                showAddOption={showAddOption}
-              />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              "w-full justify-between font-normal",
+              !value && "text-muted-foreground"
+            )}
+            disabled={disabled}
+          >
+            <span className="truncate">
+              {selectedOption?.label || placeholder}
+            </span>
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0">
+          <Command>
+            <CommandInput
+              placeholder={`Search ${placeholder.toLowerCase()}...`}
+              value={searchTerm}
+              onValueChange={setSearchTerm}
+            />
+            <CommandEmpty className="py-2 px-2 text-sm text-center">
+              <div className="flex flex-col gap-1.5">
+                <span>{emptyMessage}</span>
+                {typeof onAddNew === 'function' && searchTerm.trim() !== "" && (
+                  <Button
+                    size="sm"
+                    className="mt-1 h-8 text-xs"
+                    onClick={handleAddNew}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Add "{searchTerm}"
+                  </Button>
+                )}
+              </div>
             </CommandEmpty>
-            {safeFilteredOptions.length > 0 ? (
-              safeFilteredOptions.map((option, index) => (
-                <EnhancedSelectOption
+            <CommandGroup>
+              {filteredOptions.map((option) => (
+                <div
                   key={option.value}
-                  value={option.value}
-                  label={option.label}
-                  isSelected={value === option.value}
-                  onSelect={() => {
-                    onValueChange(option.value);
-                    setOpen(false);
-                  }}
-                  onKeyDown={handleKeyDown}
-                  index={index}
-                />
-              ))
-            ) : (
-              <div className="py-2 px-4 text-sm text-gray-500">
-                {searchTerm ? `No results for "${searchTerm}"` : emptyMessage}
-              </div>
-            )}
-            {showAddOption && (
-              <div 
-                className="cursor-pointer flex items-center px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-t"
-                onClick={handleAddNewItem}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add "{searchTerm}" to {masterType} master
-              </div>
-            )}
-          </CommandList>
-        )}
-      </Command>
+                  className={cn(
+                    "flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground",
+                    value === option.value && "bg-accent"
+                  )}
+                  onClick={() => handleSelect(option.value)}
+                >
+                  <Check
+                    className={cn(
+                      "h-4 w-4",
+                      value === option.value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <span>{option.label}</span>
+                </div>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
-}
+};
