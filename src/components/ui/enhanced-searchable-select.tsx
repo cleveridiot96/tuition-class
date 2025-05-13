@@ -1,136 +1,68 @@
 
-import React, { useState, useEffect } from "react";
-import { Command, CommandInput, CommandEmpty, CommandGroup } from "@/components/ui/command";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { SelectOption } from "./enhanced-select/types";
+import React from "react";
+import { SearchableSelect } from "./searchable-select";
+import { useMasterData } from "@/hooks/useMasterData";
+import { useGlobalMasterDialog } from "@/hooks/useGlobalMasterDialog";
+import { MasterType } from "@/types/master.types";
+import { SelectOption } from "./searchable-select/types";
 
 interface EnhancedSearchableSelectProps {
   options?: SelectOption[];
   value: string;
   onValueChange: (value: string) => void;
-  onAddNew?: (value: string) => void;
   placeholder?: string;
   emptyMessage?: string;
-  label?: React.ReactNode;
+  label?: string;
   disabled?: boolean;
   className?: string;
-  masterType?: 'supplier' | 'agent' | 'transporter' | 'customer' | 'broker' | 'party';
+  masterType?: MasterType;
 }
 
 export const EnhancedSearchableSelect: React.FC<EnhancedSearchableSelectProps> = ({
-  options = [],
+  options: providedOptions,
   value,
   onValueChange,
-  onAddNew,
-  placeholder = "Select an option",
-  emptyMessage = "No results found.",
+  placeholder,
+  emptyMessage,
   label,
-  disabled = false,
+  disabled,
   className,
   masterType,
 }) => {
-  const [open, setOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredOptions, setFilteredOptions] = useState<SelectOption[]>(options);
-
-  // Get the selected option based on value
-  const selectedOption = options.find((option) => option.value === value);
-
-  useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredOptions(options);
-    } else {
-      const filtered = options.filter((option) =>
-        option.label.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredOptions(filtered);
-    }
-  }, [searchTerm, options]);
-
-  const handleSelect = (currentValue: string) => {
-    onValueChange(currentValue === value ? "" : currentValue);
-    setOpen(false);
+  // Get master data and dialog functionality
+  const { getByType, refresh } = useMasterData();
+  const { open: openMasterDialog } = useGlobalMasterDialog();
+  
+  // Use provided options or get options based on masterType
+  const options = providedOptions || (masterType ? getByType(masterType) : []);
+  
+  // Handler for adding new master data
+  const handleAddNew = (name: string) => {
+    if (!masterType) return;
+    
+    // Open the global master dialog with the new name prefilled
+    openMasterDialog({
+      itemName: name,
+      masterType,
+      onConfirm: (name) => {
+        // After confirming, refresh the master data
+        refresh();
+      }
+    });
   };
-
-  const handleAddNew = () => {
-    // ✅ Fixed: Check if onAddNew is a function before calling it
-    if (typeof onAddNew === 'function') {
-      onAddNew(searchTerm);
-    }
-    setOpen(false);
-  };
-
+  
   return (
-    <div className={cn("relative", className)}>
-      {label && (
-        <div className="text-sm font-medium mb-1.5 text-gray-700">{label}</div>
-      )}
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              "w-full justify-between font-normal",
-              !value && "text-muted-foreground"
-            )}
-            disabled={disabled}
-          >
-            <span className="truncate">
-              {selectedOption?.label || placeholder}
-            </span>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="p-0">
-          <Command>
-            <CommandInput
-              placeholder={`Search ${placeholder.toLowerCase()}...`}
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-            />
-            <CommandEmpty className="py-2 px-2 text-sm text-center">
-              <div className="flex flex-col gap-1.5">
-                <span>{emptyMessage}</span>
-                {typeof onAddNew === 'function' && searchTerm.trim() !== "" && (
-                  <Button
-                    size="sm"
-                    className="mt-1 h-8 text-xs"
-                    onClick={handleAddNew}
-                  >
-                    <Plus className="mr-1 h-3.5 w-3.5" />
-                    Add "{searchTerm}"
-                  </Button>
-                )}
-              </div>
-            </CommandEmpty>
-            <CommandGroup>
-              {filteredOptions.map((option) => (
-                <div
-                  key={option.value}
-                  className={cn(
-                    "flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-accent hover:text-accent-foreground",
-                    value === option.value && "bg-accent"
-                  )}
-                  onClick={() => handleSelect(option.value)}
-                >
-                  <Check
-                    className={cn(
-                      "h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span>{option.label}</span>
-                </div>
-              ))}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <SearchableSelect
+      options={options}
+      value={value}
+      onValueChange={onValueChange}
+      onAddNew={masterType ? handleAddNew : undefined}
+      placeholder={placeholder || `Select ${masterType || 'option'}`}
+      emptyMessage={emptyMessage || "No results found."}
+      label={label}
+      disabled={disabled}
+      className={className}
+      masterType={masterType}
+    />
   );
 };

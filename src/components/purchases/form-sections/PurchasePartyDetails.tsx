@@ -38,7 +38,6 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
-                  options={partyManagement.suppliers || []}
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
@@ -62,7 +61,6 @@ const PurchasePartyDetails: React.FC<PurchasePartyDetailsProps> = ({
               </FormLabel>
               <FormControl>
                 <EnhancedSearchableSelect 
-                  options={partyManagement.agents || []}
                   value={field.value}
                   onValueChange={field.onChange}
                   className={fieldState.error && showErrors ? "border-red-500" : fieldState.invalid === false ? "border-green-500" : ""}
